@@ -11,7 +11,7 @@
 // what makes them the same thing rather than two readings of one record.
 
 import * as link from "../explorer/permalink.js";
-import { CONSTANTS as ANCHORS, SETTLED } from "../explorer/catalog.js";
+import { CONSTANTS as ANCHORS, CURVES, SETTLED } from "../explorer/catalog.js";
 import { DEFAULT_PALETTE, PALETTES } from "../explorer/palettes.js";
 import { familySpecOf } from "../explorer/render.js";
 
@@ -53,6 +53,7 @@ export function contractOf(homeRaw) {
     palettes: PALETTES,
     defaultPalette: DEFAULT_PALETTE,
     settled: (mode) => SETTLED[mode],
+    curve: (mode) => CURVES[mode],
   };
 }
 
@@ -66,8 +67,9 @@ export function contractOf(homeRaw) {
  * named and the slot's tooltip says it.
  *
  * The record's own `refused` list carries these too, plus the things a view has no shape
- * for at all — an autolevel pass whose curve the run did not record, a curve a mode's
- * catalog does not give it. The two are
+ * for at all — an autolevel pass whose curve the run did not record. A curve a mode's
+ * catalog does not give it was one until `curve` became a key (tools_figures_ckpt156); the
+ * slot's own `curve` goes to the link now. The two are
  * held together by `atlas.test.mjs`: the record may not claim a refusal the roster does
  * not make, and may not stay quiet about one it does.
  */
@@ -119,6 +121,8 @@ export function opened(contract, slot) {
       // The mark's picture was drawn at the catalog's constant wherever the slot names
       // none, and under permalink v3 an absent weight or opacity is one to derive.
       params: link.settledParams(mode, params, contract),
+      // The curve the picture read its field through; the contract leaves out the catalog's.
+      curve: slot.curve ?? null,
       x: written(slot.x),
       y: written(slot.y),
       w: written(slot.w),

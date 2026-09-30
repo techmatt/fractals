@@ -1,5 +1,5 @@
 {
-  "built": "2026-09-26",
+  "built": "2026-09-29",
   "crate": "explorer/engine-wasm",
   "engine_changes": [
     "coloring::composite, coloring::modulate and direct_trap::Painter::trace are pub: visibility only, no signature moved, engine tests unmoved.",
@@ -18,9 +18,9 @@
     "autolevel, derive, and mode::tune, set, and params_of were ALREADY pub (render_link phase 1, 778b55f), and are named here because this crate now imports them in place of its own level.rs, derive.rs, and lib.rs copies; engine_wasm_import_ckpt151. Nothing was changed next door for it: engine/ has no diff, the native release binary is the same file (sha256 753053ec\u2026a064e0), and the fingerprint is unmoved (5d97e76bb16be71d). The one seam the engine lacks, the paged-out inflection pre-map in derive::probe_row, is inflect::probe_row here, over the engine's own derive::probe_pixel."
   ],
   "engine_version": "0.1.0",
-  "gzip_bytes": 251917,
-  "raw_bytes": 923567,
+  "gzip_bytes": 252907,
+  "raw_bytes": 926641,
   "rustc": "1.96.0 (ac68faa20 2026-05-25)",
   "schema": 1,
-  "wallpapers_commit": "9b8f05f94e8ebe15d47c98bff313f84bd9a19cbb"
+  "wallpapers_commit": "1c4fd4dee5ea65e1b23db173c98cc8fe125a194b"
 }

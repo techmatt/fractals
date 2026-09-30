@@ -1456,7 +1456,11 @@ export function mount(host) {
   /** The engine's screen on one frame: `{ passed, fate, reading }`. */
   async function screened(view) {
     const started = performance.now();
-    const spec = specOf({ ...view, mode: "smooth", palette: SCREEN_MAP, params: {} }, NODE.width, NODE.height);
+    const spec = specOf(
+      { ...view, mode: "smooth", curve: null, palette: SCREEN_MAP, params: {} },
+      NODE.width,
+      NODE.height,
+    );
     const report = await screeners.screen(spec, true);
     timed("screen", started);
     if (!report.ok) throw new Error(report.why);

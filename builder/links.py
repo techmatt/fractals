@@ -313,7 +313,7 @@ def _panel_links(
     maker, in a neutral map, at a mode the figure is *about*, and nothing next door is a
     record of them. A spec goes down the same `_view` a citation of the wallpapers side
     does, so the same refusals apply — a fractional degree, a mode the explorer does not
-    offer, a curve the catalog does not give that mode, a map the picker does not carry,
+    offer, a map the picker does not carry,
     a fold on a cyclic map, a frame past what `f64` resolves, and a cap the depth policy
     would not choose are each a labelled panel with no link rather than a link to
     something else.
@@ -836,15 +836,10 @@ def _view(
             f"the {mode} mode is not one the explorer offers — the page draws the "
             "engine's production roster, and this is not on it",
         )
+    # The curve the picture read its field through. Since tools_figures_ckpt156 a link
+    # carries one that is not the catalog's as `curve`, and `emit` leaves out the catalog's
+    # own, so a view says it either way.
     curve = record["curve"] if record else _text(fields.get("curve"))
-    if curve is not None and curve != curves[mode]:
-        return _refused(
-            identifier,
-            "not_exposed",
-            f"the picture reads {mode} through a {curve} curve, and the catalog's "
-            f"{mode} is {curves[mode]}: a curve is part of a mode's identity here and "
-            "is not a key a link may carry",
-        )
 
     if colormap not in palettes:
         return _refused(
@@ -874,6 +869,7 @@ def _view(
             "constants": _constants(family, fields, record),
             "mode": mode,
             "params": params,
+            "curve": curve,
             **frame,
             "palette": colormap,
             "shade": shade,
@@ -1038,6 +1034,9 @@ def ledger_view(recipe: dict, *, level: dict | None = None) -> dict:
         "constants": _constants(family, {}, record),
         "mode": str(recipe["mode"]),
         "params": params,
+        # The curve the recipe read its field through; `emit` writes it only where it is not
+        # the catalog's, so a recipe at its mode's own curve is the link it always was.
+        "curve": recipe.get("curve"),
         **_frame({}, record),
         "palette": str(recipe["colormap"]),
         "shade": _shade({}, record),

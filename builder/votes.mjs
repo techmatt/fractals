@@ -22,7 +22,7 @@ import * as link from "../explorer/permalink.js";
 import { parseImport, queryOf } from "../explorer/saved.js";
 import { DEFAULT_PALETTE, PALETTES } from "../explorer/palettes.js";
 import { familySpecOf } from "../explorer/render.js";
-import { CONSTANTS, SETTLED } from "../explorer/catalog.js";
+import { CONSTANTS, CURVES, SETTLED } from "../explorer/catalog.js";
 
 const WASM = fileURLToPath(new URL("../explorer/engine.wasm", import.meta.url));
 
@@ -72,6 +72,7 @@ const SHALLOW = {
   palettes: PALETTES,
   defaultPalette: DEFAULT_PALETTE,
   settled: (mode) => SETTLED[mode],
+  curve: (mode) => CURVES[mode],
   cap: (width) => engine.maxiter_for_width(width),
 };
 

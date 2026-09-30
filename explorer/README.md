@@ -5345,7 +5345,7 @@ turns `multibrot3` into `{kind: "multibrot", degree: 3}`.
 ### The keys, in emit order
 
 ```
-v · f · cx · cy · px · py · zx · zy · m · the mode's parameters · x · y · w · n · a · p · the shade keys · level
+v · f · cx · cy · px · py · zx · zy · m · the mode's parameters · curve · x · y · w · n · a · p · the shade keys · level
 ```
 
 - **`v`** — required. `1` to `4` parse; every string this page writes says `v=4`.
@@ -5401,6 +5401,19 @@ v · f · cx · cy · px · py · zx · zy · m · the mode's parameters · x ·
   is the engine's: a screened cross saturates toward white, so `direct_trap_screen` is
   held below an opacity of 0.15 and a threshold of 0.08 whatever a link asks for. The
   link keeps what was asked and the picture shows the cap.
+- **`curve`** *(tools_figures_ckpt156)* — the curve the mode reads its field through, one
+  of the engine's `coloring::Transform`: `linear`, `sqrt`, `log` or `scurve`. **Absent is
+  the catalog's own** (`catalog.js`'s `CURVES`: `log` for `trap_circle`, `linear` for every
+  other mode), and a link spelling the catalog's own canonicalizes to one that does not,
+  through `context.curve(mode)`. It lands where the wallpaper project's `coloring_of` lands a
+  recipe's `curve` — a field coloring's transform, a composite's or modulate's base — and
+  the module refuses one under a direct trap, which reads no field. A key with a default,
+  so `v` stays 4. It is a colour and not arithmetic: `fieldKey` leaves it out. The studio
+  shows it as a *Curve* select beside the mode's parameters, reset by a change of mode. It
+  exists because eight gallery seats read `smooth` or `stripe` through `log` and their
+  links drew the right place in the wrong tones. The rebuilt `engine.wasm` drew 1,571
+  existing links — every fifth gallery seat and every figure link, at 96×54 — byte for byte
+  as the module before it.
 - **`x`, `y`, `w`** — the frame's centre and its width in the plane, as **decimal
   strings**, exponent form allowed, capped at 64 characters, and **echoed back
   verbatim**. The decimal string is the identity of a location: `f64` is a lossy view of
@@ -6050,8 +6063,9 @@ it; `builder/links.py` is where the rules are, and the short version is:
 - **Nearly is refused.** Four reasons, and each is a thing the contract deliberately does
   not carry — a drawn diagram, a frame past the `f64` wall, a record that does not say
   enough, or a picture that needs something this page does not offer: a fractional
-  degree, a curve the mode's own catalog does not give it, a fold on a cyclic map, **a
-  cap somebody chose**. That last is the one that surprises: the depth policy owns the
+  degree, a fold on a cyclic map, **a cap somebody chose**. A curve the mode's own
+  catalog does not give it was on this list until `curve` became a key
+  *(tools_figures_ckpt156)*. That last is the one that surprises: the depth policy owns the
   iteration cap and a link carries a place rather than a budget, so the figure drawn at
   300 iterations to show what banding looks like is a figure this page cannot reopen.
 

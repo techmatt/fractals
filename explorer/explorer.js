@@ -37,7 +37,7 @@ import * as hold from "./hold.js";
 import * as fitting from "./fit.js";
 import * as travel from "./period-range.js";
 import * as modeParams from "./params.js";
-import { CONSTANTS as ANCHORS, MODES as IDENTITIES, SETTLED } from "./catalog.js";
+import { CONSTANTS as ANCHORS, CURVES, MODES as IDENTITIES, SETTLED } from "./catalog.js";
 import { DEFAULT_PALETTE, PALETTES, PROVENANCE } from "./palettes.js";
 import { fetchStops, stopsOf } from "./stops.js";
 import * as aliasing from "./aliasing.js";
@@ -2167,7 +2167,50 @@ function buildParams() {
     group.append(label, slider, input);
     paramStrip.append(group);
   }
+  // A direct trap reads no field, so it has no curve to read one through.
+  if (!planOf(view).direct) paramStrip.append(curveGroup());
   syncParams();
+}
+
+/** How the curve select names each of the engine's curves. */
+const CURVE_WORDS = { linear: "Linear", sqrt: "Square root", log: "Log", scurve: "S-curve" };
+
+/**
+ * The curve the mode's field is read through (permalink `curve`, tools_figures_ckpt156).
+ *
+ * It opens at the catalog's own for the mode, which is what every link without the key
+ * means, and a choice of that same curve is no choice at all: `heldCurve` keeps it `null`.
+ */
+function curveGroup() {
+  const group = document.createElement("span");
+  group.className = "group";
+  group.title =
+    "How the field is spread along the palette. Log and square root give the low end " +
+    "more of it; the S-curve pushes contrast into the middle.";
+  const label = document.createElement("label");
+  label.textContent = "Curve";
+  label.htmlFor = "param-curve";
+  const select = document.createElement("select");
+  select.id = "param-curve";
+  for (const curve of link.FIELD_CURVES) select.append(new Option(CURVE_WORDS[curve], curve));
+  select.value = view.curve ?? CURVES[view.mode];
+  select.addEventListener("change", () => setCurve(select.value));
+  group.append(label, select);
+  return group;
+}
+
+/** The curve, as the select now says it. A recolour: the field it reads is unchanged. */
+function setCurve(curve) {
+  const select = document.getElementById("param-curve");
+  if (locked()) {
+    if (select) select.value = view.curve ?? CURVES[view.mode];
+    return;
+  }
+  const held = link.heldCurve(view.mode, curve, contract);
+  if ((view.curve ?? null) === held) return;
+  view = { ...view, curve: held };
+  changed();
+  draw();
 }
 
 /** One mode parameter, as its box or slider now says it. A value that is not a number
@@ -2227,6 +2270,8 @@ function syncParams() {
       input.value = shownParam(value);
     }
   }
+  const curve = paramStrip.querySelector("select");
+  if (curve !== null) curve.value = view.curve ?? CURVES[view.mode];
 }
 
 /**
@@ -2625,7 +2670,7 @@ function shownField() {
 function fitted(subject, from = subject) {
   const absolute = from.shade.scale === "absolute";
   const target = absolute ? { ...from.shade, lambda: 1, phase: 0 } : from.shade;
-  const found = fitting.fit(shownField(), target, subject.mode ?? "smooth");
+  const found = fitting.fit(shownField(), target, subject.mode ?? "smooth", subject.curve ?? null);
   if (found === null) return null;
   let next = { ...subject.shade, scale: "absolute" };
   for (const key of ["lambda", "period", "phase"]) next = shade.withKey(next, key, String(found[key]));
@@ -5254,7 +5299,9 @@ modePicker.addEventListener("change", () => {
   // `TEXTURE_DEFAULT` only where nothing ever set one.
   const held = seated === undefined && link.DERIVED[mode] === "weight" && heldWeight !== null;
   if (held) params.weight = heldWeight;
-  view = { ...view, mode, params };
+  // The curve goes with the mode it was chosen for, the way the parameters do: the new
+  // mode opens at the catalog's own.
+  view = { ...view, mode, params, curve: null };
   // A mode that was only listed because the view arrived in it goes, now it is left.
   syncModes();
   changed();
@@ -5781,6 +5828,8 @@ async function main() {
     palettes: PALETTES,
     defaultPalette: DEFAULT_PALETTE,
     settled: (mode) => SETTLED[mode],
+    // The catalog's curve for a mode, which is what an absent `curve` means.
+    curve: (mode) => CURVES[mode],
     // The width policy, which is what an absent `n` means: a view whose held cap is the
     // width's own emits none, so it is the string it always was (permalink v4).
     cap: (width) => renderer.maxiter(width),

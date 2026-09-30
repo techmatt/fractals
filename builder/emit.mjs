@@ -36,7 +36,7 @@ import {
 } from "../explorer/permalink.js";
 import { DEFAULT_PALETTE, PALETTES } from "../explorer/palettes.js";
 import { familySpecOf } from "../explorer/render.js";
-import { CONSTANTS, SETTLED } from "../explorer/catalog.js";
+import { CONSTANTS, CURVES, SETTLED } from "../explorer/catalog.js";
 
 const WASM = fileURLToPath(new URL("../explorer/engine.wasm", import.meta.url));
 
@@ -88,12 +88,38 @@ const CONTEXT = {
   palettes: PALETTES,
   defaultPalette: DEFAULT_PALETTE,
   settled: (mode) => SETTLED[mode],
+  curve: (mode) => CURVES[mode],
   // The width policy, out of the same module the page asks — so a view whose record names
   // the cap the policy gives emits no `n`, exactly as the page's own would.
   cap: (width) => engine.maxiter_for_width(width),
 };
 
 const written = (text) => ({ text, value: Number(text) });
+
+const direct = new Map();
+
+/** Whether a mode paints during the iteration and reads no field: the module's answer. */
+function readsNoField(mode) {
+  if (!direct.has(mode)) {
+    const answer = plan({ schema: 1, family: { kind: "mandelbrot" }, mode });
+    if (!answer.ok) throw new Error(`${mode}: ${answer.why}`);
+    direct.set(mode, answer.direct === true);
+  }
+  return direct.get(mode);
+}
+
+/**
+ * The curve a record's picture was read through, as a view holds it.
+ *
+ * A direct trap's recorded curve is dropped rather than carried: the pipeline's
+ * `coloring_of` never sets it, so two records that differ only in it are one picture, and
+ * the module refuses a curve under a direct trap. Everything else is the record's own, and
+ * `emit` leaves it out wherever it is the catalog's.
+ */
+function curveOf(derived) {
+  const curve = derived.curve ?? null;
+  return curve === null || readsNoField(derived.mode) ? null : curve;
+}
 
 /** One derived view as the contract's own shape. */
 function viewOf(derived) {
@@ -106,6 +132,7 @@ function viewOf(derived) {
     // A record's picture was drawn at the catalog's constant wherever it names none, and
     // its link says so: under permalink v3 an absent weight or opacity is one to derive.
     params: settledParams(derived.mode, derived.params ?? {}, CONTEXT),
+    curve: curveOf(derived),
     x: written(derived.x),
     y: written(derived.y),
     w: written(derived.w),

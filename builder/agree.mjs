@@ -34,7 +34,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 import * as link from "../explorer/permalink.js";
-import { SETTLED } from "../explorer/catalog.js";
+import { CURVES, SETTLED } from "../explorer/catalog.js";
 import { specOf } from "../explorer/render.js";
 import { install } from "../explorer/stops.js";
 import { load } from "../explorer/bench/engine.mjs";
@@ -146,6 +146,14 @@ function disagreements(slot) {
     // Where the recipe names none, the picture was drawn at the catalog's constant.
     const drawn = recipe[key] ?? settled[key];
     if (view.params[key] !== drawn) differ(`${slot.mode} ${key}`, drawn, view.params[key]);
+  }
+
+  // The curve the field was read through: the slot's own where it records one, and the
+  // catalog's where it does not, against what the link reads back as.
+  const drawnCurve = slot.curve ?? CURVES[slot.mode];
+  const openedCurve = view.curve ?? CURVES[view.mode];
+  if (openedCurve !== drawnCurve && !said.has(`curve ${drawnCurve}`)) {
+    differ("curve", drawnCurve, openedCurve);
   }
 
   if (palette !== slot.colormap && !said.has(`colormap ${slot.colormap}`)) {

@@ -131,8 +131,8 @@ BANNED = tuple((spelled_out(term), pattern_for(term), False) for term in BANNED_
     (spelled_out(term), clock_pattern_for(term), True) for term in CLOCK_TERMS
 )
 
-#: The generated palette library page, and the two lines on it that are a map's own name:
-#: what the page calls a palette, and — where the two differ — what the library spells it.
+#: The generated palette library page, and the one line under each strip that is a map's
+#: own name: the name the explorer shows it under.
 #:
 #: Until that page titled the names it shows, the hyphens inside them did the work
 #: `clock_pattern_for` leans on: a map called `mornin[g]-at-misty-vale-25` is plainly a
@@ -143,7 +143,7 @@ BANNED = tuple((spelled_out(term), pattern_for(term), False) for term in BANNED_
 #: everywhere, and the
 #: page's own prose — its lead, its headings — is not exempt from anything.
 NAME_LINES = "palettes/all-palettes.html"
-NAME_LINE = re.compile(r'^\s*(?:<figcaption>|<p class="palette-id">)')
+NAME_LINE = re.compile(r"^\s*<figcaption>")
 
 #: Suffixes that are not text. Reading one costs nothing but says nothing either.
 BINARY_SUFFIXES = frozenset({".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".wasm"})

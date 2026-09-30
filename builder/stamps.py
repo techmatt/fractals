@@ -17,9 +17,9 @@ Three halves:
   collection, its recipe, its recorded tone curve and its cap, spelled by `emit.mjs` and by
   `explorer_link.query_of`, and the two strings held equal byte for byte — and next door's
   own `EXPLORER_URL` held to this one's. A seat read through a curve its mode's catalog
-  does not give it is the one case the two are *meant* to differ: `emit.mjs` never sees a
-  curve and spells a link, `seats` calls it a gap, and `explorer_link` refuses — so there
-  the refusal is what is held.
+  does not give it is the one case the two are *meant* to differ: `emit.mjs` spells it as
+  `curve` since tools_figures_ckpt156, and `explorer_link` next door has no such key and
+  refuses — so there the refusal is what is held, until that writer learns the key.
 * **bytes**, the same condition: one PNG and one JPEG, drawn next door with Pillow,
   embedded by both writers with one link, and the two files held equal byte for byte — and
   each decoded, before and after, to the same pixels. **And a third writer**
@@ -207,9 +207,9 @@ def _next_door(base: str | None) -> list[str]:
     }
     answer = seats._program(PROGRAM, "spelling the seats' links next door", ask=ask)
 
-    # A seat read through a curve its mode's catalog does not give it has no exact link: the
-    # contract never sees the curve and spells one anyway, `seats` records it as a gap, and
-    # a release writer refuses. That refusal is the agreement, not a difference.
+    # A seat read through a curve its mode's catalog does not give it: the contract spells
+    # it as `curve`, and the release writer next door, which has no such key, refuses. That
+    # refusal is the agreement, not a difference.
     curves = links.catalog_curves()
 
     def unsayable(recipe: dict) -> bool:
@@ -229,7 +229,8 @@ def _next_door(base: str | None) -> list[str]:
             if theirs["query"] is not None:
                 found.append(
                     f"seat {pick.key} reads {pick.recipe['mode']} through a "
-                    f"{pick.recipe.get('curve')} curve, which no link can say, and explorer_link "
+                    f"{pick.recipe.get('curve')} curve, which explorer_link has no key for, and "
+                    "it "
                     f"spells {theirs['query']}"
                 )
             continue

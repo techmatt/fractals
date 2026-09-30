@@ -61,9 +61,9 @@
 // mean "taken from this view" — the page measures the view and derives the value —
 // rather than the catalog's constant. See "What version 3 changed" below.
 //
-// Emit order: v · f · cx · cy · px · py · zx · zy · m · the mode's parameters · x · y · w ·
-// n · a · p · then the shade parameters, in the order the engine's own palette recipe
-// declares them · level.
+// Emit order: v · f · cx · cy · px · py · zx · zy · m · the mode's parameters · curve · x ·
+// y · w · n · a · p · then the shade parameters, in the order the engine's own palette
+// recipe declares them · level.
 //
 // ## What version 3 changed, and why it is a 3
 //
@@ -98,6 +98,22 @@
 // should be told that a v4 link says something it cannot hear, rather than draw the
 // frame at the wrong cap. A link below v4 that spells `n` is refused, the deep
 // contract's rule for its own `f`.
+//
+// ## `curve`, and why it is not a version *(tools_figures_ckpt156)*
+//
+// A mode reads its field through a curve — `linear`, `sqrt`, `log` or `scurve`, the
+// engine's `coloring::Transform` — and the catalog settles one per mode: `log` for
+// `trap_circle`, `linear` for the rest. The wallpaper project's recipes can name another,
+// and eight gallery seats read `smooth` or `stripe` through `log`. Until this key a link
+// could not say that, so it drew those seats in the right place with the wrong tones.
+//
+// `curve` names the curve where it is not the catalog's. **Absent is the catalog's**, which
+// is what every link written before the key meant, and a link that spells the catalog's own
+// curve canonicalizes to one that does not — `context.curve(mode)` is the catalog's answer,
+// out of the baked `CURVES`. A key with a default is a widening, so `v` stays 4. It lands
+// where the pipeline's `coloring_of` lands it: a field coloring's curve, and the base of a
+// composite or a modulate. A direct trap reads no field, so the module refuses a curve
+// under one with its own sentence, the way it refuses a `level` there.
 //
 // ## `level`, and why it is last
 //
@@ -428,6 +444,29 @@ export function settledParams(mode, params, context) {
  *  a key the current mode has no room for. */
 const PARAMETER_KEYS = new Set(Object.values(MODE_PARAMETERS).flat());
 
+/** The key carrying the curve a mode reads its field through, where it is not the
+ *  catalog's. See "`curve`, and why it is not a version" at the top. */
+export const CURVE_KEY = "curve";
+
+/** The curves a field can be read through: the engine's `coloring::Transform`, in its own
+ *  spelling and its own order. */
+export const FIELD_CURVES = ["linear", "sqrt", "log", "scurve"];
+
+/** A curve a link spells, or the refusal. */
+export function readCurve(text) {
+  if (!FIELD_CURVES.includes(text)) {
+    throw new PermalinkError(`The ${wordsFor(CURVE_KEY)} has to be ${either(FIELD_CURVES)}, not ${text}.`);
+  }
+  return text;
+}
+
+/** The curve a view holds, as the contract keeps it: `null` wherever it is the mode's own,
+ *  so that a view spelling the catalog's curve and one saying nothing are one view. */
+export function heldCurve(mode, curve, context) {
+  if (curve === null || curve === undefined) return null;
+  return curve === context.curve?.(mode) ? null : curve;
+}
+
 /** The aspect a link means when it says nothing. */
 export const DEFAULT_ASPECT = { across: 16, down: 9 };
 
@@ -505,6 +544,7 @@ const KEY_WORDS = {
   a: ["aspect ratio", "aspect ratios"],
   p: ["palette", "palettes"],
   level: ["tone curve", "tone curves"],
+  curve: ["field curve", "field curves"],
   cx: ["real part of c", "real parts of c"],
   cy: ["imaginary part of c", "imaginary parts of c"],
   px: ["real part of the Phoenix coefficient p", "real parts of the Phoenix coefficient p"],
@@ -969,7 +1009,7 @@ export function parse(search, context) {
 
   const wanted = MODE_PARAMETERS[mode] ?? [];
   const known = new Set([
-    "v", "f", "m", "x", "y", "w", CAP_KEY, "a", "p", LEVEL_KEY.key,
+    "v", "f", "m", CURVE_KEY, "x", "y", "w", CAP_KEY, "a", "p", LEVEL_KEY.key,
     ...CONSTANTS[family], ...wanted, ...SHADE_KEYS.map((spec) => spec.key),
   ]);
   for (const key of seen) {
@@ -1036,6 +1076,9 @@ export function parse(search, context) {
   // and still does. See "What version 3 changed" at the top.
   if (Number(version) < 3) Object.assign(values, settledParams(mode, values, context));
 
+  const curveText = params.get(CURVE_KEY);
+  const curve = heldCurve(mode, curveText === null ? null : readCurve(curveText), context);
+
   const shade = defaultShade();
   for (const spec of SHADE_KEYS) {
     const text = params.get(spec.key);
@@ -1053,7 +1096,7 @@ export function parse(search, context) {
   const levelText = params.get(LEVEL_KEY.key);
   const level = levelUnder(shade, levelText === null ? LEVEL_KEY.fallback : LEVEL_KEY.read(levelText));
 
-  return { version: VERSION, family, constants, mode, params: values, x, y, w, maxiter, aspect, palette, shade, level };
+  return { version: VERSION, family, constants, mode, params: values, curve, x, y, w, maxiter, aspect, palette, shade, level };
 }
 
 /** A view nobody has said anything about: this family, this mode, at home. */
@@ -1067,6 +1110,7 @@ export function fresh(family, mode, context) {
     constants,
     mode,
     params: {},
+    curve: null,
     ...context.home(family),
     maxiter: null,
     aspect: { ...DEFAULT_ASPECT },
@@ -1095,6 +1139,9 @@ export function emit(view, context) {
     const value = view.params[key];
     if (value !== undefined) parts.push(`${key}=${encode(number(value))}`);
   }
+  // Absent on a view built before the key existed, which is the mode's own curve.
+  const curve = heldCurve(view.mode, view.curve ?? null, context);
+  if (curve !== null) parts.push(`${CURVE_KEY}=${readCurve(curve)}`);
   for (const key of ["x", "y", "w"]) {
     if (view[key].text !== home[key].text) parts.push(`${key}=${encode(view[key].text)}`);
   }
@@ -1189,7 +1236,14 @@ export function canonicalize(search, context) {
 export function fieldKey(view, context, pixelWidth, pixelHeight, direct = false) {
   const geometry = direct
     ? view
-    : { ...view, params: shadeless(view.params), palette: context.defaultPalette, shade: defaultShade(), level: null };
+    : {
+        ...view,
+        params: shadeless(view.params),
+        curve: null,
+        palette: context.defaultPalette,
+        shade: defaultShade(),
+        level: null,
+      };
   return `${emit(geometry, context)}&px=${pixelWidth}x${pixelHeight}`;
 }
 

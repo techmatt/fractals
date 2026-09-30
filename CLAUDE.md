@@ -206,7 +206,7 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   of its own, needs its own per-panel view before its figure can be split.
 - **A figure's id opens with its page's prefix** — `overview-`, `escape-`, `render-`,
   `modes-`, `locations-`, `judges-`, `palette-`, `wallpapers-`, `gallery-`, `pipeline-`,
-  `atlas-`, `deep-`, `math-`, `start-`, `packs-` — so a slug says where it
+  `atlas-`, `deep-`, `math-`, `start-`, `packs-`, `tools-` — so a slug says where it
   lives before anything looks it up. One prefix to a page and one page to a prefix, with
   the single carve-out that a page hanging off a section shares that section's prefix:
   `palette-generator-batch` sits on `palettes/make-your-own.html`. The front page's one
@@ -297,7 +297,7 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   maker is a module in `builder/` with an entry in its own `SHEETS`, `MAKERS` or
   `DIAGRAMS` table and a subcommand that draws it by figure id — `families`,
   `fundamentals`, `overview`, `diagram`, `locations`, `judges`, `palettes`, `pool`,
-  `picks`, `curation`, `growth`, `pipeline`, `atlas`, `front`, `deep`, `start`,
+  `picks`, `curation`, `growth`, `pipeline`, `atlas`, `front`, `deep`, `start`, `tools`,
   `screenshot`. `scratch/` stays what it is for: the probes, sweeps and contact sheets
   that *found* a choice. Once a choice is made, the program that acts on it is committed,
   and a row naming a path under `scratch/` is a bug. Three rules come with it. **A maker
@@ -433,7 +433,10 @@ everywhere else it is the heading alone, which is when a section opens onto its 
 too. The page sits at the root beside the front page, in no `sections.jsonl` row. Its peer
 sits under it, **Wallpaper packs**: a second group set the same way, spelled by
 `sections.PACKS_NAME` and linking to `wallpaper-packs/index.html`, always the heading
-alone. Both are a `rail-group`; the masthead's own link to the packs stays. A prose
+alone. A third sits under that, **Tools and data** (`sections.TOOLS_NAME`,
+`tools-and-data/index.html`), set the same way; `builder/README.md`'s *Tools and data*
+has the page, its generated data (`python -m builder tools-and-data`) and its figures. All
+three are a `rail-group`; the masthead's own links to the packs and to Tools and data stay. A prose
 `<h2>` also gets the id its rail entry links to, spelled from its own words by rule —
 a fragment is a permanent URL. `python -m builder build` writes the rail between two
 marker comments; `check`'s `contents` check re-derives the rail and the heading ids,
@@ -496,8 +499,9 @@ What a figure is made of:
   gallery tile they are still a line of text. The link is derived and never
   typed — `python -m builder links --write`, and `check` holds the registry to the site's
   own roster. **A link that is nearly the figure is worse than none**, so anything the
-  contract cannot say exactly — a chosen iteration cap, a curve a mode's catalog does not
-  give it, a fractional degree — is a refusal rather than an approximation.
+  contract cannot say exactly — a fractional degree, a fold on a cyclic map — is a refusal
+  rather than an approximation. A cap (`n`, permalink v4) and a curve a mode's catalog does
+  not give it (`curve`, tools_figures_ckpt156) used to be on that list and are keys now.
 - **`python -m builder diagram <id>` is deliberately unwired** from `build` and from
   `check`. Text is rasterized through whatever font the machine has, so two machines agree
   about the picture and not about its bytes; a regenerate-and-diff check would fail

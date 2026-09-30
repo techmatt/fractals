@@ -122,7 +122,7 @@ PROSE: tuple[tuple[str, str], ...] = (
         "was found and rendered with the search and rendering methods this site describes. "
         "They're free to use under "
         '<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>. If you share '
-        "them, credit Matt Fisher.",
+        'them, credit <a href="https://techmatt.github.io/">Matt Fisher</a>.',
     ),
     (
         "p",

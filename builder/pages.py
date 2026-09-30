@@ -288,12 +288,15 @@ def library_page(sections: list[sections_module.Section]) -> str:
     directory = palettes_module.library_assets_dir()
     width, height = palettes_module.LIBRARY_STRIP
     article = relative_href(page, SITE_ROOT / "article" / "color-palettes.html")
+    tools = relative_href(page, sections_module.TOOLS) + "#palettes"
 
     blocks = [
         NEWLINE.join(
             [
                 '  <section class="intro">',
                 f"    <p>{text(palettes_module.library_lead())}</p>",
+                "    <p>The palettes I made are free to download, under CC0, from "
+                f'<a href="{attribute(tools)}">Tools and data</a>.</p>',
                 f'    <p><a href="{attribute(article)}">Back to Color palettes</a></p>',
                 "  </section>",
             ]
@@ -331,22 +334,15 @@ def library_page(sections: list[sections_module.Section]) -> str:
 
 
 def _palette_cell(held, page: Path, directory: Path, width: int, height: int) -> list[str]:
-    """One cell of the hue grid: a palette's gradient, what the page calls it, and — where
-    those two differ — the id the library actually spells it with.
-
-    The id is on the page rather than in a `title` attribute because it is the key a
-    permalink carries and the key a reader searching this page would type, and a tooltip
-    is invisible to a touch screen, to a keyboard and to the browser's own find.
-    """
-    lines = [
+    """One cell of the hue grid: a palette's gradient and the name the explorer shows it
+    under, and nothing else *(Matt, tools_figures_ckpt156)*. The library's own id is the
+    key a link carries and never a name a reader is shown."""
+    return [
         '      <figure class="palette">',
         f"        {_strip(held, page, directory, width, height)}",
         f"        <figcaption>{text(held.display)}</figcaption>",
+        "      </figure>",
     ]
-    if held.renamed:
-        lines.append(f'        <p class="palette-id">{text(held.name)}</p>')
-    lines.append("      </figure>")
-    return lines
 
 
 def _strip(held, page: Path, directory: Path, width: int, height: int) -> str:

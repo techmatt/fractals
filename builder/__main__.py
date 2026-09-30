@@ -68,6 +68,7 @@ from . import seats as seats_module
 from . import sections as sections_module
 from . import serve as serve_module
 from . import start as start_module
+from . import tools as tools_module
 from . import tools_and_data as tools_and_data_module
 from . import votes as votes_module
 from . import walk as walk_module
@@ -506,6 +507,17 @@ def _parser() -> argparse.ArgumentParser:
         "--placeholders",
         action="store_true",
         help="draw the pink gallery's placeholder seats once, into its list, and draw nothing",
+    )
+
+    tooled = commands.add_parser("tools", help="draw the figures of the Tools and data page")
+    tooled.add_argument(
+        "id", nargs="*", choices=[[], *sorted(tools_module.MAKERS)], help="the figure's id"
+    )
+    tooled.add_argument(
+        "--place", action="store_true", help="land each panel and fill its registry row"
+    )
+    tooled.add_argument(
+        "--replace", action="store_true", help="land a redraw of a figure already on the page"
     )
 
     commands.add_parser("icons", help="record the site's icon recipe and draw the icon set from it")
@@ -1511,6 +1523,39 @@ def _do_start(options: argparse.Namespace) -> int:
     return 0
 
 
+def _do_tools(options: argparse.Namespace) -> int:
+    """Draw the Tools and data page's figures, and optionally land them."""
+    landing = bool(options.place or options.replace)
+    for identifier in options.id or list(tools_module.MAKERS):
+        drawn = tools_module.draw(identifier)
+        if landing:
+            # A panel that is a `link` panel reads its link off a row this lands first.
+            tools_module.keep(identifier)
+        if not tools_module.composite(identifier):
+            _land_split(identifier, drawn, tools_module, replace=options.replace, landing=landing)
+            continue
+        # A composite is one sheet, landed the way every composited figure is.
+        (sheet,) = drawn.panels
+        print(f"wrote {sheet.path.relative_to(SITE_ROOT).as_posix()}")
+        if not landing:
+            continue
+        destination = FIGURE_IMAGES_DIR / f"{identifier}{images.FIGURE_SUFFIX}"
+        width, height = images.import_web_res(sheet.path, destination)
+        placed = figures.place(
+            identifier,
+            destination.name,
+            width,
+            height,
+            provenance=list(drawn.provenance),
+            recipe=tools_module.recipe(identifier),
+            sources=tools_module.sources(identifier),
+            replace=options.replace,
+        )
+        size = destination.stat().st_size / 1024
+        print(f"  {destination.name}  {width}x{height}  ({size:.0f} KB) — {placed.page}")
+    return 0
+
+
 def _do_icons() -> int:
     """Record the icon's recipe row, then draw every file of the icon set from it."""
     for path in icons.draw():
@@ -1812,6 +1857,8 @@ def main(argv: list[str] | None = None) -> int:
             return _do_front(options)
         if options.command == "start":
             return _do_start(options)
+        if options.command == "tools":
+            return _do_tools(options)
         if options.command == "icons":
             return _do_icons()
         if options.command == "deep":

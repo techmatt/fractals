@@ -78,8 +78,10 @@ wrong color:
 * `level` — the curve as the permalink's own `level` value, where `tone` is `curved`, and
   `null` everywhere else. The page hands it to the link, so a curved seat opens levelled;
 * `gap` — what the run did not record, where `tone` is `lost`, which the tooltip says;
-* `from` — the run the row came out of, and `curve` — the mode's transform it was drawn
-  at. Both are notes; nothing reads them to build a link.
+* `from` — the run the row came out of, a note; and `curve` — the curve the mode's field
+  was read through. The page hands `curve` to the link as its own key since
+  tools_figures_ckpt156, so a `curve <name>` the maker wrote into `refused` for it is
+  dropped at the ingest: the link carries it.
 
 A `lost` slot is the one that carries an `autolevel` refusal, and a slot that carries one
 is `lost`: the two are one fact spelled twice, and the loader holds them together.
@@ -1251,9 +1253,21 @@ def _slot_row(name: str, held: dict, file: str, plate: Plate) -> dict:
         for key in ("gap", "from", "curve"):
             if held.get(key) is not None:
                 row[key] = held[key]
-    row["refused"] = list(held.get("refused") or [])
+    row["refused"] = carried(row, list(held.get("refused") or []))
     row["file"] = file
     return row
+
+
+def carried(row: dict, refused: list[str]) -> list[str]:
+    """A slot's `refused`, less the curve its link now carries.
+
+    The maker names a curve its mode's catalog does not give it as `curve <name>`, which was
+    true while no key could say one. `atlas/links.js` hands the slot's `curve` to the link
+    since tools_figures_ckpt156, so that line is dropped wherever the slot records the same
+    curve, and kept wherever it does not, since then nothing carries it.
+    """
+    curve = row.get("curve")
+    return [line for line in refused if curve is None or line != f"curve {curve}"]
 
 
 def _family_name(family: dict) -> str:

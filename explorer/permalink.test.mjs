@@ -107,6 +107,7 @@ const CONTEXT = {
   palettes: PALETTES,
   defaultPalette: DEFAULT_PALETTE,
   settled: (mode) => SETTLED[mode],
+  curve: (mode) => CURVES[mode],
 };
 
 /** `p` as every canonical string carries it, when nobody picked a palette. */
@@ -803,7 +804,12 @@ test("every link the site carries parses, and is the canonical spelling of its v
     if (row.link.startsWith(`${DEEP_MARKER}=`)) continue;
     linked++;
     const view = parse(row.link, CONTEXT);
-    assert.equal(emit(view, CONTEXT), row.link, row.id);
+    // A link that opens a panel as well (`tools-atlas`'s, onto the Atlas tab) carries its UI
+    // keys after the picture, the way `withKeys` sets them: the picture is what is canonical.
+    const parts = row.link.split("&");
+    const picture = parts.filter((part) => !UI_KEYS.has(part.split("=")[0]));
+    assert.deepEqual(parts.slice(0, picture.length), picture, row.id);
+    assert.equal(emit(view, CONTEXT), picture.join("&"), row.id);
     assert.equal(view.version, VERSION, row.id);
   }
   assert.ok(linked > 0, "no row of the registry carries a link");
@@ -1053,6 +1059,45 @@ test("under the absolute scale a tone curve is read, then dropped from the link"
   );
   // Leveled keeps its curve exactly as before.
   assert.ok(emit(leveled, CONTEXT).endsWith(curve));
+});
+
+// ------------------------------------------------------------ the field's curve
+//
+// tools_figures_ckpt156. Eight gallery seats read `smooth` or `stripe` through a `log`
+// curve the catalog does not give those modes, and no key could say it. `curve` does, and
+// it is a widening: absent is the catalog's, so no link written before it moved.
+
+test("curve round-trips after the mode's parameters, and only where it is not the catalog's", () => {
+  const text = `v=${VERSION}&m=stripe&density=4&curve=log&w=0.5&${HOUSE}&gamma=0.8`;
+  const view = parse(text, CONTEXT);
+  assert.equal(view.curve, "log");
+  assert.equal(emit(view, CONTEXT), text);
+  assert.equal(canonicalize(text, CONTEXT), text);
+  // Spelling the catalog's own curve is the same view as saying nothing.
+  assert.equal(parse(`v=${VERSION}&curve=linear&${HOUSE}`, CONTEXT).curve, null);
+  assert.equal(canonicalize(`v=${VERSION}&curve=linear&${HOUSE}`, CONTEXT), `v=${VERSION}&${HOUSE}`);
+  assert.equal(canonicalize(`v=${VERSION}&m=trap_circle&curve=log&${HOUSE}`, CONTEXT), `v=${VERSION}&m=trap_circle&${HOUSE}`);
+  // And trap_circle read straight is the one place `linear` is written.
+  assert.match(canonicalize(`v=${VERSION}&m=trap_circle&curve=linear&${HOUSE}`, CONTEXT), /&curve=linear&/);
+  // A view built before the key existed carries none, and emits exactly what it did.
+  const { curve: _, ...older } = view;
+  assert.doesNotMatch(emit(older, CONTEXT), /curve=/);
+});
+
+test("a curve is one of the engine's four, and an older version reads it too", () => {
+  assert.throws(() => parse(`v=${VERSION}&curve=cubic&${HOUSE}`, CONTEXT), PermalinkError);
+  assert.throws(() => parse(`v=${VERSION}&curve=LOG&${HOUSE}`, CONTEXT), PermalinkError);
+  for (const curve of ["sqrt", "log", "scurve"]) {
+    assert.equal(parse(`v=${VERSION}&curve=${curve}&${HOUSE}`, CONTEXT).curve, curve);
+  }
+  assert.equal(parse(`v=3&curve=log&${HOUSE}`, CONTEXT).curve, "log");
+});
+
+test("the curve is a colour: the field is keyed without it", () => {
+  const plain = parse(`v=${VERSION}&${HOUSE}`, CONTEXT);
+  const curved = parse(`v=${VERSION}&curve=log&${HOUSE}`, CONTEXT);
+  assert.equal(fieldKey(curved, CONTEXT, 160, 90), fieldKey(plain, CONTEXT, 160, 90));
+  assert.notEqual(emit(curved, CONTEXT), emit(plain, CONTEXT));
 });
 
 // ------------------------------------------------------------ one key, named once

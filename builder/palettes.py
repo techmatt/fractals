@@ -52,8 +52,8 @@ from __future__ import annotations
 
 import json
 import random
-import re
 from dataclasses import dataclass
+from functools import cache
 from pathlib import Path
 
 from . import records, renders, sheets
@@ -1157,10 +1157,6 @@ LIBRARY_ROW = "palette"
 #: library that grew by two hundred is one instruction, not two hundred lines of it.
 DRIFT_NAMED = 8
 
-#: Where a map's name came from, which is the whole of what decides whether the page shows
-#: it under a display name — see `display_name`.
-EXTRACTED = "extracted"
-
 #: The maps written against the palette prompt, as opposed to `extracted` from a picture
 #: or `converted` from an upstream library. **These are the maps a figure draws at random**
 #: *(Matt, 2026-09-02)*: their names were written as prose rather than being a library
@@ -1170,138 +1166,16 @@ EXTRACTED = "extracted"
 #: `cet_rainbow_bgyr_35_85_c72` under a picture on the article's front page.
 AUTHORED = "authored"
 
-#: Words a filename carries that say nothing about the palette: the site a picture came
-#: off, the resolution words beside it, and `fractal`, which every map on a fractal site
-#: is. Dropped wherever they fall rather than only at the ends, because they turn up in the
-#: middle as often — `at-the-beach-hd-wallpaper-1920x1200`.
-NAME_NOISE = frozenset(
-    {
-        "hd",
-        "4k",
-        "8k",
-        "uhd",
-        "wallpaper",
-        "wallpapers",
-        "background",
-        "backgrounds",
-        "desktop",
-        "widescreen",
-        "image",
-        "images",
-        "photo",
-        "fractal",
-        "com",
-        "www",
-        "org",
-        "wallhaven",
-        "commons",
-        "imgur",
-        "deviantart",
-        "flickr",
-        "pixabay",
-        "unsplash",
-    }
-)
-
-#: The words a title keeps lower case anywhere but first, cut to what actually turns up in
-#: a wallpaper's filename.
-NAME_SMALL = frozenset(
-    {
-        "a",
-        "an",
-        "and",
-        "as",
-        "at",
-        "but",
-        "by",
-        "for",
-        "from",
-        "in",
-        "into",
-        "of",
-        "on",
-        "or",
-        "over",
-        "the",
-        "to",
-        "under",
-        "up",
-        "with",
-    }
-)
-
-_VOWELS = frozenset("aeiouyAEIOUY")
-
-#: A filename that arrived percent-encoded, its `%` written as `_`: two or more two-digit
-#: hex bytes in a row is UTF-8 the file system flattened, and there are twenty-three of
-#: them in the library — Wikimedia Commons titles in Vietnamese. Decoding them is guessing
-#: about a separator that is also a word break, and a wrong guess is mojibake in front of a
-#: reader, so these keep the name they have.
-PERCENT_ENCODED = re.compile(r"(?:_[0-9A-F]{2}){2}")
-
-
-def _hashish(word: str) -> bool:
-    """Whether a word is an identifier rather than a word: `dg6v93`, `2pi1Zz6`, `Jqmsl`."""
-    mixed = any(character.isdigit() for character in word) and any(
-        character.isalpha() for character in word
-    )
-    return mixed or (len(word) >= 4 and not _VOWELS & set(word))
-
-
-def display_name(name: str, source: str) -> str:
-    """What the page calls a palette, which is not always what the library calls it.
-
-    **The id is never renamed.** It is the key a permalink carries, the key the explorer
-    resolves and the key `provenance` writes down, and the page shows it under the strip
-    wherever the two differ. This is a reading label and nothing else.
-
-    Only an *extracted* map gets one. Those names are the filenames of the wallpapers the
-    maps were distilled out of — `02591_vermilionlakes_2560x1600`,
-    `along-the-starry-way-25` — and a filename is not a name a reader can use. A
-    *converted* ramp's name is the upstream library's own identifier,
-    `cet_cyclic_mrybm_35_75_c68`, which is the thing to look up and would be destroyed by
-    title-casing it; an *authored* map's name was written as prose in the first place.
-
-    The rule: drop resolution tokens and everything that is not a letter or a digit, drop
-    `NAME_NOISE` wherever it falls, collapse a token repeated straight after itself
-    (`wallhaven_wallhaven-…`), drop a leading id number and any trailing number, and title
-    what is left. **Where what survives is more identifier than words — over half of it a
-    hash or a bare number, or nothing at all — the name stands as it is.** That is the
-    honest answer for the maps whose filenames were only ever a hash, and it is what stops
-    `commons_Julia-Menge_-0.8_0.156i` from being read out as *Julia Menge 0 8 0 156i*.
-    """
-    if source != EXTRACTED or PERCENT_ENCODED.search(name):
-        return name
-    text = re.sub(r"\d{3,4}\s*x\s*\d{3,4}", " ", name)
-    words: list[str] = []
-    for word in re.sub(r"[^0-9A-Za-z]+", " ", text).split():
-        if word.lower() in NAME_NOISE:
-            continue
-        if words and word.lower() == words[-1].lower():
-            continue
-        words.append(word)
-    while words and words[0].isdigit():
-        words.pop(0)
-    while words and words[-1].isdigit():
-        words.pop()
-    kept = words
-    if not kept or sum(_hashish(word) or word.isdigit() for word in kept) * 2 > len(kept):
-        return name
-    return " ".join(
-        word.lower() if at and word.lower() in NAME_SMALL else word.lower().capitalize()
-        for at, word in enumerate(kept)
-    )
-
 
 @dataclass(frozen=True)
 class Held:
     """One palette as the library page needs it: its name, whether it closes, the hue it is
     dominant in, and where its name came from.
 
-    `source` is on the row because the page's display name turns on it and on nothing else
-    — see `display_name` — and a page that is a pure function of committed text cannot go
-    next door to ask. `hue` is one of `HUES` and never a number: the section a map sits in
-    is a colour a reader can see, so it is spelled.
+    `source` is on the row because the hand-made palettes are the `authored` ones, and a
+    page that is a pure function of committed text cannot go next door to ask. `hue` is one
+    of `HUES` and never a number: the section a map sits in is a colour a reader can see,
+    so it is spelled.
     """
 
     name: str
@@ -1311,21 +1185,16 @@ class Held:
 
     @property
     def display(self) -> str:
-        """What the page calls it."""
-        return display_name(self.name, self.source)
+        """What the page calls it: the name the explorer shows, and nothing else.
 
-    @property
-    def renamed(self) -> bool:
-        """Whether the page owes the reader the true id as well as the display name.
-
-        Compared with case and punctuation squashed out, because `azarn` shown as *Azarn*
-        is the same string to anyone reading it or searching for it, and a line under nine
-        hundred strips repeating what the caption already says is noise. `Along the Starry
-        Way` against `along-the-starry-way-25` is a real difference and is shown.
+        *(Matt, tools_figures_ckpt156.)* The page used to title a name of its own out of
+        the library's id by a rule of its own and print the id under it wherever the two
+        differed, so a reader met `Flow` over `flow-25` here and *Magenta Coal* in the
+        explorer for the same map. `explorer/palette-names.json` is the one place a display
+        name lives, and a map it gives none keeps the id, as the explorer does.
         """
-        squashed = "".join(character for character in self.display if character.isalnum())
-        was = "".join(character for character in self.name if character.isalnum())
-        return squashed.casefold() != was.casefold()
+        entry = explorer_names().get(self.name)
+        return entry["name"] if entry else self.name
 
     @property
     def strip(self) -> str:
@@ -1335,7 +1204,7 @@ class Held:
     def alt(self) -> str:
         """What a strip is, for a reader who cannot see it."""
         closing = "closes on the color it opens with" if self.cyclic else "drawn folded"
-        return f"The gradient {self.name}, {closing}."
+        return f"The gradient {self.display}, {closing}."
 
     def row(self) -> dict:
         return {
@@ -1346,6 +1215,18 @@ class Held:
             "hue": self.hue,
             "source": self.source,
         }
+
+
+#: Where the explorer's display names live, `{underlying: {name, source}}`. Read here
+#: rather than through `builder/picker.py`, which imports this module.
+EXPLORER_NAMES = ("explorer", "palette-names.json")
+
+
+@cache
+def explorer_names() -> dict[str, dict]:
+    """The explorer's display names, or none where the record is not there."""
+    path = SITE_ROOT.joinpath(*EXPLORER_NAMES)
+    return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
 
 
 def library_registry_path() -> Path:
@@ -1370,7 +1251,9 @@ def held_library() -> tuple[Held, ...]:
 
 def held_hues() -> list[tuple[str, tuple[Held, ...]]]:
     """The record's rows as the page's sections: each hue some map is dominant in, in the
-    wheel's order, and inside it the maps in the order the record holds them.
+    wheel's order, and inside it the maps in the order of the name a reader sees, case
+    folded. The record keeps its own order, by id; the page sorts by what it prints, so a
+    section reads alphabetically under the explorer's names.
 
     A hue no map is dominant in gets no section rather than an empty one — the sections are
     a reading of the library and not a promise about the codebook.
@@ -1378,7 +1261,8 @@ def held_hues() -> list[tuple[str, tuple[Held, ...]]]:
     ordered: dict[str, list[Held]] = {}
     for held in held_library():
         ordered.setdefault(held.hue, []).append(held)
-    return [(hue, tuple(ordered[hue])) for hue in HUES if hue in ordered]
+    shown = lambda held: (held.display.casefold(), held.name)  # noqa: E731
+    return [(hue, tuple(sorted(ordered[hue], key=shown))) for hue in HUES if hue in ordered]
 
 
 def derive_library() -> tuple[Held, ...]:

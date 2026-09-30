@@ -321,6 +321,10 @@ export function specOf(
   const cap = maxiter ?? view.maxiter ?? null;
   if (cap !== null) spec.maxiter = cap;
   if (Object.keys(view.params).length > 0) spec.params = view.params;
+  // The curve the mode's field is read through, where the view holds one that is not the
+  // catalog's. On every spec, the plan included, so that the module's refusal of a curve
+  // under a direct trap arrives at the first question rather than at the shade.
+  if (view.curve) spec.curve = view.curve;
   if (colormap) spec.colormap = stopsOf(view.palette);
   // The tone operator acts on the map's stops, so it travels with the colormap and is
   // left out of the specs that carry none — a field pass has no ramp to curve, and a

@@ -87,4 +87,4 @@ lists them. The wasm modules are committed, so Rust matters only if you rebuild 
 
 The code is MIT; see [LICENSE](LICENSE). The wallpapers are
 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/): use them for anything, with
-credit to Matt Fisher.
+credit to [Matt Fisher](https://techmatt.github.io/).

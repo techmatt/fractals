@@ -81,8 +81,11 @@ export const MIN_SAMPLES = 64;
  */
 const CURVES = new Map([["trap_circle", "log"]]);
 
+/** The engine's `coloring::Transform`, each of the four a link may name. */
 function curve(name, p) {
   if (name === "log") return Math.log1p(p) / Math.LN2;
+  if (name === "sqrt") return Math.sqrt(p);
+  if (name === "scurve") return p * p * (3 - 2 * p);
   return p;
 }
 
@@ -118,8 +121,10 @@ function percentile(sorted, p) {
  * `shade.lambda` is Leveled's own compression, the one the stretch is measured on; gamma,
  * cycles, phase and the transfer are its too. The edge transfer is fitted as the value
  * transfer it remaps, being a reshaping of the same stretch by where the picture moves.
+ * `held` is the view's own curve where it holds one (permalink `curve`), which is the
+ * curve Leveled reads the base through in place of the mode's.
  */
-export function fitSorted(sorted, shade, mode = null) {
+export function fitSorted(sorted, shade, mode = null, held = null) {
   if (sorted === null || sorted.length < MIN_SAMPLES) return null;
   if (!(sorted[sorted.length - 1] > sorted[0])) return null;
 
@@ -129,7 +134,7 @@ export function fitSorted(sorted, shade, mode = null) {
   const high = level(percentile(sorted, CLIP_HIGH));
   const span = high > low ? high - low : null;
   const ranked = shade.transfer?.kind === "rank";
-  const shape = CURVES.get(mode) ?? "linear";
+  const shape = held ?? CURVES.get(mode) ?? "linear";
 
   const nus = new Float64Array(QUANTILES);
   const target = new Float64Array(QUANTILES);
@@ -194,8 +199,8 @@ export function fitSorted(sorted, shade, mode = null) {
 }
 
 /** `fitSorted` over a field as either tab holds it. */
-export function fit(field, shade, mode = null) {
-  return fitSorted(samples(field), shade, mode);
+export function fit(field, shade, mode = null, held = null) {
+  return fitSorted(samples(field), shade, mode, held);
 }
 
 /**

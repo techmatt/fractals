@@ -94,9 +94,9 @@ what is missing, and there are three ways that happens here.
   *(preclose_website_ckpt155; until then this was a gap on 421 seats)*. The row still
   says so if the link's cap and the recipe's ever part, in the words `links._settled`
   uses for a figure.
-- **A mode's curve.** A mode's identity here includes the curve it reads its field
-  through, and the catalog fixes it; four of these seats read `smooth` through a `log`
-  curve, which no key can say.
+- **Not a mode's curve, any more.** Eight seats read `smooth` or `stripe` through a `log`
+  curve the catalog does not give those modes, and until tools_figures_ckpt156 no key could
+  say it, so each was a gap. The link carries it as `curve` now, and the gap is gone.
 """
 
 from __future__ import annotations
@@ -599,12 +599,6 @@ def tone(pick: picks.Pick, stamps: dict[str, dict]) -> Tone:
 
 # ------------------------------------------------------------------------------ the rows
 
-#: How a mode's own curve is spelled where the catalog fixes a different one. A mode's
-#: identity here includes the curve it reads its field through, so this is a difference no
-#: key can say — and it is a gap rather than a refusal because the geometry, the mode and
-#: the palette of the link are still this seat's.
-CURVE_GAP = "the {read} curve this seat reads {mode} through, where the catalog's {mode} is {held}"
-
 
 def alt_text(mode: str, hue: str) -> str:
     """What a reader's screen reader says about one tile.
@@ -657,7 +651,6 @@ def derive() -> list[dict]:
     resolved = picks.resolve(f"{stamp}{picks.PICK_SEPARATOR}{seat['key']}" for stamp, seat in seats)
     stamps = stamps_of(resolved)
     hues = hues_of(seats)
-    curves = links.catalog_curves()
 
     tones = {pick.key: tone(pick, stamps) for pick in resolved}
     views = {}
@@ -676,9 +669,7 @@ def derive() -> list[dict]:
         answer = emitted[pick.key]
         if not answer.get("ok"):
             raise SeatError(f"{pick.key}: the contract refuses this seat — {answer['why']}")
-        rows.append(
-            _row(seat, pick, tones[pick.key], answer, curves, places[pick.key], hues[pick.key])
-        )
+        rows.append(_row(seat, pick, tones[pick.key], answer, places[pick.key], hues[pick.key]))
     return rows
 
 
@@ -687,7 +678,6 @@ def _row(
     pick: picks.Pick,
     toned: Tone,
     answer: dict,
-    curves: dict[str, str],
     places: dict[str, int],
     hues: list[str],
 ) -> dict:
@@ -707,10 +697,9 @@ def _row(
     gaps = []
     if toned.why:
         gaps.append(toned.why)
-    held = curves.get(mode)
-    read = str(recipe.get("curve") or "linear")
-    if held is not None and read != held:
-        gaps.append(CURVE_GAP.format(read=read, mode=mode, held=held))
+    # No gap for the curve the mode's field is read through: since tools_figures_ckpt156
+    # the link spells one that is not the catalog's, so eight seats that read `smooth` or
+    # `stripe` through `log` stopped being links to a different picture.
     # The cap the link draws at: its `n` where it carries one, the width policy where it
     # does not — `emit.mjs` reads both off the parsed link since permalink v4.
     cap = recipe.get("maxiter")

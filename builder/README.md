@@ -337,6 +337,35 @@ under its player (`video_links`): the explorer's arrival at `go/favicon-mid/` an
 `go/favicon-end/`, the first by `fractal-engine render-link` and the second, a deep link,
 by `deep_figures.draw_link`, the Deep tab's own renderer and shader.
 
+## Tools and data is a page of downloads, and its data is generated
+
+*(tools_and_data_ckpt156; figures tools_figures_ckpt156.)* `tools-and-data/index.html` is a
+top-level page like the packs page: hand-written, placed verbatim from `Tools and data v1.md`
+and held to it by `python -m builder prose`, in `sections.hand_written`, so `build` owns its
+rail and heading ids. It is the rail's **third group** — `sections.TOOLS` / `TOOLS_NAME`,
+set like Start here and Wallpaper packs, after the packs and before Contents — and the site
+bar's *Tools and data* link sits between *Wallpaper packs* and *GitHub* (`pages.topbar`
+takes its href).
+
+Its two data files are written by **`python -m builder tools-and-data`**
+(`builder/tools_and_data.py`, whose module docstring is the field-by-field reference), from
+the wallpapers checkout:
+
+- `gallery-locations.jsonl` — one row per seat of the `all` union: family, frame, cap,
+  mode, the palette and its settings, tone curve, collections, both judges' scores, and the
+  explorer link. A row adds `link_differs_by` where the link is not the picture; since
+  permalink `curve` *(tools_figures_ckpt156)* none does.
+- `hand-made-palettes.json` — the `authored` maps of the library, as stops, CC0.
+
+**Its four figures are `builder/tools.py`**, `python -m builder tools [ID] [--place]
+[--replace]`: a table of four modules, one per figure, each placed under its section's
+heading and each with the rule it drew by in its own docstring and provenance.
+`tools-atlas` (`tools_atlas.py`) is the atlas plates; `tools-palettes` (`tools_palettes.py`)
+the hand-made palettes as strips, by hue family and then mean Oklab lightness; `tools-judges`
+(`tools_judges.py`) five examples at each judge's 5th to 95th percentile over its own
+population; `tools-labels` (`tools_labels.py`) four seeded-random pictures at each of Matt's
+ratings.
+
 ## The contents rail is derived, never kept
 
 `article/sections.jsonl` gives the fourteen sections their reading order and says which are
@@ -685,7 +714,8 @@ a picture in — and the sections are the codebook's twelve hues in the wheel's 
 rose, red, orange, yellow, lime, green, teal, cyan, azure, blue, purple, magenta. All 1,021
 maps carry at least one cell and no map ties for its largest, so every map lands in exactly
 one section and none needs a bucket for the colourless; `_uncarried` is the check that says
-so if that ever stops being true. Inside a section the maps are in name order, case folded.
+so if that ever stops being true. Inside a section the maps are in the order of the name
+the page shows, case folded.
 
 What this replaced was a sixteen-way hierarchical clustering of a 96-number descriptor,
 which grouped maps by a distance nothing on the page could show, and a `<details>` fold
@@ -695,21 +725,15 @@ their own right now** — the near-duplicate reading is the pipeline's business,
 narrows the pool a run draws from, and it was never a thing a reader of a library page
 wanted done to it.
 
-**A name a reader can use, and the name the library spells** — `display_name` in
-`builder/palettes.py`, and the rule is worth stating because it only fires for one of the
-three sources. An *authored* map was named as prose and an upstream *converted* ramp's name
-(`cet_cyclic_mrybm_35_75_c68`) is the identifier somebody would look up, so both are shown
-exactly as the library spells them. An *extracted* map's name is the filename of the
-wallpaper it was distilled out of, and a filename is not a name: resolution tokens and the
-site a picture came off are dropped, so is `fractal`, a repeated leading token is collapsed
-(`wallhaven_wallhaven-…`), a leading id number and a trailing number go, and the rest is
-titled — `along-the-starry-way-25` reads as *Along the Starry Way*. **Where what survives is
-more identifier than words, the name stands as it is**: 71 of the 334 extracted maps were
-only ever a hash or a percent-encoded Wikimedia title, and a made-up reading of one would be
-worse than the id. The id is never renamed anywhere it matters — a permalink, the explorer,
-a figure's `provenance` — and where it differs from the display name the page carries it
-under the strip, in text rather than in a `title` attribute, so a reader can search for it.
-208 of the 1,021 carry that second line.
+**One name under each strip, the one the explorer shows** *(Matt, tools_figures_ckpt156)*.
+`Held.display` in `builder/palettes.py` reads it out of `explorer/palette-names.json`, the
+one place a display name lives, and a map that record gives none keeps its id, exactly as
+the explorer does. The strip's alt text says the same name. The id is never renamed
+anywhere it matters — a permalink, a figure's `provenance`, the record below — and it is
+not on the page: the page used to title a name of its own out of the id and print the id
+under it where the two differed, so a reader met *Flow* over `flow-25` here and *Magenta
+Coal* in the explorer for the same map. Under the lead, one line points at the hand-made
+palettes' CC0 download on Tools and data.
 
 That record is this repository's, exactly as `gallery.jsonl` is, and for the same reason:
 page generation is a pure function of committed text, so `check` can hold the largest

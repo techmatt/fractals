@@ -146,6 +146,13 @@ struct Spec {
     /// the caller is [`shade_level`] asking to measure one — see [`level`].
     #[serde(default)]
     autolevel: Option<autolevel::Curve>,
+    /// The curve the mode's field is read through, where it is not the catalog's: the
+    /// wallpaper project's recipe `curve`, landed exactly where its `engine_spec.coloring_of`
+    /// lands it — on a field coloring's transform, and on the base of a composite or a
+    /// modulate. Absent is the mode as the catalog settles it, which is every spec written
+    /// before this key existed. See [`with_curve`].
+    #[serde(default)]
+    curve: Option<coloring::Transform>,
     /// Iterations per sample, where the caller wants a cap other than the engine's
     /// depth policy. **A probe's knob and never a picture's**: the walk panel asks
     /// for 256 on the 64×36 straddle probe, which is what the sampler's own
@@ -303,7 +310,7 @@ fn resolve(text: &str) -> Result<Plan, String> {
         Coloring::Composite { texture_weight, .. } => Some(*texture_weight),
         _ => None,
     };
-    let coloring = mode::tune(&spec.mode, settled, &spec.params)?;
+    let coloring = with_curve(mode::tune(&spec.mode, settled, &spec.params)?, spec.curve)?;
     coloring.validate()?;
     spec.palette.validate()?;
     coloring.agrees_with(&spec.palette)?;
@@ -418,6 +425,33 @@ fn resolve(text: &str) -> Result<Plan, String> {
         settled_weight,
         inflections,
     })
+}
+
+/// A mode's coloring with the spec's curve written in, where the spec carries one.
+///
+/// The pipeline sets one curve per render and reads the base through it, so a composite's
+/// or a modulate's texture keeps its own. A direct trap reads no field and the pipeline
+/// never sets its curve, so a spec asking for one under a direct trap is refused rather
+/// than drawn unchanged: a knob that silently did nothing would look like one that worked.
+fn with_curve(
+    mut coloring: Coloring,
+    curve: Option<coloring::Transform>,
+) -> Result<Coloring, String> {
+    let Some(curve) = curve else {
+        return Ok(coloring);
+    };
+    match &mut coloring {
+        Coloring::Field { transform, .. } => *transform = curve,
+        Coloring::Composite { base, .. } | Coloring::Modulate { base, .. } => {
+            base.transform = curve
+        }
+        _ => {
+            return Err(
+                "a direct trap reads no field, so there is no curve to read it through".into(),
+            );
+        }
+    }
+    Ok(coloring)
 }
 
 fn decimal(text: &str, key: &str) -> Result<f64, String> {
