@@ -15,20 +15,15 @@ here is addressed by a release key** — `run10|release|0078` — which is a nam
 answers to and not a position in a list, so a pool that grows cannot quietly repoint a
 picture at something else.
 
-Two smaller reads hang off a seated row, and they are named because "the release records
-and nothing else" stopped being true when `gallery-release` landed. `pass_record` opens
-`data/curation/gallery/<pass>/pass.json` for the geometry a pass rendered its slots at,
-so no figure of this page restates it; and the judged picture itself comes off the
-artifacts tree at `curation/runs/<run>/pictures/<candidate>.jpg`, because it is copied
-rather than redrawn.
+One smaller read hangs off a row: the judged picture itself comes off the artifacts tree
+at `curation/runs/<run>/pictures/<candidate>.jpg`, because it is copied rather than
+redrawn.
 
-**What is not read, and what waits on it.** A pass's **seating** — which candidate took
-which seat, and what it beat — and the **solve record** the demands and their shortfalls are
-written to are both records this module does not open. That is the whole of why
-`gallery-pool`, `gallery-allowance`, `gallery-twins` and `gallery-floors` are `pending` and
-`gallery-output` is `held`: the figures of section 9 are about a pass's own choosing, and a
-release row says what a pass decided without saying how. Reaching them is a reader for those
-records, not a composition.
+**What is not read.** A pass's **seating** — which candidate took which seat, and what it
+beat — and the **solve record** the demands and their shortfalls are written to are both
+records this module does not open. The figures of section 9 are about a pass's own
+choosing, and a release row says what a pass decided without saying how; their reader is
+`builder/curation.py`.
 
 ## What is redrawn, and what is copied
 
@@ -74,13 +69,11 @@ from .locations import (
 from .palettes import strip
 from .theme import MARK_INK, WELL_INK
 
-#: The two rows these figures stand on, by the key their release record answers to. Matt
-#: chose each off a numbered contact sheet — `scratch/contact/wallpapers-attempt.png` tile 40
-#: and `scratch/contact/gallery-release.png` tile 58 — and what is written down is the
-#: record's own name for what he picked, never the tile number, because the sheet is
-#: regenerated and the record is not.
+#: The row `wallpapers-attempt` stands on, by the key its release record answers to. Matt
+#: chose it off a numbered contact sheet — `scratch/contact/wallpapers-attempt.png` tile 40
+#: — and what is written down is the record's own name for what he picked, never the tile
+#: number, because the sheet is regenerated and the record is not.
 ATTEMPT = ("run10", "0078")
-SEAT = ("gallery3", "gallery1_0441")
 
 #: How the candidate set is laid out. Eight across is what `palette-neighborhood` uses for
 #: the same thirty-two, so two figures of one candidate set are read at one size.
@@ -108,9 +101,6 @@ LIGHTNESS_MAP = {
     "stops": [[0.0, [0, 0, 0]], [1.0, [255, 255, 255]]],
 }
 
-#: Where a gallery pass writes down what it did, beside the slot files it filled. The
-#: geometry the wallpapers were drawn at is on it, so no figure of this page restates it.
-PASS_RECORD = ("data", "curation", "gallery")
 
 #: The size a band's own name is set at. Brighter and a rank up from `locations.heading`,
 #: which is for a note beside a picture: these lines say what the block under them *is*,
@@ -118,11 +108,6 @@ PASS_RECORD = ("data", "curation", "gallery")
 #: labels its two blocks the same way, and the two figures share a candidate set.
 BAND_SIZE = 16
 
-#: The block the crop search moves on, in full-size pixels. The window is scored off block
-#: means, so the origin it returns is a multiple of this — a crop is a region of a picture
-#: and not a pixel-exact claim, and a coarse grid is what keeps the search honest about
-#: that rather than pretending to a precision it does not have.
-CROP_BLOCK = 40
 
 #: `.gitattributes` normalizes this repository to LF; anything written here spells it.
 LF = "\n"
@@ -141,14 +126,6 @@ def released(run: str, candidate: str) -> dict:
     if row is None:
         raise PoolError(f"no release record for {run}|release|{candidate}")
     return row
-
-
-def pass_record(name: str) -> dict:
-    """One gallery pass's own record of the run it was."""
-    path = renders.data_file(*PASS_RECORD, name, "pass.json")
-    if not path.is_file():
-        raise PoolError(f"no pass record at {path}")
-    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def source_key(run: str, candidate: str) -> str:
@@ -411,143 +388,6 @@ def _outline(draw, box, colour=WELL_INK, width: int = 3) -> None:
 
 
 # --------------------------------------------------------- the small render and the wallpaper
-
-
-def crop_window(full: Path, small: Path, block: int = CROP_BLOCK) -> tuple[int, int, float, float]:
-    """Where the wallpaper carries texture the judged picture cannot, as `(x, y, gain, mean)`.
-
-    The two pictures are the same frame at two scales, so the question has an answer that
-    is not a matter of taste: enlarge the small render to the wallpaper's size and ask
-    where the wallpaper disagrees with it most. What is left over is exactly the detail
-    the extra samples bought — filigree finer than a 640x360 grid can hold — and the
-    window with the most of it is the one worth cropping.
-
-    Scored off block means rather than pixels: the answer wanted is a region, and a search
-    that returned a pixel-exact origin would be claiming a precision it does not have.
-    `gain` is the winning window's mean absolute difference and `mean` is the whole
-    frame's, so a caller can say how much better than average the crop it chose is.
-    """
-    from PIL import Image, ImageChops
-
-    with Image.open(full) as opened:
-        wide = opened.convert("L")
-    with Image.open(small) as opened:
-        narrow = opened.convert("L")
-    if wide.width % narrow.width or wide.height % narrow.height:
-        raise PoolError(f"{wide.size} is not a whole multiple of {narrow.size}")
-    lost = ImageChops.difference(wide, narrow.resize(wide.size, Image.LANCZOS))
-
-    across, down = wide.width // block, wide.height // block
-    means = list(lost.resize((across, down), Image.BOX).getdata())
-    # A summed-area table over the block means, so every window is four lookups.
-    total = [[0.0] * (across + 1) for _ in range(down + 1)]
-    for j in range(down):
-        for i in range(across):
-            total[j + 1][i + 1] = (
-                means[j * across + i] + total[j][i + 1] + total[j + 1][i] - total[j][i]
-            )
-    wide_blocks, high_blocks = narrow.width // block, narrow.height // block
-    if wide_blocks < 1 or high_blocks < 1:
-        raise PoolError(f"a {narrow.size} window does not fit the {block}px search grid")
-    cells = wide_blocks * high_blocks
-    best, where = -1.0, (0, 0)
-    for j in range(down - high_blocks + 1):
-        for i in range(across - wide_blocks + 1):
-            score = (
-                total[j + high_blocks][i + wide_blocks]
-                - total[j][i + wide_blocks]
-                - total[j + high_blocks][i]
-                + total[j][i]
-            ) / cells
-            if score > best:
-                best, where = score, (i * block, j * block)
-    return where[0], where[1], best, total[down][across] / (across * down)
-
-
-def finished_beside_judged() -> Drawn:
-    """`gallery-release` — the picture a seat was decided on, and the wallpaper it became."""
-    from PIL import Image
-
-    row = released(*SEAT)
-    recipe = row["recipe"]
-    wallpaper = row["_picture"]
-    source = row["source"]
-    judged = renders.artifact(
-        "curation/runs", source["run"], "pictures", f"{source['candidate']}.jpg"
-    )
-    if not judged.is_file():
-        raise PoolError(f"the seated candidate's judged picture is not at {judged}")
-
-    with Image.open(wallpaper) as opened:
-        full = opened.convert("RGB")
-    with Image.open(judged) as opened:
-        judged_picture = opened.convert("RGB")
-    scale = full.width // judged_picture.width
-    x, y, gain, mean = crop_window(wallpaper, judged)
-    crop = full.crop((x, y, x + judged_picture.width, y + judged_picture.height))
-
-    wide = panels(2)
-    head = 22
-    label = band(wide[1])
-    sheet, draw = sheets.canvas(SHEET_WIDTH, sheets.PAD + head + wide[1] + label + sheets.PAD)
-
-    top = sheets.PAD + head
-    heading(
-        draw,
-        sheets.PAD,
-        sheets.PAD,
-        "The same frame at both sizes, pixel for pixel — the marked region is what is "
-        "enlarged beside it",
-    )
-    left = sheets.PAD
-    sheet.paste(judged_picture.resize(wide, Image.LANCZOS), (left, top))
-    marked = (
-        left + round(x / scale * wide[0] / judged_picture.width),
-        top + round(y / scale * wide[1] / judged_picture.height),
-        left + round((x / scale + judged_picture.width / scale) * wide[0] / judged_picture.width),
-        top + round((y / scale + judged_picture.height / scale) * wide[1] / judged_picture.height),
-    )
-    _outline(draw, marked, width=2)
-    under(draw, (left, top), wide, ["the picture the slot was decided on"])
-
-    right = sheets.PAD + wide[0] + sheets.PAD
-    sheet.paste(crop.resize(wide, Image.LANCZOS), (right, top))
-    under(draw, (right, top), wide, [f"the wallpaper, at {scale}x, over that region"])
-
-    geometry = pass_record(row["slot"]["pass"])["render"]["geometry"]
-    if list(geometry["resolution"]) != [full.width, full.height]:
-        raise PoolError(
-            f"{row['slot']['pass']} says it rendered at {geometry['resolution']} and the "
-            f"wallpaper on disk is {full.width}x{full.height}"
-        )
-    samples = geometry["supersample"] ** 2
-    provenance = [
-        f"Release row {source_key(*SEAT)}, drawn by builder.pool:finished_beside_judged. "
-        "Neither panel is redrawn: the left is the file the render judge read, "
-        f"{source['run']}/pictures/{source['candidate']}.jpg, and the right is a crop of the "
-        f"finished wallpaper {row['picture'].replace(chr(92), '/')} under that pass's run.",
-        frame_line(row, "Both panels are this frame, and the left one is this recipe"),
-        f"The seat: pass {row['slot']['pass']}, slot {row['slot']['id']}, partition "
-        f"{row['location']['partition']}, head {row['scores']['head']}; the candidate was made "
-        f"by run {source['run']} as {source['candidate']} and seated by the pass, which is why "
-        "its id carries both.",
-        f"The wallpaper is {full.width}x{full.height} supersample "
-        f"{geometry['supersample']} — {samples} samples a pixel, off that pass's own record — "
-        f"which is {scale} times the judged picture on each axis, and no judge has seen it; "
-        "the release autolevel operator was on and did not act, so it is the render's own bytes.",
-        f"The crop is the {judged_picture.width}x{judged_picture.height} window of the "
-        f"wallpaper at ({x}, {y}), which is ({x // scale}, {y // scale}) size "
-        f"{judged_picture.width // scale}x{judged_picture.height // scale} in the judged "
-        "picture. Chosen by builder.pool:crop_window: the judged picture enlarged to the "
-        "wallpaper's size and subtracted from it, the whole frame's mean absolute difference "
-        f"{mean:.2f} of 255 and this window's {gain:.2f}, the highest of any window on a "
-        f"{CROP_BLOCK}px grid. Both panels are shown at {wide[0]}x{wide[1]}, so the right is "
-        "the wallpaper's own pixels and the left is the judged picture's own.",
-        f"Palette {recipe['colormap']}, chosen by the palette head out of the "
-        f"{len(row['palette']['candidates'])}-map set around the anchor "
-        f"{row['palette']['anchor']}.",
-    ]
-    return Drawn(sheets.save(sheet, sheet_path("gallery-release")), provenance)
 
 
 # ------------------------------------------------------------------- one visit, in full
@@ -1410,7 +1250,6 @@ def _bands_family_words(family: dict) -> str:
 MAKERS = {
     "wallpapers-attempt": attempt_steps,
     "wallpapers-mine": visit_steps,
-    "gallery-release": finished_beside_judged,
     BANDS_ID: three_bands,
 }
 

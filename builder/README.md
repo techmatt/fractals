@@ -45,9 +45,9 @@ python -m builder start [ID ...] [--place] [--replace]
                             draw the figures of the Start here page
 python -m builder front [ID ...] [--place] [--replace]
                             draw the front page's picture, index-hero, one spec panel
-python -m builder pipeline [ID ...] [--run R] [--place] [--replace]
-                            bake the Full pipeline charts read off a run's own
-                            walk ledger next door
+python -m builder pipeline [ID ...] [--stamp S] [--place] [--replace]
+                            draw the Full pipeline figures that are panels: the
+                            overview and the hue extremes
 python -m builder diagram ID draw one of the three figures that are diagrams, not renders
 python -m builder seats [--records-only]
                             land the general gallery and the nineteen collections next
@@ -1861,12 +1861,8 @@ minibrots*, *Symmetry stages*, *Embedded Julia sets*, *Spirals and seahorses*,
 
 ## What refuses, on purpose
 
-Three of the makers would rather stop than hand back a picture nobody would look at twice.
+Two of the makers would rather stop than hand back a picture nobody would look at twice.
 
-- **`pipeline` will not bake a yield decay it cannot vouch for.** A run writes a `summary`
-  row carrying its own tally of admissions per partition; the bake derives the same numbers
-  off the `candidate` rows and refuses where the two disagree. A chart that does not
-  reproduce the run's own arithmetic is a reading of something else.
 - **`diagrams.py`'s flow boxes refuse a line that outgrows its box.** The wording is a
   constant at the top of the module and the boxes are sized from the sheet, so an overrun
   is an edit somebody made to the words — and lettering running out over the well is

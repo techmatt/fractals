@@ -2,9 +2,9 @@
 
 The ninth section's subject is one pass over the whole pool that chooses the whole set at
 once, so its figures are readings of **that pass's own record** rather than pictures of a
-place. Three of them are charts and one is a pair of pictures with a number between them;
-the fifth, the grid of what a pass ships, is a sheet of seats and lives in `picks.py` with
-the other figures whose panels are named by tentative-gallery ID.
+place. The one drawn here is pairs of pictures with a number between them; the grid of
+what a pass ships is a sheet of seats and lives in `picks.py` with the other figures whose
+panels are named by tentative-gallery ID.
 
 ## The two records, and why both are named
 
@@ -39,35 +39,31 @@ claim moves: the pool is the same pool, and a seat of one pass is a seat.
 
 ## What is drawn and what is read
 
-Nothing here reaches the engine except `gallery-twins`, which draws four pictures the way
+`gallery-twins` is the one figure drawn here, and it draws four pictures the way
 `picks.py` draws a panel — at the seat's own recipe, through the autolevel curve the run
-stamped. The charts are composed from numbers and reach no renderer at all.
+stamped. The two charts this module also drew, the pool's narrowing and the seats by
+color, left the page and went on 2026-09-30 with their makers.
 """
 
 from __future__ import annotations
 
 import json
-import math
 from dataclasses import dataclass
 from pathlib import Path
 
 from . import figures as figures_module
 from . import picks, records, renders, sheets
-from .locations import SHEET_WIDTH, Drawn, sheet_path
+from .locations import Drawn, sheet_path
 from .theme import (
     SECTION_INK,
-    WELL,
     WELL_INK,
     WELL_INK_DIM,
-    WELL_RULE,
     font,
-    text_width,
 )
 
-#: The recorded tentative gallery every figure of this page reads. Pinned, the way
-#: `builder.pipeline`'s run is pinned: a page captioned *one pass* that quietly redrew
-#: itself off whichever pass was newest would be a different measurement under the same
-#: words.
+#: The recorded tentative gallery every figure of this page reads. Pinned: a page
+#: captioned *one pass* that quietly redrew itself off whichever pass was newest would be
+#: a different measurement under the same words.
 #:
 #: ⚠ **The five charts on the page were drawn off `20260902T164622Z`, and that record is
 #: gone** *(atlas_refresh_ckpt139, 2026-09-22)*. Closing mining next door removed every
@@ -78,18 +74,6 @@ from .theme import (
 #: are what has to move with it. That is a publishing-time act and was deliberately not
 #: taken here: the prompt re-based the data and left the prose alone. The figures' own
 #: registry rows still cite the old stamp, which is the provenance and is correct.
-#:
-#: ⚠ **And `gallery_pool` does not draw off this record at all** *(leftovers_rebake_ckpt140,
-#: 2026-09-21)*. Every `final139_*` pass folds its near-duplicates under `fold: pool`, where
-#: the older passes deleted them, so `preselection` writes `places_kept`/`places_folded`
-#: where this module reads `places_refused`, and `population`'s three counts are one number:
-#: an absorbed place's rows stay in the pool, so candidates, clearing and
-#: after_the_preselection are all 19,197 over 8,940 places and the funnel is flat. The
-#: narrowing is still on the record — `fine_bar.offered` and `kept` for the judge's bar,
-#: `clusters_after_the_preselection` for the collapse — and re-deriving the three bars from
-#: those is a maker change rather than a rerun. It waits for the same publishing-time act
-#: the prose does, because a funnel of places is not the funnel of candidates the page
-#: describes.
 STAMP = "20260922T012627Z"
 
 #: The solve leg whose record answers for that stamp. Held to it by `_agreeing` rather
@@ -118,42 +102,12 @@ class Pass:
     solve: dict
 
     @property
-    def asked(self) -> int:
-        return int(self.manifest["seats"]["asked"])
-
-    @property
-    def filled(self) -> int:
-        return int(self.manifest["seats"]["filled"])
-
-    @property
-    def unfilled(self) -> int:
-        return self.asked - self.filled
-
-    @property
-    def population(self) -> dict:
-        return self.solve["population"]
-
-    @property
-    def preselection(self) -> dict:
-        return self.solve["preselection"]
-
-    @property
     def taken_at(self) -> str:
         return str(self.manifest["taken_at"])
 
     @property
     def commit(self) -> str:
         return str(self.manifest.get("source_commit") or "")[:12]
-
-    @property
-    def allowance(self) -> int:
-        """`floor(k · t · n) + 1`, the rule's own arithmetic, re-derived here.
-
-        The share is uniform over the forty-eight cells, so one number is every cell's
-        ceiling and the chart draws one line rather than forty-eight.
-        """
-        rules = self.solve["rules"]
-        return int(math.floor(rules["k"] * rules["cell_share"] * self.asked)) + 1
 
 
 def manifest_path(stamp: str = STAMP) -> Path:
@@ -210,138 +164,7 @@ def _agreeing(stamp: str, manifest: dict, solve: dict) -> None:
         )
 
 
-# ---------------------------------------------------------------------------- the sheet
-
-PLOT_LEFT = 74
-PLOT_RIGHT = SHEET_WIDTH - sheets.PAD - 14
-BAR_INK = sheets.mix(WELL, SECTION_INK, 0.72)
-
-
-def _title(draw, title: str, under: str) -> int:
-    """The two lines every sheet of this page opens with, and where the plot may start."""
-    draw.text((sheets.PAD, sheets.PAD), title, fill=WELL_INK, font=font(19))
-    draw.text((sheets.PAD, sheets.PAD + 28), under, fill=WELL_INK_DIM, font=font(15))
-    return sheets.PAD + 68
-
-
-def _stamped(draw, pass_: Pass, y: int) -> None:
-    """Which pass this is, in the quietest ink there is, at the foot of every sheet."""
-    text = f"{pass_.stamp} · n = {pass_.asked:,} · wallpapers {pass_.commit}"
-    face = font(13)
-    draw.text(
-        (PLOT_RIGHT - text_width(draw, text, face), y),
-        text,
-        fill=sheets.mix(WELL, SECTION_INK, 0.62),
-        font=face,
-    )
-
-
-def _foot(draw, lines: list[str], x: int, y: int, size: int = 15) -> int:
-    face = font(size)
-    for index, line in enumerate(lines):
-        draw.text((x, y + index * 22), line, fill=SECTION_INK, font=face)
-    return y + len(lines) * 22
-
-
-# ------------------------------------------------------------------ what is chosen from
-
-#: The funnel's three steps: the label a reader reads, and where the count comes from.
-POOL_STEPS = (
-    ("every candidate a mine has made", "candidates", "locations"),
-    ("above its own mode's bar", "clearing", "clearing_locations"),
-    (
-        "after near-identical places collapse",
-        "after_the_preselection",
-        "locations_after_the_preselection",
-    ),
-)
-
-POOL_BAR = 40
-POOL_PITCH = 88
-POOL_LABEL = 330
-
-
-def gallery_pool() -> Drawn:
-    """`gallery-pool` — the three counts curation narrows through, as a funnel."""
-    pass_ = read()
-    counts = pass_.population
-    widest = max(counts[key] for _, key, _ in POOL_STEPS)
-    left = sheets.PAD + POOL_LABEL
-    room = PLOT_RIGHT - left - 156
-
-    height = sheets.PAD * 2 + 68 + len(POOL_STEPS) * POOL_PITCH + 92
-    sheet, draw = sheets.canvas(SHEET_WIDTH, height)
-    top = _title(
-        draw,
-        "What curation is choosing from",
-        "the pool narrows twice before a seat is filled, and only the last of the three "
-        "is what a gallery is seated out of",
-    )
-
-    face, small = font(16), font(14)
-    for index, (words, key, places) in enumerate(POOL_STEPS):
-        y = top + index * POOL_PITCH
-        draw.text((sheets.PAD, y + 12), words, fill=WELL_INK, font=face)
-        width = max(3.0, counts[key] / widest * room)
-        draw.rectangle([left, y, left + width, y + POOL_BAR], fill=BAR_INK, outline=SECTION_INK)
-        draw.text((left + width + 14, y + 2), f"{counts[key]:,}", fill=WELL_INK, font=font(20))
-        draw.text(
-            (left + width + 14, y + 26),
-            f"{counts[places]:,} places",
-            fill=SECTION_INK,
-            font=small,
-        )
-
-    refused = pass_.preselection
-    y = _foot(
-        draw,
-        [
-            "the first cut is the render judge's: a candidate is eligible at even odds or "
-            "better of being rated good, measured at its own mode's threshold",
-            f"the second collapses places a vision network reads as one place — "
-            f"{refused['places_refused']:,} of {refused['places_asked']:,}, one place in "
-            f"{round(1 / refused['share_of_places_refused'])}, inside a cosine distance "
-            f"of {refused['radius']}",
-        ],
-        sheets.PAD,
-        top + len(POOL_STEPS) * POOL_PITCH + 4,
-    )
-    _stamped(draw, pass_, y + 6)
-    return Drawn(sheets.save(sheet, sheet_path("gallery-pool")), pool_provenance(pass_))
-
-
-def pool_provenance(pass_: Pass) -> list[str]:
-    counts = pass_.population
-    refused = pass_.preselection
-    return [
-        "Drawn, not rendered: a chart composed by builder.curation:gallery_pool from the "
-        f"records of one curation pass — artifacts/curation/tentative/{pass_.stamp}/"
-        "manifest.json for the pass, and artifacts/curation/solve/"
-        f"{SOLVE}/solve.json for the narrowing. Nothing is rendered and no engine is "
-        "reached.",
-        _pass_line(pass_),
-        "The three bars, in order: "
-        + ", ".join(
-            f"{words} {counts[key]:,} candidates over {counts[places]:,} places"
-            for words, key, places in POOL_STEPS
-        )
-        + ". The bars are linear in the candidate count and the places are printed beside "
-        "them rather than drawn.",
-        "The first bar is every candidate of an accepted mode that any mine has written "
-        f"into the candidate ledger; the ledger held {pass_.manifest['pool']['ledger_rows']:,} "
-        "rows at this pass and "
-        f"{pass_.manifest['pool']['refused']['niche_mode']:,} of them were candidates of "
-        "modes no gallery ships, which are refused before anything else is asked. The "
-        "second is the render judge's bar, per mode. The third is the geometric "
-        "preselection: "
-        f"{refused['places_refused']:,} of {refused['places_asked']:,} places refused "
-        f"inside a cosine distance of {refused['radius']} in the frozen DINOv2 descriptor "
-        f"of each place's neutral render, taking {refused['candidates_refused']:,} "
-        "candidates with them.",
-        f"The solve then drew a stratified view of {counts['in_the_view']:,} of those "
-        "candidates to choose over, which is a sampling of the third bar and not a fourth "
-        "narrowing; it is not drawn here.",
-    ]
+# --------------------------------------------------------------------- which pass it is
 
 
 def _pass_line(pass_: Pass) -> str:
@@ -354,129 +177,6 @@ def _pass_line(pass_: Pass) -> str:
         f"carries stamp {pass_.manifest['pool']['stamp'][:16]}, which is the same pool the "
         "earlier pass of that day was chosen over."
     )
-
-
-# ---------------------------------------------------------- how much one color may take
-
-#: How many cells a hue family carries — dark and light against muted and vivid. The
-#: codebook's order is family-major, so a family is this many consecutive columns and
-#: nothing here has to know their names.
-FAMILY_CELLS = 4
-
-ALLOWANCE_TOP = 300
-ALLOWANCE_BASE = 56
-
-
-def family_of(cell: str) -> str:
-    """A cell's hue family, which is the last word of its own name."""
-    return cell.rsplit("_", 1)[-1]
-
-
-def gallery_allowance() -> Drawn:
-    """`gallery-allowance` — the gallery's seats by color, against the ceiling each has."""
-    pass_ = read()
-    counts = pass_.manifest["shortfalls"]["cells"]["counts"]
-    ink = renders.swatch_colours()
-    order = list(ink)
-    allowance = pass_.allowance
-    ceiling = allowance + 8
-
-    sheet, draw = sheets.canvas(SHEET_WIDTH, 536)
-    top = _title(
-        draw,
-        "How much of one gallery a single color took",
-        "one column a color, against the ceiling every color is given — an allowance is "
-        "never a quota, and nothing is obliged to reach it",
-    )
-    base = top + ALLOWANCE_TOP
-    step = (PLOT_RIGHT - PLOT_LEFT) / len(order)
-    width = step - 7
-
-    for value in range(0, ceiling + 1, 10):
-        y = base - value / ceiling * ALLOWANCE_TOP
-        draw.line([PLOT_LEFT, y, PLOT_RIGHT, y], fill=WELL_RULE, width=1)
-        text = f"{value:d}"
-        draw.text(
-            (PLOT_LEFT - 10 - text_width(draw, text, font(14)), y - 8),
-            text,
-            fill=SECTION_INK,
-            font=font(14),
-        )
-
-    for index, cell in enumerate(order):
-        held = int(counts.get(cell, 0))
-        x = PLOT_LEFT + index * step
-        colour = ink.get(cell, WELL_INK_DIM)
-        height = held / ceiling * ALLOWANCE_TOP
-        draw.rectangle(
-            [x, base - height, x + width, base],
-            fill=sheets.mix(WELL, colour, 0.86),
-            outline=colour,
-        )
-
-    line = base - allowance / ceiling * ALLOWANCE_TOP
-    draw.line([PLOT_LEFT - 6, line, PLOT_RIGHT + 6, line], fill=WELL_INK, width=2)
-    draw.text((PLOT_LEFT, line - 24), f"allowance {allowance}", fill=WELL_INK, font=font(15))
-
-    face = font(15)
-    for index in range(0, len(order), FAMILY_CELLS):
-        x = PLOT_LEFT + index * step
-        room = step * FAMILY_CELLS
-        sheets.centred(draw, x, base + 10, room, family_of(order[index]), face, WELL_INK_DIM)
-        if index:
-            draw.line([x - 3, base + 4, x - 3, base + 34], fill=WELL_RULE, width=1)
-    draw.text(
-        (PLOT_LEFT, base + 38),
-        "four cells to a family, dark and light, muted and vivid",
-        fill=sheets.mix(WELL, SECTION_INK, 0.7),
-        font=font(13),
-    )
-
-    at = sum(1 for cell in order if int(counts.get(cell, 0)) >= allowance)
-    y = _foot(
-        draw,
-        [
-            f"{at} of the {len(order)} colors reached their allowance and none passed it; a "
-            f"picture may be dominant in more than one color, so the columns sum past the "
-            f"{pass_.filled:,} seats",
-            "a color well short of the line is one the pool cannot supply, not one the "
-            "rules held back",
-        ],
-        sheets.PAD,
-        base + ALLOWANCE_BASE + 6,
-    )
-    _stamped(draw, pass_, y + 6)
-    return Drawn(sheets.save(sheet, sheet_path("gallery-allowance")), allowance_provenance(pass_))
-
-
-def allowance_provenance(pass_: Pass) -> list[str]:
-    counts = pass_.manifest["shortfalls"]["cells"]["counts"]
-    order = list(renders.swatch_colours())
-    rules = pass_.solve["rules"]
-    at = [cell for cell in order if int(counts.get(cell, 0)) >= pass_.allowance]
-    return [
-        "Drawn, not rendered: a chart composed by builder.curation:gallery_allowance from "
-        f"artifacts/curation/tentative/{pass_.stamp}/manifest.json — its "
-        "`shortfalls.cells.counts`, which is the seated gallery tallied over every color "
-        "each picture is dominant in. Nothing is rendered and no engine is reached.",
-        _pass_line(pass_),
-        f"The allowance is the rule's own arithmetic re-derived here: {rules['allowance']} "
-        f"with k = {rules['k']} and t = 1/{round(1 / rules['cell_share'])}, which is "
-        f"{pass_.allowance} out of {pass_.asked:,} seats and the same for every cell "
-        "because the share is uniform. The record's own `over_allowance` is empty, so "
-        "nothing passed it.",
-        "Columns in the codebook's own order — twelve hue families, four cells each, dark "
-        "and light against muted and vivid — and each drawn in that cell's own sRGB off "
-        "fractal_wallpapers.palettes.codebook.swatches(). The four neutrals carry no "
-        "allowance and are not columns here.",
-        f"At the allowance: {', '.join(at)} — {len(at)} of {len(order)}. The counts, "
-        "highest first: "
-        + ", ".join(
-            f"{cell} {counts[cell]}"
-            for cell in sorted(counts, key=lambda name: (-counts[name], name))
-        )
-        + ".",
-    ]
 
 
 # ------------------------------------------------------- two pictures that read as one
@@ -651,29 +351,20 @@ def twins_provenance(pass_: Pass, resolved, measured: list[float]) -> list[str]:
 
 # ----------------------------------------------------------------------- the interface
 
-#: Which of these are drawn art rather than photographs, and so ship lossless. A chart
-#: is hairlines and flat ground, and JPEG rings every one of them.
-CHARTS = ("gallery-pool", "gallery-allowance")
-
 MAKERS = {
-    "gallery-pool": gallery_pool,
-    "gallery-allowance": gallery_allowance,
     "gallery-twins": gallery_twins,
 }
 
 
 def sources(identifier: str) -> list[dict]:
-    """Where a figure of this page got its pictures — a record, or seats and candidates.
+    """Where a figure of this page got its pictures — seats and candidates.
 
-    The twins figure is the one that shows pictures, and its six are of two kinds: five
-    are seats of the pass, and one is a candidate the pass refused. A refused candidate
-    is not a seat and is not written down as one, which is what the `candidate` kind is
-    for.
+    The twins figure shows six pictures of two kinds: five are seats of the pass, and one
+    is a candidate the pass refused. A refused candidate is not a seat and is not written
+    down as one, which is what the `candidate` kind is for.
     """
     if identifier not in MAKERS:
         raise records.RecordError(f"{identifier} is not drawn by {__name__}")
-    if identifier != "gallery-twins":
-        return [{"kind": figures_module.SYNTHETIC, "keys": []}]
     seated = picks.seats(STAMP)
     keys = [key for pair in twin_pairs() for key in pair]
     found = [
@@ -692,9 +383,7 @@ def sources(identifier: str) -> list[dict]:
 def recipe(identifier: str) -> dict:
     if identifier not in MAKERS:
         raise records.RecordError(f"{identifier} is not drawn by {__name__}")
-    args: dict = {"stamp": STAMP, "solve": SOLVE}
-    if identifier == "gallery-twins":
-        args["pairs"] = twin_pairs()
+    args: dict = {"stamp": STAMP, "solve": SOLVE, "pairs": twin_pairs()}
     return {"maker": f"{__name__}:{MAKERS[identifier].__name__}", "args": args}
 
 

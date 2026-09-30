@@ -388,10 +388,6 @@ def _parser() -> argparse.ArgumentParser:
         metavar="ID",
     )
     charted.add_argument(
-        "--run",
-        help=f"the retired yield chart only: which run's walk ledger; {pipeline_module.RUN}",
-    )
-    charted.add_argument(
         "--stamp",
         help="which pool study the panel figures read; the latest whole one by default",
     )
@@ -1314,19 +1310,16 @@ def _do_growth(options: argparse.Namespace) -> int:
 def _do_curation(options: argparse.Namespace) -> int:
     """Draw section 9's figures, and optionally land each one where it belongs.
 
-    Two shapes land here and they ship differently: a chart is drawn art and lands
-    lossless, the way the pipeline charts do, and the twins sheet is six photographs of
-    fractals and lands as JPEG. `sources` are rewritten on landing for the same reason
-    `picks` rewrites them — the twins figure's panels **are** record keys.
+    The twins sheet is six photographs of fractals and lands as one, not lossless.
+    `sources` are rewritten on landing for the same reason `picks` rewrites them — the
+    twins figure's panels **are** record keys.
     """
     for identifier in options.id or sorted(curation_module.MAKERS):
         drawn = curation_module.draw(identifier)
         print(f"wrote {drawn.path.relative_to(SITE_ROOT).as_posix()}")
         if not (options.place or options.replace):
             continue
-        lossless = identifier in curation_module.CHARTS
-        suffix = ".png" if lossless else images.FIGURE_SUFFIX
-        destination = FIGURE_IMAGES_DIR / f"{identifier}{suffix}"
+        destination = FIGURE_IMAGES_DIR / f"{identifier}{images.FIGURE_SUFFIX}"
         width, height = images.import_web_res(drawn.path, destination)
         placed = figures.place(
             identifier,
@@ -1346,36 +1339,16 @@ def _do_curation(options: argparse.Namespace) -> int:
 def _do_pipeline(options: argparse.Namespace) -> int:
     """Draw the Full pipeline figures that are panels, and optionally land them.
 
-    Both are split and land through `_land_split`. The retired yield chart is still drawn
-    by name, and lands as a PNG for the reason `growth`'s charts do.
+    Both are split and land through `_land_split`.
     """
-    for identifier in options.id or sorted(pipeline_module.LANDED):
-        drawn = pipeline_module.draw(identifier, options.run, options.stamp)
-        if isinstance(drawn, locations_module.Split):
-            _land_split(
-                identifier,
-                drawn,
-                pipeline_module,
-                replace=options.replace,
-                landing=bool(options.place or options.replace),
-            )
-            continue
-        print(f"wrote {drawn.path.relative_to(SITE_ROOT).as_posix()}")
-        if not (options.place or options.replace):
-            continue
-        destination = FIGURE_IMAGES_DIR / f"{identifier}.png"
-        width, height = images.import_web_res(drawn.path, destination)
-        placed = figures.place(
+    for identifier in options.id or sorted(pipeline_module.MAKERS):
+        _land_split(
             identifier,
-            destination.name,
-            width,
-            height,
-            provenance=list(drawn.provenance),
-            recipe=pipeline_module.recipe(identifier),
+            pipeline_module.draw(identifier, options.stamp),
+            pipeline_module,
             replace=options.replace,
+            landing=bool(options.place or options.replace),
         )
-        size = destination.stat().st_size / 1024
-        print(f"  {destination.name}  {width}x{height}  ({size:.0f} KB) — {placed.page}")
     return 0
 
 
@@ -1927,7 +1900,6 @@ def main(argv: list[str] | None = None) -> int:
         explorer_module.ExplorerError,
         renders.EngineError,
         growth_module.GrowthError,
-        pipeline_module.PipelineError,
         picks_module.PickError,
         icons.IconError,
         picker_module.PickerError,
