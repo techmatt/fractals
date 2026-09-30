@@ -261,7 +261,7 @@ from pathlib import Path
 
 from fractal_wallpapers.curation import packs
 
-full, built = Path(sys.argv[1]), sys.argv[2]
+full, built, order = Path(sys.argv[1]), sys.argv[2], sys.argv[3]
 manifest = Path(built) / packs.MANIFEST_NAME if built else None
 held = json.loads(manifest.read_text("utf-8"))["packs"] if manifest and manifest.is_file() else []
 print(json.dumps({
@@ -273,7 +273,7 @@ print(json.dumps({
             "keys": pack.keys,
             "order_from": pack.order_from,
         }
-        for pack in packs.plan(full)
+        for pack in packs.plan(full, Path(order) if order else None)
     ],
     "built": held,
 }))
@@ -302,7 +302,8 @@ def unaskable() -> str | None:
     return None
 
 
-def _asked() -> dict:
+def _asked(order: Path | None = None) -> dict:
+    """`plan()` and `packs.json` as next door answers, the plan ranked by `order` if given."""
     root = full_root()
     built = built_root()
     completed = subprocess.run(
@@ -312,6 +313,7 @@ def _asked() -> dict:
             PLAN_PROGRAM,
             str(root),
             str(built) if built is not None else "",
+            str(order.resolve()) if order is not None else "",
         ],
         capture_output=True,
         text=True,

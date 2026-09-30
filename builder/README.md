@@ -836,6 +836,27 @@ configured.
 Any repetition on this page is allowed *(Matt, packs_page_ckpt153)*: none of these blocks
 is a registry figure, so `locations` never reads them.
 
+**STAGING: `python -m builder packs stage`** *(packs_stage_ckpt157)* ranks the packs by the
+friends' votes and writes an untracked page, `artifacts/packs-stage/index.html` (served at
+`/artifacts/packs-stage/`), with each pack's staged five and the staged Best 200 marked with
+score, voters, and why a tile was passed over. Nothing it writes is published, and the packs
+page keeps its own five until the packs are rebuilt. `builder/ranking.py` holds the ranking
+and the picker, for the real rebuild to reuse:
+
+- **The ranking** is votes (`votes.resolved`, one per voter per seat), ties in
+  `packs.current()`'s order. The general thousand in that order is written to
+  `artifacts/packs-stage/order.txt`, the file `curate packs build --order` takes, and next
+  door's `plan()` is asked with it (`packs._asked(order)`), so the parts and the best packs
+  are cut by its definitions. It is read raw, never through `current()`, whose built-wins
+  merge would put the shipped order back. **A colour pack's staged order is this module's
+  alone**: `plan()` orders the general thousand by the file and shuffles each colour pack by
+  its own seed, so shipping it needs next door to take an order per collection.
+- **The picker** walks each pack in page order and staged rank and takes `PREVIEWS` seats,
+  skipping any seat a figure shows (`shown_on_site`: panel links through `votes.match`, a
+  panel's `from` key, and a figure's source keys, whatever the figure is for), any seat an
+  earlier pack took, and a third of one hue family past `HUE_CAP`, which does not apply to a
+  colour pack. `python -m unittest builder.test_ranking` holds the three rules.
+
 ## Friends' votes live outside the repository, and make the packs' order
 
 Friends send lists of explorer links, each one a favourite with no score

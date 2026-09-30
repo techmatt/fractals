@@ -609,6 +609,12 @@ def _parser() -> argparse.ArgumentParser:
         action="store_true",
         help="rewrite wallpaper-packs/packs.jsonl from packs.plan() and packs.json; then build",
     )
+    packed.add_argument(
+        "verb",
+        nargs="?",
+        choices=["stage"],
+        help="stage: rank the packs by the votes and write artifacts/packs-stage/ (STAGING)",
+    )
 
     voted = commands.add_parser(
         "votes", help="friends' picks: ingest a list of links, count them, or order the packs"
@@ -1693,7 +1699,13 @@ def _do_seats(options: argparse.Namespace) -> int:
 
 
 def _do_packs(options: argparse.Namespace) -> int:
-    """Say what the packs record holds, or rewrite it from the project next door."""
+    """Say what the packs record holds, rewrite it from next door, or stage it from the votes."""
+    if options.verb == "stage":
+        from . import ranking
+
+        for line in ranking.stage():
+            print(line)
+        return 0
     if options.import_:
         why = packs_module.unaskable()
         if why is not None:
