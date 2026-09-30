@@ -4,7 +4,8 @@
 
 ## The ranking
 
-A seat's score is its vote count, one per voter, from `votes.resolved` so that an old
+A seat's score is its vote count, one per voter (a pin, `votes.PINNED`, counting
+`votes.PIN_WEIGHT`), from `votes.resolved` so that an old
 spelling of a seat's link still counts. A pack's staged order is its **current** order
 (`packs.current()`, a built zip's order winning over the seeded plan) stable-sorted by
 score, so the current order is the tie-break and an unvoted pack keeps the order it ships
@@ -276,7 +277,7 @@ class Staging:
 
     @property
     def scores(self) -> dict[str, int]:
-        return {key: len(names) for key, names in self.who.items()}
+        return {key: votes.score(names) for key, names in self.who.items()}
 
 
 def previews(current: dict[str, dict], order_file: Path | None = None) -> Staging:
@@ -287,7 +288,7 @@ def previews(current: dict[str, dict], order_file: Path | None = None) -> Stagin
     into the checkout.
     """
     who = voters()
-    scores = {key: len(names) for key, names in who.items()}
+    scores = {key: votes.score(names) for key, names in who.items()}
     if order_file is None:
         with tempfile.TemporaryDirectory() as scratch:
             order, _ = staged(scores, current, Path(scratch) / "order.txt")
@@ -333,7 +334,7 @@ def _served(port: int = 8000) -> str:
 def _tile(page, explorer, rank, row, names, marks, site) -> str:
     """One Best 200 tile: its rank, votes and voters, hue, and what the walks made of it."""
     src = relative_href(page, GALLERY_IMAGES_DIR / seats.SLUG / row["file"])
-    facts = [f"#{rank}", f"{len(names)} vote{'' if len(names) == 1 else 's'}", *names]
+    facts = [f"#{rank}", f"score {votes.score(names)}", *names]
     lines = [text(" · ".join(facts)), f'<span class="stage-hue">{text(row["hue"])}</span>']
     lines += [f'<span class="stage-mark">{text(mark)}</span>' for mark in marks]
     figures_showing = site.get(row["key"], [])

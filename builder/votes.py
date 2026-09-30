@@ -160,12 +160,23 @@ def selections(rows: list[dict]) -> dict[str, set[str]]:
     return picked
 
 
+#: Not a friend: Matt's "guaranteed top 30", ingested under this name and counted as
+#: `PIN_WEIGHT` votes, which outranks any count of real friends there will be.
+PINNED = "pinned"
+PIN_WEIGHT = 100
+
+
+def score(names) -> int:
+    """A seat's score from who picked it: one per friend, `PIN_WEIGHT` for a pin."""
+    return sum(PIN_WEIGHT if name == PINNED else 1 for name in names)
+
+
 def likes(rows: list[dict]) -> dict[str, int]:
-    """How many friends picked each seat."""
+    """Each seat's score: how many friends picked it, a pin counting `PIN_WEIGHT`."""
     count: dict[str, int] = {}
-    for keys in selections(rows).values():
+    for friend, keys in selections(rows).items():
         for key in keys:
-            count[key] = count.get(key, 0) + 1
+            count[key] = count.get(key, 0) + score([friend])
     return count
 
 
@@ -489,6 +500,8 @@ def browse() -> Path:
             "mode": row["mode"],
             "family": families.get(key, "?"),
             "who": sorted(friend for friend, keys in picked.items() if key in keys),
+            "score": score(friend for friend, keys in picked.items() if key in keys),
+            "pinned": key in picked.get(PINNED, set()),
             "general": ORDER_COLLECTION in row["collections"],
             "packs": held.get(key, []),
             "staged": [name for name in site_packs.PICKED if key in members.get(name, ())],
@@ -721,11 +734,11 @@ function person(f) {
 }
 function byScore(friend) {
   const keys = seated.filter((k) => !friend || DATA.tiles[k].who.includes(friend));
-  keys.sort((a, b) => DATA.tiles[b].who.length - DATA.tiles[a].who.length ||
+  keys.sort((a, b) => DATA.tiles[b].score - DATA.tiles[a].score ||
     DATA.tiles[a].tie - DATA.tiles[b].tie);
   const grid = el("div", "grid");
   grid.append(...keys.map((key) => tile(key, (meta, t) => {
-    meta.append(el("span", "count", `${t.who.length} ♥`));
+    meta.append(el("span", "count", `${t.pinned ? "📌 " : ""}${t.score} ♥`));
     t.who.forEach((f) => meta.append(el("span", "chip", f)));
     meta.append(el("span", t.general ? "yes" : "no", t.general ? "n=1000" : "not in n=1000"));
     meta.append(el("span", "key", `packs: ${t.packs.length ? t.packs.join(", ") : "none"}`));
@@ -821,12 +834,12 @@ function pickGrid(friend) {
   const only = $("only").checked;
   const keys = seated.filter((k) => (!friend || DATA.tiles[k].who.includes(friend)) &&
     (!only || holder(k)));
-  keys.sort((a, b) => DATA.tiles[b].who.length - DATA.tiles[a].who.length ||
+  keys.sort((a, b) => DATA.tiles[b].score - DATA.tiles[a].score ||
     DATA.tiles[a].tie - DATA.tiles[b].tie);
   const grid = el("div", "grid");
   grid.append(...keys.map((key) => {
     const box = tile(key, (meta, t) => {
-      meta.append(el("span", "count", `${t.who.length} ♥`));
+      meta.append(el("span", "count", `${t.pinned ? "📌 " : ""}${t.score} ♥`));
       for (const p of PICK.packs) {
         const inside = t.staged.includes(p.name);
         const chip = el("button", `toggle ${inside ? "member" : "outside"}`, p.chip);
