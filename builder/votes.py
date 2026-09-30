@@ -3,7 +3,7 @@
 A friend sends a list of explorer links, each one a favourite with no score. `ingest`
 reads the list with the explorer's own reader (`votes.mjs`), names the seat each link
 draws out of `seated-candidates/all.jsonl`, and appends **one event** to the store;
-`status` counts, `view` writes a local page of everyone's picks, and `export-order`
+`status` counts, `browse` writes a local page of everyone's picks, and `export-order`
 turns the likes into the `--order` file `curate packs build` takes next door.
 
 ## The store
@@ -19,6 +19,11 @@ matched none. Nothing here rewrites, deletes or re-keys a row, and a file that d
 end in a newline is refused rather than repaired. A friend's selection is derived, the
 union of the keys across their events, so a link sent twice is one like.
 
+An ingest is idempotent per friend and link: an entry already that friend's — a seat by
+its key, an unmatched link by its raw text — is left out of the event, and a paste with
+nothing new appends nothing at all. So running the same ingest twice leaves the store as
+the first run left it.
+
 ## The match
 
 Exact on the recipe as `permalink.js` parses and re-spells it, with `level` taken off: it
@@ -28,7 +33,10 @@ after friends could have copied the link without it. No tolerance.
 ## The page
 
 `artifacts/votes/index.html`, which is ignored, is walked by no check, and is served by
-`builder serve` at `/artifacts/votes/`. It is rewritten after every ingest and by `view`.
+`builder serve` at `/artifacts/votes/`. It is rewritten after every ingest and by `browse`.
+Two views: by person, with each friend's share of picks in the twelve hue families, their
+modes and families, their thumbnails and the links that are no seat; and by score, every
+liked seat by its vote count, ties in the general rank the packs ship in.
 """
 
 from __future__ import annotations
@@ -203,14 +211,17 @@ def ingest(name: str, text: str, *, now: datetime | None = None) -> list[str]:
     if not entries:
         raise VotesError("no links in that text, so nothing was stored")
     path = store_path()
-    before = selections(events(path)).get(friend, set())
-    at = (now or datetime.now(UTC)).strftime("%Y-%m-%dT%H:%M:%SZ")
-    append({"schema": SCHEMA, "friend": friend, "at": at, "links": entries}, path)
+    rows = events(path)
+    before = selections(rows).get(friend, set())
+    fresh = unstored(entries, before, {entry["link"] for entry in missed(rows).get(friend, [])})
+    if fresh:
+        at = (now or datetime.now(UTC)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        append({"schema": SCHEMA, "friend": friend, "at": at, "links": fresh}, path)
 
     matched = [entry["key"] for entry in entries if "key" in entry]
     distinct = list(dict.fromkeys(matched))
     new = [key for key in distinct if key not in before]
-    missed = [entry for entry in entries if "key" not in entry]
+    misses = [entry for entry in entries if "key" not in entry]
     lines = [
         f"{friend}: {len(entries)} links, {len(matched)} matched a seat"
         + (f" ({len(distinct)} distinct)" if len(distinct) != len(matched) else ""),
@@ -219,15 +230,43 @@ def ingest(name: str, text: str, *, now: datetime | None = None) -> list[str]:
     ]
     if answer["ignored"]:
         lines.append(f"  {answer['ignored']} words of other text around the links, ignored")
-    for entry in missed:
+    for entry in misses:
         lines.append(f"  unmatched ({entry['reason']}): {entry['link']}")
         lines.append(f"    {entry['detail']}")
     if answer["unreadable_seats"]:
         lines.append(f"  ⚠ {len(answer['unreadable_seats'])} seats could not be read to match")
-    lines.append(f"stored in {path}")
-    view()
+    if not fresh:
+        lines.append(f"nothing new for {friend}, so nothing was appended to {path}")
+    else:
+        if len(fresh) != len(entries):
+            lines.append(f"  {len(entries) - len(fresh)} entries already stored, not appended")
+        lines.append(f"stored {len(fresh)} entries in {path}")
+    browse()
     lines.append(f"page: {served_url()} (under `python -m builder serve`)")
     return lines
+
+
+def unstored(entries: list[dict], keys: set[str], links: set[str]) -> list[dict]:
+    """The entries a friend has not sent before, each once: a seat by key, a miss by link."""
+    keys, links = set(keys), set(links)
+    fresh = []
+    for entry in entries:
+        seen, mark = (keys, entry["key"]) if "key" in entry else (links, entry["link"])
+        if mark not in seen:
+            seen.add(mark)
+            fresh.append(entry)
+    return fresh
+
+
+def missed(rows: list[dict]) -> dict[str, list[dict]]:
+    """Each friend's links that matched no seat, once each by their raw text."""
+    out: dict[str, list[dict]] = {}
+    for row in rows:
+        mine = out.setdefault(row["friend"], [])
+        for entry in row["links"]:
+            if "key" not in entry and all(held["link"] != entry["link"] for held in mine):
+                mine.append(entry)
+    return {friend: entries for friend, entries in out.items() if entries}
 
 
 def status() -> list[str]:
@@ -236,13 +275,10 @@ def status() -> list[str]:
     if not rows:
         return [f"no votes yet ({path} is {'empty' if path.is_file() else 'not there'})"]
     picked = selections(rows)
-    unmatched: dict[str, int] = {}
+    unmatched = {friend: len(entries) for friend, entries in missed(rows).items()}
     sent: dict[str, int] = {}
     for row in rows:
         sent[row["friend"]] = sent.get(row["friend"], 0) + 1
-        unmatched[row["friend"]] = unmatched.get(row["friend"], 0) + sum(
-            "key" not in entry for entry in row["links"]
-        )
     general = {row["key"] for row in seat_rows() if ORDER_COLLECTION in row["collections"]}
     lines = [f"{path}: {len(rows)} events from {len(picked)} friends"]
     width = max(len(name) for name in picked)
@@ -250,7 +286,7 @@ def status() -> list[str]:
         keys = picked[friend]
         lines.append(
             f"  {friend:<{width}}  {len(keys):>4} picked, {len(keys & general):>4} in the "
-            f"general thousand, {unmatched[friend]} unmatched, {sent[friend]} events"
+            f"general thousand, {unmatched.get(friend, 0)} unmatched, {sent[friend]} events"
         )
     counted = likes(rows)
     lines.append(
@@ -334,46 +370,91 @@ def viewer_path() -> Path:
     return Path(stated) if stated is not None and stated.strip() else VIEWER
 
 
-def view() -> Path:
+def pack_order() -> tuple[dict[str, list[str]], list[str], str | None]:
+    """Which packs hold each seat, the general rank they ship in, and why not, if not.
+
+    The general pack is cut into parts next door; the page names it once. The rank is the
+    parts end to end, which the best packs are the opening of.
+    """
+    from . import packs as site_packs
+
+    why = site_packs.unaskable()
+    if why is not None:
+        return {}, [], why
+    held: dict[str, list[str]] = {}
+    rank: list[str] = []
+    for name, pack in site_packs.current().items():
+        general = name.startswith(f"{site_packs.GENERAL}-")
+        shown = site_packs.GENERAL if general else name
+        if general:
+            rank.extend(pack["keys"])
+        for key in pack["keys"]:
+            names = held.setdefault(key, [])
+            if shown not in names:
+                names.append(shown)
+    return held, rank, None
+
+
+def browse() -> Path:
     """Write the local page of everyone's picks, from the store as it stands."""
+    from .palettes import HUES
+
     rows = events()
     picked = selections(rows)
     by_key = {row["key"]: row for row in seat_rows()}
-    header = json.loads((SEATED / "gallery.jsonl").read_text(encoding="utf-8").splitlines()[0])
-    tiles = []
-    for key, row in by_key.items():
-        who = sorted(friend for friend, keys in picked.items() if key in keys)
-        if who:
-            tiles.append(
-                {
-                    "key": key,
-                    "file": row["file"],
-                    "link": row["link"],
-                    "alt": row["alt"],
-                    "palette": row["palette"],
-                    "who": who,
-                    "in": sorted(row["collections"]),
-                    "at": row["collections"].get("all", 0),
-                }
-            )
-    gone = sorted({key for keys in picked.values() for key in keys if key not in by_key})
-    missed: dict[str, list[dict]] = {}
-    for row in rows:
-        for entry in row["links"]:
-            if "key" not in entry:
-                missed.setdefault(row["friend"], []).append(entry)
+    families = match("")["families"]
+    held, rank, why = pack_order()
+    ranked = {key: at for at, key in enumerate(rank)}
+
+    def tie(key: str) -> int:
+        return ranked.get(key, len(rank) + by_key[key]["collections"].get("all", 0))
+
+    tiles = {}
+    for key in sorted({key for keys in picked.values() for key in keys if key in by_key}, key=tie):
+        row = by_key[key]
+        tiles[key] = {
+            "file": row["file"],
+            "link": row["link"],
+            "alt": row["alt"],
+            "palette": row["palette"],
+            "hue": row["hue"],
+            "mode": row["mode"],
+            "family": families.get(key, "?"),
+            "who": sorted(friend for friend, keys in picked.items() if key in keys),
+            "general": ORDER_COLLECTION in row["collections"],
+            "packs": held.get(key, []),
+            "tie": tie(key),
+        }
+    people = {}
+    for friend in sorted(set(picked) | set(missed(rows))):
+        keys = [key for key in tiles if key in picked.get(friend, set())]
+        people[friend] = {
+            "keys": keys,
+            "hues": _tally(tiles[key]["hue"] for key in keys),
+            "modes": _tally(tiles[key]["mode"] for key in keys),
+            "families": _tally(tiles[key]["family"] for key in keys),
+        }
     data = {
         "tiles": tiles,
-        "friends": sorted(picked),
-        "collections": [entry["name"] for entry in header["collections"]],
-        "missed": missed,
-        "gone": gone,
+        "people": people,
+        "missed": missed(rows),
+        "hues": list(HUES),
+        "packs_note": why,
+        "gone": sorted({key for keys in picked.values() for key in keys if key not in by_key}),
     }
     path = viewer_path()
     path.parent.mkdir(parents=True, exist_ok=True)
     blob = json.dumps(data, ensure_ascii=False).replace("</", "<\\/")
     path.write_text(PAGE.replace("__DATA__", blob), encoding="utf-8", newline=LF)
     return path
+
+
+def _tally(values) -> dict[str, int]:
+    """Counts, most first."""
+    counted: dict[str, int] = {}
+    for value in values:
+        counted[value] = counted.get(value, 0) + 1
+    return dict(sorted(counted.items(), key=lambda item: -item[1]))
 
 
 def served_url(port: int = 8000) -> str:
@@ -408,84 +489,158 @@ PAGE = """<!doctype html>
   .chip { background: #2d323b; border-radius: 10px; padding: 1px 8px; font-size: 13px; }
   .key { width: 100%; font: 12px ui-monospace, monospace; color: #9aa3b2;
     overflow-wrap: anywhere; }
-  .missed { margin-top: 32px; }
   .missed li { word-break: break-all; margin: 4px 0; }
   .why { color: var(--soft); }
+  .tabs button { font: inherit; padding: 4px 12px; border: 1px solid #c9ceda;
+    background: var(--bg); border-radius: 4px; cursor: pointer; }
+  .tabs button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+  .person { margin: 28px 0; border-top: 1px solid #dfe3ea; padding-top: 8px; }
+  .person h2 { margin: 0 0 4px; }
+  .hues { display: flex; height: 18px; border-radius: 4px; overflow: hidden; max-width: 720px;
+    margin: 6px 0; }
+  .hues span { display: block; }
+  .facts { margin: 2px 0; }
+  .facts b { font-weight: 600; }
+  .small .grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
+  .yes { color: #7fd48a; }
+  .no { color: #9aa3b2; }
 </style>
 </head>
 <body>
 <h1>Friends' votes</h1>
 <p class="why" id="summary"></p>
-<div class="bar">
+<div class="bar tabs">
+  <button id="tab-person" aria-pressed="true">By person</button>
+  <button id="tab-score" aria-pressed="false">By score</button>
   <label>Friend <select id="friend"><option value="">everyone</option></select></label>
-  <label>Collection <select id="collection"><option value="">any</option></select></label>
-  <label>Sort <select id="sort">
-    <option value="count">most liked</option><option value="page">gallery order</option>
-  </select></label>
 </div>
-<div class="grid" id="grid"></div>
-<section class="missed" id="missed"></section>
+<main id="view"></main>
 <script>
 const DATA = __DATA__;
 const IMAGES = "../../assets/images/galleries/seated-candidates/";
 const EXPLORER = "../../explorer/?";
+const SWATCH = {
+  rose: "#e8638f", red: "#d63a2f", orange: "#ef8a2c", yellow: "#e8c93a", lime: "#a6d13c",
+  green: "#3fa35a", teal: "#2a9d8f", cyan: "#3cc4dc", azure: "#3a8ee8", blue: "#3a4fd6",
+  purple: "#8a4fd0", magenta: "#cc3fb8",
+};
 const $ = (id) => document.getElementById(id);
-function option(select, value) {
-  const o = document.createElement("option");
-  o.value = o.textContent = value;
-  select.append(o);
-}
-DATA.friends.forEach((f) => option($("friend"), f));
-DATA.collections.forEach((c) => option($("collection"), c));
 function el(tag, cls, text) {
   const e = document.createElement(tag);
   if (cls) e.className = cls;
   if (text !== undefined) e.textContent = text;
   return e;
 }
-function draw() {
-  const friend = $("friend").value, collection = $("collection").value;
-  let shown = DATA.tiles.filter((t) =>
-    (!friend || t.who.includes(friend)) && (!collection || t.in.includes(collection)));
-  shown.sort((a, b) => $("sort").value === "count"
-    ? b.who.length - a.who.length || a.at - b.at : a.at - b.at);
-  $("summary").textContent = `${shown.length} of ${DATA.tiles.length} liked seats shown, ` +
-    `${DATA.friends.length} friends.` + (DATA.gone.length ?
-    ` ${DATA.gone.length} liked seats are no longer in the gallery record.` : "");
-  const grid = $("grid");
-  grid.replaceChildren(...shown.map((t) => {
-    const tile = el("div", "tile");
-    const a = el("a");
-    a.href = EXPLORER + t.link;
-    a.target = "_blank";
-    const img = el("img");
-    img.src = IMAGES + t.file;
-    img.alt = t.alt;
-    img.loading = "lazy";
-    a.append(img);
-    const meta = el("div", "meta");
-    meta.append(el("span", "count", `${t.who.length} ♥`));
-    t.who.forEach((f) => meta.append(el("span", "chip", f)));
-    meta.append(el("span", "key", `${t.key} · ${t.palette}`));
-    tile.append(a, meta);
-    return tile;
-  }));
-  const missed = $("missed");
-  missed.replaceChildren();
-  const names = Object.keys(DATA.missed).filter((f) => !friend || f === friend).sort();
-  if (names.length) missed.append(el("h2", "", "Links that matched no seat"));
-  for (const f of names) {
-    missed.append(el("h3", "", f));
-    const ul = el("ul");
-    for (const m of DATA.missed[f]) {
+const friends = Object.keys(DATA.people);
+for (const f of friends) {
+  const o = el("option", "", f);
+  o.value = f;
+  $("friend").append(o);
+}
+const seated = Object.keys(DATA.tiles);
+$("summary").textContent = `${friends.length} voters, ${seated.length} scored seats.` +
+  (DATA.packs_note ? ` No pack columns: ${DATA.packs_note}.` : "") +
+  (DATA.gone.length ? ` ${DATA.gone.length} voted seats are no longer in the record.` : "");
+
+/** A link a friend sent, as something to click: a whole URL as it is, else the explorer. */
+function hrefOf(raw) {
+  return /^https?:[/][/]/i.test(raw) ? raw : EXPLORER + raw.replace(/^[^?]*[?]/, "");
+}
+function tile(key, extra) {
+  const t = DATA.tiles[key];
+  const box = el("div", "tile");
+  const a = el("a");
+  a.href = EXPLORER + t.link;
+  a.target = "_blank";
+  const img = el("img");
+  img.src = IMAGES + t.file;
+  img.alt = t.alt;
+  img.loading = "lazy";
+  a.append(img);
+  const meta = el("div", "meta");
+  if (extra) extra(meta, t);
+  meta.append(el("span", "key", `${t.hue} · ${t.mode} · ${t.family} · ${t.palette}`));
+  box.append(a, meta);
+  return box;
+}
+function share(counts, total) {
+  return Object.entries(counts)
+    .map(([name, n]) => `${name} ${Math.round((100 * n) / total)}%`).join(", ");
+}
+function person(f) {
+  const p = DATA.people[f];
+  const sec = el("section", "person small");
+  sec.append(el("h2", "", f));
+  const total = p.keys.length;
+  const missed = DATA.missed[f] || [];
+  sec.append(el("p", "why", `${total} scored picks, ${missed.length} links that are no seat.`));
+  if (total) {
+    const bar = el("div", "hues");
+    for (const hue of DATA.hues) {
+      const n = p.hues[hue] || 0;
+      if (!n) continue;
+      const s = el("span");
+      s.style.width = `${(100 * n) / total}%`;
+      s.style.background = SWATCH[hue];
+      s.title = `${hue} ${n} of ${total}`;
+      bar.append(s);
+    }
+    sec.append(bar);
+    for (const [label, counts] of [["Color", p.hues], ["Mode", p.modes],
+      ["Family", p.families]]) {
+      const line = el("p", "facts");
+      line.append(el("b", "", `${label}: `), document.createTextNode(share(counts, total)));
+      sec.append(line);
+    }
+    const grid = el("div", "grid");
+    grid.append(...p.keys.map((key) => tile(key, (meta, t) => {
+      if (t.who.length > 1) meta.append(el("span", "count", `${t.who.length} votes`));
+    })));
+    sec.append(grid);
+  }
+  if (missed.length) {
+    sec.append(el("h3", "", "Not scored: not a seat in the published full set"));
+    const ul = el("ul", "missed");
+    for (const m of missed) {
       const li = el("li");
-      li.append(el("span", "why", `${m.reason}: `), document.createTextNode(m.link));
+      const a = el("a", "", m.link);
+      a.href = hrefOf(m.link);
+      a.target = "_blank";
+      li.append(el("span", "why", `${m.reason}: `), a);
       ul.append(li);
     }
-    missed.append(ul);
+    sec.append(ul);
+  }
+  return sec;
+}
+function byScore(friend) {
+  const keys = seated.filter((k) => !friend || DATA.tiles[k].who.includes(friend));
+  keys.sort((a, b) => DATA.tiles[b].who.length - DATA.tiles[a].who.length ||
+    DATA.tiles[a].tie - DATA.tiles[b].tie);
+  const grid = el("div", "grid");
+  grid.append(...keys.map((key) => tile(key, (meta, t) => {
+    meta.append(el("span", "count", `${t.who.length} ♥`));
+    t.who.forEach((f) => meta.append(el("span", "chip", f)));
+    meta.append(el("span", t.general ? "yes" : "no", t.general ? "n=1000" : "not in n=1000"));
+    meta.append(el("span", "key", `packs: ${t.packs.length ? t.packs.join(", ") : "none"}`));
+  })));
+  return grid;
+}
+let mode = "person";
+function draw() {
+  const friend = $("friend").value;
+  $("tab-person").setAttribute("aria-pressed", String(mode === "person"));
+  $("tab-score").setAttribute("aria-pressed", String(mode === "score"));
+  const view = $("view");
+  if (mode === "person") {
+    view.replaceChildren(...friends.filter((f) => !friend || f === friend).map(person));
+  } else {
+    view.replaceChildren(byScore(friend));
   }
 }
-["friend", "collection", "sort"].forEach((id) => $(id).addEventListener("change", draw));
+$("tab-person").addEventListener("click", () => { mode = "person"; draw(); });
+$("tab-score").addEventListener("click", () => { mode = "score"; draw(); });
+$("friend").addEventListener("change", draw);
 draw();
 </script>
 </body>

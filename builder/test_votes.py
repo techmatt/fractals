@@ -84,7 +84,34 @@ class VotesTest(unittest.TestCase):
         self.assertEqual([row["friend"] for row in rows], ["jason", "jason"])
         self.assertIn("1 new to jason, 1 already theirs", lines[1])
         self.assertEqual(votes.selections(rows), {"jason": {one["key"], two["key"]}})
+        self.assertEqual([entry["key"] for entry in rows[1]["links"]], [two["key"]])
+        self.assertIn("1 entries already stored, not appended", "\n".join(lines))
         self.assertTrue(votes.viewer_path().is_file())
+
+    def test_the_same_ingest_twice_appends_once(self):
+        one, _ = self.plain
+        text = f"{one['link']}\n{one['link']}\nv=4&f=julia&x=0.1&y=0.2&w=1"
+        votes.ingest("jason", text)
+        first = self.store.read_bytes()
+        (row,) = votes.events()
+        self.assertEqual(len(row["links"]), 2)
+        lines = votes.ingest("Jason", text)
+        self.assertEqual(self.store.read_bytes(), first)
+        self.assertIn("nothing new for jason", "\n".join(lines))
+
+    def test_browse_shows_scores_and_misses(self):
+        one, two = self.plain
+        votes.ingest("jason", f"{one['link']} v=4&f=julia&x=0.1&y=0.2&w=1")
+        votes.ingest("amanda", f"{one['link']} {two['link']}")
+        page = votes.browse().read_text(encoding="utf-8")
+        data = json.loads(page.split("const DATA = ", 1)[1].split(";\n", 1)[0])
+        self.assertEqual(data["tiles"][one["key"]]["who"], ["amanda", "jason"])
+        self.assertEqual(set(data["people"]["amanda"]["keys"]), {one["key"], two["key"]})
+        self.assertEqual(sum(data["people"]["amanda"]["hues"].values()), 2)
+        self.assertEqual(
+            [entry["reason"] for entry in data["missed"]["jason"]], ["not a wallpaper"]
+        )
+        self.assertNotIn("amanda", data["missed"])
 
     def test_a_cut_short_store_is_refused(self):
         self.store.parent.mkdir(parents=True)

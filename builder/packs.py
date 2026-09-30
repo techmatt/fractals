@@ -324,8 +324,8 @@ def _asked() -> dict:
     return json.loads(completed.stdout)
 
 
-def derive() -> list[dict]:
-    """The record, header first, as the project next door answers today."""
+def current() -> dict[str, dict]:
+    """Each pack by name, `keys` in the order it ships, as the project next door answers."""
     asked = _asked()
     built = {
         entry["pack"]: entry
@@ -343,6 +343,12 @@ def derive() -> list[dict]:
         else:
             pack = {**pack, "bytes": None}
         planned[pack["name"]] = pack
+    return planned
+
+
+def derive() -> list[dict]:
+    """The record, header first, as the project next door answers today."""
+    planned = current()
     general_parts = sorted(name for name in planned if name.startswith(f"{GENERAL}-"))
     rows = seat_rows()
     out = [

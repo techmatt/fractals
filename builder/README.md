@@ -845,7 +845,7 @@ enters this repository**, because the repository is public and a friend's name i
 ```
 python -m builder votes ingest NAME --from FILE   append one friend's links, say what matched
 python -m builder votes status                    picks per friend
-python -m builder votes view                      rewrite the local page of everyone's picks
+python -m builder votes browse                    rewrite the local page, by person and by score
 python -m builder votes export-order --out FILE   the general thousand by likes, for --order
 ```
 
@@ -856,7 +856,11 @@ python -m builder votes export-order --out FILE   the general thousand by likes,
   each link is `{link, key}` or `{link, reason, detail}` with the raw link verbatim.
   `append` is the only write, and a file that does not end in a newline is refused rather
   than repaired. A friend's selection is derived as the union of their keys, so sending a
-  link twice is one like, and a like count is a count of friends.
+  link twice is one like, and a like count is a count of friends. **An ingest is
+  idempotent per friend and link** *(votes_ingest_browse_ckpt157)*: an entry already that
+  friend's (a seat by its key, an unmatched link by its raw text) is left out of the event,
+  and a paste with nothing new appends nothing, so re-running an ingest is safe.
+  A friend is named for the person, not the list: `MattA.txt` ingests as `matt`.
 - **The match** is `votes.mjs`, which reads the paste the way the Saved tab's import does
   (`saved.js`'s `parseImport` and `queryOf`, so a Saved export file works too). It takes
   whole URLs on the site or `localhost`, `explorer/?…`, bare queries, and `go/<name>/`
@@ -866,10 +870,19 @@ python -m builder votes export-order --out FILE   the general thousand by likes,
   of the recipe, and about 1,500 gallery links gained it in gallery_tone_backfill_ckpt154.
   Everything else is exact. A link that matches nothing is stored with one of four reasons:
   `not a wallpaper`, `collection link` (Browse's grid), `deep view`, or `unparseable`.
-- **The page** is `artifacts/votes/index.html`, served by `builder serve` at
-  `/artifacts/votes/` and walked by no check. It shows a tile per liked seat with a chip
-  for each friend who liked it, sorted by likes and filterable by friend and by
-  collection, and lists the unmatched links per friend at the foot. Every ingest rewrites it.
+- **The page** is `browse`'s, `artifacts/votes/index.html`: ignored, so Pages never
+  serves it, walked by no check, and served locally by `builder serve` at
+  `/artifacts/votes/`. Every ingest rewrites it. **By person** gives each friend a hue bar
+  and their share of picks in each of the twelve hue families (`palettes.HUES`, read off
+  each seat's primary `hue`), their modes, their fractal families (as `permalink.js` parses
+  each seat's link, which `votes.mjs` reports), their thumbnails, and the links that are no
+  seat, each with its reason. **By score** is every liked seat by vote count, one vote per
+  friend per seat, with who voted, whether it is in the n=1000 set (`general`), and which
+  packs hold it. Ties go in the general rank the packs ship in, which is next door's
+  `packs.plan()` with a built zip's order winning (`packs.current()`, which the packs
+  import reads too), and seats outside the thousand follow in the `all` order. Where the
+  checkout or the full set is not configured, the page is written without pack columns
+  and says why. Every tile links into the explorer.
 - **The order** is `export-order`. It writes one recipe key a line for exactly the 1,000
   seats of `final139_general` (`seats.STAMP`), because next door's `packs.read_order`
   refuses a file that misses one. Seats are sorted by likes, and ties go in the order of

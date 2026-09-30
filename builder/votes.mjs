@@ -13,7 +13,10 @@
 //
 //   node builder/votes.mjs < ask.json
 //   ask:    {text, seats: {key: link}, go: {name: target}}
-//   answer: {links: [{link, key} | {link, reason, detail}], ignored, unreadable_seats}
+//   answer: {links: [{link, key} | {link, reason, detail}], ignored, unreadable_seats,
+//            families: {key: family}}
+//
+// `families` is each seat's fractal family as the parser reads it, which `browse` tallies.
 
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -168,9 +171,11 @@ function read(raw, byRecipe, go) {
 
 const ask = JSON.parse(readFileSync(0, "utf8"));
 const byRecipe = new Map();
+const families = {};
 const unreadable = [];
 for (const [key, seatLink] of Object.entries(ask.seats)) {
   try {
+    families[key] = link.parse(`?${seatLink}`, SHALLOW).family;
     const recipe = recipeOf(seatLink);
     // Two seats one recipe would make a vote ambiguous; the record says it never happens,
     // and this is where it would be said if it ever did.
@@ -190,5 +195,6 @@ process.stdout.write(
     links: raws.map((raw) => read(raw, byRecipe, ask.go ?? {})),
     ignored,
     unreadable_seats: unreadable,
+    families,
   }),
 );

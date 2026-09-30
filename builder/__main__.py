@@ -620,7 +620,9 @@ def _parser() -> argparse.ArgumentParser:
         "--from", dest="source", type=Path, required=True, help="a file holding the pasted links"
     )
     votes_verbs.add_parser("status", help="picks per friend")
-    votes_verbs.add_parser("view", help="rewrite the local page of everyone's picks")
+    votes_verbs.add_parser(
+        "browse", help="rewrite the local page of everyone's picks, by person and by score"
+    )
     ordered = votes_verbs.add_parser(
         "export-order", help="the general thousand by likes, for `curate packs build --order`"
     )
@@ -1713,8 +1715,8 @@ def _do_votes(options: argparse.Namespace) -> int:
         lines = votes_module.ingest(options.name, options.source.read_text(encoding="utf-8"))
     elif options.verb == "status":
         lines = votes_module.status()
-    elif options.verb == "view":
-        votes_module.view()
+    elif options.verb == "browse":
+        votes_module.browse()
         lines = [f"page: {votes_module.served_url()} (under `python -m builder serve`)"]
     else:
         lines = votes_module.export_order(options.out)
