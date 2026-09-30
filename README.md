@@ -43,6 +43,7 @@ rebuilding the engine's wasm needs a fractal-wallpapers checkout beside this one
 - `explorer/`: the explorer, its wasm modules, and the permalink format its links use
 - `atlas/`: the atlas view shared by the explorer's Atlas tab and the Fractal atlases page
 - `palettes/`: the palette library and the palette prompt
+- `deep-zoom/`: the deep zoom videos
 - `wallpaper-packs/`: the download page for the full-size packs
 - `go/`: short links into the explorer
 - `assets/`: the stylesheet, web-size images, and icons

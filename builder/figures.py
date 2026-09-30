@@ -46,13 +46,14 @@ markup carries no script for it.
 
 **A video may carry linked pictures under its player** *(start_video_links_ckpt152)*: its
 row then says `panels` and `columns` as a split figure's does, and every panel names a
-short link in `go`, a row of `go/redirects.jsonl`, which is what the picture links to.
+short link in `go`, a row of `go/redirects.jsonl`, which is what the picture links to, or
+is a blank cell held open for a picture not made yet (deep_videos_page_ckpt156).
 The register stays the one place the target is written; the row's recipe keeps the target
 each picture was drawn at, and `check`'s `go` holds the two equal, so a redirect that
 moves takes its picture out of date loudly rather than in silence.
 
 **The pictures may land before the player** *(publish_prep_ckpt154)*: a row whose panels
-are all short links and that names no `video` is a video whose player is not up yet
+are short links and that names no `video` is a video whose player is not up yet
 (`Figure.awaiting_video`). Its well holds a 16:9 place saying so, with the row's `alt`,
 and the pictures under it; naming the video later swaps the place for the player and
 touches nothing else. `deep-zoom-video` on Deep zoom is the first.
@@ -404,13 +405,15 @@ class Figure:
     def awaiting_video(self) -> bool:
         """A video figure whose pictures are made and whose player is not up yet.
 
-        Its panels are all short links, which only a video's pictures are, so the row is a
-        video's without naming one; its well holds the player's place until it does.
+        Its panels are short links, which only a video's pictures are, so the row is a
+        video's without naming one; its well holds the player's place until it does. A
+        panel may be blank where the picture it will be is not made yet (`julia3-descent`'s
+        midpoint, on Deep zoom videos), so long as one of them is a short link.
         """
         return (
             self.video is None
-            and bool(self.panels)
-            and all(panel.go is not None for panel in self.panels)
+            and any(panel.go is not None for panel in self.panels)
+            and all(panel.go is not None or panel.blank for panel in self.panels)
         )
 
     @property
@@ -924,15 +927,16 @@ def _figure(row: records.Record, identifier: str) -> Figure:
             raise records.RecordError(
                 f"{row.where}: a video figure is hosted elsewhere, and names no file or size"
             )
-        if any(panel.go is None for panel in panels):
+        if any(panel.go is None and not panel.blank for panel in panels):
             raise records.RecordError(
                 f"{row.where}: a picture under a video's player is a short link into the "
                 "explorer, and names it in go"
             )
     elif any(panel.go is not None for panel in panels) and not all(
-        panel.go is not None for panel in panels
+        panel.go is not None or panel.blank for panel in panels
     ):
-        # All of them is a video's pictures landed before its player: `awaiting_video`.
+        # All of them, or blank cells, is a video's pictures landed before its player:
+        # `awaiting_video`.
         raise records.RecordError(
             f"{row.where}: go is for the pictures under a video's player; a figure's own "
             "panel links from its record"

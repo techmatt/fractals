@@ -731,10 +731,12 @@ DEEP_SUPERSAMPLE = 2
 def _targets(named=VIDEO_LINKS) -> dict[str, str]:
     """Each short link's explorer query, as the register writes it today."""
     held = {redirect.name: redirect.query for redirect in go.load()}
-    missing = [name for name, _ in named if name not in held]
+    # A name of `None` is a blank cell, which opens nothing.
+    named = [name for name, _ in named if name is not None]
+    missing = [name for name in named if name not in held]
     if missing:
         raise StartError(f"go/redirects.jsonl has no {', '.join(missing)}")
-    return {name: held[name] for name, _ in named}
+    return {name: held[name] for name in named}
 
 
 #: The palette keys a link may spell after its map, in the order a provenance line gives them.
@@ -750,7 +752,15 @@ def _link_words(query: str) -> str:
     fields = {key: values[0] for key, values in parse_qs(query).items()}
     # A link that names no family is the contract's first, the Mandelbrot set.
     family = fields.get("f")
-    family = f"multibrot degree {family.removeprefix('multibrot')}" if family else "mandelbrot"
+    if not family:
+        family = "mandelbrot"
+    elif family.startswith("julia"):
+        family = (
+            f"julia degree {family.removeprefix('julia') or 2}, "
+            f"c = {fields['cx']} + {fields['cy']}i"
+        )
+    else:
+        family = f"multibrot degree {family.removeprefix('multibrot')}"
     shade = "".join(f", {key} {fields[key]}" for key in LINK_SHADE_KEYS if key in fields)
     return (
         f"{family}, centre {fields['x']} + {fields['y']}i, width "
@@ -773,6 +783,9 @@ def linked_pictures(identifier: str, named, under: str) -> Split:
     `deep_figures.draw_link`: the video's own fields are coloured by `builder/zoom.py`'s
     power mapping rather than by the tab's shader, so a frame of the video is not the
     picture the link opens.
+
+    A short link named `None` is a blank cell: a picture the video will have and does not
+    yet, held open at the panel's size with its label and no link.
     """
     targets = _targets(named)
     size = VIDEO_PANEL
@@ -783,9 +796,14 @@ def linked_pictures(identifier: str, named, under: str) -> Split:
         "each is what the explorer draws on arriving at its short link, whose target this "
         "row's recipe records and `check`'s go holds to go/redirects.jsonl.",
     ]
+    first = next(name for name, _ in named if name is not None)
     for index, (name, label) in enumerate(named, start=1):
+        if name is None:
+            made.append(Made(None, None, label=label, blank=size))
+            lines.append(f"{label}: blank, a cell held open with nothing drawn in it and no link.")
+            continue
         query = targets[name]
-        words = _link_words(query).replace("{map}", "colormap" if index == 1 else "palette")
+        words = _link_words(query).replace("{map}", "colormap" if name == first else "palette")
         if query.startswith("dv="):
             drawn = deep_figures.draw_link(query, *size, DEEP_SUPERSAMPLE, f"{identifier}-{name}")
             picture = drawn.path

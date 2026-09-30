@@ -1120,8 +1120,29 @@ WORDS = {
 VIDEO = "deep-zoom-video"
 VIDEO_LINKS = (("seahorse-mid", "Midway"), ("seahorse-end", "Final frame"))
 
-#: Every figure this module draws: the frames, then the video's pictures.
-IDS = (*FIGURES, VIDEO)
+#: The videos on Deep zoom videos (`deep-zoom/videos.html`), in page order, each with the
+#: pictures under its player in the same form: the short links each opens, and the player
+#: the pictures are under, in the words a provenance line gives it. The first two are the
+#: Start here and Deep zoom videos again, which their rows' `reuse_reason` says; a short
+#: link of `None` is a blank cell, a picture the video will have once its path is made
+#: (deep_videos_page_ckpt156).
+PAGE_VIDEOS = {
+    "deep-videos-double-descent": (
+        (("favicon-mid", "Midway"), ("favicon-end", "Final frame")),
+        "the double-descent player on Deep zoom videos",
+    ),
+    "deep-videos-seahorse-valley": (
+        VIDEO_LINKS,
+        "the seahorse-valley player on Deep zoom videos",
+    ),
+    "deep-videos-julia3-descent": (
+        ((None, "Midway"), ("julia3-end", "Final frame")),
+        "the degree-3 Julia player on Deep zoom videos",
+    ),
+}
+
+#: Every figure this module draws: the frames, then the videos' pictures.
+IDS = (*FIGURES, VIDEO, *PAGE_VIDEOS)
 
 #: What each figure's deep panels were drawn as, between `draw` and `keep`.
 _DRAWN: dict[str, dict[int, Drawn]] = {}
@@ -1143,6 +1164,8 @@ def draw(identifier: str) -> Split:
 
     if identifier == VIDEO:
         return start.linked_pictures(VIDEO, VIDEO_LINKS, "the Deep zoom video's player")
+    if identifier in PAGE_VIDEOS:
+        return start.linked_pictures(identifier, *PAGE_VIDEOS[identifier])
     figure = FIGURES[identifier]
     width, height = figure.size
     ss = figure.supersample
@@ -1262,7 +1285,7 @@ def keep(identifier: str) -> None:
     """Write one figure's deep rows into `article/figure-recipes.jsonl`, as it is landed."""
     from . import recipes
 
-    if identifier == VIDEO:
+    if identifier == VIDEO or identifier in PAGE_VIDEOS:
         # Its pictures are short links, and what they were drawn at is the row's recipe.
         return
     figure = FIGURES[identifier]
@@ -1282,12 +1305,13 @@ def keep(identifier: str) -> None:
 def recipe(identifier: str) -> dict:
     if identifier not in IDS:
         raise DeepFigureError(f"{identifier} is not drawn by builder.deep_figures")
-    if identifier == VIDEO:
+    if identifier == VIDEO or identifier in PAGE_VIDEOS:
         from . import start
 
+        named = VIDEO_LINKS if identifier == VIDEO else PAGE_VIDEOS[identifier][0]
         # The targets the pictures were drawn at, which the register may later move.
         return {
             "maker": f"{__name__}:draw",
-            "args": {"id": identifier, "links": start._targets(VIDEO_LINKS)},
+            "args": {"id": identifier, "links": start._targets(named)},
         }
     return {"maker": f"{__name__}:draw", "args": {"id": identifier}}

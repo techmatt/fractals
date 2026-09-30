@@ -64,6 +64,7 @@ EM_DASH = "—"
 EXTRA_PAGES = (
     "./start-here.html",
     "palettes/make-your-own.html",
+    "deep-zoom/videos.html",
     "wallpaper-packs/index.html",
     "tools-and-data/index.html",
 )

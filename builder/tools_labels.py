@@ -21,7 +21,7 @@ to be his. It also means every picture here was drawn by this engine's own rig a
 recipe the row keeps, rather than by an earlier renderer the import translated from.
 
 **Which rows is a seeded draw, frozen once it was taken** (`draw`, then `PICKS`). The
-store is append-only and grows every sitting, so re-running the draw later shuffles a
+store is append-only and grows with every round of labels, so re-running the draw later shuffles a
 bigger population and lands elsewhere; a redraw of the figure must not move its pictures.
 `PICKS` is what the draw returned on 2026-09-29, and `make` draws exactly those rows,
 refusing any that a later verdict has superseded (`renders.finished_row`) or whose rating

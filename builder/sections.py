@@ -317,7 +317,7 @@ def with_rail(page: Path, page_html: str, sections: list[Section]) -> str:
 #: sections — they hang off a section rather than taking a place in the reading order. Written
 #: down here because there is nothing to derive them from: a page's own HTML cannot say
 #: "check my rail" and be believed, and the alternative is a rail nothing re-derives.
-HANGING = ("palettes/make-your-own.html",)
+HANGING = ("palettes/make-your-own.html", "deep-zoom/videos.html")
 
 
 def hand_written(sections: list[Section]) -> list[Path]:
