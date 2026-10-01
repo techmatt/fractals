@@ -98,6 +98,14 @@ on the mark they are showing opens it, as a click does. Whether they were showin
 read at the `pointerdown`, because the browser's stand-in `mouseenter` lands before the
 click. A mouse is unchanged.
 
+**A tap on a pile of marks steps through it** *(small_followups_ckpt159)*. Marks overlap
+where the search kept places close together, as many as fourteen under one point of the
+Mandelbrot plate at 375 px, and a tap only ever reached the top one. Where the finger
+lands on more than one mark (`elementsFromPoint` at the `pointerdown`), each tap fills the
+slots from the next of them in the plate's own order, wrapping round, and goes nowhere;
+the slots open it. The mark showing wears the pointed-at size and is raised over the
+pile (`.mark-picked`), a class only a touch sets. A lone mark behaves as above.
+
 **It does not open from `file://`**, for the reasons `explorer/README.md` spells out.
 `python -m builder serve` puts this tree on localhost.
 

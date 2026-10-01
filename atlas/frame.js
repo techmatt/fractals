@@ -428,10 +428,16 @@ export async function mount(host, options = {}) {
 
   /** Which place the three slots are showing, so that a click on one knows what it is. */
   let showing = null;
+  /** The mark of a pile a finger last stepped to, which wears the pointed-at size. */
+  let picked = null;
 
   /** Fill the three slots from one place, or empty them. The boxes stay either way. */
   const show = (dot) => {
     showing = dot;
+    if (picked !== null && picked.dot !== dot) {
+      picked.node.classList.remove("mark-picked");
+      picked = null;
+    }
     for (const [name, { node, image, mark }] of slots) {
       const label = labelOf(name);
       const slot = dot === null ? undefined : dot.slots[name];
@@ -470,6 +476,7 @@ export async function mount(host, options = {}) {
   /** The mark a finger is pressing and whether the slots already showed it, or `null`. */
   let tapped = null;
   const nodes = new Map();
+  const dotOf = new Map();
   const settle = () => show(hovering);
 
   if (!navigates) {
@@ -509,12 +516,35 @@ export async function mount(host, options = {}) {
       // on a mark the slots are not showing fills them and goes nowhere; a tap on the mark
       // they are showing opens it, as a click does. Whether they were showing it is read at
       // the press, because the browser's stand-in `mouseenter` lands before the click.
+      //
+      // **And a finger cannot pick out one mark of a pile** *(small_followups_ckpt159)*.
+      // Marks overlap where the search kept places close together, and a tap lands on the
+      // top one every time. So a tap on several marks at once steps through them, in the
+      // plate's own order, one per tap: it fills the slots and goes nowhere, and the slots
+      // are what open it. A mouse never takes this path.
       node.addEventListener("pointerdown", (event) => {
-        tapped = event.pointerType === "touch" ? { dot, shown: showing === dot } : null;
+        if (event.pointerType !== "touch") {
+          tapped = null;
+          return;
+        }
+        const pile = document
+          .elementsFromPoint(event.clientX, event.clientY)
+          .filter((under) => under.parentNode === plate && dotOf.has(under))
+          .map((under) => dotOf.get(under))
+          .sort((a, b) => partition.dots.indexOf(a) - partition.dots.indexOf(b));
+        const next = pile.length > 1 ? pile[(pile.indexOf(showing) + 1) % pile.length] : null;
+        tapped = { dot, shown: showing === dot, next };
       });
       node.addEventListener("click", (event) => {
         const tap = tapped;
         tapped = null;
+        if (tap !== null && tap.dot === dot && tap.next !== null) {
+          hovering = tap.next;
+          settle();
+          picked = { dot: tap.next, node: nodes.get(tap.next) };
+          picked.node.classList.add("mark-picked");
+          return;
+        }
         if (tap !== null && tap.dot === dot && !tap.shown) {
           enter();
           return;
@@ -539,6 +569,7 @@ export async function mount(host, options = {}) {
         }
       });
       nodes.set(dot, node);
+      dotOf.set(node, dot);
       plate.appendChild(node);
     }
   };
@@ -555,6 +586,7 @@ export async function mount(host, options = {}) {
     partition = wanted;
     hovering = null;
     nodes.clear();
+    dotOf.clear();
     for (const mark of [...plate.querySelectorAll(".mark")]) mark.remove();
     relink();
     drawMarks();

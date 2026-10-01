@@ -3830,6 +3830,24 @@ byte, checked. It is not a check anything runs and it is not promised across mac
 but it is worth knowing it holds, because it is the cheapest possible answer to "is this
 artifact the source beside it".
 
+**It embeds no path of this machine's** *(small_followups_ckpt159)*. A panic location
+keeps its source file's path even with symbols stripped, and the module used to carry
+`C:\Code\fractal-wallpapers\engine\src\…` and the cargo registry under the builder's
+home. `explorer.build_wasm` now runs cargo under `--remap-path-prefix` for the sibling
+checkout, this one, and cargo's home (`explorer.remapped_paths`), so they read
+`/fractal-wallpapers\…`, `/fractal-website\…` and `/cargo\…`, and the standard library's
+are `/rustc/<hash>/` already. **That is not yet a module independent of where it was
+built**, and the difference was measured: the same commits copied under another parent
+directory build a module of the same length that differs in 28,295 bytes, read as
+function order and the call indices that follow it. Cargo hashes a path dependency outside the workspace by its absolute
+location into that crate's `-C metadata` (`fractal_engine`'s hash moves with the
+checkout; `serde_json`'s, off the registry, does not), the symbol names follow it, and
+LTO lays the functions out by them. No rustc flag reaches it. Two checkouts at the same
+path on different machines or under different users now agree; two paths do not.
+`CARGO_ENCODED_RUSTFLAGS` replaces whatever rustflags the shell exported, deliberately.
+CI's `crates` job builds without the remaps, so its hash still differs from the committed
+one, as it always has.
+
 That is also why **`generic_loop` is a bare `--cfg` and not a cargo feature**. A feature
 enters the crate's metadata hash and the module stops reproducing; a `--cfg` the default
 build never sets leaves it exactly where it was. It exists for `bench/families.mjs`,

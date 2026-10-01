@@ -416,6 +416,10 @@ class Figure:
     #: A video figure's YouTube id; `None` for anything else, and for a video whose player
     #: is not up yet (`awaiting_video`).
     video: str | None = None
+    #: A composited figure's narrow rendition, `(file, width, height)`: the same tiles cut
+    #: out of the sheet and labelled for a phone's column (`sheets.NARROW_WIDTH`), which
+    #: `site.css` shows in the sheet's place below its breakpoint. `None` for most figures.
+    narrow: tuple[str, int, int] | None = None
 
     @property
     def awaiting_video(self) -> bool:
@@ -553,7 +557,11 @@ class Figure:
             )
         if self.pending or self.embedded:
             return ()
-        return ((self.file, self.path, self.width, self.height),)
+        shipped = ((self.file, self.path, self.width, self.height),)
+        if self.narrow is not None:
+            file, width, height = self.narrow
+            shipped += ((file, FIGURE_IMAGES_DIR / file, width, height),)
+        return shipped
 
 
 def page_name(path) -> str:
@@ -691,10 +699,21 @@ def _well(figure: Figure, opened: dict[str, str]) -> str:
             f"{text(figure.alt)}</p>"
         )
     lazy = "" if leads_its_page(figure) else ' loading="lazy"'
+    # A narrow rendition is a second picture of the same figure, and the stylesheet shows
+    # exactly one of the two: a hidden lazy image is never fetched, so a phone loads the
+    # narrow sheet and nothing else does.
+    wide = "" if figure.narrow is None else ' class="figure-wide"'
     picture = (
-        f'<img src="{attribute(figure.src)}" width="{figure.width}" '
+        f'<img{wide} src="{attribute(figure.src)}" width="{figure.width}" '
         f'height="{figure.height}" alt="{attribute(figure.alt)}"{lazy}>'
     )
+    if figure.narrow is not None:
+        file, width, height = figure.narrow
+        src = relative_href(figure.page_path, FIGURE_IMAGES_DIR / file)
+        picture += (
+            f'<img class="figure-narrow" src="{attribute(src)}" width="{width}" '
+            f'height="{height}" alt="{attribute(figure.alt)}"{lazy}>'
+        )
     return f"{INDENT}  {_linked(picture, opened.get(f'figure:{figure.id}'))}"
 
 
@@ -1058,6 +1077,7 @@ def _figure(row: records.Record, identifier: str) -> Figure:
             f"{row.where}: a draft figure says in note what re-bakes it — a mark on the "
             "caption that points at nothing is worse than no mark"
         )
+    narrow = _narrow(row, made and not panels and live is None and video is None)
     # A picture that is not made yet has nothing to record; a made one has no excuse.
     provenance = row.lines("provenance") if made else ()
     file, width, height = asset
@@ -1086,7 +1106,29 @@ def _figure(row: records.Record, identifier: str) -> Figure:
         columns=columns,
         live=live,
         video=video,
+        narrow=narrow,
     )
+
+
+def _narrow(row: records.Record, composited: bool) -> tuple[str, int, int] | None:
+    """A row's narrow rendition, held to being one file and its size on a made sheet."""
+    narrow = row.optional_mapping("narrow")
+    if narrow is None:
+        return None
+    if not composited:
+        raise records.RecordError(
+            f"{row.where}: narrow is a composited sheet's second rendition — a split, live, "
+            "video or unmade figure has none"
+        )
+    if set(narrow) != {"file", "width", "height"}:
+        raise records.RecordError(f"{row.where}: narrow is a file, a width and a height")
+    file, width, height = narrow["file"], narrow["width"], narrow["height"]
+    if not isinstance(file, str) or not file.strip():
+        raise records.RecordError(f"{row.where}: narrow's file must be a non-empty string")
+    for value in (width, height):
+        if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
+            raise records.RecordError(f"{row.where}: narrow's size must be positive integers")
+    return file, width, height
 
 
 def _caption(row: records.Record, status: str, note: str | None) -> str:
@@ -1520,6 +1562,7 @@ KEY_ORDER = (
     "file",
     "width",
     "height",
+    "narrow",
     "columns",
     "panels",
     "alt",
@@ -1546,6 +1589,7 @@ def place(
     columns: int | None = None,
     replace: bool = False,
     status: str = PLACED,
+    narrow: tuple[str, int, int] | None = None,
 ) -> Figure:
     """Turn a pending row into a made one, and heal the well its page is still showing.
 
@@ -1623,10 +1667,16 @@ def place(
         )
     row["status"] = status
     row.pop("held_reason", None)
+    # A narrow rendition is cut out of the sheet it stands in for, so a landing that does
+    # not bring a new one takes the old one off: it would be a cut of a picture that is no
+    # longer on the page.
+    row.pop("narrow", None)
     if panels is None:
         row.pop("panels", None)
         row.pop("columns", None)
         row["file"], row["width"], row["height"] = file, width, height
+        if narrow is not None:
+            row["narrow"] = dict(zip(("file", "width", "height"), narrow, strict=True))
     else:
         for key in ("file", "width", "height"):
             row.pop(key, None)
@@ -1653,6 +1703,34 @@ def place(
     links.write(links.derive())
     placed = load_all()[identifier]
     _heal(placed, was)
+    return placed
+
+
+def place_narrow(identifier: str, narrow: tuple[str, int, int]) -> Figure:
+    """Give a made, composited figure its narrow rendition, and reprint its block.
+
+    The one landing that leaves the sheet where it is: the narrow sheet is cut out of the
+    composed one already on the page, so nothing else on the row moves and the block is
+    found by its `data-figure` the way `reprint` finds it.
+    """
+    figure = load_all().get(identifier)
+    if figure is None:
+        raise records.RecordError(f"no figure {identifier!r} in the registry")
+    if figure.pending or figure.split or figure.embedded:
+        raise records.RecordError(
+            f"{identifier} is not a made, composited sheet, and only one has a narrow rendition"
+        )
+    lines = [line for line in FIGURE_REGISTRY.read_text(encoding="utf-8").splitlines() if line]
+    rows = [json.loads(line) for line in lines]
+    index = next(index for index, other in enumerate(rows) if other.get("id") == identifier)
+    row = dict(rows[index], narrow=dict(zip(("file", "width", "height"), narrow, strict=True)))
+    ordered = {key: row[key] for key in KEY_ORDER if key in row}
+    ordered.update({key: value for key, value in row.items() if key not in ordered})
+    lines[index] = json.dumps(ordered, ensure_ascii=False)
+    with FIGURE_REGISTRY.open("w", encoding="utf-8", newline=LF) as handle:
+        handle.write(LF.join(lines) + LF)
+    placed = load_all()[identifier]
+    reprint(placed)
     return placed
 
 

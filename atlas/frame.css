@@ -285,8 +285,13 @@ button.slot { margin: 0; padding: 0; font: inherit; color: inherit; cursor: poin
 .mark-mandelbrot::before { background: var(--place-mandelbrot); }
 .mark-julia::before { background: var(--place-julia); }
 
+/* The mark of a pile a finger stepped to (frame.js says how), raised so that it shows
+   over the marks it was hidden under. Only a touch ever sets the class. */
+.mark-picked { z-index: 1; }
+
 .mark:hover::before,
-.mark:focus-visible::before {
+.mark:focus-visible::before,
+.mark-picked::before {
   width: 15px;
   height: 15px;
   filter: brightness(1.3);

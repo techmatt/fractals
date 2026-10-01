@@ -81,8 +81,21 @@ LABEL_LINE_SHARE = 1.35
 LABEL_FLOOR = 14
 
 
-def label_size(tile_height: int, sheet_width: int) -> int:
+#: **A sheet's narrow rendition is a second rule, and the one exception to the first**
+#: *(small_followups_ckpt159)*. A sheet scaled to a phone's column is a third of the width
+#: it was composed for, and its labels go with it, to four or five reading pixels. Where a
+#: figure ships one, `site.css` shows it in the sheet's place below its breakpoint: the
+#: same tiles in the same arrangement, cut out of the composed sheet and composed again at
+#: `NARROW_WIDTH`, with labels at `NARROW_LABEL_SHARE` of that width — about eleven reading
+#: pixels at a 375-wide phone, nine at 320. Still one rule, and still no per-figure knob.
+NARROW_WIDTH = 640
+NARROW_LABEL_SHARE = 0.036
+
+
+def label_size(tile_height: int, sheet_width: int, *, narrow: bool = False) -> int:
     """The size the label under a tile of this shape is drawn at. The only answer."""
+    if narrow:
+        return round(NARROW_LABEL_SHARE * sheet_width)
     return max(
         round(LABEL_TILE_SHARE * tile_height),
         round(LABEL_SHEET_SHARE * sheet_width),
@@ -105,9 +118,11 @@ def fitted_size(draw, lines, tile_width: int, size: int) -> int:
     return size
 
 
-def caption_band(tile_height: int, sheet_width: int, lines: int = 1) -> int:
+def caption_band(
+    tile_height: int, sheet_width: int, lines: int = 1, *, narrow: bool = False
+) -> int:
     """How much room that label needs under the tile, for a caller laying out around it."""
-    size = label_size(tile_height, sheet_width)
+    size = label_size(tile_height, sheet_width, narrow=narrow)
     return round(size * (LABEL_GAP_SHARE + lines * LABEL_LINE_SHARE))
 
 
@@ -127,6 +142,7 @@ def tile_label(
     lead=WELL_INK,
     inks=None,
     semibold_lead: bool = False,
+    narrow: bool = False,
 ) -> None:
     """The label under one tile: centred on it, sized by the rule above.
 
@@ -141,7 +157,7 @@ def tile_label(
         lines = [lines]
     x, y = origin
     tile_width, tile_height = tile
-    size = label_size(tile_height, sheet_width)
+    size = label_size(tile_height, sheet_width, narrow=narrow)
     step = round(size * LABEL_LINE_SHARE)
     top = y + tile_height + round(size * LABEL_GAP_SHARE)
     size = fitted_size(draw, lines, tile_width, size)

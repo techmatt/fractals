@@ -333,6 +333,12 @@ def _parser() -> argparse.ArgumentParser:
         action="store_true",
         help="land the redraw over a figure that is already made, page and row together",
     )
+    named.add_argument(
+        "--narrow",
+        action="store_true",
+        help="cut each per-mode figure's narrow rendition out of its composed sheet and land "
+        "it, drawing nothing",
+    )
 
     curated = commands.add_parser("curation", help="draw the figures of the Gallery curation page")
     curated.add_argument(
@@ -1200,6 +1206,15 @@ def _do_picks(options: argparse.Namespace) -> int:
     `sources` are rewritten as well, because for this maker the panels **are** the keys —
     a re-pick that left them behind would leave the row citing the seats it used to show.
     """
+    if options.narrow:
+        for identifier in options.id or sorted(picks_module.MODE_FIGURES):
+            if identifier not in picks_module.MODE_FIGURES:
+                print(f"{identifier} is not a per-mode figure, and has no narrow rendition")
+                return 1
+            narrow = _land_narrow(identifier)
+            figures.place_narrow(identifier, narrow)
+            print(f"  {narrow[0]}  {narrow[1]}x{narrow[2]}")
+        return 0
     for identifier in options.id or sorted(picks_module.MAKERS):
         drawn = picks_module.draw(identifier)
         if isinstance(drawn, picks_module.Split):
@@ -1225,10 +1240,19 @@ def _do_picks(options: argparse.Namespace) -> int:
             recipe=picks_module.recipe(identifier),
             sources=picks_module.sources(identifier),
             replace=options.replace,
+            narrow=_land_narrow(identifier) if identifier in picks_module.MODE_FIGURES else None,
         )
         size = destination.stat().st_size / 1024
         print(f"  {destination.name}  {width}x{height}  ({size:.0f} KB) — {placed.page}")
     return 0
+
+
+def _land_narrow(identifier: str) -> tuple[str, int, int]:
+    """Cut a per-mode figure's narrow sheet and encode it, by the one encoder."""
+    source = picks_module.narrow_pair(identifier)
+    destination = FIGURE_IMAGES_DIR / f"{source.stem}{images.FIGURE_SUFFIX}"
+    width, height = images.import_web_res(source, destination)
+    return destination.name, width, height
 
 
 def _land_split(identifier: str, drawn, maker, *, replace: bool, landing: bool) -> None:

@@ -520,6 +520,17 @@ a:hover { color: var(--ink); }
 }
 .figure img { display: block; width: 100%; height: auto; }
 
+/* A sheet with a narrow rendition carries both, and a phone's column shows the narrow one:
+   the same tiles, with labels drawn to be read at that width rather than the four or five
+   reading pixels the sheet's own come to there (`builder/sheets.py`, NARROW_WIDTH). Both
+   are lazy where the figure is, and a hidden lazy image is never fetched. 30rem is every
+   phone held upright; turned, the column is wide enough for the sheet's own labels. */
+.figure img.figure-narrow { display: none; }
+@media (max-width: 30rem) {
+  .figure img.figure-wide { display: none; }
+  .figure img.figure-narrow { display: block; }
+}
+
 /* A split figure: one picture per panel instead of several composited into one raster,
    so each opens in the explorer at its own view and each label is text rather than
    pixels. The arrangement is the composite's at the article's width, and it reflows on

@@ -666,6 +666,21 @@ and a rerun rewrote the record under pictures nobody had touched. `check` resolv
 key against the store its kind names, where the wallpapers checkout is configured, and
 says so and moves on where it is not.
 
+### A composited sheet may carry a narrow rendition
+
+**The twelve per-mode pairs on Rendering modes do** *(small_followups_ckpt159)*. Their
+labels are drawn at the tile-label rule's floor, 1.45% of a 1316-wide sheet, which a 375 px
+phone shows at about five reading pixels and a 320 at under four. A `narrow` object on the
+row — `{file, width, height}` — names a second sheet, and the derived block carries both
+pictures, `figure-wide` and `figure-narrow`; `site.css` shows the narrow one below 30rem and
+the sheet everywhere else, so the desktop page is the picture it was. The narrow sheet is
+**cut out of the composed sheet** in `artifacts/figures/`, never drawn again: the same four
+tiles in the same two-across, recomposed at `sheets.NARROW_WIDTH` (640) with labels at the
+narrow rule's 3.6% of it, which comes to 10.8 reading pixels at 375 and 8.8 at 320.
+`python -m builder picks --narrow [id ...]` cuts and lands it alone; `picks <id> --replace`
+cuts it with the redraw, and `figures.place` takes a stale one off any row a landing does
+not bring a fresh one for. `check`'s `figures` holds its file and size like the sheet's.
+
 ## A figure may name its panels by tentative-gallery ID
 
 Matt picks wallpapers off the curation browser by the short alias printed under a tile, so

@@ -110,6 +110,7 @@ import csv
 import gzip
 import hashlib
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -1393,6 +1394,40 @@ def write_catalog() -> tuple[Path, int]:
 # ------------------------------------------------------------------------------ the wasm
 
 
+def remapped_paths() -> dict[str, str]:
+    """Each absolute prefix a build of `engine-wasm` would embed, and what it is written as.
+
+    A panic location carries its source file's path, and the module keeps the location
+    strings even with symbols stripped, so an unremapped build embeds the sibling
+    checkout's path and cargo's registry under this machine's home: two checkouts of the
+    same commits at different places built different bytes. Remapping the three prefixes
+    is what makes the module a function of the source and the toolchain alone. The
+    standard library's own paths arrive as `/rustc/<hash>/` already.
+    """
+    cargo_home = Path(os.environ.get("CARGO_HOME") or Path.home() / ".cargo")
+    return {
+        str(wallpapers_root().resolve()): "/fractal-wallpapers",
+        str(SITE_ROOT.resolve()): "/fractal-website",
+        str(cargo_home.resolve()): "/cargo",
+    }
+
+
+def remapped_env() -> dict[str, str]:
+    """The environment `cargo build` runs `engine-wasm` under: the remaps, and only those.
+
+    `CARGO_ENCODED_RUSTFLAGS` rather than `RUSTFLAGS`, because a path with a space in it
+    survives the unit-separator encoding and not the whitespace one. It replaces any
+    rustflags the shell carried, deliberately: a module whose bytes depend on what
+    somebody had exported is the thing this is here to stop.
+    """
+    flags = [
+        f"--remap-path-prefix={source}={target}" for source, target in remapped_paths().items()
+    ]
+    env = {key: value for key, value in os.environ.items() if key != "RUSTFLAGS"}
+    env["CARGO_ENCODED_RUSTFLAGS"] = "\x1f".join(flags)
+    return env
+
+
 def build_wasm() -> tuple[Path, int, int]:
     """Compile the crate for wasm and copy the module in beside the page."""
     if not CRATE_DIR.is_dir():
@@ -1401,6 +1436,7 @@ def build_wasm() -> tuple[Path, int, int]:
     finished = subprocess.run(
         ["cargo", "build", "--target", WASM_TARGET, "--release"],
         cwd=CRATE_DIR,
+        env=remapped_env(),
         capture_output=True,
         text=True,
     )

@@ -1,5 +1,5 @@
 {
-  "built": "2026-09-30",
+  "built": "2026-10-01",
   "crate": "explorer/engine-wasm",
   "engine_changes": [
     "coloring::composite, coloring::modulate and direct_trap::Painter::trace are pub: visibility only, no signature moved, engine tests unmoved.",
@@ -20,9 +20,9 @@
     "link::ShallowView gains curve and link::DeepView gains scale_stated, with link::with_curve, which render-link applies to its resolved coloring: link.rs reads and writes the site's curve key and keeps a deep link's stated leveled scale, and fixtures/link-cases.json regenerates at 703 cases. link_fidelity_ckpt157's addendum was sent for the seam. Nothing this crate calls moved: 540 renders of the identity battery byte-identical before and after, engine tests 256 unmoved plus one new; this module does not call link and its bytes are unmoved by it."
   ],
   "engine_version": "0.1.0",
-  "gzip_bytes": 253447,
-  "raw_bytes": 927885,
+  "gzip_bytes": 253403,
+  "raw_bytes": 927501,
   "rustc": "1.96.0 (ac68faa20 2026-05-25)",
   "schema": 1,
-  "wallpapers_commit": "7a715c1849a60846f286d58b9aec574e71845d49"
+  "wallpapers_commit": "f0a993afb291b4f5ed8c9d49916f7be0297c86fb"
 }

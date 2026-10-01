@@ -1871,7 +1871,61 @@ def mode_pair(identifier: str) -> Drawn:
             sheet.paste(sheets.fitted(picture, size), origin)
             sheets.tile_label(draw, origin, size, word, sheet.width)
     destination = sheets.save(sheet, sheet_path(identifier))
+    narrow_pair(identifier)
     return Drawn(destination, pair_provenance(identifier, examples, size))
+
+
+#: What a pair figure's narrow rendition is called, beside the sheet it was cut from.
+NARROW_SUFFIX = "-narrow"
+
+
+def narrow_path(identifier: str) -> Path:
+    """Where a pair figure's narrow sheet is written, losslessly, beside its composite."""
+    composite = sheet_path(identifier)
+    return composite.with_name(f"{composite.stem}{NARROW_SUFFIX}.png")
+
+
+def narrow_pair(identifier: str) -> Path:
+    """The pair figure again for a phone's column: its own four tiles, labelled to be read.
+
+    **Cut out of the composed sheet, never drawn again.** The tiles are the pixels the
+    sheet in `artifacts/figures/` pasted, at the geometry `mode_pair` laid it out at, so
+    the narrow rendition cannot show a different picture from the one it stands in for;
+    it is only smaller, and the browser would have made it that small anyway. What changes
+    is the label, at `sheets.label_size`'s narrow rule, and the arrangement keeps its two
+    across, because the pair beside each other is the whole of what the figure says.
+    """
+    from PIL import Image
+
+    source = sheet_path(identifier)
+    if not source.is_file():
+        raise PickError(
+            f"{identifier} has no composed sheet at {source.as_posix()} to cut its narrow "
+            f"rendition from — `python -m builder picks {identifier}` draws it"
+        )
+    words = (SMOOTH, MODE_FIGURES[identifier])
+    size = panels(PAIR_COLUMNS)
+    caption = sheets.caption_band(size[1], SHEET_WIDTH, PAIR_LABEL_LINES)
+    across = (sheets.NARROW_WIDTH - sheets.PAD * (PAIR_COLUMNS + 1)) // PAIR_COLUMNS
+    tile = (across, round(across * size[1] / size[0]))
+    band = sheets.caption_band(tile[1], sheets.NARROW_WIDTH, PAIR_LABEL_LINES, narrow=True)
+    narrow, draw = sheets.canvas(*sheets.grid_size(tile, PAIR_COLUMNS, PAIR_ROWS, band))
+    with Image.open(source) as opened:
+        composed = opened.convert("RGB")
+    if composed.width != SHEET_WIDTH:
+        raise PickError(
+            f"{identifier}'s composed sheet is {composed.width} wide and a pair sheet is "
+            f"{SHEET_WIDTH}: it is not the layout this cuts"
+        )
+    for index in range(PAIR_COLUMNS * PAIR_ROWS):
+        left, top = sheets.panel_origin(index, size, PAIR_COLUMNS, caption)
+        cut = composed.crop((left, top, left + size[0], top + size[1]))
+        origin = sheets.panel_origin(index, tile, PAIR_COLUMNS, band)
+        narrow.paste(cut.resize(tile, Image.LANCZOS), origin)
+        sheets.tile_label(
+            draw, origin, tile, words[index % PAIR_COLUMNS], narrow.width, narrow=True
+        )
+    return sheets.save(narrow, narrow_path(identifier))
 
 
 def pair_provenance(identifier: str, examples: list[Example], size: tuple[int, int]) -> list[str]:

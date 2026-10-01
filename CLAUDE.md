@@ -491,7 +491,9 @@ What a figure is made of:
   *(Matt, 2026-08-22)*. The rule is `builder/sheets.py`'s `label_size`: the larger of a
   share of the tile's height and a share of the composed sheet's width, so that the size
   means the same thing on sheets composed at different widths. It steps down where a line
-  would run past its tile, and there is no per-figure size to pass.
+  would run past its tile, and there is no per-figure size to pass. A sheet's **narrow
+  rendition** (the per-mode pairs carry one, shown on a phone in the sheet's place) is
+  the one second rule, a share of its own width; `builder/README.md` has it.
 - **A figure may be registered before its asset exists**, with `"status": "pending"` and
   no file or size. The block it derives is a well saying what the picture will show, which
   is honest in a way an empty space or a broken image is not. `python -m builder figures`
