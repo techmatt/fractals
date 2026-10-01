@@ -466,12 +466,12 @@ What a figure is made of:
   element, no script, no second markup path. **A video is not the site's to host**: a
   registry row that says `video` names a YouTube id and derives one `youtube-nocookie.com`
   `<iframe>`, lazy and 16:9, carrying no script of the site's own, and titled by the row's
-  `alt`. Four rows carry one: `start-video` on Start here, `deep-zoom-video` on Deep zoom,
-  and two on Deep zoom videos. Under its player each carries two linked pictures: panels
+  `alt`. Five rows carry one: `start-video` on Start here, `deep-zoom-video` on Deep zoom,
+  and three on Deep zoom videos. Under its player each carries two linked pictures: panels
   that each name a short link in `go` and link through `go/`, so `go/redirects.jsonl` stays
   the one source of a target, and `check`'s `go` fails when the register moves on from the
   target a picture was drawn at. A row with those panels and no `video` yet holds a 16:9
-  *Video pending* well where the player will go (`deep-videos-julia3-descent`).
+  *Video pending* well where the player will go; none is waiting today.
 - **A figure's caption is the caption and nothing else** *(Matt, 2026-08-21)*: no credit
   saying the engine drew it, and no way into the explorer written out as prose. A gallery
   tile still carries its credit, which is where a reader meets a wallpaper without the

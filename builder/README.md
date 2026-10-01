@@ -474,8 +474,9 @@ Fractal atlases is the one live row, mounted by `atlas/embed.js`. **A row may be
 piece: no file, size, panels or link row, and a block that is one lazy
 `youtube-nocookie.com` `<iframe>` titled by the row's `alt`, which is the player's
 accessible name and so says what the zoom shows rather than repeating the video's own
-title. Four rows carry one: `start-video` on Start here, `deep-zoom-video` on Deep zoom, and
-`deep-videos-double-descent` and `deep-videos-seahorse-valley` on Deep zoom videos.
+title. Five rows carry one: `start-video` on Start here, `deep-zoom-video` on Deep zoom, and
+`deep-videos-double-descent`, `deep-videos-seahorse-valley`, and `deep-videos-julia3-descent`
+on Deep zoom videos.
 **A video may carry linked pictures under its player** *(start_video_links_ckpt152)*: its
 row then says `panels` and `columns` as a split row does, every panel names a short link
 in `go` and links to `go/<name>/index.html`, and the grid stacks when the column narrows.
@@ -486,7 +487,8 @@ of somewhere the click no longer goes. **A video whose pictures are made before 
 is up** is a row with those `go` panels and no `video` (`figures.Figure.awaiting_video`):
 its block is the same, with a 16:9 well saying *Video pending* above its row's `alt` where
 the player will go, and naming the YouTube id in `video` is the whole of putting the player
-in. `deep-videos-julia3-descent` on Deep zoom videos is the one waiting today.
+in. None is waiting today; `deep-videos-julia3-descent` was the last, and got its id
+2026-09-30.
 
 A row is `pending` because prose gets written before pictures get made, and a page that
 says what is coming beats a broken image or a silent gap; `figures` lists what is still
