@@ -237,7 +237,7 @@ Two panels, and the document itself does not scroll.
 **The bar carries the page's `<h1>`** *(pre_closeout_ckpt138, 2026-09-20)*. Every other
 page on the site opens with a masthead and this one has no room for one, so its outline
 started at `<h2>` and had no top — the only page on the site without one
-*(explorer_bug_hunt_ckpt138, finding 7)*. It reads *Explorer*, after the way back to the
+*(explorer_bug_hunt_ckpt138, finding 7)*. It reads *Mandelnaut* *(mandelnaut_name_ckpt159)*, after the way back to the
 front page and at the bar's own size: `site.css` sets an `h1` at 1.75rem serif, and
 `.studio-title` takes all of that back, because a heading that broke the bar's single line
 to satisfy an outline would be the wrong trade.

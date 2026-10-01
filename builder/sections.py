@@ -303,7 +303,7 @@ def _take_away(page: Path) -> list[str]:
 #: line at the very top of a page the reader has scrolled away from — the rail is where a
 #: reader is looking when the question "can I try this myself?" arrives.
 OFFSITE = (
-    ("explorer/index.html", "Fractal explorer"),
+    ("explorer/index.html", "Mandelnaut explorer"),
     ("https://github.com/techmatt/fractal-wallpapers", "fractal-wallpapers on GitHub"),
     ("https://github.com/techmatt/fractals", "fractals on GitHub"),
 )
