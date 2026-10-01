@@ -1288,6 +1288,20 @@ A figure that shows a location is made in two halves, and the split is deliberat
   subtrees now live on an external disk, and a path built from the checkout root and a
   string finds only the hot one.
 
+  **A pool picture resolves per file, by next door's rule** *(website_resolver_ckpt157)*.
+  `curation` stays hot, but about 560k of its candidate pictures moved one file at a time
+  to the archive's mirror, so `curation/<group>/<leg>/pictures/<file>` is answered from
+  the hot copy where there is one, then from
+  `<archive>/pool_pictures/<group>/<leg>/pictures/<file>`, and otherwise as the hot spelling, which the caller's own `is_file`
+  then refuses. Hot wins because every write lands hot. With the archive configured and
+  not there, a name the hot tier cannot answer raises `ArchiveUnreachable`, an
+  `EngineError`, rather than reading as a picture nobody made. The names (`POOL_NAME`,
+  `POOL_PICTURES_DIR`, `POOL_PICTURES_NAME`, `is_pool_picture`, `Tiers.mirror`) are
+  next door's `paths.py`, spelled the same, and every reader goes through `artifact` or
+  `rehome`, never a path built by hand. So `pool.visit_steps` raises on an attempt the
+  ledger still names whose picture neither tier holds, and redraws only what retention
+  deleted. `python -m unittest builder.test_renders` holds the rule on temporary trees.
+
   **A path handed to the engine is handed absolute.** Both `run` and `cli` shell with
   `cwd` set to the *wallpapers* checkout, because the engine finds `data/palettes`
   relative to it — so an `output`, an `--out`, a `--manifest` or an `--out-dir` that is
@@ -1487,9 +1501,9 @@ the field time, and it previews the video rather than a cheaper one:
 ```
 python -m builder descent "<link>" --name <name>
 node builder/zoom_fields.mjs --record builder/data/<name>.keyframes.json --variant preview   # probes first
-python builder/zoom.py --record builder/data/<name>.keyframes.json --variant preview video --mapping knee --knee <nu>
+python builder/zoom.py --record builder/data/<name>.keyframes.json --variant preview video      # the knee
 node builder/zoom_fields.mjs --record builder/data/<name>.keyframes.json                     # the 4K fields
-python builder/zoom.py --record builder/data/<name>.keyframes.json video --mapping knee --knee <nu>
+python builder/zoom.py --record builder/data/<name>.keyframes.json video
 ```
 
 ⚠ **The base is now the big render.** At the favicon seat's depth, `4k60`'s fields were 18 GB
@@ -1566,10 +1580,29 @@ the knee is now the engine's own rather than the table's.
 python builder/zoom.py --record builder/data/julia3-descent.keyframes.json --variant preview video --mapping knee --knee 10000 --lambda 0.254
 ```
 
+**And the knee is the code's default, not a convention** *(website_resolver_ckpt157)*.
+`--mapping` is optional on `colour`, `sheet`, `encode`, `video`, and `still`, and none is
+`zoom.py`'s `DEFAULT_MAPPING`, the knee. Its `knee` and `lambda` come from a flag, else the
+record's own `knee` mapping, else `KNEE_DEFAULTS`, which is k5000-calm: `knee = 5000`,
+`lambda = 0.157`. Its `L` and `phase` have no default, since a band's width is the record's
+choice: they come from a flag, the record's `knee` mapping, or its `absolute` at
+`lambda = 1`. A record with neither mapping (the seahorse and double-descent records, which
+predate the knee) needs `--L`, its phase then `--phase` or 0, and refuses by name without it
+rather than guess. An explicit `--mapping` still wins, and every mapping a record names
+resolves exactly as before: every record, variant, and named mapping in `data/` (42 of them)
+resolves to the same dict under the old and new `mapping_of`. The one moved path is a knee
+read off `absolute`, which now takes `lambda = 0.157` where it took 0; no committed record
+takes it. Each committed video's
+own, read off its `4k60` colour directory's `mapping.json` (log, power, knee, knee), is that
+dict to the key. `descent.py` writes no knee mapping into a new record: the defaults live
+once, in `zoom.py`, and a link that is not Absolute at `lambda = 1` leaves the knee's `L` to
+be set against the fields, as multibrot3's was, which do not exist yet when the record is
+written.
+
 **The knee is the default style for zoom videos** *(Matt; julia3_video_4k_ckpt157)*. The
 julia3 record's own `knee` mapping is the chosen cut, k5000-calm (`knee = 5000`,
-`lambda = 0.157`, the link's `L = 1870` and phase 0.091), so `--mapping knee` takes it with
-no flags, and `go/julia3-mid` and `go/julia3-end` spell the same keys. Its `4k60` variant is
+`lambda = 0.157`, the link's `L = 1870` and phase 0.091), so `zoom.py` takes it with no
+flags, and `go/julia3-mid` and `go/julia3-end` spell the same keys. Its `4k60` variant is
 the final video at the seahorse master's pacing (1.2 s a halving, 1 s and 7 s holds). Its caps
 are the measured rule's `need`, kept per frame as `rule`, with every keyframe raised to the
 explicit ceiling. The rule alone left k63 at 2,132 over a probe maximum of 2,089, which is a

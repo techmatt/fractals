@@ -40,11 +40,16 @@ each keyframe at its own width, which is what its PNG is used for (a sheet, a st
 **A schedule makes colour flow**: structure already on screen is recoloured as the width
 passes it. `knee` is the answer that does not, being one function of `nu` again.
 
+**`knee` is the default** (website_resolver_ckpt157): a run with no `--mapping` colours with
+it, at `knee = 5000` and `lambda = 0.157` (`KNEE_DEFAULTS`) unless the record's own `knee`
+mapping or a flag says otherwise. An explicit `--mapping` still wins.
+
     python builder/zoom.py stats                     nu and band widths per keyframe
     python builder/zoom.py colour --mapping log      keyframe PNGs for one mapping
     python builder/zoom.py sheet --mapping log       a contact sheet of chosen keyframes
     python builder/zoom.py encode --mapping log      composite and encode that mapping
     python builder/zoom.py video --mapping log       colour, then encode
+    python builder/zoom.py video                     the same, under the knee
 
 The encode is `ENCODE` unless the record says otherwise; `--crf` and `--preset` override it
 for one run.
@@ -75,6 +80,13 @@ MAPPINGS = ("linear", "log", "power", "absolute", "knee")
 #: video_defaults_ckpt151. The profile, the 4:2:0 and the BT.709 tags are in `encode_command`
 #: and are not a choice.
 ENCODE = {"crf": 12, "preset": "slow", "tune": "film"}
+#: The mapping a run colours with when no `--mapping` names one: the knee, the default style
+#: for zoom videos (Matt; julia3_video_4k_ckpt157), made the code's default by
+#: website_resolver_ckpt157. An explicit `--mapping` still wins.
+DEFAULT_MAPPING = "knee"
+#: The knee style's two knobs, k5000-calm, where neither a flag nor the record's own `knee`
+#: mapping sets them. Its `L` and `phase` have no default: they are the record's.
+KNEE_DEFAULTS = {"knee": 5000, "lambda": 0.157}
 
 
 #: The record this run reads: `RECORD` unless `--record` names another, such as an
@@ -146,18 +158,26 @@ def read_field(record: dict, k: int) -> np.ndarray:
 
 
 def mapping_of(record: dict, args: argparse.Namespace) -> dict:
-    """The record's defaults for one mapping, with any flag given laid over them."""
+    """The record's defaults for one mapping, with any flag given laid over them.
+
+    No `--mapping` is `DEFAULT_MAPPING`, the knee. A knee takes its `knee` and `lambda` from,
+    in order, a flag, the record's own `knee` mapping, and `KNEE_DEFAULTS`; its `L` and
+    `phase` from a flag, the record's `knee` mapping, or else its `absolute` at lambda 1. A
+    record with neither needs `--L` (its phase is then `--phase`, else 0), and refuses
+    without it. A knee read off `absolute` takes `KNEE_DEFAULTS`'s lambda, 0.157."""
     mappings = record["colour"]["mappings"]
-    if args.mapping == "knee" and "knee" not in mappings:
-        # The knee's line is the link's own colouring, so it is read off `absolute`; the
-        # Box–Cox under it starts as a log.
+    kind = args.mapping or DEFAULT_MAPPING
+    if kind == "knee" and "knee" not in mappings:
+        # The knee's line is the link's own colouring, so it is read off `absolute`; with
+        # no such line, `--L` (and `--phase`, else 0) must supply it, checked below.
         link = mappings.get("absolute")
-        if link is None or link.get("lambda", 1) != 1:
-            raise SystemExit("knee: the record needs a knee mapping, or an absolute at lambda 1")
-        chosen = {"L": link["L"], "phase": link.get("phase", 0), "lambda": 0.0}
+        if link is not None and link.get("lambda", 1) == 1:
+            chosen = {"L": link["L"], "phase": link.get("phase", 0)}
+        else:
+            chosen = {"phase": 0}
     else:
-        chosen = dict(mappings[args.mapping])
-    chosen["kind"] = args.mapping
+        chosen = dict(mappings[kind])
+    chosen["kind"] = kind
     for key, flag in (
         ("L", "L"),
         ("alpha", "alpha"),
@@ -172,17 +192,26 @@ def mapping_of(record: dict, args: argparse.Namespace) -> dict:
         laid = json.loads(args.schedule.read_text(encoding="utf-8"))
         chosen["schedule"] = laid["points"]
         chosen["schedule_name"] = laid["name"]
+    if kind == "knee":
+        if "L" not in chosen:
+            named = "knee" if args.mapping else "no --mapping is the knee, and knee"
+            raise SystemExit(
+                f"{named}: the record needs a knee mapping, or an absolute at lambda 1, "
+                "for its L and phase, or --L must give one"
+            )
+        for key, value in KNEE_DEFAULTS.items():
+            chosen.setdefault(key, value)
     chosen["palette"] = args.palette or record["palette"]
     chosen["record"] = record["name"]
     chosen["mirror"] = bool(args.mirror)
     chosen["reverse"] = bool(args.reverse)
     if not chosen["L"] or chosen["L"] <= 0:
-        raise SystemExit(f"{args.mapping}: L must be positive")
-    if args.mapping == "power" and not 0 < chosen.get("alpha", 0) < 1:
+        raise SystemExit(f"{kind}: L must be positive")
+    if kind == "power" and not 0 < chosen.get("alpha", 0) < 1:
         raise SystemExit("power: alpha must be in (0, 1)")
-    if args.mapping == "absolute" and not 0 <= chosen.get("lambda", 1) <= 1:
+    if kind == "absolute" and not 0 <= chosen.get("lambda", 1) <= 1:
         raise SystemExit("absolute: lambda must be in [0, 1]")
-    if args.mapping == "knee":
+    if kind == "knee":
         if not chosen.get("knee") or chosen["knee"] <= 0:
             raise SystemExit("knee: --knee must be positive")
         if not 0 <= chosen.get("lambda", 0) <= 1:
@@ -655,7 +684,9 @@ def main(argv: list[str] | None = None) -> None:
     sub.add_parser("stats", help="nu and band widths per keyframe")
     for name in ("colour", "sheet", "encode", "video", "still"):
         p = sub.add_parser(name)
-        p.add_argument("--mapping", choices=MAPPINGS, required=True)
+        p.add_argument(
+            "--mapping", choices=MAPPINGS, help=f"the colouring (default {DEFAULT_MAPPING})"
+        )
         p.add_argument("--L", type=float, help="the cycle length, in units of g")
         p.add_argument("--alpha", type=float, help="power only: the exponent")
         p.add_argument(

@@ -640,6 +640,17 @@ def visit_steps() -> Split:
         row["key"]: renders.artifact("curation", "depth", run, "pictures", f"{row['key']}.jpg")
         for row in shown
     }
+    # A redraw stands in only for an attempt retention deleted, which takes the ledger row
+    # and the picture together. One the ledger still names has a picture somewhere — hot,
+    # or in the archive's mirror, which `renders.artifact` reads — and not finding it is a
+    # fault to say, never a redraw to publish under the stored picture's claim.
+    lost = sorted(key for key in kept if key in stored and not stored[key].is_file())
+    if lost:
+        raise PoolError(
+            f"the candidate ledger still names {', '.join(lost)}, and neither the hot tier "
+            "nor the pool-picture mirror holds its picture. A redraw here would be published "
+            "as the stored picture the judge read; find the file, or restore it next door."
+        )
     redrawn = {row["key"]: mine_render(run, row) for row in shown}
     pictures = {key: path if (path := stored[key]).is_file() else redrawn[key] for key in stored}
     worst, mean = mine_agreement(

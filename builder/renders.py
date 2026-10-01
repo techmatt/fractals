@@ -34,6 +34,12 @@ project resolves it by, and from the same settings: that project's own `local.to
 second copy of the setting in this repo's `local.toml` — one machine, one answer to
 where its tree is, and a duplicate would be a copy free to drift.
 
+One name is finer than a top-level name: a **pool picture**,
+`curation/<group>/<leg>/pictures/<file>`, which may have moved alone to the archive's
+`pool_pictures/` mirror while `curation` stays hot. `Tiers.resolve` answers it the way
+next door does — hot copy, then mirror, then the hot spelling — and raises
+`ArchiveUnreachable` rather than answering when only the unplugged disk could.
+
 ## The cache
 
 Renders are the expensive part and compositions are the part that gets adjusted, so
@@ -71,6 +77,14 @@ HOT_ROOT_VARIABLE = "FRACTAL_WALLPAPERS_HOT_ROOT"
 ARCHIVE_ROOT_KEY = "archive_root"
 ARCHIVE_ROOT_VARIABLE = "FRACTAL_WALLPAPERS_ARCHIVE_ROOT"
 
+#: The pool's top-level name, the directory every leg keeps its candidates in, and the
+#: top-level name their archive mirror lives under — next door's `paths.POOL_NAME`,
+#: `POOL_PICTURES_DIR` and `POOL_PICTURES_NAME`, spelled the same. A name of the shape
+#: `curation/<group>/<leg>/pictures/<file>` is a pool picture; see `Tiers.resolve`.
+POOL_NAME = "curation"
+POOL_PICTURES_DIR = "pictures"
+POOL_PICTURES_NAME = "pool_pictures"
+
 ENGINE_BINARY = ("engine", "target", "release", "fractal-engine")
 
 #: The neutral map every figure that is not *about* colour is drawn in.
@@ -79,6 +93,16 @@ COLORMAP = "twilight_shifted"
 
 class EngineError(RuntimeError):
     """The engine could not be found, could not be run, or refused what it was asked."""
+
+
+class ArchiveUnreachable(EngineError):
+    """The archive is configured, absent, and a name could only be answered there.
+
+    Next door's `paths.ArchiveUnreachable`, under the same name and for the same reason:
+    "not built yet" and "on the disk you unplugged" are the same observation from here,
+    and only one of them is safe to act on. An `EngineError` too, so a caller that already
+    catches the seam's one error type catches this without being taught a second.
+    """
 
 
 # ------------------------------------------------------------------------ the settings
@@ -122,6 +146,15 @@ class Tiers:
     The unit of tiering is a top-level name, not a file: `curation` is on one disk or the
     other, whole. That is what the wallpaper project's `storage` commands move, and it is
     what makes resolution one lookup per subtree rather than one per file.
+
+    **With one exception, a pool picture**, which is answered per file. `curation` never
+    leaves the hot tier, but its candidate pictures, one file at a time, may have moved to
+    an archive mirror under a top-level name of their own:
+    `curation/<group>/<leg>/pictures/<file>` may be at
+    `pool_pictures/<group>/<leg>/pictures/<file>` instead. Records keep naming the first
+    spelling, and `resolve` answers it from the hot copy where there is one and from the
+    mirror where there is not — next door's rule, which its `storage pictures` is the only
+    thing that acts on.
     """
 
     hot: Path
@@ -153,20 +186,57 @@ class Tiers:
             return self.archive / name
         if hot_here or self.archive is None or self.archive_is_reachable:
             return self.hot / name
-        raise EngineError(
+        raise ArchiveUnreachable(
             f"{ARTIFACTS_NAME}/{name} is not in the hot tier ({self.hot}), and the archive "
             f"that could hold it — {self.archive} — is not plugged in. From here an "
             "archived subtree and one nobody has built yet look exactly alike."
         )
 
     def resolve(self, *parts) -> Path:
-        """A name inside the tree, addressed against whichever tier holds its subtree."""
-        named = [part for part in "/".join(str(part) for part in parts).split("/") if part]
+        """A name inside the tree, addressed against whichever tier holds its subtree.
+
+        A pool picture is the one name answered per file: its hot copy where there is one,
+        its mirror where there is not, and the hot spelling where neither is — what does
+        not exist yet is made where writes land, and a caller's own `is_file` says so.
+        Hot wins because every write lands hot, so a hot copy is never older than a
+        mirrored one. Raises `ArchiveUnreachable` when the hot copy is gone and the mirror
+        is on a disk that is not here.
+        """
+        named = [
+            part
+            for part in "/".join(str(part) for part in parts).replace("\\", "/").split("/")
+            if part not in ("", ".")
+        ]
         if named and named[0] == ARTIFACTS_NAME:
             named = named[1:]
         if not named:
             return self.hot
-        return self.unit(named[0]).joinpath(*named[1:])
+        here = self.unit(named[0]).joinpath(*named[1:])
+        if not is_pool_picture(named) or here.is_file():
+            return here
+        mirrored = self.mirror(named)
+        return mirrored if mirrored.is_file() else here
+
+    def mirror(self, named) -> Path | None:
+        """Where a pool picture, or a pictures directory, sits in the archive mirror.
+
+        `None` for any other name. The mirror is a top-level name like any other, so with
+        the archive unplugged and the mirror not hot this raises `ArchiveUnreachable` — the
+        point of asking is that the hot copy is gone.
+        """
+        named = [str(part) for part in named]
+        if not (len(named) in (4, 5) and named[0] == POOL_NAME and named[3] == POOL_PICTURES_DIR):
+            return None
+        return self.unit(POOL_PICTURES_NAME).joinpath(*named[1:])
+
+
+def is_pool_picture(named) -> bool:
+    """Whether a name below the tree is `curation/<group>/<leg>/pictures/<file>`.
+
+    Exactly that depth, as next door's `paths.is_pool_picture` reads it: a leg's other
+    records and every other file under `curation` are not pool pictures and have no mirror.
+    """
+    return len(named) == 5 and named[0] == POOL_NAME and named[3] == POOL_PICTURES_DIR
 
 
 def artifact(*parts) -> Path:
