@@ -25,15 +25,17 @@ for how they look, and each row's provenance says so.
 `start-pink-gallery` is the exception, and it is a list rather than a draw
 *(start_pink_gallery_ckpt155)*: `article/pink-gallery.jsonl` holds the picks Matt's
 daughter made, as the explorer links she chose them at, and then placeholder seats of the
-magenta collection. The figure takes every pick in order and fills the rest of its twelve
-cells from the placeholders, so a pick appended to the list takes the first remaining
-placeholder's cell and nothing else moves. A pick is drawn from its link and nothing else;
+magenta collection. Once the list holds more picks than cells, the registry row's recipe
+names twelve in `chosen` and the figure draws those, shuffled by the row's `seed`
+*(pink_picks_ckpt157)*; without it, the figure takes every pick in order and fills the rest
+of its twelve cells from the placeholders. A pick is drawn from its link and nothing else;
 the link lands in `article/figure-recipes.jsonl` beside the seats (`link` for a shallow
 one, `deep` for a Deep-tab one), which is what the panel's own link is read from.
 """
 
 from __future__ import annotations
 
+import hashlib
 import json
 import random
 from collections import Counter
@@ -120,6 +122,18 @@ PINK_DRAW = (
     "pick or an earlier placeholder already took. Nothing here was chosen for how it looks, "
     "and the list holds more of them than the figure draws.",
 )
+
+#: Once the list holds more picks than cells, Matt chooses twelve *(pink_picks_ckpt157)*:
+#: the registry row's recipe names them in `chosen`, each by `pick_id` of its link, and the
+#: figure draws them in list order shuffled by `seed`. A pick is named by its own link
+#: rather than by its place in the list, so nothing appended later can move a choice.
+PINK_ORDER_SEED = 20260930
+
+
+def pick_id(link: str) -> str:
+    """A pick's name: the first eight hex of its link's sha256."""
+    return hashlib.sha256(link.encode("utf-8")).hexdigest()[:8]
+
 
 #: A deep pick is drawn at the Deep figures' supersample, and a shallow one at a seat's.
 PINK_RENDER = picks_module.PANEL_RENDER
@@ -231,10 +245,34 @@ def pink_list() -> list[dict]:
     return found
 
 
+def pink_choice() -> tuple[list[str], int] | None:
+    """The twelve pick ids the registry row names and the seed they are shuffled by, if any."""
+    figure = figures_module.load_all().get(PINK)
+    args = dict(figure.recipe.args) if figure is not None and figure.recipe is not None else {}
+    if "chosen" not in args:
+        return None
+    return list(args["chosen"]), int(args["seed"])
+
+
 def pink_tiles() -> list[dict]:
-    """The twelve cells: every pick in order, then as many placeholders as are left."""
+    """The twelve cells: the chosen twelve in their seeded order, or else every pick in
+    order and then as many placeholders as are left."""
     listed = pink_list()
     chosen = [one for one in listed if one["kind"] == PICK]
+    choice = pink_choice()
+    if choice is not None:
+        named, seed = choice
+        by_id = {pick_id(one["link"]): one for one in chosen}
+        if len(by_id) != len(chosen):
+            raise StartError(f"{PINK_LIST.name}: two picks share an id")
+        missing = [one for one in named if one not in by_id]
+        if missing:
+            raise StartError(f"{PINK}'s row names {', '.join(missing)}, in no row of the list")
+        if len(set(named)) != GRID_SEATS or len(named) != GRID_SEATS:
+            raise StartError(f"{PINK}'s row names {len(named)} picks for {GRID_SEATS} cells")
+        tiles = [one for one in chosen if pick_id(one["link"]) in set(named)]
+        random.Random(seed).shuffle(tiles)
+        return tiles
     spare = [one for one in listed if one["kind"] == PLACEHOLDER]
     if len(chosen) > GRID_SEATS:
         raise StartError(f"{PINK_LIST.name} holds {len(chosen)} picks for {GRID_SEATS} cells")
@@ -273,6 +311,13 @@ def _link_family(fields: dict[str, str]) -> dict:
     name = fields.get("f", "mandelbrot")
     if name == "mandelbrot":
         return {"kind": "mandelbrot"}
+    if name == "phoenix":
+        return {
+            "kind": "phoenix",
+            "c": [fields["cx"], fields["cy"]],
+            "p": [fields["px"], fields["py"]],
+            "z0": [fields["zx"], fields["zy"]],
+        }
     for kind in ("julia", "multibrot"):
         if name.startswith(kind):
             family = {"kind": kind, "degree": int(name.removeprefix(kind) or 2)}
@@ -289,8 +334,9 @@ def _pick_line(index: int, pick: dict, how: str) -> str:
     words = family["kind"]
     if "degree" in family:
         words += f" degree {family['degree']}"
-    if "c" in family:
-        words += f", c = {family['c'][0]} + {family['c'][1]}i"
+    for key in ("c", "p", "z0"):
+        if key in family:
+            words += f", {key} = {family[key][0]} + {family[key][1]}i"
     shade = "".join(f", {key} {fields[key]}" for key in LINK_SHADE_KEYS if key in fields)
     return (
         f"panel {index}, a pick ({pick['from']}): {words}, centre {fields['x']} + "
@@ -371,11 +417,19 @@ def pink_gallery() -> Split:
         )
         lines.append(_pick_line(index, tile, how))
     _KEPT[PINK] = kept
+    choice = pink_choice()
+    fill = (
+        f"the {GRID_SEATS} picks the row's recipe names in `chosen` (Matt's choice of them, "
+        f"pink_picks_ckpt157), each by the first eight hex of its link's sha256, taken in the "
+        f"list's order and shuffled by random.Random({choice[1]})"
+        if choice is not None
+        else "every pick the list holds, in its order, then the first placeholders the cells "
+        "still need"
+    )
     head = [
         f"builder.start:pink_gallery — {GRID_SEATS} panels at {size[0]}x{size[1]}, "
-        f"{GRID_COLUMNS} across, landed one file a panel, filled in order from "
-        f"article/{PINK_LIST.name}: every pick the list holds, in its order, then the first "
-        "placeholders the cells still need. A pick is an explorer link somebody chose and is "
+        f"{GRID_COLUMNS} across, landed one file a panel, filled from "
+        f"article/{PINK_LIST.name}: {fill}. A pick is an explorer link somebody chose and is "
         "drawn from that link and nothing else, and the link is kept in "
         "article/figure-recipes.jsonl under link|<figure>#<panel> for a shallow one and "
         "deep|<figure>#<panel> for a Deep-tab one. A placeholder is a seat of the magenta "
@@ -881,8 +935,12 @@ def recipe(identifier: str) -> dict:
         # The targets the pictures were drawn at, which the register may later move.
         args = {"links": _targets()}
     elif identifier == PINK:
-        # The list is the one place the picks live; the row names it rather than copying it.
+        # The list is the one place the picks live; the row names it rather than copying it,
+        # and names which twelve it draws once there are more (read back off the row).
         args = {"list": f"article/{PINK_LIST.name}"}
+        choice = pink_choice()
+        if choice is not None:
+            args |= {"chosen": choice[0], "seed": choice[1]}
     else:
         args = {} if identifier in (WALK, FAMILIES) else _args(identifier)
     return {"maker": f"{__name__}:{MAKERS[identifier].__name__}", "args": args}

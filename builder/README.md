@@ -325,10 +325,13 @@ are seats named in `picks` on their rows, a seeded draw over the `final139_*` ge
 collection. `start-pink-gallery` is a list instead *(start_pink_gallery_ckpt155)*:
 `article/pink-gallery.jsonl` holds the picks Matt's daughter made, as explorer links, and
 then placeholder seats of the magenta collection that `start --placeholders` drew once,
-seeded. The figure takes every pick in order and fills its other cells from the
-placeholders, so **a new pick is one row appended to the list** followed by
-`python -m builder start start-pink-gallery --replace`, and it takes the first remaining
-placeholder's cell. A pick is drawn from its link alone: a shallow link by
+seeded. **The list holds more picks than cells now, so the row chooses** *(pink_picks_ckpt157)*:
+its recipe's `chosen` names twelve picks, each by the first eight hex of its link's sha256
+(`start.pick_id`), and the figure draws them in the list's order shuffled by the row's
+`seed`. A new pick is still one row appended to the list, and re-choosing is an edit to
+`chosen` followed by `python -m builder start start-pink-gallery --replace`. Without
+`chosen`, the figure takes every pick in order and fills its other cells from the
+placeholders, which are unused while the row chooses. A pick is drawn from its link alone: a shallow link by
 `fractal-engine render-link`, kept in `figure-recipes.jsonl` as a `link` row, and a
 Deep-tab link by `deep_figures.draw_link`, kept as a `deep` row; the panel names that row
 and its link is read off it, never derived. `start-modes` is two locations of the
