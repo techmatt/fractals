@@ -9,13 +9,15 @@ Python. A build is done here and reviewed in a diff.
 python -m builder build     regenerate gallery pages, the gallery index, thumbnails,
                             the contents rail and site bar every page carries, and the
                             short links under go/ from go/redirects.jsonl
-python -m builder check     twenty-nine named checks: links, page sync, contents, bar, figure
+python -m builder check     thirty-one named checks: links, page sync, contents, bar, figure
                             blocks, seat panels, landings, one location to one figure,
-                            explorer links, the atlas record, each atlas link against
+                            explorer links, the cap each seat panel's link opens
+                            at, the atlas record, each atlas link against
                             its picture, the explorer's bake, embedded links, the
                             wallpaper coloring, assets, the palette record, prose, the
                             editorial pointer, theme, banned vocabulary, em-dashes, line
-                            endings, the site's icon, display formulas, short links,
+                            endings, the site's icon, each page's description and
+                            preview tags, display formulas, short links,
                             the wallpaper packs record, both root READMEs' links,
                             no key named twice in a stored link, the Deep tab's
                             gallery and Random dives held to their tiles
@@ -470,19 +472,25 @@ Opened from disk or with scripting off, the well is what a reader gets. `atlas-l
 Fractal atlases is the one live row, mounted by `atlas/embed.js`. **A row may be a
 `video`** *(start_video_embed_ckpt152)*, the same shape with a YouTube id in place of a
 piece: no file, size, panels or link row, and a block that is one lazy
-`youtube-nocookie.com` `<iframe>` titled by the row's `alt`. `start-video` is the one.
+`youtube-nocookie.com` `<iframe>` titled by the row's `alt`, which is the player's
+accessible name and so says what the zoom shows rather than repeating the video's own
+title. Four rows carry one: `start-video` on Start here, `deep-zoom-video` on Deep zoom, and
+`deep-videos-double-descent` and `deep-videos-seahorse-valley` on Deep zoom videos.
 **A video may carry linked pictures under its player** *(start_video_links_ckpt152)*: its
 row then says `panels` and `columns` as a split row does, every panel names a short link
 in `go` and links to `go/<name>/index.html`, and the grid stacks when the column narrows.
 The register stays the one place a target is written. The row's `recipe` keeps, under
 `links`, the target each picture was drawn at, and `check`'s `go` fails when the register
 has moved on from it, so a redirect edit asks for a redraw rather than leaving a picture
-of somewhere the click no longer goes.
-Every page on this site is a draft and none of them says so; this status is
-the narrower claim, that a reader who copied a number off this picture would be copying
-something with a shelf life. Prose gets written before pictures get made, and a
-page that says what is coming beats a broken image or a silent gap; `figures` lists what
-is still owed, grouped by the page it is owed on.
+of somewhere the click no longer goes. **A video whose pictures are made before its player
+is up** is a row with those `go` panels and no `video` (`figures.Figure.awaiting_video`):
+its block is the same, with a 16:9 well saying *Video pending* above its row's `alt` where
+the player will go, and naming the YouTube id in `video` is the whole of putting the player
+in. `deep-videos-julia3-descent` on Deep zoom videos is the one waiting today.
+
+A row is `pending` because prose gets written before pictures get made, and a page that
+says what is coming beats a broken image or a silent gap; `figures` lists what is still
+owed, grouped by the page it is owed on.
 
 When the asset lands, `figures --place` does the whole of what used to be four steps with
 two numbers retyped: it imports the picture as a web-res asset, writes the file and the
@@ -507,7 +515,8 @@ comes out the same bytes. `overview-gallery-hook` is the first of these.
 **A panel says which record it is, and there are two kinds**
 *(figure_split_all_ckpt140, 2026-09-22)*. `seat` is a tentative-gallery seat,
 `<stamp>|<recipe key>`, linked from that seat's ledger recipe whole and carrying the tone
-curve the run that drew it recorded. `spec` is the engine render spec the maker drew with,
+curve the run that drew it recorded and the cap it was drawn at (`links.ledger_view` sets
+the cap from the recipe's `maxiter`, and `check`'s `caps` holds every seat panel to it). `spec` is the engine render spec the maker drew with,
 for the far commoner panel that is no seat at all: the frames on the Escape-time fractals
 page are frozen into the maker, drawn in a neutral map, at a mode the figure is *about*,
 and nothing next door is a record of them. A spec names its mode rather than writing a
@@ -605,11 +614,13 @@ and code is what runs, which is why both are kept.
 
 **Renaming a figure moves three things, and the `recipe` is not one of them.** The slug,
 the asset file, and the figure's row in `explorer/links.jsonl` all carry it: every made
-row's `file` is its id plus a suffix — all 61 of them, with no exception — and an image
+row's `file` is its id plus a suffix, and so is every split row's panel with its number
+between — 38 files and 486 panels today, with no exception — and an image
 filename is a URL a reader can land on, so the naming rule in `CLAUDE.md` reaches it
-exactly as it reaches a page slug. `gallery-release` is the worked example: it came across
+exactly as it reaches a page slug. `gallery-release` was the worked example: it came across
 from `wallpapers-release` with its asset and its link row renamed alongside it, and the
-old slug survives nowhere. What does **not** move is `recipe`, which names the function
+old slug survived nowhere; it has since left its page and the registry, its asset and
+maker with it (2026-09-30). What does **not** move is `recipe`, which names the function
 that actually ran — `palette-autolevel`'s is still `builder.palettes:autolevel_pairs`
 after the section above it stopped being called *Leveling* — because a maker is code and a
 slug is vocabulary, and holding them to the same word would rename a function every time
@@ -702,17 +713,17 @@ prose repeated it. Nothing in `check` reads this module — `locations` reads
 makes — each one a `claim` and the `source` it was checked against. It is the answer to
 "who checked this, against what?" asked of a number the article states as settled.
 
-Two figures are an exception, and they are diagrams rather than pictures of a location:
-`escape-orbit-race` and `pipeline-overview` explain a mechanism, so there
-is nothing to render and nothing outside this repository to read. Those two are
-`diagrams.DIAGRAMS`, and `diagram` draws them from `diagrams.py`, in the stylesheet's own
-colours, straight into
+One figure is an exception, and it is a diagram rather than a picture of a location:
+`escape-orbit-race` explains a mechanism, so there is nothing to render and nothing
+outside this repository to read. It is `diagrams.DIAGRAMS`, and `diagram` draws it from
+`diagrams.py`, in the stylesheet's own colours, straight into
 `assets/images/figures/`. It is deliberately a separate command from `build` and is not
 part of `check`: type is rasterized through whatever font the machine has, so two machines
-agree about the picture and not about its bytes. `overview-pipeline` looks like a third
-and is not one — it is a composed sheet with real renders in it, made by
-`builder/overview.py`, which is what its `recipe` and its `sources` say. Every other figure
-asset arrived through `import`.
+agree about the picture and not about its bytes. `pipeline-overview` was the second until it
+became real renders split into panels, drawn by `builder/pipeline.py`; its old flow PNG and
+the flow drawing went in release_polish_ckpt157. `overview-pipeline` looks like a diagram
+and is not one — it is real renders, made by `builder/overview.py`, which is what its
+`recipe` and its `sources` say. Every other figure asset arrived through `import`.
 
 **A screenshot is a figure of the site itself** *(deep_zoom_v4_place_ckpt154)*.
 `deep-dive-block` is the first: the Deep tab's Dive block. `screenshots.MAKERS` names it,
@@ -973,12 +984,14 @@ does not yet cover are `dashes`, `stamps`, `go`, `packs`, `readmes`, `repeats`, 
   root-absolute. The site is served from `/fractals/`, so a rooted href works
   locally and breaks only in production. A link to a bare directory fails too: a page
   here has to open from the filesystem, where `wallpaper-packs/` is a directory listing.
-- **pages** — the committed HTML the builder owns — `wallpaper-packs/`, and the palette
-  library page — is byte-identical to what the builder produces now, and no page under
-  `wallpaper-packs/` is unaccounted for.
+- **pages** — the committed HTML the builder owns — `wallpaper-packs/`, the palette
+  library page, and `404.html` — is byte-identical to what the builder produces now, and no
+  page under `wallpaper-packs/` is unaccounted for. `404.html` is the page Pages serves for
+  any missing address at any depth, so it alone carries a `<base>` naming `pages.SITE_URL`
+  and spells every link as a root page does (`pages.not_found_page` says why).
 - **contents** — every hand-written page carries today's rail, every prose heading carries
   the id its words give it, every article page is listed in `sections.jsonl`, and the
-  front page marks the same sections done that the registry calls written.
+  front page's typed contents list has a one-line `<h3>` entry for every section.
 - **bar** — every hand-written page carries `pages.topbar`'s site bar exactly, and so does
   every other served page that carries one.
 - **figures** — every figure block matches its registry row; every row names the page
@@ -1066,6 +1079,14 @@ does not yet cover are `dashes`, `stamps`, `go`, `packs`, `readmes`, `repeats`, 
   asked here: the permalink contract is written in JavaScript, `permalink.test.mjs` holds
   the registry to it, and a second reading of a URL contract in Python is the one thing a
   URL contract cannot survive.
+- **caps** *(release_polish_ckpt157)* — every figure panel linked from a gallery seat opens
+  at the cap that seat was drawn at, its recipe's `maxiter`: the link's own `n`, or the
+  width's depth policy where it carries none, which is asked of the contract by emitting
+  the same recipe with no cap through `emit.mjs` rather than read a second time here.
+  `links.ledger_view` once dropped the cap, so every seat panel opened at the policy, and
+  four had been drawn elsewhere. All 107 seats are in the site's recipe store and are asked
+  on any clone; one only the ledger next door holds would be a named skip without the
+  checkout, and the whole check is one without node.
 - **bake** — the explorer's two generated modules are byte for byte what a rebake here
   produces, both of them and with nothing excepted: `palettes.js` off
   `explorer/palettes.jsonl`, `catalog.js` off `explorer/modes.jsonl`, and the gradients,
@@ -1095,6 +1116,14 @@ does not yet cover are `dashes`, `stamps`, `go`, `packs`, `readmes`, `repeats`, 
   `.ico` holds 16, 32 and 48, each PNG is its own size, the manifest is what the builder
   writes, and the recipe store holds the `icon` row. Runs on a bare clone; the PNG sizes
   are the one half that wants Pillow.
+- **heads** — every page the site serves carries the description and link-preview block
+  `builder/heads.py` derives from it, between its `head-tags` markers: the page's own first
+  sentence (the first unclassed `<p>` in `<main>` outside any figure, tags out, cut near 160
+  characters at a word with an ellipsis), its `<title>`, its first figure's first picture or
+  the icon's 512-pixel PNG, and its served URL. `og:image` and `og:url` are absolute under
+  `pages.SITE_URL`, the one deliberate exception to relative links, since a crawler resolves
+  neither. The explorer has no prose paragraph and keeps its authored description, from
+  which the block reads `og:description`; any other page carrying one fails.
 - **formulas** — every display formula is a formula block (TeX on the `<div>`, one SVG
   inside with `role="img"`, a spoken reading, `currentColor` and no `<text>`), and no
   `<pre class="formula">` is left. Where node and the pinned MathJax are here, every SVG is
@@ -2001,12 +2030,10 @@ minibrots*, *Symmetry stages*, *Embedded Julia sets*, *Spirals and seahorses*,
 
 ## What refuses, on purpose
 
-Two of the makers would rather stop than hand back a picture nobody would look at twice.
+A maker would rather stop than hand back a picture nobody would look at twice.
+`diagrams.py`'s flow boxes used to refuse a line that outgrew its box; they went with the
+flow diagram (release_polish_ckpt157).
 
-- **`diagrams.py`'s flow boxes refuse a line that outgrows its box.** The wording is a
-  constant at the top of the module and the boxes are sized from the sheet, so an overrun
-  is an edit somebody made to the words — and lettering running out over the well is
-  invisible in a diff and obvious in the picture, which is the wrong way round.
 - **`images.py` raises `ImageFile.MAXBLOCK`** before it writes a JPEG. Pillow's default
   block is too small for a scanline of a wide 4:4:4 JPEG, and the encoder fails at the sheet
   sizes this site ships rather than at anything smaller anybody would have tried first. A

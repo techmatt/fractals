@@ -2908,8 +2908,9 @@ function syncShade() {
       held.box.value = text === "" ? String(shade.STRAIGHTEN.knee) : text;
       held.box.disabled = text === "";
     } else if (control.control === "number") {
-      held.box.value = text;
-      // The box keeps the number the link said; the slider sits where `shade.js` puts it.
+      // The box shows the number the link said, rounded for display (`shade.shown`); the
+      // recipe keeps it in full. The slider sits where `shade.js` puts it.
+      held.box.value = shade.shown(control.key, text);
       if (held.slider) held.slider.value = String(shade.sliderAt(control, text, travelOf(control)));
     } else {
       const said = shade.parts(text);
@@ -6425,7 +6426,7 @@ main().catch((error) => {
     location.protocol === "file:"
       ? `The explorer could not start: ${error.message ?? error}. It needs to be served over http — ` +
           "opened straight off the filesystem a browser will not load its module, its workers or its " +
-          "renderer. `python -m builder serve` puts this tree on localhost."
+          "renderer. Running python -m builder serve puts this tree on localhost."
       : `The explorer could not start: ${error.message ?? error}. Reloading the page usually fixes it.`,
   );
 });

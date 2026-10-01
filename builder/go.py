@@ -29,7 +29,7 @@ from dataclasses import dataclass
 from html import escape
 from pathlib import Path
 
-from . import icons
+from . import heads, icons
 from .paths import SITE_ROOT
 
 GO_DIR = SITE_ROOT / "go"
@@ -104,7 +104,7 @@ def load() -> list[Redirect]:
 def page(redirect: Redirect) -> str:
     """The forwarding page for one row."""
     href = escape(redirect.href, quote=True)
-    return "\n".join(
+    html = "\n".join(
         [
             "<!doctype html>",
             '<html lang="en">',
@@ -129,6 +129,9 @@ def page(redirect: Redirect) -> str:
             "",
         ]
     )
+    # Its description and preview tags are its own first sentence and the site icon, read
+    # off the page the way every other page's are.
+    return heads.with_head(redirect.path, html)
 
 
 def pages() -> dict[Path, str]:

@@ -372,10 +372,10 @@ def grid_boxes(count: int, panel: tuple[int, int], columns: int, caption: int):
 def elbow_arrow(draw, points, colour=WELL_INK_DIM, width: int = 2) -> None:
     """A run of horizontal and vertical segments, with a solid head on the last one.
 
-    The one arrow this project draws. `diagrams.py` drew it for the pipeline's loop and
-    `pool.py` draws it between the bands of `wallpapers-three-bands`, and an arrowhead
-    that differed between a diagram and a sheet of pictures would be two conventions
-    where a reader has learned one.
+    The one arrow this project draws. `diagrams.py` drew it for the pipeline's loop, a
+    diagram since retired, and `pool.py` draws it between the bands of
+    `wallpapers-three-bands`, and an arrowhead that differed between a diagram and a sheet
+    of pictures would be two conventions where a reader has learned one.
     """
     for start, end in zip(points, points[1:], strict=False):
         draw.line((*start, *end), fill=colour, width=width)

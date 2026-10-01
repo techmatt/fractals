@@ -7,6 +7,15 @@
 <link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
 <link rel="manifest" href="../assets/icons/site.webmanifest">
 <title>Rendering modes — Making Fractal Wallpapers</title>
+<!-- head-tags:start, written by builder/. Run `python -m builder build`. -->
+<meta name="description" content="Rendering fundamentals built one way of rendering a location: compute the smooth field, percentile-stretch it, and map a palette across it.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Rendering modes — Making Fractal Wallpapers">
+<meta property="og:description" content="Rendering fundamentals built one way of rendering a location: compute the smooth field, percentile-stretch it, and map a palette across it.">
+<meta property="og:url" content="https://techmatt.github.io/fractals/article/rendering-modes.html">
+<meta property="og:image" content="https://techmatt.github.io/fractals/assets/images/figures/modes-gallery-1.webp">
+<meta name="twitter:card" content="summary_large_image">
+<!-- head-tags:end -->
 <link rel="stylesheet" href="../assets/css/site.css">
 </head>
 <body>
@@ -304,7 +313,7 @@
     <p>The search for good locations (<a href="finding-good-locations.html">finding good
     locations</a>) only renders smooth. Every other mode enters in
     <a href="finding-good-wallpapers.html">finding good wallpapers</a>, when the pipeline
-    takes a found location and renders it in several modes, drawn at random from the whole roster with none repeated, so no one mode takes all of that location's attempts.</p>
+    takes a found location and renders it in several modes, drawn at random from the mined roster with none repeated, so no one mode takes all of that location's attempts.</p>
 
     <p>I search over modes rather than picking one and using it everywhere, because a mode
     that's great at one location can fail badly at the next, even when the geometry is
@@ -315,7 +324,7 @@
     starts from geometry that works. These are the judge's scores, not mine, since nobody
     has looked at three hundred thousand pictures, and the judge runs optimistic compared
     to my ratings. Even so, most modes spend most of their attempts at a one or a two, and some,
-    like curvature, need about 30 attempts to find one strong result. I keep mining until even the modes with a lower hit rate leave enough strong candidates for the galleries. The last two columns are what an attempt costs: the engine time to render
+    like direct_trap_lines, need about 25 attempts to find one strong result. I keep mining until even the modes with a lower hit rate leave enough strong candidates for the galleries. The last two columns are what an attempt costs: the engine time to render
     one candidate at the size the judge scores (640×360, supersampled 2×) and a finished
     wallpaper at full size (2560×1440, supersampled 3×).</p>
 

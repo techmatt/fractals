@@ -7,7 +7,7 @@ over unchanged inputs reports nothing.
 
 from pathlib import Path
 
-from . import galleries, go, icons, images, pages, sections
+from . import galleries, go, heads, icons, images, pages, sections
 from .paths import SITE_ROOT
 
 
@@ -97,12 +97,17 @@ def _icon_links(generated: set[Path]) -> list[str]:
     page's: a generated page gets them from its shell, and every other page, the
     explorer and the atlas frame included, gets them here, the way a hand-written page gets
     its rail. Nothing else in such a page is touched.
+
+    The description and preview tags go in by the same pass and for the same pages, after
+    the rail and the bar, which they never read: `builder.heads` derives them from the page's
+    own first sentence and first figure.
     """
     changed = []
     for path in icons.served_pages():
         if path in generated:
             continue
-        written = _write_page(path, icons.with_icons(path, sections.read_page(path)))
+        page = icons.with_icons(path, sections.read_page(path))
+        written = _write_page(path, heads.with_head(path, page))
         if written:
             changed.append(written)
     return changed

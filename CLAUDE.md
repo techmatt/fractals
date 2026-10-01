@@ -366,7 +366,10 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
 - **Relative links, always.** The site lives under a project-Pages subpath
   (`/fractals/`), so a root-absolute `/assets/...` href is broken in
   production and fine locally — the worst kind of bug. Every internal href and src is
-  relative to the page that carries it.
+  relative to the page that carries it. Two absolute URLs are deliberate, both under
+  `pages.SITE_URL`: the derived head block's `og:image` and `og:url`, which a link preview
+  resolves from no page (`builder/heads.py`), and `404.html`'s `<base>`, because Pages
+  serves that page at any depth (`pages.not_found_page`).
 - **`.gitignore` keeps its shape**: `scratch/` and `artifacts/` (runtime output),
   toolchain noise, OS junk. A tracked file inside an ignored tree is how these rules
   rot.
@@ -462,11 +465,13 @@ What a figure is made of:
   extension and sits in the **same plain `<img>` block** as everything else. No video
   element, no script, no second markup path. **A video is not the site's to host**: a
   registry row that says `video` names a YouTube id and derives one `youtube-nocookie.com`
-  `<iframe>`, lazy and 16:9, carrying no script of the site's own. `start-video` on Start
-  here is the one. Under its player it carries two linked pictures: panels that each name a
-  short link in `go` and link through `go/`, so `go/redirects.jsonl` stays the one source of
-  a target, and `check`'s `go` fails when the register moves on from the target a picture
-  was drawn at.
+  `<iframe>`, lazy and 16:9, carrying no script of the site's own, and titled by the row's
+  `alt`. Four rows carry one: `start-video` on Start here, `deep-zoom-video` on Deep zoom,
+  and two on Deep zoom videos. Under its player each carries two linked pictures: panels
+  that each name a short link in `go` and link through `go/`, so `go/redirects.jsonl` stays
+  the one source of a target, and `check`'s `go` fails when the register moves on from the
+  target a picture was drawn at. A row with those panels and no `video` yet holds a 16:9
+  *Video pending* well where the player will go (`deep-videos-julia3-descent`).
 - **A figure's caption is the caption and nothing else** *(Matt, 2026-08-21)*: no credit
   saying the engine drew it, and no way into the explorer written out as prose. A gallery
   tile still carries its credit, which is where a reader meets a wallpaper without the
@@ -556,7 +561,7 @@ installed; `explorer/README.md`'s *The test suites* says what each holds, and
 After touching placed prose, `python -m builder prose <page>` as well — see **Where prose
 comes from** above for what it holds together and why one edit has several sites.
 
-`builder check` is read-only, and it runs twenty-nine named checks. `builder/checks.py`'s
+`builder check` is read-only, and it runs thirty-one named checks. `builder/checks.py`'s
 module docstring names every one and what it holds; `builder/README.md`'s *What `check`
 checks* has most of them at more length. It also prints one note — never a failure — about
 the committed wasm module, described in `explorer/README.md`. The same commands run in CI
@@ -570,7 +575,10 @@ Nine of them want it — the next-door halves of `stamps`, `readmes`, `repeats` 
 (which needs the full set as well: `full_set_root` in `local.toml`, and there on disk),
 `library`, `bake`, `seats`, `coloring`, and the source-key half of `figures` — and without
 it each reports a **named skip**: `skipped` rather than `ok` on its own line, and counted
-in the exit summary. Pillow's absence is the same shape, for pixel sizes. Never a crash
+in the exit summary. `caps` joins them only for a seat panel whose recipe the ledger next
+door alone holds, and there is none today: all 107 are in `article/figure-recipes.jsonl`.
+Pillow's absence is the same shape, for pixel sizes, and node's for the whole of `caps`,
+which asks the permalink contract through `emit.mjs`. Never a crash
 before the other checks, and never a silent pass. The one command that needs the checkout
 on the palette library page's behalf is `python -m builder palettes --library`, which
 rewrites the record and lands any missing strip.

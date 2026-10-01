@@ -18,6 +18,7 @@
 // page calls, which is what makes "the control shows what the link says" a tested
 // property rather than a hopeful one.
 
+import { PERIOD_FIGURES, PHASE_PLACES } from "./hold.js";
 import { SHADE_KEYS, defaultShade, shadeKey } from "./permalink.js";
 import * as travel from "./period-range.js";
 
@@ -171,6 +172,22 @@ export const CONTROLS = SHADE_KEYS.map((spec) => {
  */
 export function spelling(shade, key) {
   return shadeKey(key).write(shade[key]);
+}
+
+/**
+ * **What a number box shows for a key's spelling** *(release_polish_ckpt157)*: Phase at
+ * `PHASE_PLACES` and Period at `PERIOD_FIGURES`, the precision the explorer's own fit writes
+ * them at, so that a link carrying seventeen digits of either (`go/favicon-end`) fits its box.
+ * It is the box's text and nothing else: the recipe, and every link written from it, keep the
+ * number the link said, and the box only writes back when the reader changes it. Every other
+ * key, and anything that is not a finite number, shows as it is spelled.
+ */
+export function shown(key, text) {
+  const value = Number(text);
+  if (text === "" || !Number.isFinite(value)) return text;
+  if (key === "phase") return String(Number(value.toFixed(PHASE_PLACES)));
+  if (key === "period") return String(Number(value.toPrecision(PERIOD_FIGURES)));
+  return text;
 }
 
 /**

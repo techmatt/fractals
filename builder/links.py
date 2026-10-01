@@ -1041,6 +1041,10 @@ def ledger_view(recipe: dict, *, level: dict | None = None) -> dict:
         **_frame({}, record),
         "palette": str(recipe["colormap"]),
         "shade": _shade({}, record),
+        # The cap the recipe was drawn at, as every other writer sets it: `emit` writes it
+        # as `n` only where the width's depth policy gives another, so a seat drawn at the
+        # policy's own cap is the link it always was, and one drawn elsewhere opens there.
+        "cap": recipe.get("maxiter"),
     }
     if level is not None:
         view["level"] = level

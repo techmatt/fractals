@@ -1076,7 +1076,7 @@ LIBRARY_TITLE = "All palettes"
 #: first pair is a parenthesis because the count has to stay inside the sentence that
 #: derives it, and the second is a sentence break.
 LIBRARY_LEAD = (
-    "Every palette the project ships ({palettes} of them), grouped by the color each one "
+    "Every palette the project ships ({palettes:,} of them), grouped by the color each one "
     "is dominant in: a map is read onto three fixed pictures, and the hue it puts most of "
     "a picture in is the section it sits in here. Each is drawn as a render sweeps through "
     "it, folded where it does not close on the color it opened with. So what is on the "

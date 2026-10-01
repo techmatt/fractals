@@ -9,7 +9,7 @@ check rather than a coin toss.
 import re
 from pathlib import Path
 
-from . import figures, icons, links, packs, records
+from . import figures, heads, icons, links, packs, records
 from . import palettes as palettes_module
 from . import sections as sections_module
 from .escape import attribute, text
@@ -129,7 +129,15 @@ def topbar_problems(hand_written: list[Path]) -> list[str]:
 
 
 def _shell(
-    *, page: Path, title: str, css: str, bar: str, rail: str, header: str, blocks: list[str]
+    *,
+    page: Path,
+    title: str,
+    css: str,
+    bar: str,
+    rail: str,
+    header: str,
+    blocks: list[str],
+    base: str | None = None,
 ) -> str:
     """The shape every page has: the site bar, the contents rail, the column beside it.
 
@@ -137,7 +145,7 @@ def _shell(
     here — on these pages the rail is the way back into the article.
     """
     body = "\n\n".join(blocks)
-    return (
+    html = (
         "\n".join(
             [
                 "<!doctype html>",
@@ -145,6 +153,7 @@ def _shell(
                 "<head>",
                 GENERATED_NOTICE,
                 '<meta charset="utf-8">',
+                *([f'<base href="{attribute(base)}">'] if base else []),
                 '<meta name="viewport" content="width=device-width, initial-scale=1">',
                 # **The site's icon, declared on every page** *(favicon_wire_ckpt145)*. A
                 # browser asks every origin for `/favicon.ico` unbidden, and under a
@@ -177,6 +186,9 @@ def _shell(
         )
         + "\n"
     )
+    # The description and preview tags are read off the page they describe, so they go in
+    # last, once there is a page to read them off.
+    return heads.with_head(page, html)
 
 
 def _masthead(kicker: str | None, heading: str) -> str:
@@ -336,14 +348,15 @@ def library_page(sections: list[sections_module.Section]) -> str:
     width, height = palettes_module.LIBRARY_STRIP
     article = relative_href(page, SITE_ROOT / "article" / "color-palettes.html")
     tools = relative_href(page, sections_module.TOOLS) + "#palettes"
+    own = relative_href(page, SITE_ROOT / "palettes" / "make-your-own.html")
 
     blocks = [
         NEWLINE.join(
             [
                 '  <section class="intro">',
                 f"    <p>{text(palettes_module.library_lead())}</p>",
-                "    <p>The palettes I made are free to download, under CC0, from "
-                f'<a href="{attribute(tools)}">Tools and data</a>.</p>',
+                f'    <p>The <a href="{attribute(own)}">palettes I made</a> are free to '
+                f'download, under CC0, from <a href="{attribute(tools)}">Tools and data</a>.</p>',
                 f'    <p><a href="{attribute(article)}">Back to Color palettes</a></p>',
                 "  </section>",
             ]
@@ -397,6 +410,51 @@ def _strip(held, page: Path, directory: Path, width: int, height: int) -> str:
     )
 
 
+NOT_FOUND = SITE_ROOT / "404.html"
+
+
+def not_found_page(sections: list[sections_module.Section]) -> str:
+    """The page GitHub Pages serves for any address under the site that names nothing.
+
+    Pages answers a missing path at **any depth** with this one file, unredirected, so the
+    address bar may read `/fractals/a/b/c` while the page is `404.html` from the root, and
+    every relative link it carries would resolve against `a/b/` and break. So this page,
+    and only this page, carries a `<base>` naming the served root, `SITE_URL`: the bar, the
+    rail, the stylesheet, the icons and the two links below are all spelled exactly as they
+    are on any root page — relative, from `relative_href` — and resolve against the root
+    wherever the reader landed. One absolute URL, rather than every link on the page made
+    absolute by hand. The cost is that the page opened from disk or from `serve` draws its
+    stylesheet from production, which is where it is the only page anyone sees.
+
+    No masthead and no heading: the words are the whole of the page, exactly as
+    release_polish_ckpt157 gives them, and the rail is the way back into the article the
+    way it is on a gallery page.
+    """
+    page = NOT_FOUND
+    home = relative_href(page, SITE_ROOT / index_path())
+    start = relative_href(page, sections_module.START)
+    return _shell(
+        page=page,
+        title=f"Page not found — {SITE_TITLE}",
+        css=relative_href(page, SITE_ROOT / "assets" / "css" / "site.css"),
+        bar=topbar(page),
+        rail=sections_module.block(page, sections),
+        header="",
+        blocks=[
+            NEWLINE.join(
+                [
+                    '  <section class="prose">',
+                    f"    <p>That page isn't here. Try the "
+                    f'<a href="{attribute(home)}">home page</a> or '
+                    f'<a href="{attribute(start)}">Start here</a>.</p>',
+                    "  </section>",
+                ]
+            )
+        ],
+        base=SITE_URL,
+    )
+
+
 def generated_pages(galleries: list[Gallery], sections: list[sections_module.Section]) -> dict:
     """Every page the builder owns, as {path: html}. The set `check` compares against.
 
@@ -409,4 +467,5 @@ def generated_pages(galleries: list[Gallery], sections: list[sections_module.Sec
     for gallery in galleries:
         pages[gallery_page_path(gallery)] = gallery_page(gallery, sections)
     pages[palettes_module.library_page_path()] = library_page(sections)
+    pages[NOT_FOUND] = not_found_page(sections)
     return pages

@@ -730,6 +730,26 @@ test("a slider writes what a link carries, and sits where the link's value is", 
   assert.equal(shade.spelling(shade.withKey(view.shade, "cycles", "6"), "cycles"), "6");
 });
 
+test("a box shows phase and period rounded, and the recipe and its link keep them in full", () => {
+  // go/favicon-end's own values, seventeen digits each, which overfilled their boxes.
+  const said = { phase: "0.6315789473684212", period: "2.5333333333333337" };
+  const view = parse(
+    `v=${VERSION}&p=viridis&scale=absolute&phase=${said.phase}&period=${said.period}`,
+    CONTEXT,
+  );
+  for (const key of ["phase", "period"]) {
+    assert.equal(shade.spelling(view.shade, key), said[key], `${key} keeps the link's digits`);
+  }
+  assert.equal(shade.shown("phase", said.phase), "0.6316");
+  assert.equal(shade.shown("period", said.period), "2.533");
+  // What a reader writes already fits, and shows as it is spelled.
+  assert.equal(shade.shown("phase", "0.25"), "0.25");
+  assert.equal(shade.shown("period", "1870"), "1870");
+  // Only phase and period are rounded, and a box that is not a number shows as it is.
+  assert.equal(shade.shown("lambda", "0.123456789"), "0.123456789");
+  assert.equal(shade.shown("period", ""), "");
+});
+
 test("every mode parameter has a slider, and the slider bounds the control and not the value", () => {
   const keys = new Set(Object.values(MODE_PARAMETERS).flat());
   assert.deepEqual([...keys].sort(), Object.keys(modeParams.CONTROLS).sort());

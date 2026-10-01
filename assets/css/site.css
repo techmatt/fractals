@@ -82,6 +82,10 @@
   /* The air above and below a fold's summary line, which is a control the reader clicks
      and wants a target taller than its own text. */
   --fold-pad: 0.5rem;
+  /* The shade at the edge of a prose table that scrolls inside itself: how far it reaches
+     in from the edge, and how dark it is where it starts. */
+  --scroll-shade: 1.25rem;
+  --scroll-shade-ink: color-mix(in srgb, var(--ink) 20%, transparent);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -306,6 +310,10 @@ footer > * {
 
 .figure, .images .grid { max-width: none; }
 
+/* A list item in prose may carry a file path, one token with nowhere to break, which on a
+   phone pushes the page sideways. It breaks where it must and nowhere else. */
+.prose li { overflow-wrap: anywhere; }
+
 /* A fold: something a reader may open, shut until they do. The summary is one line of
    prose between two rules, held to the measure like the paragraphs, with the browser's
    own disclosure mark; what it opens onto runs to the full column, as a figure does. It
@@ -334,6 +342,23 @@ footer > * {
   margin: 1em 0;
   border-collapse: collapse;
   font-size: 0.9375rem;
+}
+
+/* The cue that a prose table holds more than it shows: a shade at whichever edge has
+   columns past it, drawn in CSS alone. Two shades stay put at the box's edges (scroll)
+   and two covers in the paper's colour ride with the content (local); where the table
+   fits, the covers sit on the shades and nothing shows, so only a table that overflows
+   ever carries one. */
+.prose table {
+  background:
+    linear-gradient(to right, var(--ground) 50%, transparent) left center /
+      calc(var(--scroll-shade) * 2) 100% no-repeat local,
+    linear-gradient(to left, var(--ground) 50%, transparent) right center /
+      calc(var(--scroll-shade) * 2) 100% no-repeat local,
+    linear-gradient(to right, var(--scroll-shade-ink), transparent) left center /
+      var(--scroll-shade) 100% no-repeat scroll,
+    linear-gradient(to left, var(--scroll-shade-ink), transparent) right center /
+      var(--scroll-shade) 100% no-repeat scroll;
 }
 
 .prose th, .prose td {

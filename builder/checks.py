@@ -52,8 +52,8 @@ was raise, and every check after it went unrun.
   width — so a place drawn at two different zooms reads as two locations here and is a
   judgement call the record cannot make for anybody.
 - **contents** — every hand-written page carries the contents rail the builder derives,
-  every prose heading carries the id its own words give it, and the front page's contents
-  list marks the same sections done that `sections.jsonl` calls written.
+  every prose heading carries the id its own words give it, and the front page's typed
+  contents list has a one-line `<h3>` entry for every section in `sections.jsonl`.
 - **bar** — every hand-written page carries the site bar `pages.topbar` spells, and so
   does every other served page that carries one: one spelling of the bar's links, which
   `build` writes the way it writes the rail. The explorer's studio bar is its own.
@@ -120,6 +120,14 @@ was raise, and every check after it went unrun.
   builder writes, and the recipe store holds the row the set is drawn from. A page that
   declares nothing is a page a browser asks the origin root about, which under a
   project-Pages subpath is a 404 in every visitor's console.
+- **heads** — every page the site serves carries, between its `head-tags` markers, the
+  description and link-preview tags `builder.heads` derives from that page: its own first
+  sentence as `description` and `og:description`, its `<title>` as `og:title`, its first
+  figure's first picture (or the site icon) as `og:image`, and where it is served as
+  `og:url`. The last two are absolute, the one deliberate exception to relative links,
+  because a crawler resolves neither; they sit in `content`, which **links** never reads.
+  A page with a prose paragraph and an authored description beside it fails, because the
+  two would say different things about the page.
 - **formulas** — every display formula is a formula block: TeX on the `<div>`, one inline
   SVG inside it with a role, a spoken reading, `currentColor` and no `<text>`, and no
   `<pre class="formula">` left anywhere. Where node and the pinned MathJax are here, every
@@ -133,6 +141,12 @@ was raise, and every check after it went unrun.
   picker's two records are held here too: `palette-names.json` names only maps the
   explorer carries and never gives two of them one display name, and `popular.json` lists
   24 carried maps once each. A map with no display name is a printed count, not a failure.
+- **caps** — every figure panel linked from a gallery seat opens at the cap that seat was
+  drawn at: the link's own `n`, or the width policy where it carries none, asked of the
+  contract through `emit.mjs`, against the seat recipe's `maxiter`. `ledger_view` once
+  dropped the cap, so every seat panel opened at the policy whatever drew it. Seats the
+  site's recipe store holds are asked on any clone; any other is a named skip without the
+  checkout, and the whole check is one without node.
 - **bake** — the explorer's two generated modules are what a rebake produces from the
   committed rosters and the wallpaper project next door, both byte for byte, because both
   stamps are read off a record — `explorer/palettes.jsonl` and `explorer/modes.jsonl` —
@@ -185,11 +199,12 @@ was raise, and every check after it went unrun.
 
 import json
 import re
+import shutil
 import subprocess
 from dataclasses import dataclass
 from html.parser import HTMLParser
 from pathlib import Path
-from urllib.parse import unquote, urldefrag
+from urllib.parse import parse_qs, unquote, urldefrag
 
 from . import (
     agreement,
@@ -201,6 +216,7 @@ from . import (
     formulas,
     galleries,
     go,
+    heads,
     icons,
     images,
     links,
@@ -1059,6 +1075,91 @@ def endings_rows() -> list[str]:
     return [row for row in completed.stdout.split(LF) if row]
 
 
+#: Where a seat panel's link came from, as `links.jsonl`'s `from` spells it.
+_SEAT_FROM = "seat "
+
+
+def _seat_panel_links() -> dict[str, tuple[str, str]]:
+    """Every figure panel linked from a seat: `{picture id: (link, seat)}`."""
+    return {
+        identifier: (link.link, link.source[len(_SEAT_FROM) :])
+        for identifier, link in links.load_all().items()
+        if identifier.startswith("figure:")
+        and link.link is not None
+        and (link.source or "").startswith(_SEAT_FROM)
+    }
+
+
+def caps_unaskable() -> tuple[str, int] | None:
+    """Why some seat panels cannot be held to their caps here, and how many, or `None`."""
+    if shutil.which("node") is None:
+        return "node is not on PATH here", len(_seat_panel_links())
+    if figures.stores_available():
+        return None
+    stored = recipes.load_all()
+    unstored = [seat for _, seat in _seat_panel_links().values() if seat not in stored]
+    return (NO_CHECKOUT, len(unstored)) if unstored else None
+
+
+def check_caps() -> list[str]:
+    """Every seat panel's link opens at the cap its seat was drawn at.
+
+    A seat panel's link is the seat's ledger recipe whole (`links.ledger_view`), and the
+    cap is part of the recipe: since permalink v4 a link spells it as `n` wherever the
+    width's depth policy gives another, and an absent `n` means the policy. Until
+    release_polish_ckpt157 `ledger_view` dropped the cap, so every seat panel opened at the
+    policy whatever it was drawn at, and four of them were drawn elsewhere — with every
+    other check green, because nothing compared a panel link's cap with its seat's.
+
+    What a link opens at is read off the link: its own `n` where it carries one, and
+    otherwise the policy at its width, asked of the contract by emitting the same recipe
+    with no cap (`emit.mjs` answers the cap a link is drawn at, never a second reading of
+    the policy here). Seats the site's recipe store holds are asked on any clone; one only
+    the ledger next door answers is a named skip where the checkout is not configured.
+    """
+    if shutil.which("node") is None:
+        return []
+    wanted = _seat_panel_links()
+    if not figures.stores_available():
+        stored = recipes.load_all()
+        wanted = {key: value for key, value in wanted.items() if value[1] in stored}
+    if not wanted:
+        return []
+    seats_named = sorted({seat for _, seat in wanted.values()})
+    try:
+        resolved = dict(zip(seats_named, picks.resolve(seats_named), strict=True))
+    except picks.PickError as error:
+        return [f"caps: no seat panel could be held to its cap — {error}"]
+
+    problems = []
+    uncapped = {}
+    for identifier, (_, seat) in wanted.items():
+        recipe = resolved[seat].recipe
+        if recipe.get("maxiter") is None:
+            problems.append(f"links.jsonl: {identifier}'s seat {seat} records no cap")
+            continue
+        view = links.ledger_view(recipe)
+        view["cap"] = None
+        uncapped[identifier] = view
+    policies = links.emit(uncapped)
+    for identifier in uncapped:
+        link, seat = wanted[identifier]
+        drawn = int(resolved[seat].recipe["maxiter"])
+        policy = policies[identifier]
+        if not policy.get("ok"):
+            problems.append(f"links.jsonl: {identifier}: {policy['why']}")
+            continue
+        spelled = parse_qs(link).get("n")
+        opens = int(spelled[0]) if spelled else int(policy["maxiter"])
+        if opens != drawn:
+            how = f"its n={opens:,}" if spelled else f"the width policy's {opens:,}"
+            problems.append(
+                f"links.jsonl: {identifier} opens at {how}, and seat {seat} was drawn at "
+                f"cap {drawn:,} — `python -m builder links --write`"
+            )
+    return problems
+
+
 def check_deep() -> list[str]:
     """The Deep tab's gallery and Random dives, each held to its tiles (see the docstring)."""
     problems = []
@@ -1294,6 +1395,19 @@ def skips() -> tuple[Skip, ...]:
         found.append(
             Skip("packs", "the packs record against what next door answers today", unpacked)
         )
+    uncapped = caps_unaskable()
+    if uncapped is not None:
+        # Half where only the checkout is missing: every seat the site's recipe store holds
+        # is still asked. Whole without node, which every one of them is asked through.
+        why, count = uncapped
+        found.append(
+            Skip(
+                "caps",
+                f"{count} seat panel link(s) against their seats' caps",
+                why,
+                whole=shutil.which("node") is None,
+            )
+        )
     untypeset = formulas.unaskable()
     if untypeset is not None:
         # Half: the shape half reads the pages, which a clone has.
@@ -1327,6 +1441,7 @@ def run_all() -> Report:
             "landing": check_landing(),
             "locations": check_locations(),
             "explorer": check_explorer(),
+            "caps": check_caps(),
             "atlas": atlas_module.problems(),
             "agreement": agreement.problems(),
             "bake": check_bake(),
@@ -1343,6 +1458,7 @@ def run_all() -> Report:
             "dashes": dashes.sweep(),
             "endings": check_endings(),
             "icons": icons.problems(),
+            "heads": heads.problems(),
             "formulas": formulas.problems(with_renderer=formulas.unaskable() is None),
             "go": go.problems(),
             "packs": packs.problems(with_checkout=figures.stores_available()),

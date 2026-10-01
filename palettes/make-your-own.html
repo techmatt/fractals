@@ -7,6 +7,15 @@
 <link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
 <link rel="manifest" href="../assets/icons/site.webmanifest">
 <title>Make your own palettes — Making Fractal Wallpapers</title>
+<!-- head-tags:start, written by builder/. Run `python -m builder build`. -->
+<meta name="description" content="I made the 495 palettes by having Claude write them from three prompts, all checked in next to the validator: a general one, one that focuses on a single…">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Make your own palettes — Making Fractal Wallpapers">
+<meta property="og:description" content="I made the 495 palettes by having Claude write them from three prompts, all checked in next to the validator: a general one, one that focuses on a single…">
+<meta property="og:url" content="https://techmatt.github.io/fractals/palettes/make-your-own.html">
+<meta property="og:image" content="https://techmatt.github.io/fractals/assets/images/figures/palette-generator-batch.webp">
+<meta name="twitter:card" content="summary_large_image">
+<!-- head-tags:end -->
 <link rel="stylesheet" href="../assets/css/site.css">
 </head>
 <body>
@@ -62,8 +71,17 @@
 
 <main>
   <section class="prose">
-    <p>I had Claude write the 495 authored palettes in the library from a technical
-    description of the problem. The palette prompt is short, and it's specific: it says
+    <p>I made the 495 palettes by having Claude write them from three prompts, all checked
+    in next to the validator:
+    <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/data/palette_authoring/generator_prompt.md">a general one</a>,
+    <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/data/palette_authoring/generator_prompt_focus_color.md">one that focuses on a single color</a>,
+    and
+    <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/data/palette_authoring/generator_prompt_specific_palettes.md">one that asks for specific named palettes</a>.
+    They are not as beautiful as the palettes fractal artists tailor by hand to one
+    particular location, but they serve this project well, where a palette has to work
+    across thousands of places.</p>
+
+    <p>The palette prompt is short, and it's specific: it says
     what "dramatic" means in measurable terms, spreads each batch across a set of
     structural templates so the batch isn't twenty versions of one idea, and ends with a
     schema. Paste it into a Claude conversation, set the four lines at the top (batch
@@ -73,13 +91,14 @@
     validator on the result. It checks the mechanical rules: the loop closes, the number
     of stops fits the complexity band, the bright band is feathered rather than cut, a
     hard edge carries only a small step, a big hue jump routes through black or white.
-    Once a batch validates, you can drop it into data/palettes/ and its palettes work
-    like any others.</p>
+    To add a batch, put it in <code>data/palettes/batches/&lt;name&gt;/</code> and run
+    <code>fractal-wallpapers palettes ingest --drop &lt;name&gt;</code>. Only then does it
+    become palettes the pipeline can use.</p>
 
     <ul>
-      <li>The palette prompt: data/palette_authoring/generator_prompt.md (v3.1)</li>
-      <li>The validator: data/palette_authoring/validate_palettes.py</li>
-      <li>What each authored palette was made from: data/palettes/provenance.jsonl</li>
+      <li>The palette prompt: <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/data/palette_authoring/generator_prompt.md">data/palette_authoring/generator_prompt.md</a> (v3.1)</li>
+      <li>The validator: <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/data/palette_authoring/validate_palettes.py">data/palette_authoring/validate_palettes.py</a></li>
+      <li>What each authored palette was made from: <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/data/palettes/provenance.jsonl">data/palettes/provenance.jsonl</a></li>
     </ul>
 
     <p>Mood families in the prompt: fire-ice · jewel-earth · atmospheric-deep · antique-faded

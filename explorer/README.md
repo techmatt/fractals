@@ -142,9 +142,15 @@ index.html            the page, and the inline script that answers for a module
 explorer.css          its own stylesheet, on top of the site's
 explorer.js           what a reader touches: drag, wheel, keys, pickers, copy link
 gallery.js            the left panel's grid: a staged gallery's record, filtered
+browse.js             Browse: the same gallery across the whole window, the viewer put away
 screensaver.js        the gallery's pictures one after another, full page, drawn live
+screensaver-home.webp the Mandelbrot set at its home view, the screensaver's last stand-in
 picker.js             the palette tab strip, and a gradient drawn per row
+hues.js               the twelve hue families in order, and a colour to show each one as
 shade.js              the recipe's controls, apart from the boxes they are drawn in
+hold.js               Hold look: Phase re-solved so a Lambda or Period move keeps the colour
+fit.js                Fit: the absolute scale's Lambda, Period and Phase, sized to the frame
+aliasing.js           New coloring's aliasing guard: a period the picture cannot show, lengthened
 period-range.js       the Period slider's travel, measured off the frame on the screen
 julia-preview.js      the Julia set of the point under the pointer, and the click into it
 download.js           the same render at a wallpaper's size, and what caps it
@@ -162,8 +168,12 @@ deep-gallery/         a tile a row, `python -m builder deep-gallery thumbs`
 random-dives.js       the Deep tab's Random dives: the record read, shuffled once a page, tiled
 random-dives.jsonl    its record: a deep link a row, `python -m builder random-dives`
 random-dives/         a tile a row, named as deep-gallery/'s are, by the same command
+dives.js              the Dive block's rules, with no page in them, and the list results collect in
+dive-results.js       the Deep tab's Dive results: this session's landings, newest first
+dive-plates/          each dive plane's atlas plate made small, `builder atlas --dive-plates`
 phoenix.js            the Phoenix tab: the Phoenix plane drawn live, and a click into its sets
-phoenix-points.json   the tab's starting points and its one style, `builder phoenix-points`; tiles in phoenix-points/
+phoenix-points.json   the tab's starting points and its one style, `builder phoenix-points`
+phoenix-points/       its tiles, by the same command
 paged-inflection/     PAGED: the Inflection tab, out of the working set — see below
 undo.js               the way back: the pictures shown, and the cursor into them
 outermost.js          how far out a gesture may zoom, and how the frame settles onto home
@@ -177,21 +187,27 @@ resize.mjs            PIL's bicubic resize, ported byte for byte: what a judge r
 judges/               the render judge and the ORT runtime, `builder walk`
 permalink.js          the link contract — parse, validate, canonicalize
 params.js             a mode parameter's control: its word, its slider's travel, the mapping
-permalink.test.mjs    58 tests, `node --test explorer/permalink.test.mjs`
+permalink.test.mjs    68 tests, `node --test explorer/permalink.test.mjs`
 screensaver.test.mjs  9 tests: the intervals, the samples, the overrun rule, the correction, the bag,
                       the stand-in order
-bands.test.mjs        3 tests: the pool cuts the frame, never what is in it
-level.test.mjs        7 tests: the module's tone measurement, and a derived curve replays
+bands.test.mjs        9 tests: the pool cuts the frame, never what is in it
+level.test.mjs        11 tests: the module's tone measurement, and a derived curve replays
 derive.test.mjs       6 tests: a derived weight replays, a derived opacity lands where it says
+stops.test.mjs        3 tests: the blob's reader held to the planar layout the bake writes
 saved.test.mjs        8 tests: a bad stored value is an empty list, one link is one entry, the cap
-undo.test.mjs         8 tests: one action is one entry, a step back keeps what is ahead, the cap
+undo.test.mjs         10 tests: one action is one entry, a step back keeps what is ahead, the cap
 zip.test.mjs          2 tests: CRC-32's check values, and an archive read back to its bytes
 stamp.test.mjs        21 tests: the link goes in three ways, and the picture does not move
-deep-fx.test.mjs      12 tests: the Deep tab's arithmetic is exact where a double is not
-deep-link.test.mjs    39 tests: the deep contract, the shallow one held to not moving,
+deep-fx.test.mjs      13 tests: the Deep tab's arithmetic is exact where a double is not
+deep-link.test.mjs    45 tests: the deep contract, the shallow one held to not moving,
                       and the gallery register held to the deep one
-deep.test.mjs         17 tests: where the two modules meet, against both committed ones
-period-range.test.mjs 7 tests: the travel's two ends mean what they say, a stage does not
+deep.test.mjs         30 tests: where the two modules meet, against both committed ones
+hold.test.mjs         7 tests: a held move keeps the colour at the reference value
+fit.test.mjs          15 tests: a fit runs the palette its passes across Leveled's stretch
+dives.test.mjs        21 tests: the Dive block's chains, draws and results, and Random dives
+aliasing.test.mjs     5 tests: a smooth field is left alone, a static one has its period lengthened
+pointers.test.mjs     7 tests: a lifted pointer is measured before it is forgotten
+period-range.test.mjs 8 tests: the travel's two ends mean what they say, a stage does not
                       move it, and a Lambda move that keeps the cycles keeps the thumb
 palettes.jsonl        the roster palettes.js is baked from; 1,022 maps, 77 offered,
                       232 a random pick may draw
@@ -3173,8 +3189,8 @@ and a URL's escaping rule, neither of which has anything to do with how deep the
   *(ckpt141)*. The pass is committed rather than automatic — a link is a press — so Cancel
   is there for it.
 
-`deep-link.test.mjs` is 38 tests — two of them the gallery register's — and `deep-fx.test.mjs` is 12, on Node's own runner with
-nothing installed; three of them hold the shallow contract to not having moved, including
+`deep-link.test.mjs` is 45 tests — two of them the gallery register's — and `deep-fx.test.mjs` is 13, on Node's own runner with
+nothing installed; several of them hold the shallow contract to not having moved, including
 that a deep Julia link is refused by it at both doors — `cx` and `cy` are keys that reader
 knows, which is exactly why the marker has to be what dispatches.
 
@@ -3301,10 +3317,10 @@ deep-worker.js     one worker: one perturb instance, one held orbit, one band
 deep-fx.js         exact decimal coordinates, BigInt fixed point
 deep-link.js       the deep link contract — parse, emit, canonicalize, describe
 deep-gallery.js    the gallery under the tab's sentence, and deep-gallery.jsonl its register
-deep-fx.test.mjs   12 tests: the arithmetic is exact where a double is not
-deep-link.test.mjs 41 tests: the contract, the shallow one held to not moving, and the
+deep-fx.test.mjs   13 tests: the arithmetic is exact where a double is not
+deep-link.test.mjs 45 tests: the contract, the shallow one held to not moving, and the
                    gallery register
-deep.test.mjs      27 tests: where the two modules meet, against both committed ones —
+deep.test.mjs      30 tests: where the two modules meet, against both committed ones —
                    and the cap policy's seam, which fails the same way the rest of
                    this file does, by drawing a plausible picture
 bench/julia.mjs    what a Julia frame costs against the Mandelbrot frame at the same c
@@ -3514,7 +3530,7 @@ it when shown.
 **Ctrl/Cmd+Z steps back through the pictures this session has shown; Ctrl+Shift+Z and
 Ctrl+Y step forward.** There is no button and no panel — the two keys are named once, in
 the `title` on the row of view toggles, which is where this page already says what its keys
-are. `undo.js` holds the list and the cursor and has **8 tests** of its own
+are. `undo.js` holds the list and the cursor and has **10 tests** of its own
 (`node --test explorer/undo.test.mjs`); the two ends of it are in `explorer.js` under *the
 way back*.
 
@@ -5760,7 +5776,8 @@ and is sometimes the whole picture.
 
 ### A view the reader made measures its own curve *(autolevel_port_ckpt127, 2026-09-16)*
 
-**Both halves of the operator are in the module now.** `level.rs` carries `tone_stats` —
+**Both halves of the operator are in the module now.** `fractal_engine::autolevel`, which
+was the crate's own `level.rs` until engine_wasm_import_ckpt151, carries `tone_stats` —
 sRGB8 to Oklab lightness and chroma per pixel, P0.5 and P99.5 by **numpy's own linear
 interpolation** (not the engine's nearest-rank `coloring::percentile`, which answers a
 different number), the masked median, the neutral-black guard — and `derive_curve`
@@ -6281,7 +6298,7 @@ list of what a link may *say*. Two lists on purpose — a contract that read its
 from a generated file could be widened by rebuilding it — and the test suite asserts they
 are the same roster in the same order, which is where a promoted or retired mode shows up.
 
-`permalink.test.mjs` holds all of that: **53 tests**, Node's own runner, nothing
+`permalink.test.mjs` holds all of that: **68 tests**, Node's own runner, nothing
 installed. Among them, encode-then-decode is the identity for **every family crossed with
 a mode of each of the engine's four coloring shapes**, parameters and constants included.
 

@@ -18,11 +18,10 @@ downscales, crops if asked, and writes the format the destination's suffix names
 source path is a command-line argument and is never recorded: originals live outside
 this repository.
 
-The two figures that are diagrams rather than renders — `escape-orbit-race.png`, an
-APNG, and `pipeline-overview.png` — are the exception: `python -m builder diagram <id>` draws
-them here from `builder/diagrams.py`, so there is no original anywhere.
-`overview-pipeline.webp` is not one of them: it reads as a diagram and is a composed sheet
-with four real renders in it, drawn by a rig under ignored `scratch/`.
+The one figure that is a diagram rather than renders — `escape-orbit-race.png`, an
+APNG — is the exception: `python -m builder diagram <id>` draws it here from
+`builder/diagrams.py`, so there is no original anywhere. `overview-pipeline` is not one:
+it reads as a diagram and is real renders in panels, drawn by `builder/overview.py`.
 
 **An animation is copied, never imported.** Pillow's one-image read keeps the first frame
 and silently drops the rest, so an APNG that went through `import_web_res` would land as

@@ -1,15 +1,15 @@
 """The figures that are drawn rather than rendered.
 
-Three of the article's figures are diagrams: each explains a mechanism instead of showing a
+One of the article's figures is a diagram: it explains a mechanism instead of showing a
 location, so no fractal engine is involved and nothing outside this repository is read.
-Each is drawn here, from the stylesheet's own colours, so the picture in the well matches
+It is drawn here, from the stylesheet's own colours, so the picture in the well matches
 the well it sits in — and so a wording change is an edit to this file rather than to an
 image somebody has to find again.
 
-The overview's pipeline teaser used to be the second *(Matt, 2026-08-22)*. It is a paper
-teaser now — real renders of one location at each stage, with the stages' parts drawn
-around them — so it is composed where every other sheet of renders is composed, in
-`scratch/figures/make_sheets.py`, and this module keeps its rule that no engine is
+The overview's pipeline teaser used to be the second *(Matt, 2026-08-22)*, and
+`pipeline-overview`'s flow diagram of the loop the third; both are real renders now, split
+into panels and drawn by their makers in `builder/`, and the flow drawing went with the
+last of them (release_polish_ckpt157). This module keeps its rule that no engine is
 reached from here.
 
     python -m builder diagram escape-orbit-race
@@ -34,7 +34,6 @@ from .theme import (
     WELL,
     WELL_INK,
     WELL_INK_DIM,
-    WELL_PANEL,
     WELL_PENDING,
     WELL_RULE,
     font,
@@ -311,255 +310,8 @@ def orbit_race(destination: Path) -> tuple[int, int]:
     )
 
 
-# ------------------------------------------------------------------------- flow figures
-#
-# One diagram lives here, and it used to be two. The tenth section is about a **loop** —
-# three parts, two stores between them, and one arrow running the other way — so
-# `pipeline-overview` is a spine read left to right with the return path in its own lane
-# underneath. The eighth section's `wallpapers-stages` was the same three parts drawn as
-# what each hands to the next, and it is gone: `wallpapers-three-bands` makes that claim
-# out of real pictures instead, which is a claim a box of lettering cannot make.
-#
-# Nothing here is a count. Every other figure of that page that carries a number reads it
-# off a record, and this one is about shape, which no record holds.
-
-#: The sheet a flow diagram is composed at — the width every figure of this article is
-#: composed at, so a diagram and a sheet of renders sit at the same size in the column.
-FLOW_WIDTH = 1316
-
-#: The margin around a flow diagram, and the corner every box is drawn with.
-FLOW_PAD = 24
-FLOW_RADIUS = 6
-
-#: The three ranks of lettering a flow diagram carries: a box's name, its lines, and the
-#: small note that rides beside an arrow.
-FLOW_TITLE_SIZE = 21
-FLOW_SUB_SIZE = 16
-FLOW_NOTE_SIZE = 15
-
-
-#: The air a box keeps between its lettering and its own edge, on both sides.
-FLOW_INSET = 14
-
-
-def _flow_lines(draw, x: int, y: int, lines, size: int, room: int) -> None:
-    """A box's quiet lines, held to fitting inside the box that carries them.
-
-    The wording of these two figures is a constant at the top of this module and the boxes
-    are sized from the sheet, so a line that outgrows its box is an edit somebody made to
-    the words. It is a refusal rather than lettering that runs out over the well: an
-    overrun is invisible in a diff and obvious in the picture, which is the wrong way
-    round.
-    """
-    face = font(size)
-    for index, line in enumerate(lines):
-        span = text_width(draw, line, face)
-        if span > room:
-            raise ValueError(
-                f"{line!r} is {span:.0f}px at size {size} and its box holds {room}px — "
-                "shorten the line rather than letting it run over the well"
-            )
-        draw.text((x, y + index * (size + 7)), line, fill=WELL_INK_DIM, font=face)
-
-
-def _flow_box(
-    draw,
-    box: tuple[int, int, int, int],
-    title: str,
-    lines,
-    *,
-    outline=WELL_RULE,
-    width: int = 1,
-    title_size: int = FLOW_TITLE_SIZE,
-    sub_size: int = FLOW_SUB_SIZE,
-    fill=WELL_PANEL,
-) -> None:
-    """One panel of a flow diagram: a plate of well, its name, and its quiet lines."""
-    left, top, right, bottom = box
-    draw.rounded_rectangle(
-        (left, top, right - 1, bottom - 1),
-        radius=FLOW_RADIUS,
-        fill=fill,
-        outline=outline,
-        width=width,
-    )
-    draw.text((left + FLOW_INSET, top + 13), title, fill=WELL_INK, font=font(title_size, SEMIBOLD))
-    _flow_lines(
-        draw,
-        left + FLOW_INSET,
-        top + title_size + 25,
-        lines,
-        sub_size,
-        right - left - 2 * FLOW_INSET,
-    )
-
-
-#: The arrow both this module and `pool.py` draw, which is why it lives in `sheets.py`
-#: now: `wallpapers-three-bands` hands one band's material to the next the way the loop
-#: figure hands one plate's to the next, and two arrowheads drawn two ways would be two
-#: conventions for a reader to learn.
-_flow_arrow = sheets.elbow_arrow
-
-
-# ------------------------------------------------------------------- the pipeline's loop
-
-#: The three parts, in reading order, each with the lines that say what it does. The words
-#: are the tenth section's own prose reduced to a box.
-LOOP_PARTS = [
-    (
-        "Find locations",
-        [
-            "a guided walk in every family,",
-            "admitting the frames the",
-            "location judge rates good",
-        ],
-    ),
-    (
-        "Find wallpapers",
-        [
-            "a mine returns to locations",
-            "and draws each many ways,",
-            "every picture judged",
-        ],
-    ),
-    (
-        "Curate a gallery",
-        [
-            "one solve over the whole",
-            "candidate pool, at a size,",
-            "under the bar and the floors",
-        ],
-    ),
-]
-
-#: The two stores, each drawn between the parts that write it and read it. Both say the
-#: thing that makes them stores rather than steps.
-LOOP_STORES = [
-    ("The location pool", ["every admitted frame,", "from every run —", "never pruned"]),
-    (
-        "The candidate pool",
-        ["every judged picture,", "its recipe and its", "scores — never pruned"],
-    ),
-]
-
-#: What the solve writes down when it comes up short, and the arrow out of it. This box is
-#: the whole difference between a loop and a sequence.
-LOOP_READOUT = (
-    "The shortfall readout",
-    [
-        "for every seat it could not fill: what the pool",
-        "had to offer, which rule refused the pictures",
-        "that were there, and which locations could have fed it",
-    ],
-)
-LOOP_RETURN = "what the solve could not seat is what the next mine reads"
-
-LOOP_GAP = 20
-LOOP_PART_HEIGHT = 152
-LOOP_STORE_HEIGHT = 112
-LOOP_DROP = 54
-LOOP_READOUT_HEIGHT = 118
-
-#: How far under the readout the return arrow runs, and where the sheet then stops. The
-#: lane is the last thing on the sheet: nothing is drawn below the line a reader follows.
-LOOP_LANE = 46
-
-#: How wide a store is drawn against a part. A store holds rather than does, and the eye
-#: should be able to say which is which before it has read either.
-LOOP_STORE_SHARE = 0.78
-
-#: A store's lines are set a rank smaller than a part's: it is the narrower box, and what
-#: is in it is a caption on the store rather than a description of work.
-LOOP_STORE_SUB = 15
-
-
-def pipeline_loop(destination: Path) -> tuple[int, int]:
-    """`pipeline-overview` — the three parts, the two stores, and the way back.
-
-    Read left to right the picture is a sequence, which is the one thing the page says the
-    pipeline is not; the arrow underneath, out of the solve's own readout and into mining,
-    is the claim. So the return path gets its own lane rather than being threaded between
-    the boxes: it is the line of this figure a reader is meant to follow all the way back.
-    """
-    inner = FLOW_WIDTH - 2 * FLOW_PAD
-    content = inner - 4 * LOOP_GAP
-    part_width = round(content / (3 + 2 * LOOP_STORE_SHARE))
-    store_width = (content - 3 * part_width) // 2
-
-    top = FLOW_PAD
-    bottom = top + LOOP_PART_HEIGHT
-    readout_top = bottom + LOOP_DROP
-    readout_bottom = readout_top + LOOP_READOUT_HEIGHT
-    back = readout_bottom + LOOP_LANE
-    height = back + FLOW_PAD
-    sheet, draw = sheets.canvas(FLOW_WIDTH, height)
-
-    parts, stores = [], []
-    x = FLOW_PAD
-    for index, (title, lines) in enumerate(LOOP_PARTS):
-        parts.append((x, x + part_width))
-        _flow_box(draw, (x, top, x + part_width, bottom), title, lines)
-        x += part_width + LOOP_GAP
-        if index < len(LOOP_STORES):
-            store_top = top + (LOOP_PART_HEIGHT - LOOP_STORE_HEIGHT) // 2
-            stores.append((x, x + store_width))
-            _flow_box(
-                draw,
-                (x, store_top, x + store_width, store_top + LOOP_STORE_HEIGHT),
-                LOOP_STORES[index][0],
-                LOOP_STORES[index][1],
-                outline=SECTION_INK,
-                width=2,
-                title_size=FLOW_SUB_SIZE + 2,
-                sub_size=LOOP_STORE_SUB,
-            )
-            x += store_width + LOOP_GAP
-
-    spine = top + LOOP_PART_HEIGHT // 2
-    for left, right in zip(
-        [parts[0], stores[0], parts[1], stores[1]],
-        [stores[0], parts[1], stores[1], parts[2]],
-        strict=True,
-    ):
-        _flow_arrow(draw, [(left[1] + 3, spine), (right[0] - 4, spine)])
-
-    # The readout hangs under the solve that writes it and stops at the second store's
-    # left edge, so the lane the return arrow climbs is clear of it: an arrow crossing a
-    # plate it has nothing to do with is a line a reader has to work out rather than read.
-    third_left, third_right = parts[2]
-    _flow_box(
-        draw,
-        (stores[1][0], readout_top, third_right, readout_bottom),
-        LOOP_READOUT[0],
-        LOOP_READOUT[1],
-        title_size=FLOW_SUB_SIZE + 2,
-    )
-    down = (third_left + third_right) // 2
-    _flow_arrow(draw, [(down, bottom + 4), (down, readout_top - 5)])
-
-    into = (parts[1][0] + parts[1][1]) // 2
-    # A rank heavier than the spine's arrows, and in the same ink: this is the one line
-    # of the figure a reader is asked to follow, and colouring it would make it a fourth
-    # thing to learn rather than the same arrow drawn louder.
-    _flow_arrow(
-        draw,
-        [(down, readout_bottom + 4), (down, back), (into, back), (into, bottom + 5)],
-        width=3,
-    )
-    draw.text(
-        (into + 18, back - FLOW_NOTE_SIZE - 11),
-        LOOP_RETURN,
-        fill=SECTION_INK,
-        font=font(FLOW_NOTE_SIZE),
-    )
-
-    sheets.save(sheet, destination)
-    return sheet.width, sheet.height
-
-
 DIAGRAMS = {
     "escape-orbit-race": ("escape-orbit-race.png", orbit_race),
-    "pipeline-overview": ("pipeline-overview.png", pipeline_loop),
 }
 
 

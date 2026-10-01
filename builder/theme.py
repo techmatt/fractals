@@ -1,6 +1,6 @@
 """The one home for the colours and faces a drawn figure is made of.
 
-Every figure this project draws — the two diagrams in `diagrams.py`, every contact
+Every figure this project draws — the diagram in `diagrams.py`, every contact
 sheet a rig composes — sits in the same dark image well the rendered figures sit in.
 That means it takes its colours from the stylesheet rather than inventing a second set,
 and until this module existed it did so by four separate copies of the same five hex
