@@ -1460,9 +1460,9 @@ the field time, and it previews the video rather than a cheaper one:
 ```
 python -m builder descent "<link>" --name <name>
 node builder/zoom_fields.mjs --record builder/data/<name>.keyframes.json --variant preview   # probes first
-python builder/zoom.py --record builder/data/<name>.keyframes.json --variant preview video --mapping power
+python builder/zoom.py --record builder/data/<name>.keyframes.json --variant preview video --mapping knee --knee <nu>
 node builder/zoom_fields.mjs --record builder/data/<name>.keyframes.json                     # the 4K fields
-python builder/zoom.py --record builder/data/<name>.keyframes.json video --mapping power
+python builder/zoom.py --record builder/data/<name>.keyframes.json video --mapping knee --knee <nu>
 ```
 
 ⚠ **The base is now the big render.** At the favicon seat's depth, `4k60`'s fields were 18 GB
@@ -1486,10 +1486,10 @@ colouring. Redrawn through `deep_figures.mjs` at 864×486 ss2 and coloured this 
 `julia3-end` field lands within a mean 13.6 levels of the committed panel, which is the
 shading and WebP's loss.
 
-**A mapping may carry a `schedule`**, the one exception to one fixed function of `nu`: points
-`{w, L, phase, lambda}` over the frame's width, interpolated in `log2 w` (`L` in its log), so
-the colouring can follow a descent whose `nu` changes character with depth. The julia3 descent
-is why: its p0.5–p99.5 stretch of `nu` is about 300–450 down to 8e-6 and about 10,000–12,000
+**A mapping may carry a `schedule`**, the one exception to one fixed function of `nu` and
+never a video's default (below): points `{w, L, phase, lambda}` over the frame's width,
+interpolated in `log2 w` (`L` in its log). It was tried for a descent whose `nu` changes
+character with depth, and the julia3 descent is why: its p0.5–p99.5 stretch of `nu` is about 300–450 down to 8e-6 and about 10,000–12,000
 below 1.3e-7, so `period=1870`, right for the target, is a fifth of one turn across the
 opening. A scheduled mapping is coloured **per video frame, at that frame's width**, from the
 fields themselves (`zoom.py`'s `Fields` and `composite_scheduled`), so the two keyframes a
@@ -1503,8 +1503,9 @@ python builder/zoom.py --record builder/data/julia3-descent.keyframes.json --var
 where the file is `{"name": N, "points": [...]}` and `N` names the output. The julia3
 proposals (`scratch/julia3_palette_ckpt157/`) are schedules in exactly this form.
 
-⚠ **A depth schedule makes colours flow over structure, and a `nu` curve does not**
-*(julia3_curve_ckpt157)*. A schedule moves `L`, the phase and `lambda` with the frame's
+⚠ **A zoom video defaults to the `knee` mapping, one fixed curve of `nu`, because a
+depth-scheduled mapping makes colour flow over structure already on screen**
+*(julia3_curve_ckpt157; preclose_website_ckpt157)*. A schedule moves `L`, the phase and `lambda` with the frame's
 width, so a point already on screen changes colour as the zoom passes it, and all three
 scheduled julia3 previews flowed where the unscheduled baseline did not (Matt). Under one
 fixed function of `nu` a point's colour depends on its own `nu` and nothing else, so nothing

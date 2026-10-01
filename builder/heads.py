@@ -12,8 +12,10 @@ Every value is read off the page it describes, the way the rail is read off the 
   tags out, entities read, whitespace collapsed. The first sentence ends at the first `.`,
   `?` or `!` that is followed by a space and a capital, a digit or an opening quote, or at
   the paragraph's end; `e.g. the` is one sentence. Past `DESCRIPTION_MAX` characters it is
-  cut at the last word boundary that fits, and the cut is marked with an ellipsis — the
-  one character the derivation adds, and it adds no words.
+  cut at the last sentence end inside it that fits, or failing that at the last clause
+  boundary that fits — a comma, a semicolon or a dash — where the boundary becomes a full
+  stop; only where neither exists is it cut at the last word boundary that fits, marked
+  with an ellipsis. The derivation adds that one character and never a word.
 - **A page with no prose paragraph** is a tool, and there is one: the explorer, whose
   every paragraph is a tab's side note. It carries a description its author wrote in its
   head, outside the block, and the block derives `og:description` from that by the same
@@ -66,6 +68,11 @@ _TITLE = re.compile(r"<title>(.*?)</title>\n", re.S)
 #: A sentence ends at terminal punctuation, a closing quote or bracket if one follows, then
 #: whitespace and the opening of the next sentence.
 _SENTENCE_END = re.compile(r"[.!?][\"'”’)]?(?=\s+[A-Z0-9\"“(])")
+#: Inside an over-long first sentence, the end of a sentence it holds (a `?` the next word
+#: does not capitalize after, say), never the dot of an `e.g.` or an initial.
+_INNER_END = re.compile(r"(?<!\b\w)[.!?][\"'”’)]?(?=\s)")
+#: A clause boundary a long sentence may be cut at: a comma, a semicolon, or a dash.
+_CLAUSE = re.compile(r"[,;](?=\s)|\s?[—–]\s?|\s-\s")
 
 
 @dataclass(frozen=True)
@@ -139,12 +146,19 @@ class _Reader(HTMLParser):
 
 
 def first_sentence(prose: str) -> str:
-    """The first sentence of a run of collapsed text, cut to `DESCRIPTION_MAX` at a word."""
+    """The first sentence of a run of collapsed text, cut to `DESCRIPTION_MAX`: at the last
+    sentence end that fits, else the last clause boundary, else a word and an ellipsis."""
     prose = " ".join(prose.split())
     end = _SENTENCE_END.search(prose)
     sentence = prose[: end.end()] if end else prose
     if len(sentence) <= DESCRIPTION_MAX:
         return sentence
+    ends = [m.end() for m in _INNER_END.finditer(sentence) if m.end() <= DESCRIPTION_MAX]
+    if ends:
+        return sentence[: ends[-1]]
+    clauses = [m.start() for m in _CLAUSE.finditer(sentence) if m.start() + 1 <= DESCRIPTION_MAX]
+    if clauses:
+        return sentence[: clauses[-1]].rstrip() + "."
     cut = sentence[: DESCRIPTION_MAX - len(ELLIPSIS) + 1].rsplit(" ", 1)[0]
     return cut.rstrip(",;:—-") + ELLIPSIS
 
