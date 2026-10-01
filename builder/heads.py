@@ -15,7 +15,11 @@ Every value is read off the page it describes, the way the rail is read off the 
   cut at the last sentence end inside it that fits, or failing that at the last clause
   boundary that fits — a comma, a semicolon or a dash — where the boundary becomes a full
   stop; only where neither exists is it cut at the last word boundary that fits, marked
-  with an ellipsis. The derivation adds that one character and never a word.
+  with an ellipsis. The derivation adds that one character and never a word. **A series is
+  never cut**: no boundary inside brackets or inside a series counts, the colon that opens
+  a series does unless its lead-in counts the items, and a sentence whose only cut would
+  fall inside one is kept whole, past `DESCRIPTION_MAX` — a card that cuts the text itself
+  is better than a description that names one of two things.
 - **A page with no prose paragraph** is a tool, and there is one: the explorer, whose
   every paragraph is a tab's side note. It carries a description its author wrote in its
   head, outside the block, and the block derives `og:description` from that by the same
@@ -73,6 +77,14 @@ _SENTENCE_END = re.compile(r"[.!?][\"'”’)]?(?=\s+[A-Z0-9\"“(])")
 _INNER_END = re.compile(r"(?<!\b\w)[.!?][\"'”’)]?(?=\s)")
 #: A clause boundary a long sentence may be cut at: a comma, a semicolon, or a dash.
 _CLAUSE = re.compile(r"[,;](?=\s)|\s?[—–]\s?|\s-\s")
+#: A colon, which is no cut of its own but may open a series.
+_COLON = re.compile(r":(?=\s)")
+#: The comma that closes a series, which the site's Oxford-comma rule always spells.
+_SERIES_CLOSE = re.compile(r",(?=\s+(?:and|or)\b)")
+#: A comma that opens a relative clause, which ends a clause and never separates two items.
+_RELATIVE = re.compile(r",(?=\s+(?:which|who|whom|whose|where)\b)")
+#: A colon whose lead-in counts what follows (`two things:`) promises the list it opens.
+_COUNTED = re.compile(r"\b(?:two|three|four|five|six|seven|eight|nine|ten|\d+)\s+\S+$", re.I)
 
 
 @dataclass(frozen=True)
@@ -147,7 +159,8 @@ class _Reader(HTMLParser):
 
 def first_sentence(prose: str) -> str:
     """The first sentence of a run of collapsed text, cut to `DESCRIPTION_MAX`: at the last
-    sentence end that fits, else the last clause boundary, else a word and an ellipsis."""
+    sentence end that fits, else the last clause boundary, else a word and an ellipsis; a
+    series is never cut, and a sentence with nowhere else to cut is kept whole."""
     prose = " ".join(prose.split())
     end = _SENTENCE_END.search(prose)
     sentence = prose[: end.end()] if end else prose
@@ -156,11 +169,77 @@ def first_sentence(prose: str) -> str:
     ends = [m.end() for m in _INNER_END.finditer(sentence) if m.end() <= DESCRIPTION_MAX]
     if ends:
         return sentence[: ends[-1]]
-    clauses = [m.start() for m in _CLAUSE.finditer(sentence) if m.start() + 1 <= DESCRIPTION_MAX]
+    clauses = [at for at in _cuts(sentence) if at + 1 <= DESCRIPTION_MAX]
     if clauses:
         return sentence[: clauses[-1]].rstrip() + "."
     cut = sentence[: DESCRIPTION_MAX - len(ELLIPSIS) + 1].rsplit(" ", 1)[0]
+    if any(start < len(cut) < end for start, _, end in _series(sentence)):
+        return sentence
     return cut.rstrip(",;:—-") + ELLIPSIS
+
+
+def _marks(sentence: str) -> list[tuple[int, str]]:
+    """The sentence's boundaries outside brackets, in order, each with its kind: `close` for
+    an Oxford comma, `stop` for a semicolon, a dash or a comma before `which`, `comma` for
+    any other, or `colon`. A comma counts only before a space, so `1,021` holds none."""
+    depths, depth = [], 0
+    for char in sentence:
+        depth = max(depth - (char == ")"), 0)  # an enumeration's lone `1)` closes nothing
+        depths.append(depth)
+        depth += char == "("
+    marks = []
+    for m in [*_CLAUSE.finditer(sentence), *_COLON.finditer(sentence)]:
+        if depths[m.start()]:
+            continue
+        kind = {",": "comma", ":": "colon"}.get(m.group(), "stop")
+        if kind == "comma" and _SERIES_CLOSE.match(sentence, m.start()):
+            kind = "close"
+        elif kind == "comma" and _RELATIVE.match(sentence, m.start()):
+            kind = "stop"
+        marks.append((m.start(), kind))
+    return sorted(marks)
+
+
+def _series(sentence: str) -> list[tuple[int, int, int]]:
+    """Where the sentence's series run, as `(start, first, end)`. An Oxford comma closes a
+    series when the commas running back from it hold another (`a, b, and c`) or a colon opens
+    them (`two things: a, and b`); a lone `, and` with no colon in front is a clause, and
+    stays a cut. `first` is the series' first comma and `end` the boundary after its last
+    item, so a cut is barred from `first` up to `end` and never at `end` itself: a clause
+    comma after the series still cuts, and drops nothing of it. `start` is the colon where
+    one opens the series, and `first` otherwise."""
+    marks, spans = _marks(sentence), []
+    for i, (_, kind) in enumerate(marks):
+        if kind != "close":
+            continue
+        j = i
+        while j and marks[j - 1][1] == "comma":
+            j -= 1
+        colon = marks[j - 1][0] if j and marks[j - 1][1] == "colon" else None
+        if j == i and colon is None:
+            continue
+        end = marks[i + 1][0] if i + 1 < len(marks) else len(sentence)
+        first = marks[j][0]
+        spans.append((first if colon is None else colon, first, end))
+    return spans
+
+
+def _cuts(sentence: str) -> list[int]:
+    """Where a long sentence may be cut, in order: a clause boundary outside brackets and
+    outside every series, or the colon that opens a series, unless its lead-in counts the
+    items (`two things:` cut there names none of them)."""
+    spans = _series(sentence)
+    cuts = [
+        at
+        for at, kind in _marks(sentence)
+        if kind != "colon" and not any(first <= at < end for _, first, end in spans)
+    ]
+    cuts += [
+        start
+        for start, first, _ in spans
+        if start < first and not _COUNTED.search(sentence[:start].rstrip())
+    ]
+    return sorted(cuts)
 
 
 def page_url(page: Path) -> str:

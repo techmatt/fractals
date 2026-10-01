@@ -588,6 +588,7 @@ FAMILY_WORDS = (
     ("multibrot", "multibrot"),
     ("mandelbrot", "mandelbrot"),
     ("julia", "julia"),
+    ("phoenix_m", "phoenix_m"),
     ("phoenix", "phoenix"),
 )
 
@@ -603,7 +604,9 @@ FAMILY_WORDS = (
 #: explorer opened were different objects, which is the one failure this registry exists to
 #: refuse. Held to the family names rather than to `[a-z_]+`, because `the field family` is
 #: a phrase this site's provenance also writes.
-FAMILY_NAMED = re.compile(r"\bfamily (fractional_multibrot|multibrot|mandelbrot|julia|phoenix)\b")
+FAMILY_NAMED = re.compile(
+    r"\bfamily (fractional_multibrot|multibrot|mandelbrot|julia|phoenix_m|phoenix)\b"
+)
 
 #: The shade keys a prose provenance line spells out, and how each is read.
 PROSE_SHADE = {
@@ -945,6 +948,10 @@ def _named(kind: str, degree: int) -> str:
         return "mandelbrot" if degree == 2 else f"multibrot{degree}"
     if kind == "julia":
         return "julia" if degree == 2 else f"julia{degree}"
+    if kind == "phoenix_m":
+        # The engine's parameter plane is the contract's `phoenix_plane`, as next door's
+        # `explorer_link.family_name` and the engine's `link.rs` both spell it.
+        return "phoenix_plane"
     return kind
 
 
@@ -959,7 +966,8 @@ def _frame(fields: dict, record: dict | None) -> dict | None:
 
 
 #: What a Phoenix recipe means by a constant it does not name: the engine's own serde
-#: defaults, `FamilySpec::Phoenix`'s `phoenix_c`, `phoenix_p` and `origin`, so that
+#: defaults, `FamilySpec::Phoenix`'s `phoenix_c`, `phoenix_p` and `origin` (and
+#: `FamilySpec::PhoenixM`'s `phoenix_p`, for `phoenix_plane`), so that
 #: `{"kind": "phoenix"}` alone is the classic Ushiki set, and spelled as the engine's own
 #: spec test spells the classic. **Never the origin for `c` and `p`**
 #: *(link_fidelity_ckpt157)*: that was the default here, and seventeen gallery seats whose
@@ -975,7 +983,7 @@ def _constants(family: str, fields: dict, record: dict | None) -> dict:
     (`PHOENIX_DEFAULTS`), and a Julia `c` the origin, which the engine refuses to assume
     and a link therefore never meets."""
     held = record["family"] if record is not None else fields
-    absent = PHOENIX_DEFAULTS if family == "phoenix" else {}
+    absent = PHOENIX_DEFAULTS if family in ("phoenix", "phoenix_plane") else {}
     pair = {}
     for name, keys in (("c", ("cx", "cy")), ("p", ("px", "py")), ("z_prev", ("zx", "zy"))):
         spelled = held.get(name) or absent.get(name, ("0", "0"))
@@ -984,6 +992,10 @@ def _constants(family: str, fields: dict, record: dict | None) -> dict:
         return {"cx": pair["cx"], "cy": pair["cy"]}
     if family == "phoenix":
         return pair
+    if family == "phoenix_plane":
+        # `c` is the plane's point and the orbit opens at the origin, so `p` is all it
+        # carries; absent, it is `FamilySpec::PhoenixM`'s own `phoenix_p` default.
+        return {"px": pair["px"], "py": pair["py"]}
     return {}
 
 
