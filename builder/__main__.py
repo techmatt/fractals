@@ -514,6 +514,12 @@ def _parser() -> argparse.ArgumentParser:
         action="store_true",
         help="draw the pink gallery's placeholder seats once, into its list, and draw nothing",
     )
+    started.add_argument(
+        "--gallery-seed",
+        type=int,
+        metavar="N",
+        help="draw start-gallery afresh from the voted leftovers at seed N, for --replace to land",
+    )
 
     tooled = commands.add_parser("tools", help="draw the figures of the Tools and data page")
     tooled.add_argument(
@@ -1522,6 +1528,9 @@ def _do_start(options: argparse.Namespace) -> int:
         for line in start_module.draw_placeholders():
             print(line)
         return 0
+    if options.gallery_seed is not None:
+        for line in start_module.draw_gallery(options.gallery_seed):
+            print(line)
     landing = bool(options.place or options.replace)
     for identifier in options.id or list(start_module.MAKERS):
         drawn = start_module.draw(identifier)

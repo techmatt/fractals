@@ -22,6 +22,13 @@ of the video's short links (`video_links`).
 These are placeholders Matt adjusts. The seats were drawn by a seeded shuffle, not chosen
 for how they look, and each row's provenance says so.
 
+`start-gallery` is a seeded draw from the **voted leftovers** *(start_gallery_ckpt157)*:
+every seat a friend voted for, from any collection, that nothing else on the site shows
+(`gallery_pool`, `gallery_draw`). `python -m builder start start-gallery --replace
+--gallery-seed N` draws it and lands it, writing the twelve seats in tile order to the
+row's `picks` beside the `seed` and the pool's size at each step; a redraw without the flag
+draws what the row names, so a new vote never moves a placed figure.
+
 `start-pink-gallery` is the exception, and it is a list rather than a draw
 *(start_pink_gallery_ckpt155)*: `article/pink-gallery.jsonl` holds the picks Matt's
 daughter made, as the explorer links she chose them at, and then placeholder seats of the
@@ -39,9 +46,10 @@ import hashlib
 import json
 import random
 from collections import Counter
+from dataclasses import dataclass, field
 from urllib.parse import parse_qs
 
-from . import deep_figures, frames, go, links, recipes, records, renders, sheets
+from . import deep_figures, frames, go, links, recipes, records, renders, seats, sheets
 from . import families as families_module
 from . import figures as figures_module
 from . import picks as picks_module
@@ -78,30 +86,19 @@ FAMILY_COLUMNS = 3
 GRID_COLUMNS = 4
 GRID_SEATS = 12
 
-#: The recorded galleries these were drawn from: the `final139_*` solves `builder/seats.py`
-#: names for the general and magenta collections.
-GENERAL_STAMP = "20260922T012627Z"
+#: The recorded gallery the pink placeholders were drawn from: the `final139_*` solve
+#: `builder/seats.py` names for the magenta collection.
 MAGENTA_STAMP = "20260922T014213Z"
 
 #: The four renderings a location is shown in, in the page's own words' order.
 MODE_ROW = ("smooth", "tia", "threads", "stripe")
 
-#: How each seat figure's seats were arrived at, which the resolution cannot say for itself.
-SEED = 20260924
-DRAW = (
-    f"Which seats: a seeded shuffle (seed {SEED}) of each collection's seats, taking the "
-    "first that clear the rejections, by scratch/start/select.py — a seat whose place "
-    "(centre and width, as builder.frames reduces it) any other figure on the site already "
-    "stands on, or whose key a figure already cites; a seat whose run recorded that the "
-    "autolevel operator acted without recording the curve, so no render of the recipe is "
-    "its picture; a place another Start here panel already took. Nothing here was chosen "
-    "for how it looks.",
-)
-GALLERY_DRAW = (
-    *DRAW,
-    "start-gallery takes twelve seats of the general collection, at most two of any one "
-    "rendering mode, hue family or partition.",
-)
+#: The general gallery's draw *(start_gallery_ckpt157)*: twelve of the voted leftovers, at
+#: most this many of one hue family (the codebook's twelve, a seat row's `hue`, as the
+#: packs' colour walk reads it) and one to a location, laid out so that no two tiles side
+#: by side or one above the other share a family. Where the pool cannot meet that, the cap
+#: relaxes to the next value, and then the layout rule is dropped; the row says which.
+GALLERY_CAPS = (2, 3)
 #: The pink gallery's list: the picks, then the placeholders that fill what they leave.
 PINK_LIST = ARTICLE_DIR / "pink-gallery.jsonl"
 PICK, PLACEHOLDER = "pick", "placeholder"
@@ -206,27 +203,215 @@ def families() -> Split:
     return Split(made, lines, FAMILY_COLUMNS)
 
 
-def _grid(identifier: str, chosen: tuple[str, ...], stamps: tuple[str, ...]) -> Split:
-    wanted = picks_module.picks_of(identifier)
+@dataclass
+class GalleryDraw:
+    """One seeded draw of the general gallery: the row's recipe args, and what it passed."""
+
+    args: dict
+    lines: list[str] = field(default_factory=list)
+
+
+#: The draw `--gallery-seed` made this run, which `gallery`, `recipe` and `sources` answer
+#: from in place of the row until it lands.
+_DRAWN: dict[str, GalleryDraw] = {}
+
+
+def _seat_stamp(row: dict) -> str:
+    """The solve a seat is addressed by: the first collection `seats.COLLECTIONS` names that
+    seats it, so that a seat of the general thousand keeps the general stamp."""
+    for name, stamp in seats.COLLECTIONS:
+        if name in row["collections"]:
+            return stamp
+    raise StartError(f"seat {row['key']} is in no collection with a stamp")
+
+
+def gallery_pool() -> tuple[list[picks_module.Pick], dict[str, str], dict[str, int]]:
+    """The voted leftovers: every seat with a vote, from any collection, that nothing else
+    on the site shows, resolved; with each one's hue family and the pool's size at each step.
+
+    Shown means any figure's panel or source key (`ranking.shown_on_site`, which matches a
+    panel by its recipe as well as by its seat) other than this figure's own, and any pack's
+    preview on the packs page. The Gallery tab is not the site in this sense. A seat whose
+    place (centre and width, as `builder.frames` reduces it) another figure stands on is
+    dropped as well, because `check`'s `locations` would refuse it.
+    """
+    from . import packs as packs_module
+    from . import ranking, votes
+
+    rows = votes.resolved(votes.events())
+    entries = [entry for row in rows for entry in row["links"]]
+    links = list(dict.fromkeys(entry["link"] for entry in entries))
+    unresolved = {entry["link"] for entry in entries if "key" not in entry}
+    voted = {entry["key"] for entry in entries if "key" in entry}
+    shown = {key for key, where in ranking.shown_on_site().items() if set(where) - {GALLERY}}
+    for row in records.read(packs_module.RECORD):
+        shown.update(row.fields.get("thumbs") or [])
+    seat_rows = {row["key"]: row for row in votes.seat_rows()}
+    left = sorted(voted - shown)
+    resolved = picks_module.resolve(
+        f"{_seat_stamp(seat_rows[key])}{picks_module.PICK_SEPARATOR}{key}" for key in left
+    )
+    others = {key: one for key, one in figures_module.load_all().items() if key != GALLERY}
+    taken = set(frames.resolve(others)["places"])
+    place = frames.place_of_viewport
+    pool = [pick for pick in resolved if place(pick.recipe["viewport"]) not in taken]
+    counts = {
+        "links": len(links),
+        "unresolved": len(unresolved),
+        "voted": len(voted),
+        "unshown": len(left),
+        "pool": len(pool),
+    }
+    return pool, {key: str(row["hue"]) for key, row in seat_rows.items()}, counts
+
+
+def _arranged(tiles: list[str], hue: dict[str, str]) -> list[str] | None:
+    """`tiles` in reading order with no two side by side or one above the other sharing a
+    hue family: the first such order a depth-first walk in draw order finds, or `None`."""
+    placed: list[str] = []
+
+    def clash(key: str) -> bool:
+        cell = len(placed)
+        left = placed[cell - 1] if cell % GRID_COLUMNS else None
+        above = placed[cell - GRID_COLUMNS] if cell >= GRID_COLUMNS else None
+        return any(other is not None and hue[other] == hue[key] for other in (left, above))
+
+    def fill(rest: list[str]) -> bool:
+        if not rest:
+            return True
+        for index, key in enumerate(rest):
+            if clash(key):
+                continue
+            placed.append(key)
+            if fill(rest[:index] + rest[index + 1 :]):
+                return True
+            placed.pop()
+        return False
+
+    return placed if fill(list(tiles)) else None
+
+
+def gallery_draw(seed: int, found=None) -> GalleryDraw:
+    """Twelve of the voted leftovers in `seed`'s shuffle, under `GALLERY_CAPS` and the
+    layout rule, relaxing in that order where the pool cannot meet them.
+
+    The walk takes the first seat that clears every rule: one to a place, at most the cap
+    of a hue family, and not a seat whose run recorded that the autolevel operator acted
+    without recording the curve, since no render of that recipe is its picture.
+    """
+    pool, hue, counts = found if found is not None else gallery_pool()
+    by_key = {pick.key: pick for pick in pool}
+    order = sorted(by_key)
+    random.Random(seed).shuffle(order)
+    tiles: list[str] | None = None
+    for cap in GALLERY_CAPS:
+        taken: list[str] = []
+        places: set = set()
+        per_hue: Counter = Counter()
+        for key in order:
+            if len(taken) == GRID_SEATS:
+                break
+            pick = by_key[key]
+            spot = frames.place_of_viewport(pick.recipe["viewport"])
+            if spot in places or per_hue[hue[key]] >= cap:
+                continue
+            if picks_module.run_stamp(pick).way == picks_module.UNRECOVERABLE:
+                continue
+            taken.append(key)
+            places.add(spot)
+            per_hue[hue[key]] += 1
+        if len(taken) == GRID_SEATS:
+            tiles = _arranged(taken, hue)
+            if tiles is not None:
+                break
+    relaxed: list[str] = []
+    if cap != GALLERY_CAPS[0]:
+        relaxed.append(f"the hue cap, from {GALLERY_CAPS[0]} to {cap}")
+    if tiles is None:
+        if len(taken) < GRID_SEATS:
+            raise StartError(f"only {len(taken)} voted leftovers clear the rules")
+        tiles = taken
+        relaxed.append("the layout rule, dropped")
+    args = {
+        "seed": seed,
+        "picks": [by_key[key].identifier for key in tiles],
+        "pool": counts,
+    }
+    if relaxed:
+        args["relaxed"] = relaxed
+    return GalleryDraw(args, [f"{key[:8]} {hue[key]}" for key in tiles])
+
+
+def _gallery_args() -> dict:
+    drawn = _DRAWN.get(GALLERY)
+    return dict(drawn.args) if drawn is not None else _args(GALLERY)
+
+
+def _gallery_words(args: dict) -> tuple[str, ...]:
+    """How the row's seats were arrived at, which the resolution cannot say for itself."""
+    from . import votes
+
+    hue = {row["key"]: str(row["hue"]) for row in votes.seat_rows()}
+    count = args["pool"]
+    relaxed = args.get("relaxed") or []
+    rules = (
+        f"at most {GALLERY_CAPS[0]} of one hue family (the codebook's twelve, as the seat "
+        "row's `hue` names them and the packs' colour walk reads them), one to a place, and "
+        "laid out so that no two tiles side by side or one above the other share a family"
+    )
+    return (
+        "Which seats: a seeded draw from the voted leftovers (start_gallery_ckpt157), by "
+        f"builder.start:gallery_draw at seed {args['seed']}. The pool is every seat a friend "
+        "voted for in the votes store, read through builder.votes.resolved so an old "
+        "spelling of a seat's link still counts, from any collection: "
+        f"{count['links']} distinct links voted, {count['unresolved']} matching no seat and "
+        f"dropped, the rest naming {count['voted']} seats; {count['unshown']} of them shown "
+        "nowhere else on the site (no figure's panel or source key, by seat or by recipe, "
+        "and no preview on the packs page; the Gallery tab is not counted); "
+        f"{count['pool']} of those at a place no other figure stands on. The draw is "
+        f"random.Random({args['seed']}).shuffle of the pool's keys in sorted order, taking "
+        f"the first {GRID_SEATS} that clear the rules: {rules}; and no seat whose run "
+        "recorded that the autolevel operator acted without recording the curve. "
+        + (f"Relaxed: {', '.join(relaxed)}. " if relaxed else "Nothing was relaxed. ")
+        + "Nothing here was chosen for how it looks.",
+        "Hue families in reading order: "
+        + ", ".join(hue[picks_module.split(one)[1]] for one in args["picks"])
+        + ".",
+    )
+
+
+def gallery() -> Split:
+    """Twelve of the voted leftovers, unlabelled."""
+    args = _gallery_args()
+    wanted = list(args["picks"])
     if len(wanted) != GRID_SEATS:
-        raise StartError(f"{identifier} is {GRID_SEATS} seats and its row names {len(wanted)}")
+        raise StartError(f"{GALLERY} is {GRID_SEATS} seats and its row names {len(wanted)}")
+    stamps = {stamp for _, stamp in seats.COLLECTIONS}
     strays = [one for one in wanted if picks_module.split(one)[0] not in stamps]
     if strays:
-        raise StartError(f"{identifier} draws from {', '.join(stamps)}; not {', '.join(strays)}")
+        raise StartError(f"{GALLERY} draws from the recorded collections; not {', '.join(strays)}")
     resolved = picks_module.resolve(wanted)
-    made, size = picks_module.seat_panels(identifier, resolved, GRID_COLUMNS, identifier)
+    made, size = picks_module.seat_panels(GALLERY, resolved, GRID_COLUMNS, GALLERY)
     return Split(
         made,
         picks_module.provenance(
-            resolved, size, columns=GRID_COLUMNS, chosen=chosen, composed=False
+            resolved, size, columns=GRID_COLUMNS, chosen=_gallery_words(args), composed=False
         ),
         GRID_COLUMNS,
     )
 
 
-def gallery() -> Split:
-    """Twelve seats of the general gallery, unlabelled."""
-    return _grid(GALLERY, GALLERY_DRAW, (GENERAL_STAMP,))
+def draw_gallery(seed: int) -> list[str]:
+    """Draw the general gallery at `seed` for this run to land; see `gallery_draw`."""
+    drawn = gallery_draw(seed)
+    _DRAWN[GALLERY] = drawn
+    count = drawn.args["pool"]
+    return [
+        f"pool: {count['links']} voted links, {count['unresolved']} unresolved, "
+        f"{count['voted']} seats, {count['unshown']} unshown, {count['pool']} at a free place",
+        f"relaxed: {', '.join(drawn.args.get('relaxed') or ['nothing'])}",
+        *drawn.lines,
+    ]
 
 
 def pink_list() -> list[dict]:
@@ -917,6 +1102,8 @@ def sources(identifier: str) -> list[dict]:
         if len(seats) < len(tiles):
             found.append({"kind": figures_module.SYNTHETIC, "keys": []})
         return found
+    if identifier == GALLERY:
+        return [{"kind": figures_module.GALLERY_SEAT, "keys": list(_gallery_args()["picks"])}]
     if identifier in SEATED:
         return [{"kind": figures_module.GALLERY_SEAT, "keys": picks_module.picks_of(identifier)}]
     if identifier == MODES:
@@ -941,6 +1128,8 @@ def recipe(identifier: str) -> dict:
         choice = pink_choice()
         if choice is not None:
             args |= {"chosen": choice[0], "seed": choice[1]}
+    elif identifier == GALLERY:
+        args = _gallery_args()
     else:
         args = {} if identifier in (WALK, FAMILIES) else _args(identifier)
     return {"maker": f"{__name__}:{MAKERS[identifier].__name__}", "args": args}
