@@ -550,6 +550,21 @@ three Julia cells open until Matt sent their frames, one from deep_multibrots_pa
 and none since deep_multibrots_final_rows_ckpt154 filled degree 5's. No figure holds a blank
 cell now; the kind stays for the next one that needs it.
 
+**A panel may be another artist's work** *(art_section_ckpt157)*. It says `credit`:
+`{title, page, artist, artist_page, license, license_url}`, the three pages absolute. The
+credit is the panel's words in place of a label — the title in `<cite>`, linked to the
+work's page, then `by` the artist and the licence, each linked — and its picture links to
+the work's page with no explorer mark, because the explorer never drew it. `links.py`
+refuses it with the fifth reason, `external`, rather than asking for a spec or a seat. The
+row's record of it is a source of kind `external` whose keys are the credited panels'
+pages, and `_credits_sourced` holds the two sets equal at load; the store that answers an
+`external` key is the row itself, so it needs no checkout next door. A credited panel may be
+blank, which is how a work whose licence does not let the site show it is still credited.
+Its file is the artist's published image scaled down and re-encoded by `python -m builder
+import` and nothing else, which a NoDerivatives licence allows, and its `provenance` line
+says where it was downloaded from. `art-hand-directed` on Other artistic techniques is the
+first.
+
 Either way the record describes the **un-annotated** picture wherever the maker letters or
 marks the tile, because a way into the explorer is a way into the place and not into the
 drawing over it. What a maker still draws into the pixels is what the page cannot know

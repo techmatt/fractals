@@ -733,6 +733,10 @@ a:hover { color: var(--ink); }
 .figure a { color: var(--well-link); }
 .figure a:hover { color: var(--well-ink); }
 
+/* Another artist's picture links to its own page, and is a block the way a picture that
+   opens the explorer is, so the anchor wraps the picture rather than a line box. */
+.figure-source { display: block; }
+
 /* A picture the explorer can draw again is itself the way into it. The mark in the
    corner is the affordance — a picture that is quietly a link is a link nobody finds —
    and the words ride on the anchor, where a hover and a screen reader both reach them.

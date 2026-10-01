@@ -143,9 +143,13 @@ MADE = (PLACED, STALE, DRAFT)
 #: - `synthetic` — nothing stored stands behind it: drawn here, or rendered for this
 #:   article alone. The row's own `provenance` is the record, and it carries no keys.
 #: - `none` — the picture cannot be reconstructed. The row says why, in `held_reason`.
+#: - `external` — another artist's published work, shown under its licence
+#:   *(art_section_ckpt157)*. A key is the work's own page, and the record behind it is
+#:   the panel's `credit`, so the row answers for it rather than a store next door: every
+#:   key is a credited panel's page and every credited panel's page is a key.
 RUN_ROW, LOCATION, SYNTHETIC, NO_SOURCE = "run_row", "location", "synthetic", "none"
-GALLERY_SEAT, CANDIDATE = "gallery_seat", "candidate"
-SOURCE_KINDS = (RUN_ROW, LOCATION, GALLERY_SEAT, CANDIDATE, SYNTHETIC, NO_SOURCE)
+GALLERY_SEAT, CANDIDATE, EXTERNAL = "gallery_seat", "candidate", "external"
+SOURCE_KINDS = (RUN_ROW, LOCATION, GALLERY_SEAT, CANDIDATE, SYNTHETIC, NO_SOURCE, EXTERNAL)
 
 
 @dataclass(frozen=True)
@@ -369,6 +373,12 @@ class Panel:
     #: no file, no record and so no link — and it is a dashed well the page owns up to,
     #: the way a pending figure's is. `file` is `None` exactly when this is set.
     blank: bool = False
+    #: Another artist's work, and the words its licence asks for *(art_section_ckpt157)*:
+    #: `{title, page, artist, artist_page, license, license_url}`. The picture links to
+    #: `page` rather than into the explorer, which cannot draw it, and the credit is the
+    #: panel's words in place of a label. A blank panel may carry one too: a work whose
+    #: licence does not let the site show it is credited in a held-open cell.
+    credit: dict | None = None
 
     @property
     def path(self):
@@ -816,7 +826,7 @@ def _panels(figure: Figure, opened: dict[str, str]) -> str:
                 f'{pad}  <div class="figure-blank" '
                 f'style="aspect-ratio: {panel.width} / {panel.height}"></div>'
             )
-            if panel.label:
+            if panel.label or panel.credit:
                 lines.append(f'{pad}  <p class="figure-label">{_label(panel)}</p>')
             lines.append(f"{pad}</div>")
             continue
@@ -831,9 +841,16 @@ def _panels(figure: Figure, opened: dict[str, str]) -> str:
             classes.append("figure-panel-marked")
         ink = f' style="--panel-ink: {attribute(panel.ink)}"' if panel.ink else ""
         lines.append(f'{pad}<div class="{" ".join(classes)}"{ink}>')
-        target = go_href(figure, panel) if panel.go else opened.get(panel_id(figure.id, index))
-        lines.append(f"{pad}  {_linked(picture, target)}")
-        if panel.label:
+        if panel.credit:
+            # Somebody else's work links to its own page, and carries no explorer mark.
+            lines.append(
+                f'{pad}  <a class="figure-source" href="{attribute(panel.credit["page"])}">'
+                f"{picture}</a>"
+            )
+        else:
+            target = go_href(figure, panel) if panel.go else opened.get(panel_id(figure.id, index))
+            lines.append(f"{pad}  {_linked(picture, target)}")
+        if panel.label or panel.credit:
             lines.append(f'{pad}  <p class="figure-label">{_label(panel)}</p>')
         lines.append(f"{pad}</div>")
     close_group()
@@ -850,7 +867,18 @@ def _label(panel: Panel) -> str:
     under a tile — the step a descent took, the width it reached — and they stay one
     line here with the separator CSS's, because a label that wraps is a label and a label
     in four hard-broken lines is a table.
+
+    A credited panel's words are its credit instead: the work's title, which is the one
+    thing here set in italics because it is the title of a work, then its artist and its
+    licence, each linked to its own page.
     """
+    if panel.credit:
+        held = panel.credit
+        return (
+            f'<cite><a href="{attribute(held["page"])}">{text(held["title"])}</a></cite> by '
+            f'<a href="{attribute(held["artist_page"])}">{text(held["artist"])}</a>, '
+            f'<a href="{attribute(held["license_url"])}">{text(held["license"])}</a>'
+        )
     notes = (
         panel.note if isinstance(panel.note, list | tuple) else ([panel.note] if panel.note else [])
     )
@@ -1033,6 +1061,8 @@ def _figure(row: records.Record, identifier: str) -> Figure:
     # A picture that is not made yet has nothing to record; a made one has no excuse.
     provenance = row.lines("provenance") if made else ()
     file, width, height = asset
+    sources = _sources(row)
+    _credits_sourced(row, panels, sources)
     return Figure(
         id=identifier,
         page=row.text("page"),
@@ -1044,7 +1074,7 @@ def _figure(row: records.Record, identifier: str) -> Figure:
         height=height,
         provenance=provenance,
         recipe=_recipe(row),
-        sources=_sources(row),
+        sources=sources,
         params=_params(row),
         facts=_facts(row),
         held_reason=held_reason,
@@ -1094,12 +1124,18 @@ PANEL_FIELDS = (
     "link",
     "go",
     "blank",
+    "credit",
 )
 PANEL_REQUIRED = ("file", "width", "height", "alt")
 #: What a blank panel must say, and what it may: a size and a label, and nothing that
-#: would be a picture or a record of one.
+#: would be a picture or a record of one. A credit stands in for the label.
 BLANK_REQUIRED = ("width", "height", "label")
-BLANK_ALLOWED = ("width", "height", "label", "note", "blank")
+BLANK_ALLOWED = ("width", "height", "label", "note", "blank", "credit")
+
+#: What a panel's `credit` says, every field a non-empty string. The three that are
+#: pages are absolute, because they are somebody else's.
+CREDIT_FIELDS = ("title", "page", "artist", "artist_page", "license", "license_url")
+CREDIT_PAGES = ("page", "artist_page", "license_url")
 
 #: What a band may say. `title` is required; `note` is the sentence under it, `blocks`
 #: the chips beside it, `columns` how many panels that band runs across, and `arrow` the
@@ -1135,7 +1171,10 @@ def _panel_rows(row: records.Record) -> tuple[Panel, ...]:
                     f"{row.where}: a blank panel is a size and a label, and has no "
                     f"{', '.join(sorted(extra))}"
                 )
+        _credit_fields(row, entry)
         required = BLANK_REQUIRED if blank else PANEL_REQUIRED
+        if entry.get("credit") is not None:
+            required = tuple(name for name in required if name != "label")
         missing = [name for name in required if entry.get(name) is None]
         if missing and blank:
             raise records.RecordError(
@@ -1201,6 +1240,45 @@ def _panel_rows(row: records.Record) -> tuple[Panel, ...]:
         found.append(Panel(**held))
     _groups_in_bands(row, found)
     return tuple(found)
+
+
+def _credit_fields(row: records.Record, entry: dict) -> None:
+    """A credit is the whole of what another artist's licence asks for, and is one record.
+
+    It is the panel's words, so it stands instead of a label rather than beside one, and
+    it is the panel's record, so nothing that would make the picture this project's own —
+    a spec, a seat, a recipe or a short link — rides with it.
+    """
+    credit = entry.get("credit")
+    if credit is None:
+        return
+    if not isinstance(credit, dict) or set(credit) != set(CREDIT_FIELDS):
+        raise records.RecordError(f"{row.where}: a panel's credit is {', '.join(CREDIT_FIELDS)}")
+    for name in CREDIT_FIELDS:
+        value = credit[name]
+        if not isinstance(value, str) or not value.strip():
+            raise records.RecordError(f"{row.where}: a credit's {name} is a non-empty string")
+        if name in CREDIT_PAGES and not value.startswith("https://"):
+            raise records.RecordError(f"{row.where}: a credit's {name} is an https:// page")
+    claimed = [
+        name for name in ("label", "note", "spec", "seat", "deep", "link", "go") if name in entry
+    ]
+    if claimed:
+        raise records.RecordError(
+            f"{row.where}: a credited panel is somebody else's work in their words, and "
+            f"names no {', '.join(claimed)}"
+        )
+
+
+def _credits_sourced(row: records.Record, panels: tuple[Panel, ...], sources) -> None:
+    """Every credited panel's page is an `external` key, and every such key is one."""
+    credited = {panel.credit["page"] for panel in panels if panel.credit}
+    keyed = {key for source in sources if source.kind == EXTERNAL for key in source.keys}
+    if credited != keyed:
+        raise records.RecordError(
+            f"{row.where}: an external source's keys are its credited panels' pages — "
+            f"credited {sorted(credited)}, keyed {sorted(keyed)}"
+        )
 
 
 def _group_fields(row: records.Record, group) -> None:
@@ -1345,11 +1423,11 @@ def _sources(row: records.Record) -> tuple[Source, ...]:
                     f"{row.where}: source key {key!r} is not a string — a key addresses a "
                     "record by its own name, never by its position in live data"
                 )
-        if keys and kind not in KEYED_KINDS:
+        if keys and kind not in (*KEYED_KINDS, EXTERNAL):
             raise records.RecordError(
                 f"{row.where}: a {kind} source carries no keys, and this one names {len(keys)}"
             )
-        if not keys and kind in KEYED_KINDS:
+        if not keys and kind in (*KEYED_KINDS, EXTERNAL):
             raise records.RecordError(f"{row.where}: a {kind} source with no keys says nothing")
         drawn = entry.get("drawn")
         if drawn is not None and kind != GALLERY_SEAT:

@@ -29,7 +29,7 @@ A sheet is many pictures and a link is one, so the rule is stated rather than gu
 A link that is *nearly* the figure is worse than no link: the reader lands on a picture
 that does not match what they were just looking at and has no way to know which half is
 wrong. So a spec that cannot be said exactly is not approximated — the row says
-`no_link` and which of the four reasons it is. `REASONS` spells them.
+`no_link` and which of the five reasons it is. `REASONS` spells them.
 
 ## Who writes the link
 
@@ -80,6 +80,8 @@ REASONS = {
     "not_exposed": "the picture depends on something this page does not offer by ruling "
     "— a render-only family, a niche mode, a curve a mode does not carry, a fold a cyclic "
     "map refuses",
+    "external": "another artist's work, which links to its own page rather than into an "
+    "explorer that never drew it",
 }
 
 # ------------------------------------------------------------------------- the registry
@@ -348,6 +350,9 @@ def _panel_links(
     found = []
     held = _deep_recipes() if any(panel.deep or panel.link for panel in figure.panels) else {}
     for identifier, panel in pictured:
+        if panel.credit:
+            found.append(_refused(identifier, "external", REASONS["external"]))
+            continue
         if panel.link:
             # **A link panel's link is its recipe too** (start_pink_gallery_ckpt155): a
             # shallow link somebody chose, stored canonical and drawn by `render-link` from

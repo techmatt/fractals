@@ -206,7 +206,7 @@ keeps the mechanics. **Every apply round ends by distilling that round's general
   of its own, needs its own per-panel view before its figure can be split.
 - **A figure's id opens with its page's prefix** — `overview-`, `escape-`, `render-`,
   `modes-`, `locations-`, `judges-`, `palette-`, `wallpapers-`, `gallery-`, `pipeline-`,
-  `atlas-`, `deep-`, `math-`, `start-`, `packs-`, `tools-` — so a slug says where it
+  `atlas-`, `deep-`, `art-`, `math-`, `start-`, `packs-`, `tools-` — so a slug says where it
   lives before anything looks it up. One prefix to a page and one page to a prefix, with
   the single carve-out that a page hanging off a section shares that section's prefix:
   `palette-generator-batch` sits on `palettes/make-your-own.html`. The front page's one
@@ -461,6 +461,12 @@ What a figure is made of:
   transcodes of the JPEGs they replaced**, so a maker rerun does *not* reproduce them byte
   for byte the way the one-encoder rule promises; it lands one lossy step better, and the
   promise holds from that redraw on.
+- **Another artist's picture is shown only under its own licence** *(art_section_ckpt157)*:
+  any CC licence that allows non-commercial sharing (BY, BY-SA, BY-NC, BY-NC-SA,
+  BY-NC-ND), confirmed on the work's page. The file is the artist's published image,
+  whole — scaled and re-encoded, nothing else — and the panel carries a `credit` and an
+  `external` source; a page stating no licence or all rights reserved gets a blank,
+  credited cell. `builder/README.md` has the mechanics.
 - **A diagram is PNG**, and **an animation is an APNG** — which also carries a `.png`
   extension and sits in the **same plain `<img>` block** as everything else. No video
   element, no script, no second markup path. **A video is not the site's to host**: a
@@ -497,7 +503,8 @@ What a figure is made of:
   the page.
 - **A picture the explorer can draw again carries a link into it.** `explorer/links.jsonl`
   has one row per figure and per gallery tile: a permalink derived from that picture's own
-  provenance, or an explicit `no_link` with which of four reasons it is. The words are
+  provenance, or an explicit `no_link` with which of five reasons it is — the fifth,
+  `external`, is another artist's work, which links to its own page instead. The words are
   *open in fractal explorer* wherever it appears — on a figure they are the accessible
   name of a small mark in the picture's corner, and the picture itself is the link; on a
   gallery tile they are still a line of text. The link is derived and never
