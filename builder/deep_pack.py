@@ -1,9 +1,11 @@
 """The deep gallery pack: deep views picked by hand, rendered at full size and zipped.
 
-    python -m builder.deep_pack members            write the member record from the picks
-    python -m builder.deep_pack probe              time every member small, estimate the run
-    python -m builder.deep_pack render [--ss N]    the full-size JPEGs, resuming
-    python -m builder.deep_pack previews           the packs page's five tiles and their pick
+    python -m builder deep-pack members            write the member record from the picks
+    python -m builder deep-pack probe              time every member small, estimate the run
+    python -m builder deep-pack render [--ss N]    the full-size JPEGs, resuming
+    python -m builder deep-pack previews           the packs page's five tiles and their pick
+    python -m builder deep-pack verify             each picture against the tab's own render
+    python -m builder deep-pack zip                the zip, and its size into the record
 
 *(deep_pack_ckpt157.)* Deep pictures never enter the wallpaper pipeline next door, so this
 pack is made entirely on this side. **The members** are Matt's fifteen hand-picked deep
@@ -477,9 +479,129 @@ def _stamp(jobs: list[dict]) -> None:
         raise DeepPackError(f"stamping failed:\n{done.stderr[-2000:]}")
 
 
+# ------------------------------------------------------------------------ verify and zip
+
+#: The explorer-scale render each picture is held to: the tab's own wasm path at its canvas.
+EXPLORER = (1280, 720)
+#: Mean absolute difference, per 0-255 channel, at 320x180, over which a picture is refused.
+#: Supersampling alone moves filigree by a few levels; a wrong view moves it by tens.
+REFUSE = 12.0
+
+
+def verify(ss: int = SUPERSAMPLE) -> list[str]:
+    """Each full-size picture against its link drawn as the Deep tab draws it.
+
+    `deep_figures.draw_link` is the tab's own reading of the link, its band renderer on the
+    committed `perturb.wasm`, and its shading. Both are box-reduced to 1280x720 and to
+    320x180 and compared there; a side-by-side sheet lands beside the numbers.
+    """
+    import numpy as np
+    from PIL import Image
+
+    from . import deep_figures
+
+    out = WORK / "verify"
+    out.mkdir(parents=True, exist_ok=True)
+    said, rows, pairs = [], [], []
+    for member in members():
+        drawn = deep_figures.draw_link(member["link"], *EXPLORER, 1, f"deep-pack-{member['id']}")
+        full = Image.open(WORK / f"full-ss{ss}" / f"{member['id']}.jpg").convert("RGB")
+        tab = Image.open(drawn.path).convert("RGB")
+        row = {"rank": member["rank"], "id": member["id"]}
+        for size in (EXPLORER, (320, 180)):
+            a = np.asarray(full.resize(size, Image.BOX), dtype=np.float64)
+            b = np.asarray(tab.resize(size, Image.BOX), dtype=np.float64)
+            diff = np.abs(a - b)
+            row[f"{size[0]}"] = {
+                "mean": round(float(diff.mean()), 2),
+                "p99": round(float(np.percentile(diff, 99)), 1),
+            }
+        row["ok"] = row["320"]["mean"] <= REFUSE
+        rows.append(row)
+        pairs.append((full.resize((320, 180), Image.BOX), tab.resize((320, 180), Image.BOX)))
+        said.append(
+            f"{member['rank']:2d} {'ok ' if row['ok'] else 'BAD'} mean {row['1280']['mean']:5.2f} "
+            f"/ {row['320']['mean']:5.2f} at 1280 / 320, p99 {row['1280']['p99']}"
+        )
+    sheet = Image.new("RGB", (2 * 328, 188 * len(pairs)), "white")
+    for at, (a, b) in enumerate(pairs):
+        sheet.paste(a, (0, at * 188))
+        sheet.paste(b, (328, at * 188))
+    sheet.save(out / "sheet.png")
+    (out / "verify.json").write_text(json.dumps(rows, indent=1) + "\n", encoding="utf-8")
+    bad = [row["rank"] for row in rows if not row["ok"]]
+    said.append(f"{len(rows) - len(bad)} of {len(rows)} match; refused: {bad or 'none'}")
+    return said
+
+
+def readme(count: int) -> str:
+    """The zip's README, worded and licensed as next door's `curation/packs.py` writes one."""
+    return "\n".join(
+        [
+            f"Fractal wallpapers, the deep gallery: {count} deep zooms picked by hand.",
+            "",
+            "More, and the explorer every picture came from: https://techmatt.github.io/fractals/",
+            "Each picture's metadata carries a link that reopens it in the explorer.",
+            "",
+            "Wallpapers © 2026 Matt Fisher, licensed under CC BY 4.0 "
+            "(https://creativecommons.org/licenses/by/4.0/).",
+            "",
+        ]
+    )
+
+
+def build_zip(ss: int = SUPERSAMPLE) -> list[str]:
+    """The zip beside next door's packs, and its size and digest into the record.
+
+    One folder named after the zip, the pictures STORED (JPEGs do not compress) and the
+    README deflated, as next door's `write_zip` lays a pack out. Refuses while any member
+    has no picture: a pack here is whole or it is not built.
+    """
+    import hashlib
+    import zipfile
+
+    from . import packs
+
+    root = packs.built_root()
+    if root is None:
+        raise DeepPackError(f"no packs directory (`{packs.BUILT_KEY}` in local.toml)")
+    listed = members()
+    held = WORK / f"full-ss{ss}"
+    missing = [one["rank"] for one in listed if not (held / f"{one['id']}.jpg").is_file()]
+    if missing:
+        raise DeepPackError(f"members {missing} have no picture yet")
+    target = Path(root) / ZIP
+    folder = target.stem
+    writing = target.with_name(target.name + ".writing")
+    with zipfile.ZipFile(writing, "w") as bundle:
+        for one in listed:
+            bundle.write(
+                held / f"{one['id']}.jpg",
+                f"{folder}/{one['file']}",
+                compress_type=zipfile.ZIP_STORED,
+            )
+        bundle.writestr(
+            f"{folder}/README.txt", readme(len(listed)), compress_type=zipfile.ZIP_DEFLATED
+        )
+    writing.replace(target)
+    digest = hashlib.sha256(target.read_bytes()).hexdigest()
+    rows = [json.loads(line) for line in RECORD.read_text(encoding="utf-8").splitlines() if line]
+    rows[0]["zip"] = {"file": ZIP, "bytes": target.stat().st_size, "sha256": digest}
+    rows[0]["regime"] = {
+        "resolution": list(RESOLUTION),
+        "supersample": ss,
+        "quality": QUALITY,
+        "chroma": "444",
+    }
+    _write(rows)
+    return [f"{target}: {target.stat().st_size:,} bytes, sha256 {digest}"]
+
+
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="python -m builder.deep_pack")
-    parser.add_argument("stage", choices=("members", "probe", "render", "previews"))
+    parser = argparse.ArgumentParser(prog="python -m builder deep-pack")
+    parser.add_argument(
+        "stage", choices=("members", "probe", "render", "previews", "verify", "zip")
+    )
     parser.add_argument("--ss", type=int, default=SUPERSAMPLE)
     options = parser.parse_args(argv)
     below_normal()
@@ -487,6 +609,10 @@ def main(argv: list[str] | None = None) -> int:
         said = write_members()
     elif options.stage == "previews":
         said = previews()
+    elif options.stage == "verify":
+        said = verify(options.ss)
+    elif options.stage == "zip":
+        said = build_zip(options.ss)
     elif options.stage == "probe":
         said = probe()
     else:

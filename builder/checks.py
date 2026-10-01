@@ -160,6 +160,7 @@ was raise, and every check after it went unrun.
   collection's opening. Where the checkout and the full set are here, the record is also
   what `packs --import` would write today, so zips built and not imported fail here; a
   named skip elsewhere. `packs.py` says why the record is imported rather than derived.
+  The deep gallery's row is held to `builder/data/deep-pack.jsonl` instead, on any clone.
 - **readmes** — every explorer link in this repository's root `README.md` parses under
   `permalink.js` and is already its own canonical spelling. Where the checkout is
   configured, the same of fractal-wallpapers' root `README.md`, and every strip thumbnail

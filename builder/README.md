@@ -883,6 +883,19 @@ walk (`ranking.previews`) and writes its picks into `packs.jsonl`, ahead of any 
   unwalked; the colour packs walk on and never reuse one. `check`'s `packs` holds the file
   to the record, to five a pack and no seat twice, and (with the store) to every pick having
   a vote.
+- **The deep gallery** *(deep_pack_ckpt157)* is the one pack made on this side: deep links
+  never enter the pipeline next door, so `python -m builder deep-pack` does what `curate
+  packs build` does for the rest. Its members are Matt's fifteen picks (frozen in
+  `deep_pack.PICKS`) and `deep-random-dives`' panels, less any view an earlier member is up
+  to link spelling, recorded with their links in `builder/data/deep-pack.jsonl`. Each is
+  drawn by the native perturbation path at 2560x1440, 3x3 samples a pixel, shaded by the
+  tab's own `deep_gallery_shade.mjs`, saved as 4:4:4 JPEG at 95, and stamped through
+  `explorer/stamp.js`; `verify` holds each to the tab's own render of its link, where the
+  difference is the supersampling (a 1x1 render's speckle averaged away) and nothing else.
+  Its five previews are a seeded hue-spread draw from all its members, since nearly every
+  one is already a Deep zoom figure: the seat packs' rule against a picture the site shows
+  elsewhere cannot reach it. Its `packs.jsonl` row is `deep_pack.row()`, `--import` writes
+  it from the tracked record, and `check`'s `packs` holds it there on any clone.
 
 ## Friends' votes live outside the repository, and make the packs' order
 

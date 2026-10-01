@@ -15,6 +15,7 @@ no page made from them. `import`,
 that found the first set. `dive-candidates` lands deep candidates by the Dive block's own
 rules and lays them out as a numbered sheet to pick a figure from; `random-dives` lands the
 same way, in New coloring, into the Deep tab's Random dives record and its tiles.
+`deep-pack` renders the Wallpaper packs page's deep gallery at full size and zips it.
 `tools-and-data` writes the two files the Tools and data page offers.
 `prose`, `review`, `explorer`, `locations`, `judges`, `picks`, `start`, `seats`, `phoenix-points`,
 `deep-gallery`, `growth`, `pipeline` and `tools-and-data` are the
@@ -656,6 +657,15 @@ def _parser() -> argparse.ArgumentParser:
     deep.add_argument(
         "args", nargs="*", help="descend: DEGREE COUNT SEED EXTRA; preview: FRAMES NAME"
     )
+
+    deep_pack = commands.add_parser(
+        "deep-pack",
+        help="the Wallpaper packs page's deep gallery: members, renders, previews, and zip",
+    )
+    deep_pack.add_argument(
+        "stage", choices=["members", "probe", "render", "previews", "verify", "zip"]
+    )
+    deep_pack.add_argument("--ss", type=int, default=3, help="samples a pixel each way")
 
     random_dives = commands.add_parser(
         "random-dives",
@@ -1892,6 +1902,10 @@ def main(argv: list[str] | None = None) -> int:
             for line in dive_candidates_module.main(options):
                 print(line)
             return 0
+        if options.command == "deep-pack":
+            from . import deep_pack
+
+            return deep_pack.main([options.stage, "--ss", str(options.ss)])
         if options.command == "random-dives":
             for line in random_dives_module.main(options):
                 print(line)
