@@ -474,6 +474,9 @@ def _parser() -> argparse.ArgumentParser:
         "--branch", type=int, default=0, help="which twin, at degree D: 0 to D-2"
     )
     descended.add_argument(
+        "--direct", action="store_true", help="take the one link as it is: no chain, no copy"
+    )
+    descended.add_argument(
         "--dry-run", action="store_true", help="solve the chain and print it; write nothing"
     )
     descended.add_argument(

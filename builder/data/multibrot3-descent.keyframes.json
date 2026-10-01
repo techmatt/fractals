@@ -1,0 +1,228 @@
+{
+  "schema": 1,
+  "name": "multibrot3-descent",
+  "note": "An automatic minibrot descent's recipe, written by `python -m builder descent`: the chain it was asked for, the stages it found, and a keyframe at every halving centred on the last copy. `zoom_fields.mjs --record` draws the fields and `zoom.py --record` colours and encodes them; `builder/README.md` has the commands.",
+  "links": [
+    "explorer/?dv=3&f=multibrot3&x=-0.091789550132415001067&y=0.770122710433646015127&w=5.844395282808642e-13&n=1028544&p=Terminal%20Flare&phase=0.681&scale=absolute&lambda=0&period=0.413"
+  ],
+  "link": "explorer/index.html?dv=3&f=multibrot3&x=-0.091789550132415001067&y=0.770122710433646015127&w=5.8444e-13&p=Terminal Flare",
+  "center_re": "-0.091789550132415001067",
+  "center_im": "0.770122710433646015127",
+  "target_width": 5.844395282808642e-13,
+  "degree": 3,
+  "family": "multibrot3",
+  "mode": "smooth",
+  "palette": "Terminal Flare",
+  "branch": null,
+  "chain": [],
+  "stages": [
+    {
+      "name": "home",
+      "width": 7.938214081541854,
+      "k": 44,
+      "cap_floor": null
+    },
+    {
+      "name": "target",
+      "width": 5.844395282808642e-13,
+      "k": 0,
+      "cap_floor": null
+    }
+  ],
+  "notes": [
+    "a link taken as it is (--direct): no chain and no copies, so no stage but the target"
+  ],
+  "fit": {
+    "note": "The family's home view, from engine.wasm's plan.",
+    "re": [-2.6, 2.6],
+    "im": [-1.4625000000000001, 1.4625000000000001]
+  },
+  "keyframes": {
+    "rule": "w_k = target_width * 2^k, k = 0 up to the first width that holds the home view",
+    "grid": [7680, 4320],
+    "supersample": 1,
+    "cap_rule": "the Deep tab's settle (deep-gallery-native settle, policy::settle), raised at every stage frame and each keyframe deeper to 32 periods of that stage's copy, under cap::EXPLICIT_CEILING; then, as the floor, measured by zoom_fields.mjs's capRule over the probe (kept as `was`)",
+    "probe": [480, 270],
+    "cap": {
+      "share": 1e-05,
+      "headroom": 2
+    },
+    "frames": [
+      { "k": 0, "width": 5.844395282808642e-13, "maxiter": 2000000, "settled": 54667, "probe_mean": 3558, "escaped": 1, "stage": "target", "need": 20178, "was": 54667, "black_was": 0, "black": 0, "interior": 0.0001, "nu_max": 29289 },
+      { "k": 1, "width": 1.1688790565617284e-12, "maxiter": 2000000, "settled": 53467, "probe_mean": 2800, "escaped": 1, "need": 40814, "was": 53467, "black_was": 7.72e-06, "black": 0, "interior": 0.0003, "nu_max": 56333 },
+      { "k": 2, "width": 2.3377581131234567e-12, "maxiter": 2000000, "settled": 52267, "probe_mean": 4105, "escaped": 0.9627, "need": 1267606, "was": 52267, "black_was": 0.000849, "black": 0, "interior": 0.0347, "nu_max": 1945443 },
+      { "k": 3, "width": 4.6755162262469135e-12, "maxiter": 2000000, "settled": 51067, "probe_mean": 3200, "escaped": 0.9727, "need": 684409, "was": 51067, "black_was": 0.000486, "black": 0, "interior": 0.0294, "nu_max": 1195965 },
+      { "k": 4, "width": 9.351032452493827e-12, "maxiter": 2000000, "settled": 49867, "probe_mean": 2345, "escaped": 0.9918, "need": 1208089, "was": 49867, "black_was": 0.000131, "black": 0, "interior": 0.0076, "nu_max": 1650200 },
+      { "k": 5, "width": 1.8702064904987654e-11, "maxiter": 2000000, "settled": 48667, "probe_mean": 2023, "escaped": 0.997, "need": 169730, "was": 48667, "black_was": 5.4e-05, "black": 0, "interior": 0.0023, "nu_max": 306961 },
+      { "k": 6, "width": 3.740412980997531e-11, "maxiter": 2000000, "settled": 47467, "probe_mean": 1701, "escaped": 0.9987, "need": 95204, "was": 47467, "black_was": 2.31e-05, "black": 0, "interior": 0.0018, "nu_max": 1956180 },
+      { "k": 7, "width": 7.480825961995062e-11, "maxiter": 2000000, "settled": 46267, "probe_mean": 1684, "escaped": 0.9905, "need": 637059, "was": 46267, "black_was": 0.000216, "black": 0, "interior": 0.0085, "nu_max": 1342375 },
+      { "k": 8, "width": 1.4961651923990123e-10, "maxiter": 2000000, "settled": 45067, "probe_mean": 1559, "escaped": 0.9961, "need": 1028132, "was": 45067, "black_was": 0.000123, "black": 0, "interior": 0.004, "nu_max": 1168556 },
+      { "k": 9, "width": 2.9923303847980246e-10, "maxiter": 2000000, "settled": 43867, "probe_mean": 2313, "escaped": 0.9787, "need": 1701919, "was": 43867, "black_was": 0.00105, "black": 0, "interior": 0.0206, "nu_max": 1899263 },
+      { "k": 10, "width": 5.984660769596049e-10, "maxiter": 2000000, "settled": 42667, "probe_mean": 4525, "escaped": 0.9041, "need": 1711842, "was": 42667, "black_was": 0.00389, "black": 0, "interior": 0.0917, "nu_max": 1949027 },
+      { "k": 11, "width": 1.1969321539192099e-09, "maxiter": 2000000, "settled": 41467, "probe_mean": 12891, "escaped": 0.6832, "need": 1846047, "was": 41467, "black_was": 0.00669, "black": 0, "interior": 0.3101, "nu_max": 1946476 },
+      { "k": 12, "width": 2.3938643078384197e-09, "maxiter": 2000000, "settled": 40267, "probe_mean": 15441, "escaped": 0.3872, "need": 1478736, "was": 40267, "black_was": 0.00413, "black": 0, "interior": 0.6093, "nu_max": 1895545 },
+      { "k": 13, "width": 4.787728615676839e-09, "maxiter": 2000000, "settled": 39067, "probe_mean": 10871, "escaped": 0.2487, "need": 1324636, "was": 39067, "black_was": 0.00201, "black": 0, "interior": 0.7476, "nu_max": 1525019 },
+      { "k": 14, "width": 9.575457231353679e-09, "maxiter": 2000000, "settled": 37867, "probe_mean": 6928, "escaped": 0.2604, "need": 863501, "was": 37867, "black_was": 0.00113, "black": 0, "interior": 0.737, "nu_max": 1913561 },
+      { "k": 15, "width": 1.9150914462707358e-08, "maxiter": 2000000, "settled": 36667, "probe_mean": 4130, "escaped": 0.5247, "need": 394287, "was": 36667, "black_was": 0.00071, "black": 0, "interior": 0.4735, "nu_max": 570476 },
+      { "k": 16, "width": 3.8301828925414715e-08, "maxiter": 2000000, "settled": 35467, "probe_mean": 1712, "escaped": 0.7539, "need": 1036380, "was": 35467, "black_was": 0.000347, "black": 0, "interior": 0.2443, "nu_max": 1696433 },
+      { "k": 17, "width": 7.660365785082943e-08, "maxiter": 1967206, "settled": 34267, "probe_mean": 826, "escaped": 0.8928, "need": 281145, "was": 34267, "black_was": 0.000185, "black": 0, "interior": 0.1066, "nu_max": 602848 },
+      { "k": 18, "width": 1.5320731570165886e-07, "maxiter": 1967206, "settled": 33067, "probe_mean": 280, "escaped": 0.9722, "need": 82969, "was": 33067, "black_was": 6.17e-05, "black": 0, "interior": 0.0272, "nu_max": 88093 },
+      { "k": 19, "width": 3.064146314033177e-07, "maxiter": 1967206, "settled": 31867, "probe_mean": 178, "escaped": 0.9926, "need": 27238, "was": 31867, "black_was": 7.72e-06, "black": 0, "interior": 0.0068, "nu_max": 673313 },
+      { "k": 20, "width": 6.128292628066354e-07, "maxiter": 1967206, "settled": 30667, "probe_mean": 132, "escaped": 0.9983, "need": 7836, "was": 30667, "black_was": 0, "black": 0, "interior": 0.0017, "nu_max": 12137 },
+      { "k": 21, "width": 1.2256585256132709e-06, "maxiter": 1967206, "settled": 29467, "probe_mean": 94, "escaped": 0.9996, "need": 721, "was": 29467, "black_was": 0, "black": 0, "interior": 0.0004, "nu_max": 730 },
+      { "k": 22, "width": 2.4513170512265418e-06, "maxiter": 1967206, "settled": 28267, "probe_mean": 88, "escaped": 1, "need": 560, "was": 28267, "black_was": 0, "black": 0, "interior": 0.0001, "nu_max": 612 },
+      { "k": 23, "width": 4.9026341024530835e-06, "maxiter": 1967206, "settled": 27067, "probe_mean": 99, "escaped": 1, "need": 649, "was": 27067, "black_was": 0, "black": 0, "interior": 0, "nu_max": 726 },
+      { "k": 24, "width": 9.805268204906167e-06, "maxiter": 1967206, "settled": 25867, "probe_mean": 89, "escaped": 1, "need": 601, "was": 25867, "black_was": 0, "black": 0, "interior": 0, "nu_max": 828 },
+      { "k": 25, "width": 1.9610536409812334e-05, "maxiter": 1967206, "settled": 24667, "probe_mean": 75, "escaped": 0.9983, "need": 2999, "was": 24667, "black_was": 7.72e-06, "black": 0, "interior": 0.0018, "nu_max": 35472 },
+      { "k": 26, "width": 3.922107281962467e-05, "maxiter": 1967206, "settled": 23467, "probe_mean": 82, "escaped": 0.9996, "need": 861, "was": 23467, "black_was": 0, "black": 0, "interior": 0.0005, "nu_max": 2516 },
+      { "k": 27, "width": 7.844214563924934e-05, "maxiter": 1967206, "settled": 22267, "probe_mean": 82, "escaped": 0.9996, "need": 3431, "was": 22267, "black_was": 0, "black": 0, "interior": 0.0002, "nu_max": 6128 },
+      { "k": 28, "width": 0.00015688429127849867, "maxiter": 1967206, "settled": 21067, "probe_mean": 56, "escaped": 1, "need": 739, "was": 21067, "black_was": 0, "black": 0, "interior": 0.0001, "nu_max": 2090 },
+      { "k": 29, "width": 0.00031376858255699735, "maxiter": 1967206, "settled": 19867, "probe_mean": 61, "escaped": 0.9965, "need": 5310, "was": 19867, "black_was": 0, "black": 0, "interior": 0.0025, "nu_max": 7887 },
+      { "k": 30, "width": 0.0006275371651139947, "maxiter": 1967206, "settled": 18667, "probe_mean": 53, "escaped": 0.9996, "need": 2297, "was": 18667, "black_was": 0, "black": 0, "interior": 0.0009, "nu_max": 4472 },
+      { "k": 31, "width": 0.0012550743302279894, "maxiter": 1967206, "settled": 17467, "probe_mean": 56, "escaped": 0.9978, "need": 5273, "was": 17467, "black_was": 0, "black": 0, "interior": 0.001, "nu_max": 8302 },
+      { "k": 32, "width": 0.0025101486604559788, "maxiter": 1967206, "settled": 16267, "probe_mean": 65, "escaped": 0.9939, "need": 16963, "was": 16267, "black_was": 1.54e-05, "black": 0, "interior": 0.0067, "nu_max": 23826 },
+      { "k": 33, "width": 0.0050202973209119576, "maxiter": 1967206, "settled": 15067, "probe_mean": 45, "escaped": 0.9965, "need": 12306, "was": 15067, "black_was": 7.72e-06, "black": 0, "interior": 0.0034, "nu_max": 28689 },
+      { "k": 34, "width": 0.010040594641823915, "maxiter": 1967206, "settled": 13867, "probe_mean": 62, "escaped": 0.9957, "need": 10604, "was": 13867, "black_was": 7.72e-06, "black": 0, "interior": 0.0041, "nu_max": 31792 },
+      { "k": 35, "width": 0.02008118928364783, "maxiter": 1967206, "settled": 12667, "probe_mean": 212, "escaped": 0.9401, "need": 74445, "was": 12667, "black_was": 0.000139, "black": 0, "interior": 0.0593, "nu_max": 153541 },
+      { "k": 36, "width": 0.04016237856729566, "maxiter": 1967206, "settled": 11467, "probe_mean": 1390, "escaped": 0.7682, "need": 983603, "was": 11467, "black_was": 0.00091, "black": 0, "interior": 0.2318, "nu_max": 1003496 },
+      { "k": 37, "width": 0.08032475713459132, "maxiter": 554732, "settled": 10267, "probe_mean": 1443, "escaped": 0.5156, "need": 144252, "was": 10267, "black_was": 0.000617, "black": 0, "interior": 0.4816, "nu_max": 254156 },
+      { "k": 38, "width": 0.16064951426918264, "maxiter": 554732, "settled": 9067, "probe_mean": 931, "escaped": 0.3264, "need": 213446, "was": 9067, "black_was": 0.000332, "black": 0, "interior": 0.6738, "nu_max": 327083 },
+      { "k": 39, "width": 0.3212990285383653, "maxiter": 554732, "settled": 7867, "probe_mean": 551, "escaped": 0.2643, "need": 277366, "was": 7867, "black_was": 0.000255, "black": 0, "interior": 0.7338, "nu_max": 378679 },
+      { "k": 40, "width": 0.6425980570767306, "maxiter": 335524, "settled": 6667, "probe_mean": 326, "escaped": 0.3268, "need": 167762, "was": 6667, "black_was": 0.000193, "black": 0, "interior": 0.6718, "nu_max": 228229 },
+      { "k": 41, "width": 1.2851961141534611, "maxiter": 195992, "settled": 5467, "probe_mean": 186, "escaped": 0.5139, "need": 43101, "was": 5467, "black_was": 8.49e-05, "black": 0, "interior": 0.4856, "nu_max": 168325 },
+      { "k": 42, "width": 2.5703922283069223, "maxiter": 195992, "settled": 4267, "probe_mean": 64, "escaped": 0.7691, "need": 41688, "was": 4267, "black_was": 3.86e-05, "black": 0, "interior": 0.2307, "nu_max": 64100 },
+      { "k": 43, "width": 5.1407844566138445, "maxiter": 195992, "settled": 3067, "probe_mean": 26, "escaped": 0.8919, "need": 97996, "was": 3067, "black_was": 2.31e-05, "black": 0, "interior": 0.1085, "nu_max": 99185 },
+      { "k": 44, "width": 10.281568913227689, "maxiter": 11466, "settled": 1867, "probe_mean": 9, "escaped": 0.9701, "stage": "home", "need": 5733, "was": 1867, "black_was": 3.09e-05, "black": 7.72e-06, "interior": 0.0302, "nu_max": 11877 }
+    ],
+    "probe_ceiling": 2000000
+  },
+  "video": {
+    "resolution": [3840, 2160],
+    "fps": 60,
+    "seconds_per_halving": 1.5,
+    "hold_start": 1,
+    "hold_end": 3,
+    "ease_seconds": 2,
+    "ease_note": "The zoom's speed in halvings per second rises from zero to 1/seconds_per_halving over ease_seconds along a raised cosine, and falls back the same way at the end.",
+    "feather": 0.08,
+    "feather_note": "The inner keyframe's edge fades over this share of its own width."
+  },
+  "variants": {
+    "preview": {
+      "note": "A half-size preview of this record's video: the same widths, caps, path and colouring, at 1920x1080 fields and a 960x540 video, paced as the 4k60 master is (1.2 s a halving, 1 s and 7 s holds), so it previews that video's timing too. `zoom_fields.mjs --variant preview` and `zoom.py --variant preview` draw it under `<zoom dir>/preview/`.",
+      "grid": [1920, 1080],
+      "supersample": 1,
+      "video": {
+        "resolution": [960, 540],
+        "speedup": 1.25,
+        "hold_start": 1.25,
+        "hold_end": 8.75
+      }
+    },
+    "4k60": {
+      "note": "multibrot3_video_ckpt157: the final video, under the knee mapping, at julia3's 4k60 pacing: 1.2 s a halving (speedup 1.25 over the base's 1.5, the easing's shape kept), holding 1 s at the start and 7 s on the final frame (written times 1.25 because speedup divides them). Fields at 7680x4320 so a 3840x2160 frame is never enlarged. Caps: the measured rule's cap is kept per frame as `rule`, and every keyframe is raised to the explicit ceiling, 2,000,000, as julia3's were. This descent is not fully escaped (the probe's interior share reaches 75% at k13 and 73% at k39), but the kernel settles interior early: the probe drew k39 at the ceiling in 0.5 s, so the raise still costs only the iterations escaping samples use. The rule already asks 2,000,000 from k00 to k16 and 1,967,206 to k36; the raise moves k37-k44 and shows that cap nowhere as a jump. `zoom_fields.mjs --variant 4k60` draws it into artifacts/multibrot3-descent/4k60/fields/ and `zoom.py --variant 4k60` colours and encodes it.",
+      "grid": [7680, 4320],
+      "supersample": 1,
+      "video": {
+        "resolution": [3840, 2160],
+        "fps": 60,
+        "speedup": 1.25,
+        "hold_start": 1.25,
+        "hold_end": 8.75
+      },
+      "encode": {
+        "crf": 12
+      },
+      "probe": [480, 270],
+      "cap": {
+        "share": 1e-05,
+        "headroom": 2
+      },
+      "frames": [
+        { "k": 0, "maxiter": 2000000, "need": 20178, "was": 54667, "black_was": 0, "black": 0, "interior": 0.0001, "nu_max": 29289, "rule": 2000000 },
+        { "k": 1, "maxiter": 2000000, "need": 40814, "was": 53467, "black_was": 7.72e-06, "black": 0, "interior": 0.0003, "nu_max": 56333, "rule": 2000000 },
+        { "k": 2, "maxiter": 2000000, "need": 1267606, "was": 52267, "black_was": 0.000849, "black": 0, "interior": 0.0347, "nu_max": 1945443, "rule": 2000000 },
+        { "k": 3, "maxiter": 2000000, "need": 684409, "was": 51067, "black_was": 0.000486, "black": 0, "interior": 0.0294, "nu_max": 1195965, "rule": 2000000 },
+        { "k": 4, "maxiter": 2000000, "need": 1208089, "was": 49867, "black_was": 0.000131, "black": 0, "interior": 0.0076, "nu_max": 1650200, "rule": 2000000 },
+        { "k": 5, "maxiter": 2000000, "need": 169730, "was": 48667, "black_was": 5.4e-05, "black": 0, "interior": 0.0023, "nu_max": 306961, "rule": 2000000 },
+        { "k": 6, "maxiter": 2000000, "need": 95204, "was": 47467, "black_was": 2.31e-05, "black": 0, "interior": 0.0018, "nu_max": 1956180, "rule": 2000000 },
+        { "k": 7, "maxiter": 2000000, "need": 637059, "was": 46267, "black_was": 0.000216, "black": 0, "interior": 0.0085, "nu_max": 1342375, "rule": 2000000 },
+        { "k": 8, "maxiter": 2000000, "need": 1028132, "was": 45067, "black_was": 0.000123, "black": 0, "interior": 0.004, "nu_max": 1168556, "rule": 2000000 },
+        { "k": 9, "maxiter": 2000000, "need": 1701919, "was": 43867, "black_was": 0.00105, "black": 0, "interior": 0.0206, "nu_max": 1899263, "rule": 2000000 },
+        { "k": 10, "maxiter": 2000000, "need": 1711842, "was": 42667, "black_was": 0.00389, "black": 0, "interior": 0.0917, "nu_max": 1949027, "rule": 2000000 },
+        { "k": 11, "maxiter": 2000000, "need": 1846047, "was": 41467, "black_was": 0.00669, "black": 0, "interior": 0.3101, "nu_max": 1946476, "rule": 2000000 },
+        { "k": 12, "maxiter": 2000000, "need": 1478736, "was": 40267, "black_was": 0.00413, "black": 0, "interior": 0.6093, "nu_max": 1895545, "rule": 2000000 },
+        { "k": 13, "maxiter": 2000000, "need": 1324636, "was": 39067, "black_was": 0.00201, "black": 0, "interior": 0.7476, "nu_max": 1525019, "rule": 2000000 },
+        { "k": 14, "maxiter": 2000000, "need": 863501, "was": 37867, "black_was": 0.00113, "black": 0, "interior": 0.737, "nu_max": 1913561, "rule": 2000000 },
+        { "k": 15, "maxiter": 2000000, "need": 394287, "was": 36667, "black_was": 0.00071, "black": 0, "interior": 0.4735, "nu_max": 570476, "rule": 2000000 },
+        { "k": 16, "maxiter": 2000000, "need": 1036380, "was": 35467, "black_was": 0.000347, "black": 0, "interior": 0.2443, "nu_max": 1696433, "rule": 2000000 },
+        { "k": 17, "maxiter": 2000000, "need": 281145, "was": 34267, "black_was": 0.000185, "black": 0, "interior": 0.1066, "nu_max": 602848, "rule": 1967206 },
+        { "k": 18, "maxiter": 2000000, "need": 82969, "was": 33067, "black_was": 6.17e-05, "black": 0, "interior": 0.0272, "nu_max": 88093, "rule": 1967206 },
+        { "k": 19, "maxiter": 2000000, "need": 27238, "was": 31867, "black_was": 7.72e-06, "black": 0, "interior": 0.0068, "nu_max": 673313, "rule": 1967206 },
+        { "k": 20, "maxiter": 2000000, "need": 7836, "was": 30667, "black_was": 0, "black": 0, "interior": 0.0017, "nu_max": 12137, "rule": 1967206 },
+        { "k": 21, "maxiter": 2000000, "need": 721, "was": 29467, "black_was": 0, "black": 0, "interior": 0.0004, "nu_max": 730, "rule": 1967206 },
+        { "k": 22, "maxiter": 2000000, "need": 560, "was": 28267, "black_was": 0, "black": 0, "interior": 0.0001, "nu_max": 612, "rule": 1967206 },
+        { "k": 23, "maxiter": 2000000, "need": 649, "was": 27067, "black_was": 0, "black": 0, "interior": 0, "nu_max": 726, "rule": 1967206 },
+        { "k": 24, "maxiter": 2000000, "need": 601, "was": 25867, "black_was": 0, "black": 0, "interior": 0, "nu_max": 828, "rule": 1967206 },
+        { "k": 25, "maxiter": 2000000, "need": 2999, "was": 24667, "black_was": 7.72e-06, "black": 0, "interior": 0.0018, "nu_max": 35472, "rule": 1967206 },
+        { "k": 26, "maxiter": 2000000, "need": 861, "was": 23467, "black_was": 0, "black": 0, "interior": 0.0005, "nu_max": 2516, "rule": 1967206 },
+        { "k": 27, "maxiter": 2000000, "need": 3431, "was": 22267, "black_was": 0, "black": 0, "interior": 0.0002, "nu_max": 6128, "rule": 1967206 },
+        { "k": 28, "maxiter": 2000000, "need": 739, "was": 21067, "black_was": 0, "black": 0, "interior": 0.0001, "nu_max": 2090, "rule": 1967206 },
+        { "k": 29, "maxiter": 2000000, "need": 5310, "was": 19867, "black_was": 0, "black": 0, "interior": 0.0025, "nu_max": 7887, "rule": 1967206 },
+        { "k": 30, "maxiter": 2000000, "need": 2297, "was": 18667, "black_was": 0, "black": 0, "interior": 0.0009, "nu_max": 4472, "rule": 1967206 },
+        { "k": 31, "maxiter": 2000000, "need": 5273, "was": 17467, "black_was": 0, "black": 0, "interior": 0.001, "nu_max": 8302, "rule": 1967206 },
+        { "k": 32, "maxiter": 2000000, "need": 16963, "was": 16267, "black_was": 1.54e-05, "black": 0, "interior": 0.0067, "nu_max": 23826, "rule": 1967206 },
+        { "k": 33, "maxiter": 2000000, "need": 12306, "was": 15067, "black_was": 7.72e-06, "black": 0, "interior": 0.0034, "nu_max": 28689, "rule": 1967206 },
+        { "k": 34, "maxiter": 2000000, "need": 10604, "was": 13867, "black_was": 7.72e-06, "black": 0, "interior": 0.0041, "nu_max": 31792, "rule": 1967206 },
+        { "k": 35, "maxiter": 2000000, "need": 74445, "was": 12667, "black_was": 0.000139, "black": 0, "interior": 0.0593, "nu_max": 153541, "rule": 1967206 },
+        { "k": 36, "maxiter": 2000000, "need": 983603, "was": 11467, "black_was": 0.00091, "black": 0, "interior": 0.2318, "nu_max": 1003496, "rule": 1967206 },
+        { "k": 37, "maxiter": 2000000, "need": 144252, "was": 10267, "black_was": 0.000617, "black": 0, "interior": 0.4816, "nu_max": 254156, "rule": 554732 },
+        { "k": 38, "maxiter": 2000000, "need": 213446, "was": 9067, "black_was": 0.000332, "black": 0, "interior": 0.6738, "nu_max": 327083, "rule": 554732 },
+        { "k": 39, "maxiter": 2000000, "need": 277366, "was": 7867, "black_was": 0.000255, "black": 0, "interior": 0.7338, "nu_max": 378679, "rule": 554732 },
+        { "k": 40, "maxiter": 2000000, "need": 167762, "was": 6667, "black_was": 0.000193, "black": 0, "interior": 0.6718, "nu_max": 228229, "rule": 335524 },
+        { "k": 41, "maxiter": 2000000, "need": 43101, "was": 5467, "black_was": 8.49e-05, "black": 0, "interior": 0.4856, "nu_max": 168325, "rule": 195992 },
+        { "k": 42, "maxiter": 2000000, "need": 41688, "was": 4267, "black_was": 3.86e-05, "black": 0, "interior": 0.2307, "nu_max": 64100, "rule": 195992 },
+        { "k": 43, "maxiter": 2000000, "need": 97996, "was": 3067, "black_was": 2.31e-05, "black": 0, "interior": 0.1085, "nu_max": 99185, "rule": 195992 },
+        { "k": 44, "maxiter": 2000000, "need": 5733, "was": 1867, "black_was": 3.09e-05, "black": 0, "interior": 0.0302, "nu_max": 11877, "rule": 11466 }
+      ],
+      "probe_ceiling": 2000000
+    }
+  },
+  "colour": {
+    "interior": [0, 0, 0],
+    "note": "index = frac(g(nu) / L + phase). The absolute mapping is the link's own, deep-random-dives panel 10's; the knee mapping is the video's.",
+    "mappings": {
+      "linear": {
+        "g": "nu",
+        "L": 600,
+        "phase": 0
+      },
+      "log": {
+        "g": "ln nu",
+        "L": 0.25,
+        "phase": 0
+      },
+      "power": {
+        "g": "nu^alpha",
+        "alpha": 0.3,
+        "L": 0.6,
+        "phase": 0
+      },
+      "absolute": {
+        "g": "T_lambda(nu)",
+        "lambda": 0,
+        "L": 0.413,
+        "phase": 0.681,
+        "why": "the link's own scale=absolute colour, as the explorer draws it"
+      },
+      "knee": {
+        "g": "nu - 1 above the knee; (knee - 1) + knee * T_lambda(nu / knee) below it",
+        "knee": 5000,
+        "lambda": 0.157,
+        "L": 2270,
+        "phase": 0.681,
+        "why": "multibrot3_video_ckpt157: julia3's knee style (knee 5000, lambda 0.157; Matt: the default for zoom videos) in deep-random-dives panel 10's palette and phase, Terminal Flare at 0.681. L is set so the final frame carries the cycles that panel's own link (scale=absolute, lambda=0, period=0.413) gives it: over p0.5-p99.5 of the preview k00 field's nu (1,789 to 9,336), ln nu / 0.413 runs 4.00 cycles, and the knee curve's g runs 4.00 cycles at L = 2270. 86% of that frame's nu is under the knee."
+      }
+    }
+  }
+}

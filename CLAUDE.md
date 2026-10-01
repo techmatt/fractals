@@ -471,7 +471,8 @@ What a figure is made of:
   that each name a short link in `go` and link through `go/`, so `go/redirects.jsonl` stays
   the one source of a target, and `check`'s `go` fails when the register moves on from the
   target a picture was drawn at. A row with those panels and no `video` yet holds a 16:9
-  *Video pending* well where the player will go; none is waiting today.
+  *Video pending* well where the player will go; `deep-videos-multibrot3-descent`, the
+  fourth on Deep zoom videos, is waiting for its id.
 - **A figure's caption is the caption and nothing else** *(Matt, 2026-08-21)*: no credit
   saying the engine drew it, and no way into the explorer written out as prose. A gallery
   tile still carries its credit, which is where a reader meets a wallpaper without the

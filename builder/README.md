@@ -487,8 +487,8 @@ of somewhere the click no longer goes. **A video whose pictures are made before 
 is up** is a row with those `go` panels and no `video` (`figures.Figure.awaiting_video`):
 its block is the same, with a 16:9 well saying *Video pending* above its row's `alt` where
 the player will go, and naming the YouTube id in `video` is the whole of putting the player
-in. None is waiting today; `deep-videos-julia3-descent` was the last, and got its id
-2026-09-30.
+in. `deep-videos-multibrot3-descent` is waiting (multibrot3_video_ckpt157);
+`deep-videos-julia3-descent` was the last before it, and got its id 2026-09-30.
 
 A row is `pending` because prose gets written before pictures get made, and a page that
 says what is coming beats a broken image or a silent gap; `figures` lists what is still
@@ -836,6 +836,13 @@ rewrite gave every commit a new id, and `wallpapers-2026-09-29` was force-update
 rewritten commit carrying the same `packs.jsonl`, `packs.py`, and packs page. **Deleting a
 tag drops its release to a draft**, and these links 404 until it is republished, so a tag
 is only ever force-updated in the same push as the branch.
+
+**Assets go up one at a time** *(the 2026-09-30 re-upload; multibrot3_video_ckpt157,
+addendum 1)*. A parallel `gh release upload --clobber` stranded 8 of 19 assets in GitHub's
+`starter` state, so the uploads run in series. `--clobber` deletes the old asset before it
+sends the new one, so a failed upload leaves a **404** where the zip was, not a stale file.
+An upload is verified by the asset's `state == uploaded` and its `digest` equal to the local
+file's sha256, read back from the release, and never by the command's exit status.
 
 **A rebuild after the packs are built fills the sizes in.** Until `packs_root` holds a
 `packs.json`, no download line shows a size and none says one is coming. Once
@@ -1557,6 +1564,18 @@ node builder/zoom_fields.mjs --record builder/data/julia3-descent.keyframes.json
 node builder/zoom_fields.mjs --record builder/data/julia3-descent.keyframes.json --variant 4k60
 python builder/zoom.py --record builder/data/julia3-descent.keyframes.json --variant 4k60 video --mapping knee --workers 4
 ```
+
+**A picked frame is a descent too, with `--direct`** *(multibrot3_video_ckpt157)*. One
+Multibrot link and `--direct` takes the link as the Julia path takes a Julia link: no chain,
+no copy, one stage at the link's frame, a keyframe at every halving up to the home view.
+`data/multibrot3-descent.keyframes.json` is `go/multibrot3-end`'s descent, `deep-random-dives`
+panel 10's frame: 45 keyframes from 10.3 to 5.8e-13, with the same knee style as julia3
+(knee 5000, λ 0.157) in Terminal Flare at phase 0.681. Its `L = 2270` gives the final frame
+the 4.0 cycles over p0.5–p99.5 of `nu` that the panel's own `lambda=0`, `period=0.413` link
+gives it. Unlike julia3 it is not fully escaped, with interior up to 75% at k13 and 73% at
+k39, but the kernel settles interior early: the probe drew k39 at the ceiling in half a
+second. So the `4k60` ceiling raise still costs only what escaping samples use. The
+preview carries the `4k60` pacing, so it previews that video's timing as well as its look.
 
 `deep-descent-pairs` colours a twin the other way round: its counts are about `p_A` times
 its source's, so under `lambda=0` it is its source shifted by `ln p_A`, and taking that off

@@ -1139,6 +1139,10 @@ PAGE_VIDEOS = {
         (("julia3-mid", "Midway"), ("julia3-end", "Final frame")),
         "the degree-3 Julia player on Deep zoom videos",
     ),
+    "deep-videos-multibrot3-descent": (
+        (("multibrot3-mid", "Midway"), ("multibrot3-end", "Final frame")),
+        "the degree-3 Mandelbrot player on Deep zoom videos",
+    ),
 }
 
 #: The judges' fold under `deep-random-dives`, drawn by `builder/deep_judges.py` out of a record

@@ -44,6 +44,10 @@ Julia home view. The record carries its `c` as `julia_re` and `julia_im`, text a
 spells it, and the `anchor` `deep-render.js`'s `anchorOf` would choose, since every
 keyframe shares the target's centre (julia3_palette_ckpt157).
 
+**`--direct`** takes a Multibrot link the same way: no chain, no copy, the link's own frame
+as the one stage, for a video that ends on a frame someone picked rather than on a copy the
+chain would frame (multibrot3_video_ckpt157).
+
 ## The record
 
 `data/<name>.keyframes.json`, in the shape of `data/deep-zoom-descent.keyframes.json` so that
@@ -190,17 +194,28 @@ def julia_descent(link: str) -> dict:
     location = parse(link)
     frame = {"re": location.x, "im": location.y, "jre": location.jre, "jim": location.jim}
     return {
+        **direct_descent(link),
+        "julia": {"re": location.jre, "im": location.jim, "anchor": _anchor(frame)},
+        "notes": [
+            "a Julia link, taken as it is: no chain and no copies, so no stage but the target"
+        ],
+    }
+
+
+def direct_descent(link: str) -> dict:
+    """Any one link taken as it is: no chain, one stage, the link's own frame."""
+    location = parse(link)
+    return {
         "degree": location.degree,
         "family": location.family,
         "palette": location.palette,
         "branch": None,
         "chain": [],
         "final": {"re": location.x, "im": location.y},
-        "julia": {"re": location.jre, "im": location.jim, "anchor": _anchor(frame)},
         "query": location.query,
         "stages": [{"name": "target", "width": location.w}],
         "notes": [
-            "a Julia link, taken as it is: no chain and no copies, so no stage but the target"
+            "a link taken as it is (--direct): no chain and no copies, so no stage but the target"
         ],
     }
 
@@ -784,6 +799,10 @@ def main(options: argparse.Namespace) -> list[str]:
         raise DescentError("a descent needs at least one link")
     if len(links) == 1 and parse(links[0]).jre is not None:
         descent = julia_descent(links[0])
+    elif options.direct:
+        if len(links) != 1:
+            raise DescentError("--direct takes one link, as it is")
+        descent = direct_descent(links[0])
     else:
         if len(links) == 1:
             links = [links[0], links[0]]
