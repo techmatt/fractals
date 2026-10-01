@@ -490,8 +490,8 @@ of somewhere the click no longer goes. **A video whose pictures are made before 
 is up** is a row with those `go` panels and no `video` (`figures.Figure.awaiting_video`):
 its block is the same, with a 16:9 well saying *Video pending* above its row's `alt` where
 the player will go, and naming the YouTube id in `video` is the whole of putting the player
-in. `deep-videos-multibrot3-descent` is waiting (multibrot3_video_ckpt157);
-`deep-videos-julia3-descent` was the last before it, and got its id 2026-09-30.
+in. None is waiting today: `deep-videos-multibrot3-descent` was the last, and got its id
+2026-10-01 (multibrot3_video_id_ckpt157).
 
 A row is `pending` because prose gets written before pictures get made, and a page that
 says what is coming beats a broken image or a silent gap; `figures` lists what is still
