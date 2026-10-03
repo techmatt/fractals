@@ -112,7 +112,7 @@ def page(redirect: Redirect) -> str:
             '<meta charset="utf-8">',
             '<meta name="viewport" content="width=device-width, initial-scale=1">',
             icons.head(redirect.path),
-            "<title>Fractal explorer</title>",
+            "<title>Mandelnaut Explorer</title>",
             "<!-- Written by `python -m builder build` from go/redirects.jsonl: edit the row. -->",
             '<meta name="robots" content="noindex">',
             f'<meta http-equiv="refresh" content="0; url={href}">',

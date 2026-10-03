@@ -153,8 +153,9 @@ PROSE: tuple[tuple[str, str], ...] = (
     ),
     (
         "p",
-        'If you want a different size, open any picture in <a href="../explorer/index.html">'
-        "the explorer</a> and download it at the resolution you need, or render it yourself "
+        "If you want a different size, open any picture in the "
+        '<a href="../explorer/index.html">Mandelnaut Explorer</a> and download it at the '
+        "resolution you need, or render it yourself "
         'with the code in <a href="https://github.com/techmatt/fractal-wallpapers">'
         "fractal-wallpapers</a>.",
     ),

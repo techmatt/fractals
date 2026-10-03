@@ -1,4 +1,4 @@
-# The visitor explorer
+# The Mandelnaut Explorer
 
 One page that runs the wallpaper project's own renderer in the browser: pan and zoom
 every family the wallpapers are drawn from, in every mode the pipeline ships, under any
@@ -4635,15 +4635,35 @@ goes*, and the rule is the plain one — a harness whose numbers are promoted to
 a harness a later reader has to be able to run. `page.mjs` is the four runs and `cdp.mjs`
 is the fifty lines of websocket underneath them, and neither asserts anything either.
 
-| frame | cap | draft 1 | now |
-| --- | --- | --- | --- |
-| home | 3 336 | 1 567 ms | 1 537 ms |
-| anchor | 6 898 | 9 724 ms | 9 365 ms |
+**Native against Wasm** *(native_vs_wasm_numbers_ckpt159, 2026-10-01)*. The anchor row
+this replaced read 9 365 ms, from before the interior shortcut; the same frame takes 320 ms
+now. Field time only, no colouring on either side, medians of five rounds with every
+configuration run once per round in alternation (spread ≤3%, ≤9% on the 12-way shallow
+rows).
 
-That is the whole point of the specialization, and draft 1's numbers were a single-family
-single-mode build's. Both rows are `smooth`, the one mode that was specialized before the
-engine's table was reached, so they moved by the 1.2% the per-mode table below records and
-are not re-measured here.
+| kernel · frame | native 1T | Wasm 1 worker | ratio | native 12T | Chrome 12 workers | ratio |
+| --- | --: | --: | --: | --: | --: | --: |
+| shallow · spike anchor 1280x720, cap 6 898 | 257 ms | 320 ms | 1.25x | 29 ms | 34 ms | 1.17x |
+| shallow · seahorse midway 1280x720, cap 63 534 | 3 448 ms | 3 147 ms | **0.91x** | 332 ms | 329 ms | 0.99x |
+| deep · seahorse final 640x360, cap 63 534, interior switch on | 19.27 s | 23.74 s | 1.23x | 3.17 s | 3.81 s | 1.20x |
+| deep · same, interior switch off (what the page picks here) | 17.14 s | 17.89 s | 1.04x | 1.87 s | 2.37 s | 1.27x |
+
+The anchor is `kernel.mjs`'s; the other two frames are `go/seahorse-mid` and
+`go/seahorse-end`. i5-10400F (6 cores, 12 threads), Windows 10, headless Chrome 154 with a
+12-worker pool. Native shallow is `fractal-engine dump-field`, whose timer covers the field
+pass alone (`render-link`'s includes colouring), threads set by `RAYON_NUM_THREADS`; native
+deep is `builder/deep-gallery-native field --threads N`, orbit plus bands, with the interior
+switch toggled in a scratch copy. The Wasm side is the committed modules, one per worker,
+8-row bands off a shared queue, timed from the first band posted to the last received, so
+`postMessage` and the deep orbit's broadcast are in it. **Each worker is warmed first**: a
+cold 12-worker anchor took 400–540 ms against 34 ms warmed, and a reader's first frame pays
+that. No target-CPU flags on either side; an LTO, one-codegen-unit engine with and without
+`target-cpu=native` came within 2% on every row and drew identical fields.
+
+What it says: the shallow kernel is at parity and Wasm is ahead on the deep-cap frame
+single-threaded, which is unexplained. Deep perturbation costs Wasm 4–23% on one thread,
+most of it the interior switch. The all-core gap is scaling, not the kernel: 1 to 12 threads
+is 9.2x and 10.4x natively against 7.5x and 9.6x in Chrome.
 
 **Per family**, `smooth` at 1280x720, each family at **its own home view** — a family's
 home is the frame it comes back with when nobody names one, and holding nine families
