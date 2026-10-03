@@ -1025,6 +1025,18 @@ frame's height and at twelve 0.25–0.27. *(find_minibrots_bulbs_ckpt145: an ope
 is now framed by the body its preview measures, and twelve sizes times a per-degree
 `FALLBACK_BODIES` factor is the fallback. See `copy_width`.)*
 
+**Thirty-two periods is not a settled frame once the count is held to 1e-5**
+*(minibrot_size_pilot_ckpt160)*. The pilot drew 20 copies (degrees 2 to 6) at four screen sizes, with the
+body's extent at 10%, 3%, 1% and 0.1% of a 640×360 frame's width at 2×2 samples. Each was
+drawn once at up to 1,024 periods, and the unescaped share outside the copy's own body was
+read off each sample's ν at every count. Near a copy's rim that share falls only as about
+1/count. So the pooled median count that brings it within 1e-5 of where it settles is
+**512 periods at 10%, 128 at 3%, 64 at 1% and 256 at 0.1%**. At 0.1% the residue is other
+copies' rims in the wide frame. At 32 periods the median residue is 2.5e-4 at 10% and
+2–7e-5 at the other sizes. Under the explicit ceiling those counts hold the drawable period to
+about 3,900, 15,600, 31,000 and 7,800 respectively. Most copies a carried view leads to are
+past that at 10%: copy periods there run 700 to 54,000, median 9,300.
+
 **The cost is then `samples × 8p`, and `p` at these depths is of the order of the
 cap itself.** That is a finding and not a tuning, and it is what the tab's list
 had to be shaped around.
