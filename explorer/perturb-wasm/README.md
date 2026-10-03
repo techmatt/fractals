@@ -1356,6 +1356,28 @@ drawing it short. The count is 32 for the centre (`nuclei::OPEN_PERIODS`), 8 hal
 carried into a period-`p` copy escapes after about `p` times its own counts. No probe runs:
 the product is the depth the landing asks for.
 
+**What the cap rule does to a chain** *(dive_chain_audit_pilot_ckpt160)*. A chain of mapped
+landings (a view carried into a copy, then a view carried into a copy inside that one) carries
+each view at its own cap, so the whole chain's period, the last copy's, is held to
+`2,000,000 / n`. A gallery seat names no `n` and is carried at `cap::for_width`, which is
+3,700 to 44,000 over the 300 seat and Dive views the pilot drew (median about 25,000), so a
+chain's period product is held to roughly 45 to 540, and about 80 typically. Under that
+budget every stage is a low-period copy, and a stage adds a median of only 2.5 to 3.5
+decades of zoom at every degree: depth in such a chain comes from the first view, not the
+chain. Two things follow for anything that chains landings.
+
+- **Dive's own search does not reach the copies the budget admits.** Below the first stage the
+  low-period copies inside the parent are thousands of view-widths from the landed frame, past
+  `WIDEN`'s 256×. Widening further does not cure it: `find` seeds from a 64×36 atom-domain grid
+  with 24 solves, and over a whole-set frame that grid misses most low-period copies (at
+  degree 2 it returns periods 4, 16, 30, 31, 36 and 77, and not the period-3 airship). Over
+  20 rows a degree, Dive's own rule landed a depth-3 chain 3 times in 200.
+- **A catalogue does.** Copies of period 2 to 64 found by `find` over a 16×9 tiling of the
+  home view (486 at degree 2, which has the one period-3 copy, the three of period 4 and 8 of
+  the 11 of period 5), the stage's copy taken as the nearest one under a limit on its period,
+  and placed inside the parent by `twin`: with the limit at 10, every depth-3 chain landed,
+  200 of 200 over degrees 2 to 6.
+
 **The colouring rule** is `deep_gallery.py`'s `choose`, ported: for each λ in `LAMBDAS`
 (0, 0.15, 0.3, 0.5, 0.75, 1) the period is the 3rd-to-97th-percentile range of the Box–Cox
 `g` over the cycles, to three figures (numpy's linear interpolation, by selection rather
