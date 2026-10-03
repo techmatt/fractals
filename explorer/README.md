@@ -153,6 +153,7 @@ fit.js                Fit: the absolute scale's Lambda, Period and Phase, sized 
 aliasing.js           New coloring's aliasing guard: a period the picture cannot show, lengthened
 period-range.js       the Period slider's travel, measured off the frame on the screen
 julia-preview.js      the Julia set of the point under the pointer, and the click into it
+demo.js               demo mode, `?demo=1`: a drawn cursor and the hooks a recording drives
 download.js           the same render at a wallpaper's size, and what caps it
 render.js             the worker pool, the plan, the field passes, the shade
 worker.js             one worker: one wasm instance, one band of rows (or one screen)
@@ -227,6 +228,7 @@ perturb.manifest.json generated: what perturb.wasm was built from
 engine-wasm/          the crate that produces engine.wasm
 perturb-wasm/         the crate that produces perturb.wasm — see The Deep tab
 bench/                the timing harnesses — see Measured
+bench/showcase.mjs    the showcase video's tour, captured and assembled — see Demo mode
 bench/hunt/           the bug hunt's own: lib.mjs, eight units, four probes
 ```
 
@@ -974,6 +976,45 @@ does nothing under a finger, and wants nothing: a tap there already opens the se
 multi-touch sequence across a navigation: after one, no pointer event reaches the next
 document at all (measured with a capture listener on the canvas), which reads as the page
 ignoring touch. A harness takes a fresh browser after a pinch.
+
+## Demo mode *(showcase_video_build_ckpt159, 2026-10-02)*
+
+**`?demo=1` is for a recording, and nothing else changes without it.** `explorer.js` takes
+the key off the address before either contract reads it, so no link, copy or save carries
+it, and only then imports `demo.js`; a page without the flag never fetches the module. With
+it, the page is the same page driven by real input, and `globalThis.__demo` holds what a
+capture needs:
+
+- **A drawn cursor** in a layer that ignores the pointer, and **`pulse()`**, a ring at its
+  tip. It clicks nothing: the capture sends real mouse events through CDP at `where()`, so
+  a click is a reader's click and the cursor is only the picture of one. `moveTo(target,
+  ms)` eases it to a selector, an element or a point; `scroll(target, top, ms)` eases a
+  scroller.
+- **A clock**, `now()`, that every one of those reads. `step(true)` pins it and
+  `advance(ms)` moves it on and puts each animation where it then stands, so a cursor move
+  is captured one exact frame at a time whatever a screenshot costs; `step(false)` hands it
+  back to the wall.
+- **The Deep tab's progress hidden**: its bars, spinner, progress and status lines, and the
+  Dive's, are `visibility: hidden`. **`deepReady()`** resolves once the tab owns the viewer
+  and its picture of the frame it stands on has drawn to the end (`showsFinished`, and the
+  render state `final`), so a cut lands on a finished frame.
+- **A fixed Dive landing**: `landing(query)` makes the next press of Go open that deep link
+  through the page's own door for a link (`openAny`), instead of searching, and is spent by
+  it. The press is still the real button's; a capture listener takes it. `open(query)` is
+  the same door, for a cut.
+- **A caption bar**, `caption(text)` (or `null`), across the foot of the window, and
+  `cursor(false)` for frames that should carry no cursor.
+
+**`bench/showcase.mjs` is the tour**, one command a take (`node explorer/bench/showcase.mjs`,
+served on 8000). It films three ways onto one timeline: stepped frames for cursor moves,
+scrolls and pulses; a screencast with Chrome's own frame timestamps for anything that renders
+a shallow picture, each frame held until the next, so every stage of a render is on screen
+exactly as long as it took; and stills after `deepReady` for the Deep tab, whose waits are
+cut. ffmpeg (the binary `imageio_ffmpeg` bundles) turns the list into 30 fps CFR H.264.
+A take costs about three minutes on this machine, most of it the four deep pictures
+(10 to 25 s each). ⚠ **A wheel notch costs the page about 110 ms of main thread** at
+1920×1080, so 38 notches take about 4.3 s however fast they are sent: the zoom's length is
+the page's, and only the notch count moves it.
 
 ## The box tool *(Matt, explorer_box_zoom_and_download_row_ckpt140, 2026-09-22)*
 

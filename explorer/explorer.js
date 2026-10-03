@@ -6063,6 +6063,19 @@ window.addEventListener("pageshow", (event) => {
 // ------------------------------------------------------------------- starting up
 
 /** A small JSON record beside the page, or `null` where it cannot be had. */
+/** Whether the page opened in demo mode, `?demo=1` *(showcase_video_build_ckpt159)*: the
+ *  furniture a scripted capture needs, in `demo.js`. The key is taken off the address here,
+ *  before either contract reads it, so no link, copy or save ever carries it, and without
+ *  it the module is never fetched. */
+const DEMO = (() => {
+  const params = new URLSearchParams(window.location.search);
+  if (!params.has("demo")) return false;
+  params.delete("demo");
+  const rest = params.toString();
+  history.replaceState(null, "", `${window.location.pathname}${rest ? `?${rest}` : ""}${window.location.hash}`);
+  return true;
+})();
+
 async function json(url) {
   try {
     const response = await fetch(url);
@@ -6188,6 +6201,10 @@ async function main() {
 
   clearNotice();
   studio.hidden = false;
+  if (DEMO) {
+    const demo = await import("./demo.js");
+    demo.install({ open: (query) => openAny(query), deep: () => deep });
+  }
 
   buildShade();
   buildCoordinates();
