@@ -1973,6 +1973,22 @@ between its two writes — is removed on the way in. A run stops at `--until`, a
 (12 h by default, so never first on the way to 1,000), at five errors in a row, or after
 `DRY` units in a row keep nothing (300), which is the mixture running out of new places.
 
+**What the 1,000 are** *(random_dives_audit_ckpt160, from the run's log)*. 1,238 units; kept
+1,000, dropped 191 refused (`none_smaller` 111, `over_budget` 58, `no_copy` 22), 39
+repeats, 6 all-interior, 2 blank. Degrees 2–6: 238, 193, 220, 238, 111. **The landing is
+the split that shows**: 742 carried (a gallery seat's own view drawn inside a small copy, so
+the tile is that wallpaper again, turned a median 87° and 5–9 decades deeper, its copy
+off-frame, final period a median 3,381), 119 centre (a copy in the middle at 9⁄64 of the
+width, period a median 159) and 139 halfway (the copy a median 3% of the width among its
+symmetry). Within carried, neither `from` nor seat-against-view moves anything: their
+median widths agree to half a decade and their median periods to 10%. 863 of the 1,000 land
+at the first step; of the 258 centre and halfway landings, rung 1 lands at a median 1e-7,
+rungs 2–4 at 1e-10 to 1e-11, and 5–9 at 1e-14 to 1e-15. The adapt rule never fired, and the aliasing guard redrew 7 tiles. **The
+figure `deep-random-dives` was not picked from these.** Its 15 frames are tiles of the
+candidate sheet above (`artifacts/dive-reference/deep_minibrot_candidates/`, numbers 711, 55,
+343, 144, 158, 208, 219, 785, 358, 351, 51, 587, 568, 96, 733 in panel order); 14 are
+carried landings and 9 are degree 2.
+
 ### How the first set was found
 
 `builder/deep_gallery.py` holds the code, one stage a subcommand: `descend`, `frames`,
