@@ -1134,7 +1134,7 @@ def page(_args=None):
     html = (
         '<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
         '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
-        f'<meta name="robots" content="noindex">\n{icons.head(where)}\n'
+        f"{icons.head(where)}\n"
         f'<meta name="description" content="{esc(DESCRIPTION)}">\n<title>{TITLE}</title>\n'
         f'<style>{STYLE}</style>\n</head>\n<body class="julia">\n<div class="bar">\n'
         '<button id="colour" type="button" aria-pressed="true"><span class="f">Fixed'
