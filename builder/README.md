@@ -1989,6 +1989,15 @@ candidate sheet above (`artifacts/dive-reference/deep_minibrot_candidates/`, num
 343, 144, 158, 208, 219, 785, 358, 351, 51, 587, 568, 96, 733 in panel order); 14 are
 carried landings and 9 are degree 2.
 
+**Scored the way the candidates were** *(carried_dives_500_ckpt160)*. The location column of
+`builder/data/deep-judges-scores.jsonl` extends to the 1,000 with nothing changed: a
+`deep-gallery-native field` at 640 by 360 at 2x2 and the frame's own cap, shaded in the
+neutral recipe and saved as JPEG q90, gives the study's neutral picture byte for byte, and the
+shipped location head reads it back to within 1e-6. Over both runs' 1,307 distinct carried
+places, the median P(≥3) by degree is 0.94, 0.78, 0.90, 0.69, and 0.28 for degrees 2–6, the
+same in either run to within 0.06. So **degree 6 is the judge's weak plane**, not a weak run: 8 of
+its 127 places reach 0.9, against 204 of 358 at degree 2.
+
 ### How the first set was found
 
 `builder/deep_gallery.py` holds the code, one stage a subcommand: `descend`, `frames`,
