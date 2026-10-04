@@ -1998,6 +1998,43 @@ places, the median P(≥3) by degree is 0.94, 0.78, 0.90, 0.69, and 0.28 for deg
 same in either run to within 0.06. So **degree 6 is the judge's weak plane**, not a weak run: 8 of
 its 127 places reach 0.9, against 204 of 358 at degree 2.
 
+### The page of dives and their Julia sets
+
+*(carried_dives_500_ckpt160, published by carried_dives_publish_ckpt160.)*
+`deep-zoom/dives-and-julia-sets/` is a standalone page of 509 deep frames, each beside the
+Julia set at its center, linked once from the end of Deep zoom's Random dives passage as an
+extra experiment. It is in neither the rail nor the site bar, and it carries `noindex`. It
+looks the way Matt approved it in `scratch/`; carrying it over added only the icon links, an
+authored description and the derived head block that `icons` and `heads` hold every served
+page to, and the title is the link's own words.
+
+**How the picks were made.** The population is both runs' carried landings, the candidate
+sheet's and Random dives', with one place kept where two landings share a plane, sit within
+1% of the smaller width, and differ in width by under 2×. Each is scored by the location
+judge as above, and `pick` takes the top 200 at degree 2, 100 at degrees 3 and 4, and 50 at
+degrees 5 and 6. Forced in on top, in the coloring they were picked in: the 15 panels of
+`deep-random-dives` and the Deep gallery's members, less its three Julia views (Matt,
+2026-10-04). That is 509 picks, 25 of them forced. Every pick is drawn twice in each of two
+colorings, fixed (`glowdon` at 2.5 cycles) and random (a new coloring, or the forced pick's
+own), which is the page's default: once at its own frame, and once as its Julia twin, the
+Julia set at the frame's center zoomed out until the black disk round z = c is at most 5% of
+the width. Each picture is drawn at 640×360, 2×2 samples, and shown at 480×270 as WebP q80:
+2,036 images, 100.6 MB, all tracked.
+
+**What is tracked**: `builder/julia_dives.py` (the driver), `julia_dives_shade.mjs` (the
+explorer's own shading code over a drawn field), `julia_dives_score.py` (the location judge,
+run under the wallpaper project's interpreter), and `builder/data/julia-dives-picks.jsonl`,
+each pick's frame, score, rank, and the links and images of all four of its pictures. **What
+is not**: the fields, neutral pictures, scores, renders, and shades under
+`scratch/carried_dives_work/`, which the other subcommands read and append to. The page is
+rebuilt from the record and the images alone:
+
+    python -m builder.julia_dives page
+
+and a full redraw (`score`, `pick`, `render`, `twins`) needs that working folder, the
+wallpapers checkout, and `deep-gallery-native`. Like every maker it is no part of `build` or
+`check`.
+
 ### How the first set was found
 
 `builder/deep_gallery.py` holds the code, one stage a subcommand: `descend`, `frames`,
