@@ -1865,7 +1865,15 @@ halfway 15%, and a descent of 1 to 8 rungs first for six in ten of those two.
 `explorer/README.md`'s *The landing mixture* has the page's side. The page lands the
 deepest copy reached where a descent's chain runs out; this run presses once more from there,
 which is refused every time, and is at least part of why its view-started centres kept 48 of
-83 and halfway points 54 of 94. Two things here did not move with it: the plane draw, which the page has no use for, and New coloring half the time,
+83 and halfway points 54 of 94. **How often a rungs-first landing survives depends on the
+degree far more than on anything else** *(dive_candidate_sheet_ckpt160, the generator's own
+`pick`, centre and halfway pooled, drawn conditioned on the rungs first)*: with 3–5 rungs
+first, 6 of 164 at degree 2, 6 of 16 at degree 3, and every one at degrees 4–6; with 6–8, 5
+of 649 at degree 2, 6 of 25 at degree 3, and 14 of 15 at degrees 4–6. Nearly every loss is
+`none_smaller`: past the first rung, a centre-landed frame of a Mandelbrot or Multibrot 3
+copy rarely holds a copy under ⅛ of the last one's size and 1.5 bodies from it. Taking a
+random usable copy at each rung instead of the largest makes degrees 2 and 3 worse still
+(at 6–8, 3 of 1,243 and 2 of 1,368). Two things here did not move with it: the plane draw, which the page has no use for, and New coloring half the time,
 where the page defaults to always. Since the same prompt the native `coloring` rule draws
 its cycles from 1 to 4, so a rerun colours with the narrowed range; the aliasing guard is
 the page's (`explorer/aliasing.js`) and no part of this run.
