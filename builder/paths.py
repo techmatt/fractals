@@ -38,13 +38,34 @@ def carrier_path(page: str) -> Path:
     return SITE_ROOT / page if "/" in page else ARTICLE_DIR / page
 
 
-def site_pages() -> list[Path]:
-    """Every HTML page the site serves, in a stable order."""
-    pages = [
+# Trees of pages another program wrote, served here byte for byte: fractal-wallpapers'
+# inspection pages, imported by `builder.run_it_yourself`. They are not this site's pages —
+# no rail, bar, icon or head block, and none can be added without changing a byte — so
+# `site_pages` leaves them out, and `hosted_pages` is what `check`'s `links` reads them by.
+HOSTED_DIRS = (SITE_ROOT / "tools-and-data" / "run-it-yourself" / "walkthrough",)
+
+
+def _hosted(path: Path) -> bool:
+    return any(path.is_relative_to(tree) for tree in HOSTED_DIRS)
+
+
+def _all_pages() -> list[Path]:
+    return [
         path
         for path in SITE_ROOT.rglob("*.html")
         if not UNSERVED_DIRS.intersection(path.relative_to(SITE_ROOT).parts)
     ]
+
+
+def site_pages() -> list[Path]:
+    """Every HTML page the site serves and writes itself, in a stable order."""
+    pages = [path for path in _all_pages() if not _hosted(path)]
+    return sorted(pages, key=lambda path: path.relative_to(SITE_ROOT).as_posix())
+
+
+def hosted_pages() -> list[Path]:
+    """Every page served from a `HOSTED_DIRS` tree, in a stable order."""
+    pages = [path for path in _all_pages() if _hosted(path)]
     return sorted(pages, key=lambda path: path.relative_to(SITE_ROOT).as_posix())
 
 

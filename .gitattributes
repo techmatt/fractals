@@ -7,3 +7,7 @@
 *.avif binary
 *.ico binary
 *.wasm binary
+
+# fractal-wallpapers' inspection pages, hosted byte for byte (builder/run_it_yourself.py).
+# Its JSON may be written with CRLF, and normalizing it on commit would change the bytes.
+tools-and-data/run-it-yourself/walkthrough/** -text

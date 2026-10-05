@@ -1,0 +1,2440 @@
+{
+ "schema": 1,
+ "title": "Harvest stats",
+ "command": "fractal-wallpapers harvest stats",
+ "intro": [
+  "4,832 candidates found, 4,069 admitted, 4,069 scored by the location judge (`curate score`).",
+  "Scores are the location judge's P(>=3) and P(>=4) off supply_scores.jsonl."
+ ],
+ "sections": [
+  {
+   "heading": "Per fractal family",
+   "note": "",
+   "table": [
+    [
+     "family",
+     "found",
+     "admitted",
+     "scored",
+     "median P(>=3)",
+     "P(>=3) > .5",
+     "P(>=4) > .5"
+    ],
+    [
+     "julia:mandelbrot",
+     316,
+     300,
+     300,
+     0.6575,
+     181,
+     21
+    ],
+    [
+     "julia:multibrot3",
+     1020,
+     993,
+     993,
+     0.1838,
+     263,
+     57
+    ],
+    [
+     "julia:multibrot4",
+     592,
+     573,
+     573,
+     0.1552,
+     132,
+     28
+    ],
+    [
+     "julia:multibrot5",
+     596,
+     576,
+     576,
+     0.259,
+     193,
+     56
+    ],
+    [
+     "julia:multibrot6",
+     344,
+     331,
+     331,
+     0.0071,
+     1,
+     1
+    ],
+    [
+     "mandelbrot",
+     656,
+     382,
+     382,
+     0.0001,
+     1,
+     0
+    ],
+    [
+     "multibrot3",
+     296,
+     175,
+     175,
+     0.0003,
+     6,
+     0
+    ],
+    [
+     "multibrot4",
+     212,
+     112,
+     112,
+     0.0052,
+     12,
+     0
+    ],
+    [
+     "multibrot5",
+     172,
+     118,
+     118,
+     0.0028,
+     6,
+     0
+    ],
+    [
+     "multibrot6",
+     168,
+     122,
+     122,
+     0.0002,
+     0,
+     0
+    ],
+    [
+     "phoenix",
+     316,
+     281,
+     281,
+     0.0272,
+     65,
+     8
+    ],
+    [
+     "phoenix:classic",
+     144,
+     106,
+     106,
+     0.0175,
+     9,
+     0
+    ]
+   ],
+   "tiles": [],
+   "records": []
+  },
+  {
+   "heading": "julia:mandelbrot: best 4 and worst 4",
+   "note": "best first, then worst; the picture is the walk's gate render",
+   "table": null,
+   "tiles": [
+    {
+     "picture": "pictures/node743_c2.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.9937057328923116
+      ],
+      [
+       "P(>=4)",
+       0.002283313478949794
+      ],
+      [
+       "width",
+       "0.1993352004346101"
+      ],
+      [
+       "root channel",
+       "ranked_harvest"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node1277_c0.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.9932692746169179
+      ],
+      [
+       "P(>=4)",
+       0.9031208591597808
+      ],
+      [
+       "width",
+       "0.05533458542412679"
+      ],
+      [
+       "root channel",
+       "ranked_harvest"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node48_c0.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.9918369296959092
+      ],
+      [
+       "P(>=4)",
+       0.9872140703297843
+      ],
+      [
+       "width",
+       "1.1083059897818268"
+      ],
+      [
+       "root channel",
+       "ranked_harvest"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node1403_c1.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.991659860845572
+      ],
+      [
+       "P(>=4)",
+       0.9285153867395702
+      ],
+      [
+       "width",
+       "0.019578442039436865"
+      ],
+      [
+       "root channel",
+       "ranked_harvest"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node3364_c0.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       9.874237251121641e-05
+      ],
+      [
+       "P(>=4)",
+       7.407973253714251e-08
+      ],
+      [
+       "width",
+       "0.002891857387424163"
+      ],
+      [
+       "root channel",
+       "ranked_harvest"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node41_c1.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.00017640439795275664
+      ],
+      [
+       "P(>=4)",
+       9.312085370923728e-10
+      ],
+      [
+       "width",
+       "1.3088529890815273"
+      ],
+      [
+       "root channel",
+       "ranked_harvest"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node3615_c0.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.00025040184421543647
+      ],
+      [
+       "P(>=4)",
+       1.8572455960671713e-08
+      ],
+      [
+       "width",
+       "0.001059295019896546"
+      ],
+      [
+       "root channel",
+       "ranked_harvest"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node3366_c2.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.00029191169821157764
+      ],
+      [
+       "P(>=4)",
+       3.464759322128917e-07
+      ],
+      [
+       "width",
+       "0.003650972937277768"
+      ],
+      [
+       "root channel",
+       "ranked_harvest"
+      ]
+     ]
+    }
+   ],
+   "records": []
+  },
+  {
+   "heading": "julia:multibrot3: best 4 and worst 4",
+   "note": "best first, then worst; the picture is the walk's gate render",
+   "table": null,
+   "tiles": [
+    {
+     "picture": "pictures/node2596_c2.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.9996364200067734
+      ],
+      [
+       "P(>=4)",
+       0.999612698944904
+      ],
+      [
+       "width",
+       "0.0003582611067310071"
+      ],
+      [
+       "root channel",
+       "twin:labels"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node690_c0.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.9980319160153223
+      ],
+      [
+       "P(>=4)",
+       0.997977981405639
+      ],
+      [
+       "width",
+       "0.0004803211239033236"
+      ],
+      [
+       "root channel",
+       "twin:labels"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node4381_c0.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.9920323688241264
+      ],
+      [
+       "P(>=4)",
+       0.9860386584052279
+      ],
+      [
+       "width",
+       "0.001635209727876987"
+      ],
+      [
+       "root channel",
+       "twin:labels"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node2636_c1.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.9894079697032804
+      ],
+      [
+       "P(>=4)",
+       0.9891490097176121
+      ],
+      [
+       "width",
+       "0.00014004465398317946"
+      ],
+      [
+       "root channel",
+       "twin:labels"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node365_c1.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       3.992381280224432e-06
+      ],
+      [
+       "P(>=4)",
+       2.3059973505749658e-11
+      ],
+      [
+       "width",
+       "0.19002659375847666"
+      ],
+      [
+       "root channel",
+       "twin:labels"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node56_c2.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       1.2850353580006022e-05
+      ],
+      [
+       "P(>=4)",
+       6.934319820766899e-11
+      ],
+      [
+       "width",
+       "1.1472451534170185"
+      ],
+      [
+       "root channel",
+       "twin:labels"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node2100_c0.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       1.3611054700147922e-05
+      ],
+      [
+       "P(>=4)",
+       2.4046195249076507e-10
+      ],
+      [
+       "width",
+       "0.00007515298661015599"
+      ],
+      [
+       "root channel",
+       "twin:labels"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node1962_c3.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       1.5125428453914859e-05
+      ],
+      [
+       "P(>=4)",
+       1.0658228085508156e-11
+      ],
+      [
+       "width",
+       "0.002015212252597425"
+      ],
+      [
+       "root channel",
+       "twin:labels"
+      ]
+     ]
+    }
+   ],
+   "records": []
+  },
+  {
+   "heading": "julia:multibrot4: best 4 and worst 4",
+   "note": "best first, then worst; the picture is the walk's gate render",
+   "table": null,
+   "tiles": [
+    {
+     "picture": "pictures/node1600_c2.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.9994388587189853
+      ],
+      [
+       "P(>=4)",
+       0.9994152446249742
+      ],
+      [
+       "width",
+       "0.00005559964354778044"
+      ],
+      [
+       "root channel",
+       "twin:labels"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node1600_c0.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.9981630658671864
+      ],
+      [
+       "P(>=4)",
+       0.9972366092956617
+      ],
+      [
+       "width",
+       "0.00005559964354778044"
+      ],
+      [
+       "root channel",
+       "twin:labels"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node2881_c3.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.9960359580742277
+      ],
+      [
+       "P(>=4)",
+       0.9955575483439816
+      ],
+      [
+       "width",
+       "0.04024127248053426"
+      ],
+      [
+       "root channel",
+       "twin:labels"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node2453_c3.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.9942053249121608
+      ],
+      [
+       "P(>=4)",
+       0.9936172818737167
+      ],
+      [
+       "width",
+       "0.11377525886500758"
+      ],
+      [
+       "root channel",
+       "twin:labels"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node2878_c0.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       5.0262973543514936e-05
+      ],
+      [
+       "P(>=4)",
+       5.6360221183864684e-11
+      ],
+      [
+       "width",
+       "0.033109493889282145"
+      ],
+      [
+       "root channel",
+       "twin:labels"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node2328_c2.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.0001494558183096726
+      ],
+      [
+       "P(>=4)",
+       2.4831994264459327e-10
+      ],
+      [
+       "width",
+       "0.080296872966241"
+      ],
+      [
+       "root channel",
+       "twin:labels"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node2223_c0.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.0006859468767925978
+      ],
+      [
+       "P(>=4)",
+       5.756589324236946e-09
+      ],
+      [
+       "width",
+       "0.00004369635793227693"
+      ],
+      [
+       "root channel",
+       "twin:labels"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node63_c1.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.0009383049547412019
+      ],
+      [
+       "P(>=4)",
+       3.919372019623821e-08
+      ],
+      [
+       "width",
+       "1.2649258195696158"
+      ],
+      [
+       "root channel",
+       "twin:labels"
+      ]
+     ]
+    }
+   ],
+   "records": []
+  },
+  {
+   "heading": "julia:multibrot5: best 4 and worst 4",
+   "note": "best first, then worst; the picture is the walk's gate render",
+   "table": null,
+   "tiles": [
+    {
+     "picture": "pictures/node1841_c2.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.9992593381748937
+      ],
+      [
+       "P(>=4)",
+       0.9992440479942781
+      ],
+      [
+       "width",
+       "0.0005002961789205947"
+      ],
+      [
+       "root channel",
+       "twin:labels"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node949_c2.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.9976506032928188
+      ],
+      [
+       "P(>=4)",
+       0.9696147870955689
+      ],
+      [
+       "width",
+       "0.002958912552431221"
+      ],
+      [
+       "root channel",
+       "twin:labels"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node2184_c3.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.99710418160027
+      ],
+      [
+       "P(>=4)",
+       0.9966593325910091
+      ],
+      [
+       "width",
+       "0.00007167324448167342"
+      ],
+      [
+       "root channel",
+       "twin:labels"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node1783_c0.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.9967755216168322
+      ],
+      [
+       "P(>=4)",
+       0.9838504623204206
+      ],
+      [
+       "width",
+       "0.0013107803636466092"
+      ],
+      [
+       "root channel",
+       "twin:labels"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node202_c3.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.0002447745291485025
+      ],
+      [
+       "P(>=4)",
+       2.6003150624575817e-08
+      ],
+      [
+       "width",
+       "0.6663763070790202"
+      ],
+      [
+       "root channel",
+       "twin:labels"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node1458_c2.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.00030765755347909337
+      ],
+      [
+       "P(>=4)",
+       1.4718425142589708e-08
+      ],
+      [
+       "width",
+       "0.19811306522355945"
+      ],
+      [
+       "root channel",
+       "twin:labels"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node522_c1.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.0003395560650296328
+      ],
+      [
+       "P(>=4)",
+       1.4108459437414336e-08
+      ],
+      [
+       "width",
+       "0.030007541214654754"
+      ],
+      [
+       "root channel",
+       "twin:labels"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node4236_c0.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.0004026495398965478
+      ],
+      [
+       "P(>=4)",
+       8.307346132057054e-09
+      ],
+      [
+       "width",
+       "0.0004859250925336259"
+      ],
+      [
+       "root channel",
+       "twin:labels"
+      ]
+     ]
+    }
+   ],
+   "records": []
+  },
+  {
+   "heading": "julia:multibrot6: best 4 and worst 4",
+   "note": "best first, then worst; the picture is the walk's gate render",
+   "table": null,
+   "tiles": [
+    {
+     "picture": "pictures/node1421_c3.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.8489827724462699
+      ],
+      [
+       "P(>=4)",
+       0.8384880197760595
+      ],
+      [
+       "width",
+       "0.0010139655981541563"
+      ],
+      [
+       "root channel",
+       "twin:run"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node3195_c0.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.3186139851881625
+      ],
+      [
+       "P(>=4)",
+       4.096554438931706e-05
+      ],
+      [
+       "width",
+       "0.03937423984218461"
+      ],
+      [
+       "root channel",
+       "twin:run"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node4192_c3.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.2673839243570511
+      ],
+      [
+       "P(>=4)",
+       0.15356770796154237
+      ],
+      [
+       "width",
+       "0.000005749506918783923"
+      ],
+      [
+       "root channel",
+       "twin:run"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node603_c1.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.24983279382945212
+      ],
+      [
+       "P(>=4)",
+       0.0003266896768362003
+      ],
+      [
+       "width",
+       "0.524160682178471"
+      ],
+      [
+       "root channel",
+       "twin:run"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node4339_c0.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       1.1215939529013903e-05
+      ],
+      [
+       "P(>=4)",
+       1.3248238359262073e-10
+      ],
+      [
+       "width",
+       "0.00008327464483641807"
+      ],
+      [
+       "root channel",
+       "twin:run"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node1614_c0.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       1.1972839492901842e-05
+      ],
+      [
+       "P(>=4)",
+       1.5794433002607297e-14
+      ],
+      [
+       "width",
+       "0.00016415272430557408"
+      ],
+      [
+       "root channel",
+       "twin:run"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node3195_c1.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       1.4353373975819752e-05
+      ],
+      [
+       "P(>=4)",
+       1.333918860307291e-10
+      ],
+      [
+       "width",
+       "0.03937423984218461"
+      ],
+      [
+       "root channel",
+       "twin:run"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node575_c1.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       2.4138095504292854e-05
+      ],
+      [
+       "P(>=4)",
+       9.810350035803739e-11
+      ],
+      [
+       "width",
+       "1.2869613692569604"
+      ],
+      [
+       "root channel",
+       "twin:run"
+      ]
+     ]
+    }
+   ],
+   "records": []
+  },
+  {
+   "heading": "mandelbrot: best 4 and worst 4",
+   "note": "best first, then worst; the picture is the walk's gate render",
+   "table": null,
+   "tiles": [
+    {
+     "picture": "pictures/node3018_c3.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.5696249419523235
+      ],
+      [
+       "P(>=4)",
+       0.0007531246770632349
+      ],
+      [
+       "width",
+       "0.00007472325118975394"
+      ],
+      [
+       "root channel",
+       "nucleus_grid"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node3018_c2.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.45637194290259203
+      ],
+      [
+       "P(>=4)",
+       0.0002849205143811997
+      ],
+      [
+       "width",
+       "0.00007472325118975394"
+      ],
+      [
+       "root channel",
+       "nucleus_grid"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node2072_c1.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.45243524427339005
+      ],
+      [
+       "P(>=4)",
+       0.37061283349570184
+      ],
+      [
+       "width",
+       "0.00000003521282436640916"
+      ],
+      [
+       "root channel",
+       "nucleus_grid"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node3071_c1.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.3600511308465289
+      ],
+      [
+       "P(>=4)",
+       1.9670606248248552e-05
+      ],
+      [
+       "width",
+       "0.00003565346240120391"
+      ],
+      [
+       "root channel",
+       "nucleus_grid"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node309_c1.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       1.0463297553072468e-134
+      ],
+      [
+       "P(>=4)",
+       0.0
+      ],
+      [
+       "width",
+       "0.0852417994001631"
+      ],
+      [
+       "root channel",
+       "nucleus_grid"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node2648_c1.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       2.480145655611711e-113
+      ],
+      [
+       "P(>=4)",
+       0.0
+      ],
+      [
+       "width",
+       "0.00002312617277257089"
+      ],
+      [
+       "root channel",
+       "nucleus_grid"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node3152_c2.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       5.457099657510512e-107
+      ],
+      [
+       "P(>=4)",
+       0.0
+      ],
+      [
+       "width",
+       "0.00005383405349037141"
+      ],
+      [
+       "root channel",
+       "nucleus_grid"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node3351_c1.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       3.777813060764463e-94
+      ],
+      [
+       "P(>=4)",
+       5.23943851207864e-310
+      ],
+      [
+       "width",
+       "0.0064265918431488205"
+      ],
+      [
+       "root channel",
+       "nucleus_grid"
+      ]
+     ]
+    }
+   ],
+   "records": []
+  },
+  {
+   "heading": "multibrot3: best 4 and worst 4",
+   "note": "best first, then worst; the picture is the walk's gate render",
+   "table": null,
+   "tiles": [
+    {
+     "picture": "pictures/node3641_c1.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.9189167044927674
+      ],
+      [
+       "P(>=4)",
+       6.993484004356703e-05
+      ],
+      [
+       "width",
+       "0.0000010578379810667692"
+      ],
+      [
+       "root channel",
+       "nucleus_grid"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node3641_c0.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.8439967145487642
+      ],
+      [
+       "P(>=4)",
+       0.0047808956475465176
+      ],
+      [
+       "width",
+       "0.0000010578379810667692"
+      ],
+      [
+       "root channel",
+       "nucleus_grid"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node3641_c2.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.820024587834721
+      ],
+      [
+       "P(>=4)",
+       5.934035464560681e-05
+      ],
+      [
+       "width",
+       "0.0000010578379810667692"
+      ],
+      [
+       "root channel",
+       "nucleus_grid"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node3550_c3.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.7190539265281782
+      ],
+      [
+       "P(>=4)",
+       0.15485186798492817
+      ],
+      [
+       "width",
+       "0.00000003474093725200115"
+      ],
+      [
+       "root channel",
+       "nucleus_grid"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node10_c1.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       4.0741640416543964e-250
+      ],
+      [
+       "P(>=4)",
+       0.0
+      ],
+      [
+       "width",
+       "0.19786118559790777"
+      ],
+      [
+       "root channel",
+       "nucleus_grid"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node1871_c1.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       9.969832968314077e-121
+      ],
+      [
+       "P(>=4)",
+       0.0
+      ],
+      [
+       "width",
+       "0.00000012499021948475768"
+      ],
+      [
+       "root channel",
+       "nucleus_grid"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node1795_c2.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       5.854257464265738e-114
+      ],
+      [
+       "P(>=4)",
+       0.0
+      ],
+      [
+       "width",
+       "0.00000033615878169663646"
+      ],
+      [
+       "root channel",
+       "nucleus_grid"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node1951_c0.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       6.1200185782956835e-68
+      ],
+      [
+       "P(>=4)",
+       7.233776593057073e-222
+      ],
+      [
+       "width",
+       "0.006044483616143442"
+      ],
+      [
+       "root channel",
+       "nucleus_grid"
+      ]
+     ]
+    }
+   ],
+   "records": []
+  },
+  {
+   "heading": "multibrot4: best 4 and worst 4",
+   "note": "best first, then worst; the picture is the walk's gate render",
+   "table": null,
+   "tiles": [
+    {
+     "picture": "pictures/node2893_c0.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.960299805514267
+      ],
+      [
+       "P(>=4)",
+       0.0002960842874048651
+      ],
+      [
+       "width",
+       "0.0000005190138622573108"
+      ],
+      [
+       "root channel",
+       "nucleus_grid"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node648_c2.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.9014176372946446
+      ],
+      [
+       "P(>=4)",
+       0.09759779473694274
+      ],
+      [
+       "width",
+       "0.00017571944503817348"
+      ],
+      [
+       "root channel",
+       "nucleus_grid"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node648_c1.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.8441295700523072
+      ],
+      [
+       "P(>=4)",
+       3.979204863630137e-05
+      ],
+      [
+       "width",
+       "0.00017571944503817348"
+      ],
+      [
+       "root channel",
+       "nucleus_grid"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node2851_c0.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.8292458237480363
+      ],
+      [
+       "P(>=4)",
+       1.4294225363809268e-05
+      ],
+      [
+       "width",
+       "0.000004759234173811745"
+      ],
+      [
+       "root channel",
+       "nucleus_grid"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node3468_c1.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       6.361731410584628e-126
+      ],
+      [
+       "P(>=4)",
+       0.0
+      ],
+      [
+       "width",
+       "0.00000022227797213463785"
+      ],
+      [
+       "root channel",
+       "nucleus_grid"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node21_c3.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       1.2181239096910664e-74
+      ],
+      [
+       "P(>=4)",
+       2.0875414749714292e-243
+      ],
+      [
+       "width",
+       "0.028004894663695823"
+      ],
+      [
+       "root channel",
+       "nucleus_grid"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node3926_c0.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       1.1348796810041938e-21
+      ],
+      [
+       "P(>=4)",
+       2.113728626324988e-63
+      ],
+      [
+       "width",
+       "0.20517430634546618"
+      ],
+      [
+       "root channel",
+       "nucleus_grid"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node1402_c0.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       4.4209278635595817e-10
+      ],
+      [
+       "P(>=4)",
+       4.0185346194533236e-25
+      ],
+      [
+       "width",
+       "0.002049142889434871"
+      ],
+      [
+       "root channel",
+       "nucleus_grid"
+      ]
+     ]
+    }
+   ],
+   "records": []
+  },
+  {
+   "heading": "multibrot5: best 4 and worst 4",
+   "note": "best first, then worst; the picture is the walk's gate render",
+   "table": null,
+   "tiles": [
+    {
+     "picture": "pictures/node4738_c2.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.9846885607919963
+      ],
+      [
+       "P(>=4)",
+       0.007973449438447642
+      ],
+      [
+       "width",
+       "0.0000004758496471019763"
+      ],
+      [
+       "root channel",
+       "nucleus_grid"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node4738_c1.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.97547864074347
+      ],
+      [
+       "P(>=4)",
+       0.021401841547510108
+      ],
+      [
+       "width",
+       "0.0000004758496471019763"
+      ],
+      [
+       "root channel",
+       "nucleus_grid"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node4650_c2.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.9676685977623629
+      ],
+      [
+       "P(>=4)",
+       0.005326746795855233
+      ],
+      [
+       "width",
+       "0.00043941942526010483"
+      ],
+      [
+       "root channel",
+       "nucleus_grid"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node4650_c1.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.958597523062773
+      ],
+      [
+       "P(>=4)",
+       0.0003006038686727472
+      ],
+      [
+       "width",
+       "0.00043941942526010483"
+      ],
+      [
+       "root channel",
+       "nucleus_grid"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node26_c3.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       2.5912818030533523e-08
+      ],
+      [
+       "P(>=4)",
+       3.0677385924700268e-21
+      ],
+      [
+       "width",
+       "0.08329882838793097"
+      ],
+      [
+       "root channel",
+       "nucleus_grid"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node98_c2.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       3.3266379022835574e-07
+      ],
+      [
+       "P(>=4)",
+       5.22498163831003e-17
+      ],
+      [
+       "width",
+       "0.0064159376552214405"
+      ],
+      [
+       "root channel",
+       "nucleus_grid"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node27_c3.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       1.2290899308245164e-06
+      ],
+      [
+       "P(>=4)",
+       1.8339273762174876e-15
+      ],
+      [
+       "width",
+       "0.05205844964286702"
+      ],
+      [
+       "root channel",
+       "nucleus_grid"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node817_c2.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       4.320071436419021e-06
+      ],
+      [
+       "P(>=4)",
+       4.835870883894753e-13
+      ],
+      [
+       "width",
+       "0.005004906609254598"
+      ],
+      [
+       "root channel",
+       "nucleus_grid"
+      ]
+     ]
+    }
+   ],
+   "records": []
+  },
+  {
+   "heading": "multibrot6: best 4 and worst 4",
+   "note": "best first, then worst; the picture is the walk's gate render",
+   "table": null,
+   "tiles": [
+    {
+     "picture": "pictures/node3935_c0.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.1163496246411166
+      ],
+      [
+       "P(>=4)",
+       4.479246160985599e-06
+      ],
+      [
+       "width",
+       "0.00012179090286028997"
+      ],
+      [
+       "root channel",
+       "viewport_sampler"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node3957_c2.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.09449406932670833
+      ],
+      [
+       "P(>=4)",
+       0.0012386115775734766
+      ],
+      [
+       "width",
+       "0.000053946505664068284"
+      ],
+      [
+       "root channel",
+       "viewport_sampler"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node3957_c3.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.06898983738717927
+      ],
+      [
+       "P(>=4)",
+       0.00019454594313050982
+      ],
+      [
+       "width",
+       "0.000053946505664068284"
+      ],
+      [
+       "root channel",
+       "viewport_sampler"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node423_c1.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.025156681437349695
+      ],
+      [
+       "P(>=4)",
+       5.37262145538433e-06
+      ],
+      [
+       "width",
+       "0.001094027786916355"
+      ],
+      [
+       "root channel",
+       "viewport_sampler"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node4536_c0.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       4.598461235252697e-39
+      ],
+      [
+       "P(>=4)",
+       4.735484054049693e-128
+      ],
+      [
+       "width",
+       "0.00011947389926265741"
+      ],
+      [
+       "root channel",
+       "viewport_sampler"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node3830_c1.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       6.661261581974468e-30
+      ],
+      [
+       "P(>=4)",
+       1.3683362190603962e-96
+      ],
+      [
+       "width",
+       "0.0002346555265494004"
+      ],
+      [
+       "root channel",
+       "viewport_sampler"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node4409_c2.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       3.5614077388373474e-07
+      ],
+      [
+       "P(>=4)",
+       2.2318490812762495e-15
+      ],
+      [
+       "width",
+       "0.03404960387391525"
+      ],
+      [
+       "root channel",
+       "viewport_sampler"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node40_c2.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       4.1398113201254856e-07
+      ],
+      [
+       "P(>=4)",
+       4.237099345198655e-20
+      ],
+      [
+       "width",
+       "0.022615458932754923"
+      ],
+      [
+       "root channel",
+       "viewport_sampler"
+      ]
+     ]
+    }
+   ],
+   "records": []
+  },
+  {
+   "heading": "phoenix: best 4 and worst 4",
+   "note": "best first, then worst; the picture is the walk's gate render",
+   "table": null,
+   "tiles": [
+    {
+     "picture": "pictures/node214_c1.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.9839615691257102
+      ],
+      [
+       "P(>=4)",
+       0.9636134886271954
+      ],
+      [
+       "width",
+       "0.9409082095914474"
+      ],
+      [
+       "root channel",
+       "phoenix_seed_pool"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node2260_c0.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.9776485852545413
+      ],
+      [
+       "P(>=4)",
+       0.0010410630427925057
+      ],
+      [
+       "width",
+       "0.000007968129235273439"
+      ],
+      [
+       "root channel",
+       "phoenix_seed_pool"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node2020_c1.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.9743554695367056
+      ],
+      [
+       "P(>=4)",
+       0.00013834681159674166
+      ],
+      [
+       "width",
+       "0.000056063603316726115"
+      ],
+      [
+       "root channel",
+       "phoenix_seed_pool"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node1706_c3.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.9742233885491262
+      ],
+      [
+       "P(>=4)",
+       0.00012435067239021391
+      ],
+      [
+       "width",
+       "0.0003743223750667095"
+      ],
+      [
+       "root channel",
+       "phoenix_seed_pool"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node80_c0.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       1.810096928564233e-06
+      ],
+      [
+       "P(>=4)",
+       3.2119342970845883e-12
+      ],
+      [
+       "width",
+       "2.234138200995916"
+      ],
+      [
+       "root channel",
+       "phoenix_seed_pool"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node3726_c2.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       5.4000477628510794e-06
+      ],
+      [
+       "P(>=4)",
+       1.0384544501778261e-10
+      ],
+      [
+       "width",
+       "0.01695458444258661"
+      ],
+      [
+       "root channel",
+       "phoenix_seed_pool"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node80_c2.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       7.2830824442343554e-06
+      ],
+      [
+       "P(>=4)",
+       1.9913678633716725e-12
+      ],
+      [
+       "width",
+       "2.234138200995916"
+      ],
+      [
+       "root channel",
+       "phoenix_seed_pool"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node3726_c3.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       1.0221975427052514e-05
+      ],
+      [
+       "P(>=4)",
+       1.8299820796894998e-13
+      ],
+      [
+       "width",
+       "0.01695458444258661"
+      ],
+      [
+       "root channel",
+       "phoenix_seed_pool"
+      ]
+     ]
+    }
+   ],
+   "records": []
+  },
+  {
+   "heading": "phoenix:classic: best 4 and worst 4",
+   "note": "best first, then worst; the picture is the walk's gate render",
+   "table": null,
+   "tiles": [
+    {
+     "picture": "pictures/node1674_c1.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.9737968319935667
+      ],
+      [
+       "P(>=4)",
+       1.4947176450693506e-05
+      ],
+      [
+       "width",
+       "0.011255325193450905"
+      ],
+      [
+       "root channel",
+       "home_view"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node1672_c3.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.8794147509790928
+      ],
+      [
+       "P(>=4)",
+       5.683907160817534e-06
+      ],
+      [
+       "width",
+       "0.011076308485402609"
+      ],
+      [
+       "root channel",
+       "home_view"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node111_c3.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.804753388246345
+      ],
+      [
+       "P(>=4)",
+       2.999098131816777e-05
+      ],
+      [
+       "width",
+       "0.8865014759348431"
+      ],
+      [
+       "root channel",
+       "home_view"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node792_c3.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       0.6376462301781262
+      ],
+      [
+       "P(>=4)",
+       0.0004142624160471275
+      ],
+      [
+       "width",
+       "0.06324483679279803"
+      ],
+      [
+       "root channel",
+       "home_view"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node792_c1.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       2.38043407677801e-60
+      ],
+      [
+       "P(>=4)",
+       5.149616974664056e-190
+      ],
+      [
+       "width",
+       "0.06324483679279803"
+      ],
+      [
+       "root channel",
+       "home_view"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node81_c2.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       6.581404807423806e-31
+      ],
+      [
+       "P(>=4)",
+       7.219771333794986e-91
+      ],
+      [
+       "width",
+       "2.4933564162466193"
+      ],
+      [
+       "root channel",
+       "home_view"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node1329_c0.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       4.691689810575514e-07
+      ],
+      [
+       "P(>=4)",
+       1.147244927380188e-17
+      ],
+      [
+       "width",
+       "0.035345251782558464"
+      ],
+      [
+       "root channel",
+       "home_view"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/node2781_c2.jpg",
+     "title": "",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=3)",
+       8.540516829698098e-07
+      ],
+      [
+       "P(>=4)",
+       1.249089812597581e-12
+      ],
+      [
+       "width",
+       "0.001811057231895316"
+      ],
+      [
+       "root channel",
+       "home_view"
+      ]
+     ]
+    }
+   ],
+   "records": []
+  }
+ ]
+}

@@ -1,0 +1,61 @@
+{
+  "schema": 1,
+  "command": "fractal-wallpapers walkthrough --stamp 20261005T063202Z",
+  "stamp": "20261005T063202Z",
+  "pages": [
+    {
+      "folder": "judges-check",
+      "title": "Judge check",
+      "made_by": null,
+      "command": "fractal-wallpapers judges check",
+      "files": 10,
+      "bytes": 169190
+    },
+    {
+      "folder": "walk-stats",
+      "title": "Harvest stats",
+      "made_by": null,
+      "command": "fractal-wallpapers harvest stats",
+      "files": 98,
+      "bytes": 1551680
+    },
+    {
+      "folder": "candidates",
+      "title": "Candidate pool",
+      "made_by": null,
+      "command": "fractal-wallpapers curate candidate-ledger browse",
+      "files": 44,
+      "bytes": 742676
+    },
+    {
+      "folder": "gallery",
+      "title": "Gallery 20261005T063202Z",
+      "made_by": null,
+      "command": "fractal-wallpapers walkthrough --stamp 20261005T063202Z",
+      "files": 14,
+      "bytes": 229744
+    },
+    {
+      "folder": "trace",
+      "title": "Trace of 20261005T063202Z",
+      "made_by": null,
+      "command": "fractal-wallpapers walkthrough --stamp 20261005T063202Z",
+      "files": 30,
+      "bytes": 1266531
+    }
+  ],
+  "files": [
+    {
+      "name": "summary.json",
+      "source": "artifacts/harvest/summary.json"
+    },
+    {
+      "name": "stats.json",
+      "source": "artifacts/harvest/stats/stats.json"
+    },
+    {
+      "name": "keep.jsonl",
+      "source": "artifacts/curation/tentative/keep.jsonl"
+    }
+  ]
+}

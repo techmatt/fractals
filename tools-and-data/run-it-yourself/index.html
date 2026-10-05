@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="../../assets/icons/favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="apple-touch-icon" href="../../assets/icons/apple-touch-icon.png">
+<link rel="manifest" href="../../assets/icons/site.webmanifest">
+<meta name="description" content="A worked example of the fractal-wallpapers pipeline from a fresh install, with sample output from every stage.">
+<title>Run the pipeline yourself</title>
+<!-- head-tags:start, written by builder/. Run `python -m builder build`. -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Run the pipeline yourself">
+<meta property="og:description" content="A worked example of the fractal-wallpapers pipeline from a fresh install, with sample output from every stage.">
+<meta property="og:url" content="https://techmatt.github.io/fractals/tools-and-data/run-it-yourself/">
+<meta property="og:image" content="https://techmatt.github.io/fractals/assets/icons/icon-512.png">
+<meta name="twitter:card" content="summary">
+<!-- head-tags:end -->
+<link rel="stylesheet" href="../../assets/css/site.css">
+</head>
+<body>
+<div class="page-solo">
+<header class="masthead">
+  <h1>Run the pipeline yourself</h1>
+</header>
+<section class="prose">
+<p>Everything on this site was made by the code in the <a href="https://github.com/techmatt/fractal-wallpapers">fractal-wallpapers repository</a>, and you can run all of it yourself. This page walks through a fresh install on one machine and shows a small sample of what each stage writes, so you can check your own run against it. I ran each stage for about ten minutes. That is enough to see every file and a first small gallery, but nowhere near enough to find many good wallpapers.</p>
+<p>You do not need a GPU. The judges run several times faster with one, but most of the time goes to rendering, which runs on the CPU either way. The whole example takes about 45 minutes on a CPU install and about 27 with CUDA, and leaves about 1.1 GB on disk.</p>
+<p>The files below are slices: the twelve pictures in the final gallery, traced back through every stage, plus a few that were rejected along the way. Each file's fields are defined in <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md">FORMATS.md</a> in the repository.</p>
+<h2 id="install">Install</h2>
+<p>The CPU and CUDA installs differ only in which PyTorch they pull.</p>
+<pre><code>git clone https://github.com/techmatt/fractal-wallpapers
+cd fractal-wallpapers
+uv sync --extra models --extra solve              # CPU torch, any machine
+uv sync --extra cuda --extra solve                # or: CUDA torch, an NVIDIA card (Windows, Linux x86_64)
+cargo build --release --manifest-path engine/Cargo.toml
+.venv/Scripts/fractal-wallpapers fetch-weights    # Linux/macOS: .venv/bin/fractal-wallpapers</code></pre>
+<pre><code>python -m venv .venv
+.venv/Scripts/pip install -e ".[models,solve]"   # Linux/macOS: .venv/bin/pip</code></pre>
+<h2 id="render-one-picture">Render one picture</h2>
+<p>One command draws one picture from a family, a view, a rendering mode, and a palette.</p>
+<pre><code>engine/target/release/fractal-engine render-link --size 2560x1440 --out artifacts/seat.png \
+  --link "https://techmatt.github.io/fractals/explorer/?v=4&amp;f=julia&amp;cx=-1.2540170796954613&amp;cy=-0.07161459637319667&amp;m=tia&amp;x=-0.336363658629224&amp;y=-0.06271709146615745&amp;w=0.5659066537374874&amp;p=Oxblood%2C%20Cyan%2C%20Cream&amp;phase=0.597858"
+fractal-wallpapers render --family mandelbrot --center-re -0.7436438870371587 \
+  --center-im 0.13182590420531197 --width 0.00001 --mode stripe --cycles 2 --out artifacts/first.png</code></pre>
+<table>
+<tr><th>stage</th><th>rendered at</th><th>the network reads</th><th>engine s / picture</th><th>judge ms / picture, CPU · CUDA</th><th>bytes / picture</th><th>in the sample run</th></tr>
+<tr><td>full-size wallpaper</td><td>2560x1440, ss3</td><td>—</td><td>5–31</td><td>—</td><td>2.2 MB JPEG</td><td>not made</td></tr>
+</table>
+<h2 id="check-the-judges">Check the judges</h2>
+<p>This renders eight fixed pictures, scores them with all four judges, and compares the scores to the ones I got. If your numbers match, your install matches mine.</p>
+<pre><code>fractal-wallpapers judges check</code></pre>
+<table>
+<tr><th>stage</th><th>rendered at</th><th>the network reads</th><th>engine s / picture</th><th>judge ms / picture, CPU · CUDA</th><th>bytes / picture</th><th>in the sample run</th></tr>
+<tr><td>palette judge</td><td>640x360, ss2</td><td>224x224 squash</td><td>—</td><td>9 · 6</td><td>—</td><td><code>judges check</code> only</td></tr>
+</table>
+<div class="hosted">
+<iframe src="walkthrough/judges-check/index.html" title="Judge check" loading="lazy"></iframe>
+<p class="hosted-open"><a href="walkthrough/judges-check/index.html">open this page on its own</a></p>
+<ul class="hosted-files">
+<li><a href="walkthrough/judges-check/page.json">page.json</a> · <code>fractal-wallpapers judges check</code> · <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md#pagejson">FORMATS.md</a></li>
+</ul>
+</div>
+<h2 id="walk-for-locations">Walk for locations</h2>
+<p>The walk explores each fractal family for a fixed amount of time and records the places it finds, and the location judge then scores each place. No two walks find the same places.</p>
+<pre><code>fractal-wallpapers harvest --minutes 10 --no-scoring
+fractal-wallpapers curate score --harvest artifacts/harvest
+fractal-wallpapers harvest export
+fractal-wallpapers harvest stats</code></pre>
+<table>
+<tr><th>stage</th><th>rendered at</th><th>the network reads</th><th>engine s / picture</th><th>judge ms / picture, CPU · CUDA</th><th>bytes / picture</th><th>in the sample run</th></tr>
+<tr><td>walk frame (gate render)</td><td>384x216, ss1</td><td>—</td><td>0.04–0.3</td><td>—</td><td>60 KB</td><td>4,069, 246 MB</td></tr>
+<tr><td>location judge</td><td>its own 384x216 ss1 view</td><td>384x224 stretch</td><td>0.04–0.3</td><td>24 · 5</td><td>60 KB</td><td>4,022, 241 MB</td></tr>
+</table>
+<p>The full ten-minute run found 4,069 places, mined 327 candidates from them, and seated 2 of 12 at the default bars.</p>
+<div class="hosted">
+<iframe src="walkthrough/walk-stats/index.html" title="Harvest stats" loading="lazy"></iframe>
+<p class="hosted-open"><a href="walkthrough/walk-stats/index.html">open this page on its own</a></p>
+<ul class="hosted-files">
+<li><a href="walkthrough/walk-stats/page.json">page.json</a> · <code>fractal-wallpapers harvest stats</code> · <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md#pagejson">FORMATS.md</a></li>
+<li><a href="walkthrough/summary.json">summary.json</a> · <code>fractal-wallpapers harvest</code> · whole · <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md#walkjsonl">FORMATS.md</a></li>
+<li><a href="walkthrough/stats.json">stats.json</a> · <code>fractal-wallpapers harvest stats</code> · whole · <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md#locationsjsonl">FORMATS.md</a></li>
+</ul>
+</div>
+<h2 id="mine-candidates">Mine candidates</h2>
+<p>Mining takes the best-scoring places, tries rendering modes and palettes on each, and keeps the pictures the wallpaper judge likes.</p>
+<pre><code>fractal-wallpapers curate embed</code></pre>
+<pre><code>fractal-wallpapers curate hunt run --name h1 --budget 600 --unconditional 600
+fractal-wallpapers curate hunt merge --name h1
+fractal-wallpapers curate candidate-ledger browse</code></pre>
+<table>
+<tr><th>stage</th><th>rendered at</th><th>the network reads</th><th>engine s / picture</th><th>judge ms / picture, CPU · CUDA</th><th>bytes / picture</th><th>in the sample run</th></tr>
+<tr><td>embedding (DINOv2)</td><td>448x252, ss1</td><td>448x252 as is</td><td>0.05–0.2</td><td>100 · 8</td><td>90 KB</td><td>1,796, 155 MB</td></tr>
+<tr><td>mined candidate</td><td>640x360, ss2</td><td>—</td><td>0.2–1.2</td><td>—</td><td>140 KB, plus about 0.9 MB of cached field</td><td>437 rows after two merges, 81 MB of pictures, 317 MB of fields</td></tr>
+<tr><td>wallpaper judge</td><td>the candidate</td><td>384x224 stretch</td><td>—</td><td>13 · 7</td><td>—</td><td>every candidate</td></tr>
+</table>
+<div class="hosted">
+<iframe src="walkthrough/candidates/index.html" title="Candidate pool" loading="lazy"></iframe>
+<p class="hosted-open"><a href="walkthrough/candidates/index.html">open this page on its own</a></p>
+<ul class="hosted-files">
+<li><a href="walkthrough/candidates/page.json">page.json</a> · <code>fractal-wallpapers curate candidate-ledger browse</code> · <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md#pagejson">FORMATS.md</a></li>
+</ul>
+</div>
+<h2 id="grade-and-solve-a-gallery">Grade and solve a gallery</h2>
+<p>The gallery judge grades the candidates, and the solve picks a set that is good and varied. After ten minutes of mining only a handful of pictures clear the bars, so the gallery shown here was made with the forced fill, which seats the best of whatever the pool holds.</p>
+<pre><code>fractal-wallpapers gallery-grade score-pool</code></pre>
+<pre><code>fractal-wallpapers curate solve run --name first --n 12 --force-fill
+fractal-wallpapers curate solve run --name first_at_bars --n 12</code></pre>
+<pre><code>fractal-wallpapers curate solve record --n 12 --force-fill
+fractal-wallpapers curate solve browse --viewer</code></pre>
+<table>
+<tr><th>stage</th><th>rendered at</th><th>the network reads</th><th>engine s / picture</th><th>judge ms / picture, CPU · CUDA</th><th>bytes / picture</th><th>in the sample run</th></tr>
+<tr><td>gallery judge</td><td>the candidate</td><td>384x224 stretch, 3 seeds</td><td>—</td><td>25 · 8</td><td>—</td><td>the above-bar rows</td></tr>
+<tr><td>solve seat</td><td>1280x720, ss2</td><td>—</td><td>0.7–4.1</td><td>—</td><td>1.8 MB PNG</td><td>12 a solve, 34 MB for three solves and two records</td></tr>
+</table>
+<div class="hosted">
+<iframe src="walkthrough/gallery/index.html" title="Gallery 20261005T063202Z" loading="lazy"></iframe>
+<p class="hosted-open"><a href="walkthrough/gallery/index.html">open this page on its own</a></p>
+<ul class="hosted-files">
+<li><a href="walkthrough/gallery/page.json">page.json</a> · <code>fractal-wallpapers walkthrough --stamp 20261005T063202Z</code> · <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md#gallery-pagejson">FORMATS.md</a></li>
+<li><a href="walkthrough/keep.jsonl">keep.jsonl</a> · <code>fractal-wallpapers curate solve record</code> · whole · <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md#keepjsonl">FORMATS.md</a></li>
+</ul>
+</div>
+<h2 id="continue-from-your-own-pool">Continue from your own pool</h2>
+<p>Every later run adds to the same pool. A merge prunes weaker pictures, and the galleries you recorded keep theirs.</p>
+<pre><code>fractal-wallpapers curate mine run --name m1 --budget 300
+fractal-wallpapers curate mine merge --name m1
+fractal-wallpapers gallery-grade score-pool
+fractal-wallpapers curate solve run --name second --n 12</code></pre>
+<h2 id="follow-one-picture">Follow one picture</h2>
+<p>Here is one gallery picture as it appears in each file.</p>
+<pre><code>fractal-wallpapers curate solve trace &lt;stamp&gt;
+fractal-wallpapers walkthrough --stamp &lt;stamp&gt;</code></pre>
+<div class="hosted">
+<iframe src="walkthrough/trace/index.html" title="Trace of 20261005T063202Z" loading="lazy"></iframe>
+<p class="hosted-open"><a href="walkthrough/trace/index.html">open this page on its own</a></p>
+<ul class="hosted-files">
+<li><a href="walkthrough/trace/page.json">page.json</a> · <code>fractal-wallpapers walkthrough --stamp 20261005T063202Z</code> · <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md#pagejson">FORMATS.md</a></li>
+<li><a href="walkthrough/trace/counts.json">counts.json</a> · <code>fractal-wallpapers walkthrough --stamp 20261005T063202Z</code> · <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md#countsjson">FORMATS.md</a></li>
+<li><a href="walkthrough/trace/files/walk.jsonl">walk.jsonl</a> · <code>fractal-wallpapers walkthrough --stamp 20261005T063202Z</code> · 98 rows here, 8,010 in the full run · <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md#walkjsonl">FORMATS.md</a></li>
+<li><a href="walkthrough/trace/files/supply_scores.jsonl">supply_scores.jsonl</a> · <code>fractal-wallpapers walkthrough --stamp 20261005T063202Z</code> · 20 rows here, 4,022 in the full run · <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md#supply_scoresjsonl">FORMATS.md</a></li>
+<li><a href="walkthrough/trace/files/locations.jsonl">locations.jsonl</a> · <code>fractal-wallpapers walkthrough --stamp 20261005T063202Z</code> · 20 rows here, 4,069 in the full run · <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md#locationsjsonl">FORMATS.md</a></li>
+<li><a href="walkthrough/trace/files/rows.jsonl">rows.jsonl</a> · <code>fractal-wallpapers walkthrough --stamp 20261005T063202Z</code> · 18 rows here, 437 in the full run · <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md#candidate-ledger-rows">FORMATS.md</a></li>
+<li><a href="walkthrough/trace/files/scores.jsonl">scores.jsonl</a> · <code>fractal-wallpapers walkthrough --stamp 20261005T063202Z</code> · 18 rows here, 437 in the full run · <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md#candidate-ledger-scores">FORMATS.md</a></li>
+<li><a href="walkthrough/trace/files/flatness.jsonl">flatness.jsonl</a> · <code>fractal-wallpapers walkthrough --stamp 20261005T063202Z</code> · 18 rows here, 437 in the full run · <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md#candidate-ledger-flatness">FORMATS.md</a></li>
+<li><a href="walkthrough/trace/files/pool_scores.jsonl">pool_scores.jsonl</a> · <code>fractal-wallpapers walkthrough --stamp 20261005T063202Z</code> · 10 rows here, 26 in the full run · <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md#pool_scoresjsonl">FORMATS.md</a></li>
+<li><a href="walkthrough/trace/files/gallery.jsonl">gallery.jsonl</a> · <code>fractal-wallpapers walkthrough --stamp 20261005T063202Z</code> · 12 rows here, 12 in the full run · <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md#galleryjsonl">FORMATS.md</a></li>
+<li><a href="walkthrough/trace/files/manifest.json">manifest.json</a> · <code>fractal-wallpapers walkthrough --stamp 20261005T063202Z</code> · <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md#manifestjson">FORMATS.md</a></li>
+</ul>
+</div>
+</section>
+<nav class="section-nav">
+  <p><a href="../index.html">Tools and data</a></p>
+</nav>
+<footer>
+  <p><a href="https://techmatt.github.io/">Matt Fisher</a>
+  · <a href="https://github.com/techmatt/fractal-wallpapers">fractal-wallpapers</a> · MIT</p>
+</footer>
+</div>
+</body>
+</html>

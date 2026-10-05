@@ -249,6 +249,7 @@ from .paths import (
     SITE_ROOT,
     THUMBS_DIR_NAME,
     carrier_path,
+    hosted_pages,
     site_pages,
 )
 
@@ -287,7 +288,7 @@ def _shown(path: Path) -> str:
 
 def check_links() -> list[str]:
     problems = []
-    for page in site_pages():
+    for page in [*site_pages(), *hosted_pages()]:
         parser = _Links()
         parser.feed(_read(page))
         where = _shown(page)

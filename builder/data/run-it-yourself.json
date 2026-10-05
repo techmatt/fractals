@@ -1,0 +1,159 @@
+{
+  "schema": 1,
+  "readme": {
+    "read": "fractal-wallpapers ba247cd:README.md, the sample2 run's numbers",
+    "sha256": "1ebc3dfad7d6fa0757c2880d3d23f1c9e2a0703aa6f840e40b3c933564ef539d"
+  },
+  "blocks": {
+    "install": [
+      "git clone https://github.com/techmatt/fractal-wallpapers\ncd fractal-wallpapers\nuv sync --extra models --extra solve              # CPU torch, any machine\nuv sync --extra cuda --extra solve                # or: CUDA torch, an NVIDIA card (Windows, Linux x86_64)\ncargo build --release --manifest-path engine/Cargo.toml\n.venv/Scripts/fractal-wallpapers fetch-weights    # Linux/macOS: .venv/bin/fractal-wallpapers",
+      "python -m venv .venv\n.venv/Scripts/pip install -e \".[models,solve]\"   # Linux/macOS: .venv/bin/pip"
+    ],
+    "1": [
+      "engine/target/release/fractal-engine render-link --size 2560x1440 --out artifacts/seat.png \\\n  --link \"https://techmatt.github.io/fractals/explorer/?v=4&f=julia&cx=-1.2540170796954613&cy=-0.07161459637319667&m=tia&x=-0.336363658629224&y=-0.06271709146615745&w=0.5659066537374874&p=Oxblood%2C%20Cyan%2C%20Cream&phase=0.597858\"\nfractal-wallpapers render --family mandelbrot --center-re -0.7436438870371587 \\\n  --center-im 0.13182590420531197 --width 0.00001 --mode stripe --cycles 2 --out artifacts/first.png"
+    ],
+    "2": [
+      "fractal-wallpapers judges check"
+    ],
+    "3": [
+      "fractal-wallpapers harvest --minutes 10 --no-scoring\nfractal-wallpapers curate score --harvest artifacts/harvest\nfractal-wallpapers harvest export\nfractal-wallpapers harvest stats"
+    ],
+    "4": [
+      "fractal-wallpapers curate embed"
+    ],
+    "5": [
+      "fractal-wallpapers curate hunt run --name h1 --budget 600 --unconditional 600\nfractal-wallpapers curate hunt merge --name h1\nfractal-wallpapers curate candidate-ledger browse"
+    ],
+    "6": [
+      "fractal-wallpapers gallery-grade score-pool"
+    ],
+    "7": [
+      "fractal-wallpapers curate solve run --name first --n 12 --force-fill\nfractal-wallpapers curate solve run --name first_at_bars --n 12"
+    ],
+    "8": [
+      "fractal-wallpapers curate solve record --n 12 --force-fill\nfractal-wallpapers curate solve browse --viewer"
+    ],
+    "9": [
+      "fractal-wallpapers curate mine run --name m1 --budget 300\nfractal-wallpapers curate mine merge --name m1\nfractal-wallpapers gallery-grade score-pool\nfractal-wallpapers curate solve run --name second --n 12"
+    ],
+    "10": [
+      "fractal-wallpapers curate solve trace <stamp>\nfractal-wallpapers walkthrough --stamp <stamp>"
+    ]
+  },
+  "cost": [
+    [
+      "stage",
+      "rendered at",
+      "the network reads",
+      "engine s / picture",
+      "judge ms / picture, CPU · CUDA",
+      "bytes / picture",
+      "in the sample run"
+    ],
+    [
+      "walk frame (gate render)",
+      "384x216, ss1",
+      "—",
+      "0.04–0.3",
+      "—",
+      "60 KB",
+      "4,069, 246 MB"
+    ],
+    [
+      "location judge",
+      "its own 384x216 ss1 view",
+      "384x224 stretch",
+      "0.04–0.3",
+      "24 · 5",
+      "60 KB",
+      "4,022, 241 MB"
+    ],
+    [
+      "embedding (DINOv2)",
+      "448x252, ss1",
+      "448x252 as is",
+      "0.05–0.2",
+      "100 · 8",
+      "90 KB",
+      "1,796, 155 MB"
+    ],
+    [
+      "mined candidate",
+      "640x360, ss2",
+      "—",
+      "0.2–1.2",
+      "—",
+      "140 KB, plus about 0.9 MB of cached field",
+      "437 rows after two merges, 81 MB of pictures, 317 MB of fields"
+    ],
+    [
+      "wallpaper (render) judge",
+      "the candidate",
+      "384x224 stretch",
+      "—",
+      "13 · 7",
+      "—",
+      "every candidate"
+    ],
+    [
+      "gallery judge",
+      "the candidate",
+      "384x224 stretch, 3 seeds",
+      "—",
+      "25 · 8",
+      "—",
+      "the above-bar rows"
+    ],
+    [
+      "palette judge",
+      "640x360, ss2",
+      "224x224 squash",
+      "—",
+      "9 · 6",
+      "—",
+      "`judges check` only"
+    ],
+    [
+      "solve seat",
+      "1280x720, ss2",
+      "—",
+      "0.7–4.1",
+      "—",
+      "1.8 MB PNG",
+      "12 a solve, 34 MB for three solves and two records"
+    ],
+    [
+      "full-size wallpaper",
+      "2560x1440, ss3",
+      "—",
+      "5–31",
+      "—",
+      "2.2 MB JPEG",
+      "not made"
+    ],
+    [
+      "stage",
+      "read"
+    ],
+    [
+      "finding places",
+      "[`discovery/`](src/fractal_wallpapers/discovery/README.md), [`supply/`](src/fractal_wallpapers/supply/README.md)"
+    ],
+    [
+      "collecting ratings",
+      "[`labeling/`](src/fractal_wallpapers/labeling/README.md)"
+    ],
+    [
+      "training the judges",
+      "[`models/`](src/fractal_wallpapers/models/README.md)"
+    ],
+    [
+      "rendering more of the places already found",
+      "[`curation/LEGS.md`](src/fractal_wallpapers/curation/LEGS.md)"
+    ],
+    [
+      "choosing a gallery",
+      "[`curation/GALLERY.md`](src/fractal_wallpapers/curation/GALLERY.md)"
+    ]
+  ]
+}

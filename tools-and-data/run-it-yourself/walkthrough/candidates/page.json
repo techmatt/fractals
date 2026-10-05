@@ -1,0 +1,1547 @@
+{
+ "schema": 1,
+ "title": "Candidate pool",
+ "command": "fractal-wallpapers curate candidate-ledger browse",
+ "intro": [
+  "327 candidates over 109 places; 327 scored by the render judge, 0 read by the gallery judge (`gallery-grade score-pool`).",
+  "P(>=4) is the render judge's; the bar column counts rows at or over 0.5, the height a mode's own bar starts from."
+ ],
+ "sections": [
+  {
+   "heading": "Pool by mode",
+   "note": "",
+   "table": [
+    [
+     "mode",
+     "rows",
+     "scored",
+     "P(>=4) >= bar",
+     "median P(>=4)",
+     "places"
+    ],
+    [
+     "direct_trap_lines",
+     35,
+     35,
+     0,
+     0.001,
+     35
+    ],
+    [
+     "direct_trap_multiply",
+     22,
+     22,
+     0,
+     0.0005,
+     22
+    ],
+    [
+     "direct_trap_screen",
+     23,
+     23,
+     0,
+     0.0014,
+     23
+    ],
+    [
+     "itinerary",
+     10,
+     10,
+     0,
+     0.0041,
+     10
+    ],
+    [
+     "smooth",
+     37,
+     37,
+     2,
+     0.0014,
+     35
+    ],
+    [
+     "smooth_angle_min",
+     25,
+     25,
+     2,
+     0.0007,
+     25
+    ],
+    [
+     "smooth_curvature",
+     30,
+     30,
+     1,
+     0.0016,
+     30
+    ],
+    [
+     "smooth_mean_angle",
+     29,
+     29,
+     1,
+     0.002,
+     29
+    ],
+    [
+     "smooth_stripe",
+     28,
+     28,
+     2,
+     0.0025,
+     28
+    ],
+    [
+     "stripe",
+     35,
+     35,
+     3,
+     0.0017,
+     35
+    ],
+    [
+     "threads",
+     24,
+     24,
+     1,
+     0.0072,
+     24
+    ],
+    [
+     "tia",
+     29,
+     29,
+     1,
+     0.0053,
+     29
+    ]
+   ],
+   "tiles": [],
+   "records": []
+  },
+  {
+   "heading": "Pool by fractal family",
+   "note": "",
+   "table": [
+    [
+     "partition",
+     "rows",
+     "scored",
+     "P(>=4) >= bar",
+     "median P(>=4)",
+     "places"
+    ],
+    [
+     "julia:mandelbrot",
+     36,
+     36,
+     3,
+     0.002,
+     12
+    ],
+    [
+     "julia:multibrot3",
+     36,
+     36,
+     3,
+     0.0033,
+     12
+    ],
+    [
+     "julia:multibrot4",
+     36,
+     36,
+     0,
+     0.006,
+     12
+    ],
+    [
+     "julia:multibrot5",
+     33,
+     33,
+     1,
+     0.0024,
+     11
+    ],
+    [
+     "julia:multibrot6",
+     33,
+     33,
+     0,
+     0.0014,
+     11
+    ],
+    [
+     "mandelbrot",
+     33,
+     33,
+     0,
+     0.0001,
+     11
+    ],
+    [
+     "multibrot3",
+     33,
+     33,
+     1,
+     0.0022,
+     11
+    ],
+    [
+     "multibrot4",
+     33,
+     33,
+     2,
+     0.0022,
+     11
+    ],
+    [
+     "multibrot5",
+     33,
+     33,
+     2,
+     0.0019,
+     11
+    ],
+    [
+     "multibrot6",
+     3,
+     3,
+     0,
+     0.0232,
+     1
+    ],
+    [
+     "phoenix",
+     9,
+     9,
+     0,
+     0.0019,
+     3
+    ],
+    [
+     "phoenix:classic",
+     9,
+     9,
+     1,
+     0.0005,
+     3
+    ]
+   ],
+   "tiles": [],
+   "records": []
+  },
+  {
+   "heading": "Best 24 by P(>=4)",
+   "note": "",
+   "table": null,
+   "tiles": [
+    {
+     "picture": "pictures/8c09db64d0a2751f.jpg",
+     "title": "8c09db64d0a2751f",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.9964534193850384
+      ],
+      [
+       "P(>=3)",
+       0.9999276587467383
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "smooth_stripe"
+      ],
+      [
+       "family",
+       "multibrot4"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/9adc62578a671d84.jpg",
+     "title": "9adc62578a671d84",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.9957638327399297
+      ],
+      [
+       "P(>=3)",
+       0.9994419643205186
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "smooth_curvature"
+      ],
+      [
+       "family",
+       "multibrot4"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/c7b72d8fad21245d.jpg",
+     "title": "c7b72d8fad21245d",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.994313181816339
+      ],
+      [
+       "P(>=3)",
+       0.9999747831759563
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "smooth"
+      ],
+      [
+       "family",
+       "multibrot5"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/f5821b7075623251.jpg",
+     "title": "f5821b7075623251",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.9661641345535227
+      ],
+      [
+       "P(>=3)",
+       0.9971576082321298
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "smooth_stripe"
+      ],
+      [
+       "family",
+       "multibrot3"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/7da670fbc19714b3.jpg",
+     "title": "7da670fbc19714b3",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.9660519145913222
+      ],
+      [
+       "P(>=3)",
+       0.9987531832838765
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "smooth_mean_angle"
+      ],
+      [
+       "family",
+       "julia:mandelbrot"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/70b15eef0b859a8f.jpg",
+     "title": "70b15eef0b859a8f",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.8529611288063258
+      ],
+      [
+       "P(>=3)",
+       0.9953595651800514
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "smooth"
+      ],
+      [
+       "family",
+       "julia:multibrot3"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/edae02e39f622de6.jpg",
+     "title": "edae02e39f622de6",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.8181218411986025
+      ],
+      [
+       "P(>=3)",
+       0.9957339414924001
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "tia"
+      ],
+      [
+       "family",
+       "julia:multibrot5"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/d09c440c99d59329.jpg",
+     "title": "d09c440c99d59329",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.6957435458057504
+      ],
+      [
+       "P(>=3)",
+       0.9895851844852708
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "threads"
+      ],
+      [
+       "family",
+       "multibrot5"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/ec719647139349d4.jpg",
+     "title": "ec719647139349d4",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.653807742217448
+      ],
+      [
+       "P(>=3)",
+       0.9522184136581453
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "stripe"
+      ],
+      [
+       "family",
+       "julia:mandelbrot"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/e0c4610ea0bbfc98.jpg",
+     "title": "e0c4610ea0bbfc98",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.6307176955367063
+      ],
+      [
+       "P(>=3)",
+       0.8874067262327512
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "stripe"
+      ],
+      [
+       "family",
+       "julia:mandelbrot"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/ad80bcf85c2b2d81.jpg",
+     "title": "ad80bcf85c2b2d81",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.6018919593578097
+      ],
+      [
+       "P(>=3)",
+       0.9714515686049057
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "stripe"
+      ],
+      [
+       "family",
+       "julia:multibrot3"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/7128242ea9100dda.jpg",
+     "title": "7128242ea9100dda",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.5224570728345532
+      ],
+      [
+       "P(>=3)",
+       0.8341848589702426
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "smooth_angle_min"
+      ],
+      [
+       "family",
+       "julia:multibrot3"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/1f8c1812bd1ad646.jpg",
+     "title": "1f8c1812bd1ad646",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.5118110832504187
+      ],
+      [
+       "P(>=3)",
+       0.9115911020780411
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "smooth_angle_min"
+      ],
+      [
+       "family",
+       "phoenix:classic"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/1b71e1b08184dfff.jpg",
+     "title": "1b71e1b08184dfff",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.36018332160444394
+      ],
+      [
+       "P(>=3)",
+       0.6807949944378696
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "itinerary"
+      ],
+      [
+       "family",
+       "julia:multibrot3"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/5e1168b43fbda59c.jpg",
+     "title": "5e1168b43fbda59c",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.3024219765374768
+      ],
+      [
+       "P(>=3)",
+       0.7248342026455912
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "smooth"
+      ],
+      [
+       "family",
+       "multibrot5"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/68527bc4a9cec1d9.jpg",
+     "title": "68527bc4a9cec1d9",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.23836484501215485
+      ],
+      [
+       "P(>=3)",
+       0.6315798492697973
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "smooth_stripe"
+      ],
+      [
+       "family",
+       "julia:multibrot3"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/102e7fce7c2bbeb6.jpg",
+     "title": "102e7fce7c2bbeb6",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.23323567095485812
+      ],
+      [
+       "P(>=3)",
+       0.8653340050600999
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "threads"
+      ],
+      [
+       "family",
+       "julia:multibrot5"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/8e9d8de15943083f.jpg",
+     "title": "8e9d8de15943083f",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.1948775062276374
+      ],
+      [
+       "P(>=3)",
+       0.7919717467002229
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "threads"
+      ],
+      [
+       "family",
+       "julia:mandelbrot"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/22949accab08d893.jpg",
+     "title": "22949accab08d893",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.19195442671591328
+      ],
+      [
+       "P(>=3)",
+       0.44471829535431373
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "smooth_curvature"
+      ],
+      [
+       "family",
+       "julia:multibrot4"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/01483005a98b2ba4.jpg",
+     "title": "01483005a98b2ba4",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.18356404890124225
+      ],
+      [
+       "P(>=3)",
+       0.9303323578529161
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "smooth_curvature"
+      ],
+      [
+       "family",
+       "multibrot6"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/b9cc98e437ca8f35.jpg",
+     "title": "b9cc98e437ca8f35",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.14740192161874063
+      ],
+      [
+       "P(>=3)",
+       0.9560498814260247
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "tia"
+      ],
+      [
+       "family",
+       "julia:multibrot3"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/c51eeef282592ec4.jpg",
+     "title": "c51eeef282592ec4",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.14564128138009355
+      ],
+      [
+       "P(>=3)",
+       0.9966774628095868
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "stripe"
+      ],
+      [
+       "family",
+       "multibrot3"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/3a883a8048f93329.jpg",
+     "title": "3a883a8048f93329",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.140724268679783
+      ],
+      [
+       "P(>=3)",
+       0.835899371788436
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "threads"
+      ],
+      [
+       "family",
+       "julia:multibrot3"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/ecb8d41aad217091.jpg",
+     "title": "ecb8d41aad217091",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.12874257590760071
+      ],
+      [
+       "P(>=3)",
+       0.3880943872118795
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "smooth_angle_min"
+      ],
+      [
+       "family",
+       "julia:multibrot4"
+      ]
+     ]
+    }
+   ],
+   "records": []
+  },
+  {
+   "heading": "A random 24 (seed 0)",
+   "note": "",
+   "table": null,
+   "tiles": [
+    {
+     "picture": "pictures/995ea67b0326f567.jpg",
+     "title": "995ea67b0326f567",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.0014301414936591609
+      ],
+      [
+       "P(>=3)",
+       0.9785131726701312
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "smooth"
+      ],
+      [
+       "family",
+       "multibrot3"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/a86a4aa3f01abe63.jpg",
+     "title": "a86a4aa3f01abe63",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.000720264510440867
+      ],
+      [
+       "P(>=3)",
+       0.07313337873780527
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "smooth"
+      ],
+      [
+       "family",
+       "julia:multibrot5"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/0c3012280fa7b977.jpg",
+     "title": "0c3012280fa7b977",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.0031291971055126783
+      ],
+      [
+       "P(>=3)",
+       0.2547522104616548
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "tia"
+      ],
+      [
+       "family",
+       "julia:mandelbrot"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/68527bc4a9cec1d9.jpg",
+     "title": "68527bc4a9cec1d9",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.23836484501215485
+      ],
+      [
+       "P(>=3)",
+       0.6315798492697973
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "smooth_stripe"
+      ],
+      [
+       "family",
+       "julia:multibrot3"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/d09c440c99d59329.jpg",
+     "title": "d09c440c99d59329",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.6957435458057504
+      ],
+      [
+       "P(>=3)",
+       0.9895851844852708
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "threads"
+      ],
+      [
+       "family",
+       "multibrot5"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/c70fdea60addac31.jpg",
+     "title": "c70fdea60addac31",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       1.7905935101253361e-06
+      ],
+      [
+       "P(>=3)",
+       0.00010118371329094489
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "stripe"
+      ],
+      [
+       "family",
+       "mandelbrot"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/a35c3b628560e608.jpg",
+     "title": "a35c3b628560e608",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.018396253560690756
+      ],
+      [
+       "P(>=3)",
+       0.5931520468124961
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "tia"
+      ],
+      [
+       "family",
+       "multibrot3"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/7b206f43e1a85599.jpg",
+     "title": "7b206f43e1a85599",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.001501992216926318
+      ],
+      [
+       "P(>=3)",
+       0.20098905681939636
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "smooth_mean_angle"
+      ],
+      [
+       "family",
+       "julia:multibrot4"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/c2ec6473ca21d1b3.jpg",
+     "title": "c2ec6473ca21d1b3",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.0009547950538133994
+      ],
+      [
+       "P(>=3)",
+       0.5480665312080896
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "tia"
+      ],
+      [
+       "family",
+       "multibrot4"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/919b7e57082d0e97.jpg",
+     "title": "919b7e57082d0e97",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       7.322015592691955e-06
+      ],
+      [
+       "P(>=3)",
+       0.00018219693861067023
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "smooth_angle_min"
+      ],
+      [
+       "family",
+       "multibrot5"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/ec719647139349d4.jpg",
+     "title": "ec719647139349d4",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.653807742217448
+      ],
+      [
+       "P(>=3)",
+       0.9522184136581453
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "stripe"
+      ],
+      [
+       "family",
+       "julia:mandelbrot"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/577d8272ab1e2ced.jpg",
+     "title": "577d8272ab1e2ced",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.040139314720743904
+      ],
+      [
+       "P(>=3)",
+       0.9203965984792881
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "stripe"
+      ],
+      [
+       "family",
+       "julia:multibrot3"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/d0285d6116ce549c.jpg",
+     "title": "d0285d6116ce549c",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.0013655147849793979
+      ],
+      [
+       "P(>=3)",
+       0.019750034353085772
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "direct_trap_lines"
+      ],
+      [
+       "family",
+       "julia:mandelbrot"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/36e02c2bf8f431cc.jpg",
+     "title": "36e02c2bf8f431cc",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.05564766159783779
+      ],
+      [
+       "P(>=3)",
+       0.33263826168376115
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "smooth_stripe"
+      ],
+      [
+       "family",
+       "julia:multibrot3"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/7128242ea9100dda.jpg",
+     "title": "7128242ea9100dda",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.5224570728345532
+      ],
+      [
+       "P(>=3)",
+       0.8341848589702426
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "smooth_angle_min"
+      ],
+      [
+       "family",
+       "julia:multibrot3"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/216e52c4fbdbd97c.jpg",
+     "title": "216e52c4fbdbd97c",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.0012023972155955007
+      ],
+      [
+       "P(>=3)",
+       0.028023691803450858
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "direct_trap_lines"
+      ],
+      [
+       "family",
+       "julia:multibrot6"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/f4093dca8e9c0936.jpg",
+     "title": "f4093dca8e9c0936",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.002437534770912261
+      ],
+      [
+       "P(>=3)",
+       0.021939840218681745
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "smooth_angle_min"
+      ],
+      [
+       "family",
+       "multibrot5"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/6218f5b3a3344442.jpg",
+     "title": "6218f5b3a3344442",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.004768310090224405
+      ],
+      [
+       "P(>=3)",
+       0.2436175352182838
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "threads"
+      ],
+      [
+       "family",
+       "julia:multibrot4"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/d760b6083d9e0dd0.jpg",
+     "title": "d760b6083d9e0dd0",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.0006482819857298065
+      ],
+      [
+       "P(>=3)",
+       0.009682386939622567
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "smooth_curvature"
+      ],
+      [
+       "family",
+       "multibrot3"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/f0964ce4fd4b66a8.jpg",
+     "title": "f0964ce4fd4b66a8",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.03813898643983171
+      ],
+      [
+       "P(>=3)",
+       0.960246283796479
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "direct_trap_lines"
+      ],
+      [
+       "family",
+       "multibrot4"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/3a883a8048f93329.jpg",
+     "title": "3a883a8048f93329",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.140724268679783
+      ],
+      [
+       "P(>=3)",
+       0.835899371788436
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "threads"
+      ],
+      [
+       "family",
+       "julia:multibrot3"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/7c736fd6a3aeccca.jpg",
+     "title": "7c736fd6a3aeccca",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.003224570074892039
+      ],
+      [
+       "P(>=3)",
+       0.4932932992500958
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "direct_trap_multiply"
+      ],
+      [
+       "family",
+       "multibrot3"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/22949accab08d893.jpg",
+     "title": "22949accab08d893",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.19195442671591328
+      ],
+      [
+       "P(>=3)",
+       0.44471829535431373
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "smooth_curvature"
+      ],
+      [
+       "family",
+       "julia:multibrot4"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/19a7da9fb7e5db32.jpg",
+     "title": "19a7da9fb7e5db32",
+     "mark": "",
+     "caption": [
+      [
+       "P(>=4)",
+       0.0030162944797894843
+      ],
+      [
+       "P(>=3)",
+       0.04416807440725299
+      ],
+      [
+       "p_fine(>=4)",
+       null
+      ],
+      [
+       "mode",
+       "direct_trap_lines"
+      ],
+      [
+       "family",
+       "multibrot3"
+      ]
+     ]
+    }
+   ],
+   "records": []
+  }
+ ]
+}

@@ -1,0 +1,363 @@
+{
+ "schema": 1,
+ "title": "Judge check",
+ "command": "fractal-wallpapers judges check",
+ "intro": [
+  "8 tracked recipes rendered here and scored by all four judges; each line reads expected → actual. Tolerance 0.0001; largest gap 0.",
+  "PASS"
+ ],
+ "sections": [
+  {
+   "heading": "Cases",
+   "note": "",
+   "table": null,
+   "tiles": [
+    {
+     "picture": "pictures/julia_mandelbrot_stripe.jpg",
+     "title": "julia_mandelbrot_stripe · stripe",
+     "mark": "",
+     "caption": [
+      [
+       "render p_ge2",
+       "1.00000 → 1.00000"
+      ],
+      [
+       "render p_ge3",
+       "0.99999 → 0.99999"
+      ],
+      [
+       "render p_ge4",
+       "0.99965 → 0.99965"
+      ],
+      [
+       "gallery_grade p_ge2",
+       "0.99987 → 0.99987"
+      ],
+      [
+       "gallery_grade p_ge3",
+       "0.99874 → 0.99874"
+      ],
+      [
+       "gallery_grade p_ge4",
+       "0.99798 → 0.99798"
+      ],
+      [
+       "palette score",
+       "4.54237 → 4.54237"
+      ],
+      [
+       "location p_ge3",
+       "0.99888 → 0.99888"
+      ],
+      [
+       "location p_ge4",
+       "0.99813 → 0.99813"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/mandelbrot_tia.jpg",
+     "title": "mandelbrot_tia · tia",
+     "mark": "",
+     "caption": [
+      [
+       "render p_ge2",
+       "0.99998 → 0.99998"
+      ],
+      [
+       "render p_ge3",
+       "0.99856 → 0.99856"
+      ],
+      [
+       "render p_ge4",
+       "0.95074 → 0.95074"
+      ],
+      [
+       "gallery_grade p_ge2",
+       "0.99990 → 0.99990"
+      ],
+      [
+       "gallery_grade p_ge3",
+       "0.99798 → 0.99798"
+      ],
+      [
+       "gallery_grade p_ge4",
+       "0.99616 → 0.99616"
+      ],
+      [
+       "palette score",
+       "4.80612 → 4.80612"
+      ],
+      [
+       "location p_ge3",
+       "0.99993 → 0.99993"
+      ],
+      [
+       "location p_ge4",
+       "0.99992 → 0.99992"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/phoenix_smooth.jpg",
+     "title": "phoenix_smooth · smooth",
+     "mark": "",
+     "caption": [
+      [
+       "render p_ge2",
+       "1.00000 → 1.00000"
+      ],
+      [
+       "render p_ge3",
+       "0.99991 → 0.99991"
+      ],
+      [
+       "render p_ge4",
+       "0.99557 → 0.99557"
+      ],
+      [
+       "gallery_grade p_ge2",
+       "0.99980 → 0.99980"
+      ],
+      [
+       "gallery_grade p_ge3",
+       "0.99674 → 0.99674"
+      ],
+      [
+       "gallery_grade p_ge4",
+       "0.99257 → 0.99257"
+      ],
+      [
+       "palette score",
+       "5.46567 → 5.46567"
+      ],
+      [
+       "location p_ge3",
+       "0.91031 → 0.91031"
+      ],
+      [
+       "location p_ge4",
+       "0.00951 → 0.00951"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/multibrot3_smooth_mean_angle.jpg",
+     "title": "multibrot3_smooth_mean_angle · smooth_mean_angle",
+     "mark": "",
+     "caption": [
+      [
+       "render p_ge2",
+       "1.00000 → 1.00000"
+      ],
+      [
+       "render p_ge3",
+       "0.99968 → 0.99968"
+      ],
+      [
+       "render p_ge4",
+       "0.99797 → 0.99797"
+      ],
+      [
+       "gallery_grade p_ge2",
+       "0.99774 → 0.99774"
+      ],
+      [
+       "gallery_grade p_ge3",
+       "0.99233 → 0.99233"
+      ],
+      [
+       "gallery_grade p_ge4",
+       "0.98580 → 0.98580"
+      ],
+      [
+       "palette score",
+       "2.97612 → 2.97612"
+      ],
+      [
+       "location p_ge3",
+       "0.99220 → 0.99220"
+      ],
+      [
+       "location p_ge4",
+       "0.96358 → 0.96358"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/multibrot4_smooth_curvature.jpg",
+     "title": "multibrot4_smooth_curvature · smooth_curvature",
+     "mark": "",
+     "caption": [
+      [
+       "render p_ge2",
+       "1.00000 → 1.00000"
+      ],
+      [
+       "render p_ge3",
+       "0.99958 → 0.99958"
+      ],
+      [
+       "render p_ge4",
+       "0.99446 → 0.99446"
+      ],
+      [
+       "gallery_grade p_ge2",
+       "0.99950 → 0.99950"
+      ],
+      [
+       "gallery_grade p_ge3",
+       "0.98955 → 0.98955"
+      ],
+      [
+       "gallery_grade p_ge4",
+       "0.95734 → 0.95734"
+      ],
+      [
+       "palette score",
+       "7.65395 → 7.65395"
+      ],
+      [
+       "location p_ge3",
+       "0.95628 → 0.95628"
+      ],
+      [
+       "location p_ge4",
+       "0.37519 → 0.37519"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/julia_multibrot3_threads.jpg",
+     "title": "julia_multibrot3_threads · threads",
+     "mark": "",
+     "caption": [
+      [
+       "render p_ge2",
+       "0.99999 → 0.99999"
+      ],
+      [
+       "render p_ge3",
+       "0.99822 → 0.99822"
+      ],
+      [
+       "render p_ge4",
+       "0.98686 → 0.98686"
+      ],
+      [
+       "gallery_grade p_ge2",
+       "0.98783 → 0.98783"
+      ],
+      [
+       "gallery_grade p_ge3",
+       "0.94728 → 0.94728"
+      ],
+      [
+       "gallery_grade p_ge4",
+       "0.88299 → 0.88299"
+      ],
+      [
+       "palette score",
+       "3.99946 → 3.99946"
+      ],
+      [
+       "location p_ge3",
+       "0.90681 → 0.90681"
+      ],
+      [
+       "location p_ge4",
+       "0.00041 → 0.00041"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/julia_multibrot5_smooth_stripe.jpg",
+     "title": "julia_multibrot5_smooth_stripe · smooth_stripe",
+     "mark": "",
+     "caption": [
+      [
+       "render p_ge2",
+       "0.99995 → 0.99995"
+      ],
+      [
+       "render p_ge3",
+       "0.99459 → 0.99459"
+      ],
+      [
+       "render p_ge4",
+       "0.97375 → 0.97375"
+      ],
+      [
+       "gallery_grade p_ge2",
+       "0.98866 → 0.98866"
+      ],
+      [
+       "gallery_grade p_ge3",
+       "0.95114 → 0.95114"
+      ],
+      [
+       "gallery_grade p_ge4",
+       "0.87016 → 0.87016"
+      ],
+      [
+       "palette score",
+       "9.35846 → 9.35846"
+      ],
+      [
+       "location p_ge3",
+       "0.40072 → 0.40072"
+      ],
+      [
+       "location p_ge4",
+       "0.07255 → 0.07255"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/multibrot5_curvature.jpg",
+     "title": "multibrot5_curvature · curvature",
+     "mark": "",
+     "caption": [
+      [
+       "render p_ge2",
+       "0.99820 → 0.99820"
+      ],
+      [
+       "render p_ge3",
+       "0.97308 → 0.97308"
+      ],
+      [
+       "render p_ge4",
+       "0.89859 → 0.89859"
+      ],
+      [
+       "gallery_grade p_ge2",
+       "0.95853 → 0.95853"
+      ],
+      [
+       "gallery_grade p_ge3",
+       "0.75806 → 0.75806"
+      ],
+      [
+       "gallery_grade p_ge4",
+       "0.60694 → 0.60694"
+      ],
+      [
+       "palette score",
+       "5.37623 → 5.37623"
+      ],
+      [
+       "location p_ge3",
+       "0.74847 → 0.74847"
+      ],
+      [
+       "location p_ge4",
+       "0.57758 → 0.57758"
+      ]
+     ]
+    }
+   ],
+   "records": []
+  }
+ ]
+}

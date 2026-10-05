@@ -1,0 +1,556 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Candidate pool</title><style>
+:root { --bg: #fafafa; --fg: #1a1a1a; --muted: #666; --card: #fff; --line: #ddd;
+        --miss: #b3261e; }
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #161616; --fg: #eee; --muted: #999; --card: #222; --line: #333;
+          --miss: #ff8a80; } }
+body { background: var(--bg); color: var(--fg); font: 14px/1.4 system-ui, sans-serif;
+       margin: 0 auto; max-width: 1600px; padding: 16px; }
+h1 { font-size: 20px; margin: 0 0 8px; } h2 { font-size: 16px; margin: 24px 0 6px; }
+p { color: var(--muted); margin: 4px 0; max-width: 90ch; }
+table { border-collapse: collapse; margin: 8px 0; font-variant-numeric: tabular-nums; }
+td, th { border: 1px solid var(--line); padding: 3px 8px; text-align: right; }
+th:first-child, td:first-child { text-align: left; }
+.grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.tile { background: var(--card); border: 1px solid var(--line); border-radius: 4px;
+        overflow: hidden; }
+.tile img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
+.tile .none { aspect-ratio: 16 / 9; display: grid; place-items: center; color: var(--muted); }
+.tile dl { display: grid; grid-template-columns: auto 1fr; gap: 0 8px; margin: 6px 8px 8px;
+           font-variant-numeric: tabular-nums; }
+.tile dt { color: var(--muted); } .tile dd { margin: 0; overflow-wrap: anywhere; }
+.tile .title { font-weight: 600; margin: 6px 8px 0; overflow-wrap: anywhere; }
+.tile .mark { color: var(--miss); font-weight: 700; margin: 6px 8px 0; }
+.command { font: 12px/1.4 ui-monospace, Consolas, monospace; color: var(--muted);
+           overflow-wrap: anywhere; margin: 0 0 10px; }
+.record { margin: 6px 0; } .record summary { cursor: pointer; }
+.record pre { background: var(--card); border: 1px solid var(--line); padding: 6px 8px;
+              margin: 4px 0; overflow-x: auto; font-size: 12px; white-space: pre-wrap;
+              overflow-wrap: anywhere; }
+.record mark { background: #ffe08a; color: #1a1a1a; }
+.record .note { color: var(--miss); }
+</style></head><body>
+<h1>Candidate pool</h1>
+<p class="command">fractal-wallpapers curate candidate-ledger browse</p>
+<p>327 candidates over 109 places; 327 scored by the render judge, 0 read by the gallery judge (`gallery-grade score-pool`).</p>
+<p>P(&gt;=4) is the render judge&#x27;s; the bar column counts rows at or over 0.5, the height a mode&#x27;s own bar starts from.</p>
+<h2>Pool by mode</h2>
+<table><tr><th>mode</th><th>rows</th><th>scored</th><th>P(&gt;=4) &gt;= bar</th><th>median P(&gt;=4)</th><th>places</th>
+<tr><td>direct_trap_lines</td><td>35</td><td>35</td><td>0</td><td>0.001</td><td>35</td>
+<tr><td>direct_trap_multiply</td><td>22</td><td>22</td><td>0</td><td>0.0005</td><td>22</td>
+<tr><td>direct_trap_screen</td><td>23</td><td>23</td><td>0</td><td>0.0014</td><td>23</td>
+<tr><td>itinerary</td><td>10</td><td>10</td><td>0</td><td>0.0041</td><td>10</td>
+<tr><td>smooth</td><td>37</td><td>37</td><td>2</td><td>0.0014</td><td>35</td>
+<tr><td>smooth_angle_min</td><td>25</td><td>25</td><td>2</td><td>0.0007</td><td>25</td>
+<tr><td>smooth_curvature</td><td>30</td><td>30</td><td>1</td><td>0.0016</td><td>30</td>
+<tr><td>smooth_mean_angle</td><td>29</td><td>29</td><td>1</td><td>0.002</td><td>29</td>
+<tr><td>smooth_stripe</td><td>28</td><td>28</td><td>2</td><td>0.0025</td><td>28</td>
+<tr><td>stripe</td><td>35</td><td>35</td><td>3</td><td>0.0017</td><td>35</td>
+<tr><td>threads</td><td>24</td><td>24</td><td>1</td><td>0.0072</td><td>24</td>
+<tr><td>tia</td><td>29</td><td>29</td><td>1</td><td>0.0053</td><td>29</td>
+</table>
+<h2>Pool by fractal family</h2>
+<table><tr><th>partition</th><th>rows</th><th>scored</th><th>P(&gt;=4) &gt;= bar</th><th>median P(&gt;=4)</th><th>places</th>
+<tr><td>julia:mandelbrot</td><td>36</td><td>36</td><td>3</td><td>0.002</td><td>12</td>
+<tr><td>julia:multibrot3</td><td>36</td><td>36</td><td>3</td><td>0.0033</td><td>12</td>
+<tr><td>julia:multibrot4</td><td>36</td><td>36</td><td>0</td><td>0.006</td><td>12</td>
+<tr><td>julia:multibrot5</td><td>33</td><td>33</td><td>1</td><td>0.0024</td><td>11</td>
+<tr><td>julia:multibrot6</td><td>33</td><td>33</td><td>0</td><td>0.0014</td><td>11</td>
+<tr><td>mandelbrot</td><td>33</td><td>33</td><td>0</td><td>0.0001</td><td>11</td>
+<tr><td>multibrot3</td><td>33</td><td>33</td><td>1</td><td>0.0022</td><td>11</td>
+<tr><td>multibrot4</td><td>33</td><td>33</td><td>2</td><td>0.0022</td><td>11</td>
+<tr><td>multibrot5</td><td>33</td><td>33</td><td>2</td><td>0.0019</td><td>11</td>
+<tr><td>multibrot6</td><td>3</td><td>3</td><td>0</td><td>0.0232</td><td>1</td>
+<tr><td>phoenix</td><td>9</td><td>9</td><td>0</td><td>0.0019</td><td>3</td>
+<tr><td>phoenix:classic</td><td>9</td><td>9</td><td>1</td><td>0.0005</td><td>3</td>
+</table>
+<h2>Best 24 by P(&gt;=4)</h2>
+<div class="grid">
+<div class="tile">
+<a href="pictures/8c09db64d0a2751f.jpg"><img loading="lazy" src="pictures/8c09db64d0a2751f.jpg" alt=""></a>
+<div class="title">8c09db64d0a2751f</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.9965</dd>
+<dt>P(&gt;=3)</dt><dd>0.9999</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>smooth_stripe</dd>
+<dt>family</dt><dd>multibrot4</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/9adc62578a671d84.jpg"><img loading="lazy" src="pictures/9adc62578a671d84.jpg" alt=""></a>
+<div class="title">9adc62578a671d84</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.9958</dd>
+<dt>P(&gt;=3)</dt><dd>0.9994</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>smooth_curvature</dd>
+<dt>family</dt><dd>multibrot4</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/c7b72d8fad21245d.jpg"><img loading="lazy" src="pictures/c7b72d8fad21245d.jpg" alt=""></a>
+<div class="title">c7b72d8fad21245d</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.9943</dd>
+<dt>P(&gt;=3)</dt><dd>1</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>smooth</dd>
+<dt>family</dt><dd>multibrot5</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/f5821b7075623251.jpg"><img loading="lazy" src="pictures/f5821b7075623251.jpg" alt=""></a>
+<div class="title">f5821b7075623251</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.9662</dd>
+<dt>P(&gt;=3)</dt><dd>0.9972</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>smooth_stripe</dd>
+<dt>family</dt><dd>multibrot3</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/7da670fbc19714b3.jpg"><img loading="lazy" src="pictures/7da670fbc19714b3.jpg" alt=""></a>
+<div class="title">7da670fbc19714b3</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.9661</dd>
+<dt>P(&gt;=3)</dt><dd>0.9988</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>smooth_mean_angle</dd>
+<dt>family</dt><dd>julia:mandelbrot</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/70b15eef0b859a8f.jpg"><img loading="lazy" src="pictures/70b15eef0b859a8f.jpg" alt=""></a>
+<div class="title">70b15eef0b859a8f</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.853</dd>
+<dt>P(&gt;=3)</dt><dd>0.9954</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>smooth</dd>
+<dt>family</dt><dd>julia:multibrot3</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/edae02e39f622de6.jpg"><img loading="lazy" src="pictures/edae02e39f622de6.jpg" alt=""></a>
+<div class="title">edae02e39f622de6</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.8181</dd>
+<dt>P(&gt;=3)</dt><dd>0.9957</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>tia</dd>
+<dt>family</dt><dd>julia:multibrot5</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/d09c440c99d59329.jpg"><img loading="lazy" src="pictures/d09c440c99d59329.jpg" alt=""></a>
+<div class="title">d09c440c99d59329</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.6957</dd>
+<dt>P(&gt;=3)</dt><dd>0.9896</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>threads</dd>
+<dt>family</dt><dd>multibrot5</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/ec719647139349d4.jpg"><img loading="lazy" src="pictures/ec719647139349d4.jpg" alt=""></a>
+<div class="title">ec719647139349d4</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.6538</dd>
+<dt>P(&gt;=3)</dt><dd>0.9522</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>stripe</dd>
+<dt>family</dt><dd>julia:mandelbrot</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/e0c4610ea0bbfc98.jpg"><img loading="lazy" src="pictures/e0c4610ea0bbfc98.jpg" alt=""></a>
+<div class="title">e0c4610ea0bbfc98</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.6307</dd>
+<dt>P(&gt;=3)</dt><dd>0.8874</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>stripe</dd>
+<dt>family</dt><dd>julia:mandelbrot</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/ad80bcf85c2b2d81.jpg"><img loading="lazy" src="pictures/ad80bcf85c2b2d81.jpg" alt=""></a>
+<div class="title">ad80bcf85c2b2d81</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.6019</dd>
+<dt>P(&gt;=3)</dt><dd>0.9715</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>stripe</dd>
+<dt>family</dt><dd>julia:multibrot3</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/7128242ea9100dda.jpg"><img loading="lazy" src="pictures/7128242ea9100dda.jpg" alt=""></a>
+<div class="title">7128242ea9100dda</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.5225</dd>
+<dt>P(&gt;=3)</dt><dd>0.8342</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>smooth_angle_min</dd>
+<dt>family</dt><dd>julia:multibrot3</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/1f8c1812bd1ad646.jpg"><img loading="lazy" src="pictures/1f8c1812bd1ad646.jpg" alt=""></a>
+<div class="title">1f8c1812bd1ad646</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.5118</dd>
+<dt>P(&gt;=3)</dt><dd>0.9116</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>smooth_angle_min</dd>
+<dt>family</dt><dd>phoenix:classic</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/1b71e1b08184dfff.jpg"><img loading="lazy" src="pictures/1b71e1b08184dfff.jpg" alt=""></a>
+<div class="title">1b71e1b08184dfff</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.3602</dd>
+<dt>P(&gt;=3)</dt><dd>0.6808</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>itinerary</dd>
+<dt>family</dt><dd>julia:multibrot3</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/5e1168b43fbda59c.jpg"><img loading="lazy" src="pictures/5e1168b43fbda59c.jpg" alt=""></a>
+<div class="title">5e1168b43fbda59c</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.3024</dd>
+<dt>P(&gt;=3)</dt><dd>0.7248</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>smooth</dd>
+<dt>family</dt><dd>multibrot5</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/68527bc4a9cec1d9.jpg"><img loading="lazy" src="pictures/68527bc4a9cec1d9.jpg" alt=""></a>
+<div class="title">68527bc4a9cec1d9</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.2384</dd>
+<dt>P(&gt;=3)</dt><dd>0.6316</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>smooth_stripe</dd>
+<dt>family</dt><dd>julia:multibrot3</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/102e7fce7c2bbeb6.jpg"><img loading="lazy" src="pictures/102e7fce7c2bbeb6.jpg" alt=""></a>
+<div class="title">102e7fce7c2bbeb6</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.2332</dd>
+<dt>P(&gt;=3)</dt><dd>0.8653</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>threads</dd>
+<dt>family</dt><dd>julia:multibrot5</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/8e9d8de15943083f.jpg"><img loading="lazy" src="pictures/8e9d8de15943083f.jpg" alt=""></a>
+<div class="title">8e9d8de15943083f</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.1949</dd>
+<dt>P(&gt;=3)</dt><dd>0.792</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>threads</dd>
+<dt>family</dt><dd>julia:mandelbrot</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/22949accab08d893.jpg"><img loading="lazy" src="pictures/22949accab08d893.jpg" alt=""></a>
+<div class="title">22949accab08d893</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.192</dd>
+<dt>P(&gt;=3)</dt><dd>0.4447</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>smooth_curvature</dd>
+<dt>family</dt><dd>julia:multibrot4</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/01483005a98b2ba4.jpg"><img loading="lazy" src="pictures/01483005a98b2ba4.jpg" alt=""></a>
+<div class="title">01483005a98b2ba4</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.1836</dd>
+<dt>P(&gt;=3)</dt><dd>0.9303</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>smooth_curvature</dd>
+<dt>family</dt><dd>multibrot6</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/b9cc98e437ca8f35.jpg"><img loading="lazy" src="pictures/b9cc98e437ca8f35.jpg" alt=""></a>
+<div class="title">b9cc98e437ca8f35</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.1474</dd>
+<dt>P(&gt;=3)</dt><dd>0.956</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>tia</dd>
+<dt>family</dt><dd>julia:multibrot3</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/c51eeef282592ec4.jpg"><img loading="lazy" src="pictures/c51eeef282592ec4.jpg" alt=""></a>
+<div class="title">c51eeef282592ec4</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.1456</dd>
+<dt>P(&gt;=3)</dt><dd>0.9967</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>stripe</dd>
+<dt>family</dt><dd>multibrot3</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/3a883a8048f93329.jpg"><img loading="lazy" src="pictures/3a883a8048f93329.jpg" alt=""></a>
+<div class="title">3a883a8048f93329</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.1407</dd>
+<dt>P(&gt;=3)</dt><dd>0.8359</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>threads</dd>
+<dt>family</dt><dd>julia:multibrot3</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/ecb8d41aad217091.jpg"><img loading="lazy" src="pictures/ecb8d41aad217091.jpg" alt=""></a>
+<div class="title">ecb8d41aad217091</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.1287</dd>
+<dt>P(&gt;=3)</dt><dd>0.3881</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>smooth_angle_min</dd>
+<dt>family</dt><dd>julia:multibrot4</dd>
+</dl></div>
+</div>
+<h2>A random 24 (seed 0)</h2>
+<div class="grid">
+<div class="tile">
+<a href="pictures/995ea67b0326f567.jpg"><img loading="lazy" src="pictures/995ea67b0326f567.jpg" alt=""></a>
+<div class="title">995ea67b0326f567</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.00143</dd>
+<dt>P(&gt;=3)</dt><dd>0.9785</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>smooth</dd>
+<dt>family</dt><dd>multibrot3</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/a86a4aa3f01abe63.jpg"><img loading="lazy" src="pictures/a86a4aa3f01abe63.jpg" alt=""></a>
+<div class="title">a86a4aa3f01abe63</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.0007203</dd>
+<dt>P(&gt;=3)</dt><dd>0.07313</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>smooth</dd>
+<dt>family</dt><dd>julia:multibrot5</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/0c3012280fa7b977.jpg"><img loading="lazy" src="pictures/0c3012280fa7b977.jpg" alt=""></a>
+<div class="title">0c3012280fa7b977</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.003129</dd>
+<dt>P(&gt;=3)</dt><dd>0.2548</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>tia</dd>
+<dt>family</dt><dd>julia:mandelbrot</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/68527bc4a9cec1d9.jpg"><img loading="lazy" src="pictures/68527bc4a9cec1d9.jpg" alt=""></a>
+<div class="title">68527bc4a9cec1d9</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.2384</dd>
+<dt>P(&gt;=3)</dt><dd>0.6316</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>smooth_stripe</dd>
+<dt>family</dt><dd>julia:multibrot3</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/d09c440c99d59329.jpg"><img loading="lazy" src="pictures/d09c440c99d59329.jpg" alt=""></a>
+<div class="title">d09c440c99d59329</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.6957</dd>
+<dt>P(&gt;=3)</dt><dd>0.9896</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>threads</dd>
+<dt>family</dt><dd>multibrot5</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/c70fdea60addac31.jpg"><img loading="lazy" src="pictures/c70fdea60addac31.jpg" alt=""></a>
+<div class="title">c70fdea60addac31</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>1.791e-06</dd>
+<dt>P(&gt;=3)</dt><dd>0.0001012</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>stripe</dd>
+<dt>family</dt><dd>mandelbrot</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/a35c3b628560e608.jpg"><img loading="lazy" src="pictures/a35c3b628560e608.jpg" alt=""></a>
+<div class="title">a35c3b628560e608</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.0184</dd>
+<dt>P(&gt;=3)</dt><dd>0.5932</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>tia</dd>
+<dt>family</dt><dd>multibrot3</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/7b206f43e1a85599.jpg"><img loading="lazy" src="pictures/7b206f43e1a85599.jpg" alt=""></a>
+<div class="title">7b206f43e1a85599</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.001502</dd>
+<dt>P(&gt;=3)</dt><dd>0.201</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>smooth_mean_angle</dd>
+<dt>family</dt><dd>julia:multibrot4</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/c2ec6473ca21d1b3.jpg"><img loading="lazy" src="pictures/c2ec6473ca21d1b3.jpg" alt=""></a>
+<div class="title">c2ec6473ca21d1b3</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.0009548</dd>
+<dt>P(&gt;=3)</dt><dd>0.5481</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>tia</dd>
+<dt>family</dt><dd>multibrot4</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/919b7e57082d0e97.jpg"><img loading="lazy" src="pictures/919b7e57082d0e97.jpg" alt=""></a>
+<div class="title">919b7e57082d0e97</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>7.322e-06</dd>
+<dt>P(&gt;=3)</dt><dd>0.0001822</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>smooth_angle_min</dd>
+<dt>family</dt><dd>multibrot5</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/ec719647139349d4.jpg"><img loading="lazy" src="pictures/ec719647139349d4.jpg" alt=""></a>
+<div class="title">ec719647139349d4</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.6538</dd>
+<dt>P(&gt;=3)</dt><dd>0.9522</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>stripe</dd>
+<dt>family</dt><dd>julia:mandelbrot</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/577d8272ab1e2ced.jpg"><img loading="lazy" src="pictures/577d8272ab1e2ced.jpg" alt=""></a>
+<div class="title">577d8272ab1e2ced</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.04014</dd>
+<dt>P(&gt;=3)</dt><dd>0.9204</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>stripe</dd>
+<dt>family</dt><dd>julia:multibrot3</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/d0285d6116ce549c.jpg"><img loading="lazy" src="pictures/d0285d6116ce549c.jpg" alt=""></a>
+<div class="title">d0285d6116ce549c</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.001366</dd>
+<dt>P(&gt;=3)</dt><dd>0.01975</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>direct_trap_lines</dd>
+<dt>family</dt><dd>julia:mandelbrot</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/36e02c2bf8f431cc.jpg"><img loading="lazy" src="pictures/36e02c2bf8f431cc.jpg" alt=""></a>
+<div class="title">36e02c2bf8f431cc</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.05565</dd>
+<dt>P(&gt;=3)</dt><dd>0.3326</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>smooth_stripe</dd>
+<dt>family</dt><dd>julia:multibrot3</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/7128242ea9100dda.jpg"><img loading="lazy" src="pictures/7128242ea9100dda.jpg" alt=""></a>
+<div class="title">7128242ea9100dda</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.5225</dd>
+<dt>P(&gt;=3)</dt><dd>0.8342</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>smooth_angle_min</dd>
+<dt>family</dt><dd>julia:multibrot3</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/216e52c4fbdbd97c.jpg"><img loading="lazy" src="pictures/216e52c4fbdbd97c.jpg" alt=""></a>
+<div class="title">216e52c4fbdbd97c</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.001202</dd>
+<dt>P(&gt;=3)</dt><dd>0.02802</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>direct_trap_lines</dd>
+<dt>family</dt><dd>julia:multibrot6</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/f4093dca8e9c0936.jpg"><img loading="lazy" src="pictures/f4093dca8e9c0936.jpg" alt=""></a>
+<div class="title">f4093dca8e9c0936</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.002438</dd>
+<dt>P(&gt;=3)</dt><dd>0.02194</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>smooth_angle_min</dd>
+<dt>family</dt><dd>multibrot5</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/6218f5b3a3344442.jpg"><img loading="lazy" src="pictures/6218f5b3a3344442.jpg" alt=""></a>
+<div class="title">6218f5b3a3344442</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.004768</dd>
+<dt>P(&gt;=3)</dt><dd>0.2436</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>threads</dd>
+<dt>family</dt><dd>julia:multibrot4</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/d760b6083d9e0dd0.jpg"><img loading="lazy" src="pictures/d760b6083d9e0dd0.jpg" alt=""></a>
+<div class="title">d760b6083d9e0dd0</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.0006483</dd>
+<dt>P(&gt;=3)</dt><dd>0.009682</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>smooth_curvature</dd>
+<dt>family</dt><dd>multibrot3</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/f0964ce4fd4b66a8.jpg"><img loading="lazy" src="pictures/f0964ce4fd4b66a8.jpg" alt=""></a>
+<div class="title">f0964ce4fd4b66a8</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.03814</dd>
+<dt>P(&gt;=3)</dt><dd>0.9602</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>direct_trap_lines</dd>
+<dt>family</dt><dd>multibrot4</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/3a883a8048f93329.jpg"><img loading="lazy" src="pictures/3a883a8048f93329.jpg" alt=""></a>
+<div class="title">3a883a8048f93329</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.1407</dd>
+<dt>P(&gt;=3)</dt><dd>0.8359</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>threads</dd>
+<dt>family</dt><dd>julia:multibrot3</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/7c736fd6a3aeccca.jpg"><img loading="lazy" src="pictures/7c736fd6a3aeccca.jpg" alt=""></a>
+<div class="title">7c736fd6a3aeccca</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.003225</dd>
+<dt>P(&gt;=3)</dt><dd>0.4933</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>direct_trap_multiply</dd>
+<dt>family</dt><dd>multibrot3</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/22949accab08d893.jpg"><img loading="lazy" src="pictures/22949accab08d893.jpg" alt=""></a>
+<div class="title">22949accab08d893</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.192</dd>
+<dt>P(&gt;=3)</dt><dd>0.4447</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>smooth_curvature</dd>
+<dt>family</dt><dd>julia:multibrot4</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/19a7da9fb7e5db32.jpg"><img loading="lazy" src="pictures/19a7da9fb7e5db32.jpg" alt=""></a>
+<div class="title">19a7da9fb7e5db32</div>
+<dl>
+<dt>P(&gt;=4)</dt><dd>0.003016</dd>
+<dt>P(&gt;=3)</dt><dd>0.04417</dd>
+<dt>p_fine(&gt;=4)</dt><dd>—</dd>
+<dt>mode</dt><dd>direct_trap_lines</dd>
+<dt>family</dt><dd>multibrot3</dd>
+</dl></div>
+</div>
+</body></html>

@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Judge check</title><style>
+:root { --bg: #fafafa; --fg: #1a1a1a; --muted: #666; --card: #fff; --line: #ddd;
+        --miss: #b3261e; }
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #161616; --fg: #eee; --muted: #999; --card: #222; --line: #333;
+          --miss: #ff8a80; } }
+body { background: var(--bg); color: var(--fg); font: 14px/1.4 system-ui, sans-serif;
+       margin: 0 auto; max-width: 1600px; padding: 16px; }
+h1 { font-size: 20px; margin: 0 0 8px; } h2 { font-size: 16px; margin: 24px 0 6px; }
+p { color: var(--muted); margin: 4px 0; max-width: 90ch; }
+table { border-collapse: collapse; margin: 8px 0; font-variant-numeric: tabular-nums; }
+td, th { border: 1px solid var(--line); padding: 3px 8px; text-align: right; }
+th:first-child, td:first-child { text-align: left; }
+.grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.tile { background: var(--card); border: 1px solid var(--line); border-radius: 4px;
+        overflow: hidden; }
+.tile img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
+.tile .none { aspect-ratio: 16 / 9; display: grid; place-items: center; color: var(--muted); }
+.tile dl { display: grid; grid-template-columns: auto 1fr; gap: 0 8px; margin: 6px 8px 8px;
+           font-variant-numeric: tabular-nums; }
+.tile dt { color: var(--muted); } .tile dd { margin: 0; overflow-wrap: anywhere; }
+.tile .title { font-weight: 600; margin: 6px 8px 0; overflow-wrap: anywhere; }
+.tile .mark { color: var(--miss); font-weight: 700; margin: 6px 8px 0; }
+.command { font: 12px/1.4 ui-monospace, Consolas, monospace; color: var(--muted);
+           overflow-wrap: anywhere; margin: 0 0 10px; }
+.record { margin: 6px 0; } .record summary { cursor: pointer; }
+.record pre { background: var(--card); border: 1px solid var(--line); padding: 6px 8px;
+              margin: 4px 0; overflow-x: auto; font-size: 12px; white-space: pre-wrap;
+              overflow-wrap: anywhere; }
+.record mark { background: #ffe08a; color: #1a1a1a; }
+.record .note { color: var(--miss); }
+</style></head><body>
+<h1>Judge check</h1>
+<p class="command">fractal-wallpapers judges check</p>
+<p>8 tracked recipes rendered here and scored by all four judges; each line reads expected → actual. Tolerance 0.0001; largest gap 0.</p>
+<p>PASS</p>
+<h2>Cases</h2>
+<div class="grid">
+<div class="tile">
+<a href="pictures/julia_mandelbrot_stripe.jpg"><img loading="lazy" src="pictures/julia_mandelbrot_stripe.jpg" alt=""></a>
+<div class="title">julia_mandelbrot_stripe · stripe</div>
+<dl>
+<dt>render p_ge2</dt><dd>1.00000 → 1.00000</dd>
+<dt>render p_ge3</dt><dd>0.99999 → 0.99999</dd>
+<dt>render p_ge4</dt><dd>0.99965 → 0.99965</dd>
+<dt>gallery_grade p_ge2</dt><dd>0.99987 → 0.99987</dd>
+<dt>gallery_grade p_ge3</dt><dd>0.99874 → 0.99874</dd>
+<dt>gallery_grade p_ge4</dt><dd>0.99798 → 0.99798</dd>
+<dt>palette score</dt><dd>4.54237 → 4.54237</dd>
+<dt>location p_ge3</dt><dd>0.99888 → 0.99888</dd>
+<dt>location p_ge4</dt><dd>0.99813 → 0.99813</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/mandelbrot_tia.jpg"><img loading="lazy" src="pictures/mandelbrot_tia.jpg" alt=""></a>
+<div class="title">mandelbrot_tia · tia</div>
+<dl>
+<dt>render p_ge2</dt><dd>0.99998 → 0.99998</dd>
+<dt>render p_ge3</dt><dd>0.99856 → 0.99856</dd>
+<dt>render p_ge4</dt><dd>0.95074 → 0.95074</dd>
+<dt>gallery_grade p_ge2</dt><dd>0.99990 → 0.99990</dd>
+<dt>gallery_grade p_ge3</dt><dd>0.99798 → 0.99798</dd>
+<dt>gallery_grade p_ge4</dt><dd>0.99616 → 0.99616</dd>
+<dt>palette score</dt><dd>4.80612 → 4.80612</dd>
+<dt>location p_ge3</dt><dd>0.99993 → 0.99993</dd>
+<dt>location p_ge4</dt><dd>0.99992 → 0.99992</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/phoenix_smooth.jpg"><img loading="lazy" src="pictures/phoenix_smooth.jpg" alt=""></a>
+<div class="title">phoenix_smooth · smooth</div>
+<dl>
+<dt>render p_ge2</dt><dd>1.00000 → 1.00000</dd>
+<dt>render p_ge3</dt><dd>0.99991 → 0.99991</dd>
+<dt>render p_ge4</dt><dd>0.99557 → 0.99557</dd>
+<dt>gallery_grade p_ge2</dt><dd>0.99980 → 0.99980</dd>
+<dt>gallery_grade p_ge3</dt><dd>0.99674 → 0.99674</dd>
+<dt>gallery_grade p_ge4</dt><dd>0.99257 → 0.99257</dd>
+<dt>palette score</dt><dd>5.46567 → 5.46567</dd>
+<dt>location p_ge3</dt><dd>0.91031 → 0.91031</dd>
+<dt>location p_ge4</dt><dd>0.00951 → 0.00951</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/multibrot3_smooth_mean_angle.jpg"><img loading="lazy" src="pictures/multibrot3_smooth_mean_angle.jpg" alt=""></a>
+<div class="title">multibrot3_smooth_mean_angle · smooth_mean_angle</div>
+<dl>
+<dt>render p_ge2</dt><dd>1.00000 → 1.00000</dd>
+<dt>render p_ge3</dt><dd>0.99968 → 0.99968</dd>
+<dt>render p_ge4</dt><dd>0.99797 → 0.99797</dd>
+<dt>gallery_grade p_ge2</dt><dd>0.99774 → 0.99774</dd>
+<dt>gallery_grade p_ge3</dt><dd>0.99233 → 0.99233</dd>
+<dt>gallery_grade p_ge4</dt><dd>0.98580 → 0.98580</dd>
+<dt>palette score</dt><dd>2.97612 → 2.97612</dd>
+<dt>location p_ge3</dt><dd>0.99220 → 0.99220</dd>
+<dt>location p_ge4</dt><dd>0.96358 → 0.96358</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/multibrot4_smooth_curvature.jpg"><img loading="lazy" src="pictures/multibrot4_smooth_curvature.jpg" alt=""></a>
+<div class="title">multibrot4_smooth_curvature · smooth_curvature</div>
+<dl>
+<dt>render p_ge2</dt><dd>1.00000 → 1.00000</dd>
+<dt>render p_ge3</dt><dd>0.99958 → 0.99958</dd>
+<dt>render p_ge4</dt><dd>0.99446 → 0.99446</dd>
+<dt>gallery_grade p_ge2</dt><dd>0.99950 → 0.99950</dd>
+<dt>gallery_grade p_ge3</dt><dd>0.98955 → 0.98955</dd>
+<dt>gallery_grade p_ge4</dt><dd>0.95734 → 0.95734</dd>
+<dt>palette score</dt><dd>7.65395 → 7.65395</dd>
+<dt>location p_ge3</dt><dd>0.95628 → 0.95628</dd>
+<dt>location p_ge4</dt><dd>0.37519 → 0.37519</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/julia_multibrot3_threads.jpg"><img loading="lazy" src="pictures/julia_multibrot3_threads.jpg" alt=""></a>
+<div class="title">julia_multibrot3_threads · threads</div>
+<dl>
+<dt>render p_ge2</dt><dd>0.99999 → 0.99999</dd>
+<dt>render p_ge3</dt><dd>0.99822 → 0.99822</dd>
+<dt>render p_ge4</dt><dd>0.98686 → 0.98686</dd>
+<dt>gallery_grade p_ge2</dt><dd>0.98783 → 0.98783</dd>
+<dt>gallery_grade p_ge3</dt><dd>0.94728 → 0.94728</dd>
+<dt>gallery_grade p_ge4</dt><dd>0.88299 → 0.88299</dd>
+<dt>palette score</dt><dd>3.99946 → 3.99946</dd>
+<dt>location p_ge3</dt><dd>0.90681 → 0.90681</dd>
+<dt>location p_ge4</dt><dd>0.00041 → 0.00041</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/julia_multibrot5_smooth_stripe.jpg"><img loading="lazy" src="pictures/julia_multibrot5_smooth_stripe.jpg" alt=""></a>
+<div class="title">julia_multibrot5_smooth_stripe · smooth_stripe</div>
+<dl>
+<dt>render p_ge2</dt><dd>0.99995 → 0.99995</dd>
+<dt>render p_ge3</dt><dd>0.99459 → 0.99459</dd>
+<dt>render p_ge4</dt><dd>0.97375 → 0.97375</dd>
+<dt>gallery_grade p_ge2</dt><dd>0.98866 → 0.98866</dd>
+<dt>gallery_grade p_ge3</dt><dd>0.95114 → 0.95114</dd>
+<dt>gallery_grade p_ge4</dt><dd>0.87016 → 0.87016</dd>
+<dt>palette score</dt><dd>9.35846 → 9.35846</dd>
+<dt>location p_ge3</dt><dd>0.40072 → 0.40072</dd>
+<dt>location p_ge4</dt><dd>0.07255 → 0.07255</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/multibrot5_curvature.jpg"><img loading="lazy" src="pictures/multibrot5_curvature.jpg" alt=""></a>
+<div class="title">multibrot5_curvature · curvature</div>
+<dl>
+<dt>render p_ge2</dt><dd>0.99820 → 0.99820</dd>
+<dt>render p_ge3</dt><dd>0.97308 → 0.97308</dd>
+<dt>render p_ge4</dt><dd>0.89859 → 0.89859</dd>
+<dt>gallery_grade p_ge2</dt><dd>0.95853 → 0.95853</dd>
+<dt>gallery_grade p_ge3</dt><dd>0.75806 → 0.75806</dd>
+<dt>gallery_grade p_ge4</dt><dd>0.60694 → 0.60694</dd>
+<dt>palette score</dt><dd>5.37623 → 5.37623</dd>
+<dt>location p_ge3</dt><dd>0.74847 → 0.74847</dd>
+<dt>location p_ge4</dt><dd>0.57758 → 0.57758</dd>
+</dl></div>
+</div>
+</body></html>

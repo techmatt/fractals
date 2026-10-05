@@ -1,0 +1,871 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Harvest stats</title><style>
+:root { --bg: #fafafa; --fg: #1a1a1a; --muted: #666; --card: #fff; --line: #ddd;
+        --miss: #b3261e; }
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #161616; --fg: #eee; --muted: #999; --card: #222; --line: #333;
+          --miss: #ff8a80; } }
+body { background: var(--bg); color: var(--fg); font: 14px/1.4 system-ui, sans-serif;
+       margin: 0 auto; max-width: 1600px; padding: 16px; }
+h1 { font-size: 20px; margin: 0 0 8px; } h2 { font-size: 16px; margin: 24px 0 6px; }
+p { color: var(--muted); margin: 4px 0; max-width: 90ch; }
+table { border-collapse: collapse; margin: 8px 0; font-variant-numeric: tabular-nums; }
+td, th { border: 1px solid var(--line); padding: 3px 8px; text-align: right; }
+th:first-child, td:first-child { text-align: left; }
+.grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.tile { background: var(--card); border: 1px solid var(--line); border-radius: 4px;
+        overflow: hidden; }
+.tile img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
+.tile .none { aspect-ratio: 16 / 9; display: grid; place-items: center; color: var(--muted); }
+.tile dl { display: grid; grid-template-columns: auto 1fr; gap: 0 8px; margin: 6px 8px 8px;
+           font-variant-numeric: tabular-nums; }
+.tile dt { color: var(--muted); } .tile dd { margin: 0; overflow-wrap: anywhere; }
+.tile .title { font-weight: 600; margin: 6px 8px 0; overflow-wrap: anywhere; }
+.tile .mark { color: var(--miss); font-weight: 700; margin: 6px 8px 0; }
+.command { font: 12px/1.4 ui-monospace, Consolas, monospace; color: var(--muted);
+           overflow-wrap: anywhere; margin: 0 0 10px; }
+.record { margin: 6px 0; } .record summary { cursor: pointer; }
+.record pre { background: var(--card); border: 1px solid var(--line); padding: 6px 8px;
+              margin: 4px 0; overflow-x: auto; font-size: 12px; white-space: pre-wrap;
+              overflow-wrap: anywhere; }
+.record mark { background: #ffe08a; color: #1a1a1a; }
+.record .note { color: var(--miss); }
+</style></head><body>
+<h1>Harvest stats</h1>
+<p class="command">fractal-wallpapers harvest stats</p>
+<p>4,832 candidates found, 4,069 admitted, 4,069 scored by the location judge (`curate score`).</p>
+<p>Scores are the location judge&#x27;s P(&gt;=3) and P(&gt;=4) off supply_scores.jsonl.</p>
+<h2>Per fractal family</h2>
+<table><tr><th>family</th><th>found</th><th>admitted</th><th>scored</th><th>median P(&gt;=3)</th><th>P(&gt;=3) &gt; .5</th><th>P(&gt;=4) &gt; .5</th>
+<tr><td>julia:mandelbrot</td><td>316</td><td>300</td><td>300</td><td>0.6575</td><td>181</td><td>21</td>
+<tr><td>julia:multibrot3</td><td>1020</td><td>993</td><td>993</td><td>0.1838</td><td>263</td><td>57</td>
+<tr><td>julia:multibrot4</td><td>592</td><td>573</td><td>573</td><td>0.1552</td><td>132</td><td>28</td>
+<tr><td>julia:multibrot5</td><td>596</td><td>576</td><td>576</td><td>0.259</td><td>193</td><td>56</td>
+<tr><td>julia:multibrot6</td><td>344</td><td>331</td><td>331</td><td>0.0071</td><td>1</td><td>1</td>
+<tr><td>mandelbrot</td><td>656</td><td>382</td><td>382</td><td>0.0001</td><td>1</td><td>0</td>
+<tr><td>multibrot3</td><td>296</td><td>175</td><td>175</td><td>0.0003</td><td>6</td><td>0</td>
+<tr><td>multibrot4</td><td>212</td><td>112</td><td>112</td><td>0.0052</td><td>12</td><td>0</td>
+<tr><td>multibrot5</td><td>172</td><td>118</td><td>118</td><td>0.0028</td><td>6</td><td>0</td>
+<tr><td>multibrot6</td><td>168</td><td>122</td><td>122</td><td>0.0002</td><td>0</td><td>0</td>
+<tr><td>phoenix</td><td>316</td><td>281</td><td>281</td><td>0.0272</td><td>65</td><td>8</td>
+<tr><td>phoenix:classic</td><td>144</td><td>106</td><td>106</td><td>0.0175</td><td>9</td><td>0</td>
+</table>
+<h2>julia:mandelbrot: best 4 and worst 4</h2>
+<p>best first, then worst; the picture is the walk&#x27;s gate render</p>
+<div class="grid">
+<div class="tile">
+<a href="pictures/node743_c2.jpg"><img loading="lazy" src="pictures/node743_c2.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.9937</dd>
+<dt>P(&gt;=4)</dt><dd>0.002283</dd>
+<dt>width</dt><dd>0.1993352004346101</dd>
+<dt>root channel</dt><dd>ranked_harvest</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node1277_c0.jpg"><img loading="lazy" src="pictures/node1277_c0.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.9933</dd>
+<dt>P(&gt;=4)</dt><dd>0.9031</dd>
+<dt>width</dt><dd>0.05533458542412679</dd>
+<dt>root channel</dt><dd>ranked_harvest</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node48_c0.jpg"><img loading="lazy" src="pictures/node48_c0.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.9918</dd>
+<dt>P(&gt;=4)</dt><dd>0.9872</dd>
+<dt>width</dt><dd>1.1083059897818268</dd>
+<dt>root channel</dt><dd>ranked_harvest</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node1403_c1.jpg"><img loading="lazy" src="pictures/node1403_c1.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.9917</dd>
+<dt>P(&gt;=4)</dt><dd>0.9285</dd>
+<dt>width</dt><dd>0.019578442039436865</dd>
+<dt>root channel</dt><dd>ranked_harvest</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node3364_c0.jpg"><img loading="lazy" src="pictures/node3364_c0.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>9.874e-05</dd>
+<dt>P(&gt;=4)</dt><dd>7.408e-08</dd>
+<dt>width</dt><dd>0.002891857387424163</dd>
+<dt>root channel</dt><dd>ranked_harvest</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node41_c1.jpg"><img loading="lazy" src="pictures/node41_c1.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.0001764</dd>
+<dt>P(&gt;=4)</dt><dd>9.312e-10</dd>
+<dt>width</dt><dd>1.3088529890815273</dd>
+<dt>root channel</dt><dd>ranked_harvest</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node3615_c0.jpg"><img loading="lazy" src="pictures/node3615_c0.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.0002504</dd>
+<dt>P(&gt;=4)</dt><dd>1.857e-08</dd>
+<dt>width</dt><dd>0.001059295019896546</dd>
+<dt>root channel</dt><dd>ranked_harvest</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node3366_c2.jpg"><img loading="lazy" src="pictures/node3366_c2.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.0002919</dd>
+<dt>P(&gt;=4)</dt><dd>3.465e-07</dd>
+<dt>width</dt><dd>0.003650972937277768</dd>
+<dt>root channel</dt><dd>ranked_harvest</dd>
+</dl></div>
+</div>
+<h2>julia:multibrot3: best 4 and worst 4</h2>
+<p>best first, then worst; the picture is the walk&#x27;s gate render</p>
+<div class="grid">
+<div class="tile">
+<a href="pictures/node2596_c2.jpg"><img loading="lazy" src="pictures/node2596_c2.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.9996</dd>
+<dt>P(&gt;=4)</dt><dd>0.9996</dd>
+<dt>width</dt><dd>0.0003582611067310071</dd>
+<dt>root channel</dt><dd>twin:labels</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node690_c0.jpg"><img loading="lazy" src="pictures/node690_c0.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.998</dd>
+<dt>P(&gt;=4)</dt><dd>0.998</dd>
+<dt>width</dt><dd>0.0004803211239033236</dd>
+<dt>root channel</dt><dd>twin:labels</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node4381_c0.jpg"><img loading="lazy" src="pictures/node4381_c0.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.992</dd>
+<dt>P(&gt;=4)</dt><dd>0.986</dd>
+<dt>width</dt><dd>0.001635209727876987</dd>
+<dt>root channel</dt><dd>twin:labels</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node2636_c1.jpg"><img loading="lazy" src="pictures/node2636_c1.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.9894</dd>
+<dt>P(&gt;=4)</dt><dd>0.9891</dd>
+<dt>width</dt><dd>0.00014004465398317946</dd>
+<dt>root channel</dt><dd>twin:labels</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node365_c1.jpg"><img loading="lazy" src="pictures/node365_c1.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>3.992e-06</dd>
+<dt>P(&gt;=4)</dt><dd>2.306e-11</dd>
+<dt>width</dt><dd>0.19002659375847666</dd>
+<dt>root channel</dt><dd>twin:labels</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node56_c2.jpg"><img loading="lazy" src="pictures/node56_c2.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>1.285e-05</dd>
+<dt>P(&gt;=4)</dt><dd>6.934e-11</dd>
+<dt>width</dt><dd>1.1472451534170185</dd>
+<dt>root channel</dt><dd>twin:labels</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node2100_c0.jpg"><img loading="lazy" src="pictures/node2100_c0.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>1.361e-05</dd>
+<dt>P(&gt;=4)</dt><dd>2.405e-10</dd>
+<dt>width</dt><dd>0.00007515298661015599</dd>
+<dt>root channel</dt><dd>twin:labels</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node1962_c3.jpg"><img loading="lazy" src="pictures/node1962_c3.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>1.513e-05</dd>
+<dt>P(&gt;=4)</dt><dd>1.066e-11</dd>
+<dt>width</dt><dd>0.002015212252597425</dd>
+<dt>root channel</dt><dd>twin:labels</dd>
+</dl></div>
+</div>
+<h2>julia:multibrot4: best 4 and worst 4</h2>
+<p>best first, then worst; the picture is the walk&#x27;s gate render</p>
+<div class="grid">
+<div class="tile">
+<a href="pictures/node1600_c2.jpg"><img loading="lazy" src="pictures/node1600_c2.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.9994</dd>
+<dt>P(&gt;=4)</dt><dd>0.9994</dd>
+<dt>width</dt><dd>0.00005559964354778044</dd>
+<dt>root channel</dt><dd>twin:labels</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node1600_c0.jpg"><img loading="lazy" src="pictures/node1600_c0.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.9982</dd>
+<dt>P(&gt;=4)</dt><dd>0.9972</dd>
+<dt>width</dt><dd>0.00005559964354778044</dd>
+<dt>root channel</dt><dd>twin:labels</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node2881_c3.jpg"><img loading="lazy" src="pictures/node2881_c3.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.996</dd>
+<dt>P(&gt;=4)</dt><dd>0.9956</dd>
+<dt>width</dt><dd>0.04024127248053426</dd>
+<dt>root channel</dt><dd>twin:labels</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node2453_c3.jpg"><img loading="lazy" src="pictures/node2453_c3.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.9942</dd>
+<dt>P(&gt;=4)</dt><dd>0.9936</dd>
+<dt>width</dt><dd>0.11377525886500758</dd>
+<dt>root channel</dt><dd>twin:labels</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node2878_c0.jpg"><img loading="lazy" src="pictures/node2878_c0.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>5.026e-05</dd>
+<dt>P(&gt;=4)</dt><dd>5.636e-11</dd>
+<dt>width</dt><dd>0.033109493889282145</dd>
+<dt>root channel</dt><dd>twin:labels</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node2328_c2.jpg"><img loading="lazy" src="pictures/node2328_c2.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.0001495</dd>
+<dt>P(&gt;=4)</dt><dd>2.483e-10</dd>
+<dt>width</dt><dd>0.080296872966241</dd>
+<dt>root channel</dt><dd>twin:labels</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node2223_c0.jpg"><img loading="lazy" src="pictures/node2223_c0.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.0006859</dd>
+<dt>P(&gt;=4)</dt><dd>5.757e-09</dd>
+<dt>width</dt><dd>0.00004369635793227693</dd>
+<dt>root channel</dt><dd>twin:labels</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node63_c1.jpg"><img loading="lazy" src="pictures/node63_c1.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.0009383</dd>
+<dt>P(&gt;=4)</dt><dd>3.919e-08</dd>
+<dt>width</dt><dd>1.2649258195696158</dd>
+<dt>root channel</dt><dd>twin:labels</dd>
+</dl></div>
+</div>
+<h2>julia:multibrot5: best 4 and worst 4</h2>
+<p>best first, then worst; the picture is the walk&#x27;s gate render</p>
+<div class="grid">
+<div class="tile">
+<a href="pictures/node1841_c2.jpg"><img loading="lazy" src="pictures/node1841_c2.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.9993</dd>
+<dt>P(&gt;=4)</dt><dd>0.9992</dd>
+<dt>width</dt><dd>0.0005002961789205947</dd>
+<dt>root channel</dt><dd>twin:labels</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node949_c2.jpg"><img loading="lazy" src="pictures/node949_c2.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.9977</dd>
+<dt>P(&gt;=4)</dt><dd>0.9696</dd>
+<dt>width</dt><dd>0.002958912552431221</dd>
+<dt>root channel</dt><dd>twin:labels</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node2184_c3.jpg"><img loading="lazy" src="pictures/node2184_c3.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.9971</dd>
+<dt>P(&gt;=4)</dt><dd>0.9967</dd>
+<dt>width</dt><dd>0.00007167324448167342</dd>
+<dt>root channel</dt><dd>twin:labels</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node1783_c0.jpg"><img loading="lazy" src="pictures/node1783_c0.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.9968</dd>
+<dt>P(&gt;=4)</dt><dd>0.9839</dd>
+<dt>width</dt><dd>0.0013107803636466092</dd>
+<dt>root channel</dt><dd>twin:labels</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node202_c3.jpg"><img loading="lazy" src="pictures/node202_c3.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.0002448</dd>
+<dt>P(&gt;=4)</dt><dd>2.6e-08</dd>
+<dt>width</dt><dd>0.6663763070790202</dd>
+<dt>root channel</dt><dd>twin:labels</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node1458_c2.jpg"><img loading="lazy" src="pictures/node1458_c2.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.0003077</dd>
+<dt>P(&gt;=4)</dt><dd>1.472e-08</dd>
+<dt>width</dt><dd>0.19811306522355945</dd>
+<dt>root channel</dt><dd>twin:labels</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node522_c1.jpg"><img loading="lazy" src="pictures/node522_c1.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.0003396</dd>
+<dt>P(&gt;=4)</dt><dd>1.411e-08</dd>
+<dt>width</dt><dd>0.030007541214654754</dd>
+<dt>root channel</dt><dd>twin:labels</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node4236_c0.jpg"><img loading="lazy" src="pictures/node4236_c0.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.0004026</dd>
+<dt>P(&gt;=4)</dt><dd>8.307e-09</dd>
+<dt>width</dt><dd>0.0004859250925336259</dd>
+<dt>root channel</dt><dd>twin:labels</dd>
+</dl></div>
+</div>
+<h2>julia:multibrot6: best 4 and worst 4</h2>
+<p>best first, then worst; the picture is the walk&#x27;s gate render</p>
+<div class="grid">
+<div class="tile">
+<a href="pictures/node1421_c3.jpg"><img loading="lazy" src="pictures/node1421_c3.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.849</dd>
+<dt>P(&gt;=4)</dt><dd>0.8385</dd>
+<dt>width</dt><dd>0.0010139655981541563</dd>
+<dt>root channel</dt><dd>twin:run</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node3195_c0.jpg"><img loading="lazy" src="pictures/node3195_c0.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.3186</dd>
+<dt>P(&gt;=4)</dt><dd>4.097e-05</dd>
+<dt>width</dt><dd>0.03937423984218461</dd>
+<dt>root channel</dt><dd>twin:run</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node4192_c3.jpg"><img loading="lazy" src="pictures/node4192_c3.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.2674</dd>
+<dt>P(&gt;=4)</dt><dd>0.1536</dd>
+<dt>width</dt><dd>0.000005749506918783923</dd>
+<dt>root channel</dt><dd>twin:run</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node603_c1.jpg"><img loading="lazy" src="pictures/node603_c1.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.2498</dd>
+<dt>P(&gt;=4)</dt><dd>0.0003267</dd>
+<dt>width</dt><dd>0.524160682178471</dd>
+<dt>root channel</dt><dd>twin:run</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node4339_c0.jpg"><img loading="lazy" src="pictures/node4339_c0.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>1.122e-05</dd>
+<dt>P(&gt;=4)</dt><dd>1.325e-10</dd>
+<dt>width</dt><dd>0.00008327464483641807</dd>
+<dt>root channel</dt><dd>twin:run</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node1614_c0.jpg"><img loading="lazy" src="pictures/node1614_c0.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>1.197e-05</dd>
+<dt>P(&gt;=4)</dt><dd>1.579e-14</dd>
+<dt>width</dt><dd>0.00016415272430557408</dd>
+<dt>root channel</dt><dd>twin:run</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node3195_c1.jpg"><img loading="lazy" src="pictures/node3195_c1.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>1.435e-05</dd>
+<dt>P(&gt;=4)</dt><dd>1.334e-10</dd>
+<dt>width</dt><dd>0.03937423984218461</dd>
+<dt>root channel</dt><dd>twin:run</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node575_c1.jpg"><img loading="lazy" src="pictures/node575_c1.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>2.414e-05</dd>
+<dt>P(&gt;=4)</dt><dd>9.81e-11</dd>
+<dt>width</dt><dd>1.2869613692569604</dd>
+<dt>root channel</dt><dd>twin:run</dd>
+</dl></div>
+</div>
+<h2>mandelbrot: best 4 and worst 4</h2>
+<p>best first, then worst; the picture is the walk&#x27;s gate render</p>
+<div class="grid">
+<div class="tile">
+<a href="pictures/node3018_c3.jpg"><img loading="lazy" src="pictures/node3018_c3.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.5696</dd>
+<dt>P(&gt;=4)</dt><dd>0.0007531</dd>
+<dt>width</dt><dd>0.00007472325118975394</dd>
+<dt>root channel</dt><dd>nucleus_grid</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node3018_c2.jpg"><img loading="lazy" src="pictures/node3018_c2.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.4564</dd>
+<dt>P(&gt;=4)</dt><dd>0.0002849</dd>
+<dt>width</dt><dd>0.00007472325118975394</dd>
+<dt>root channel</dt><dd>nucleus_grid</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node2072_c1.jpg"><img loading="lazy" src="pictures/node2072_c1.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.4524</dd>
+<dt>P(&gt;=4)</dt><dd>0.3706</dd>
+<dt>width</dt><dd>0.00000003521282436640916</dd>
+<dt>root channel</dt><dd>nucleus_grid</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node3071_c1.jpg"><img loading="lazy" src="pictures/node3071_c1.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.3601</dd>
+<dt>P(&gt;=4)</dt><dd>1.967e-05</dd>
+<dt>width</dt><dd>0.00003565346240120391</dd>
+<dt>root channel</dt><dd>nucleus_grid</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node309_c1.jpg"><img loading="lazy" src="pictures/node309_c1.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>1.046e-134</dd>
+<dt>P(&gt;=4)</dt><dd>0</dd>
+<dt>width</dt><dd>0.0852417994001631</dd>
+<dt>root channel</dt><dd>nucleus_grid</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node2648_c1.jpg"><img loading="lazy" src="pictures/node2648_c1.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>2.48e-113</dd>
+<dt>P(&gt;=4)</dt><dd>0</dd>
+<dt>width</dt><dd>0.00002312617277257089</dd>
+<dt>root channel</dt><dd>nucleus_grid</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node3152_c2.jpg"><img loading="lazy" src="pictures/node3152_c2.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>5.457e-107</dd>
+<dt>P(&gt;=4)</dt><dd>0</dd>
+<dt>width</dt><dd>0.00005383405349037141</dd>
+<dt>root channel</dt><dd>nucleus_grid</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node3351_c1.jpg"><img loading="lazy" src="pictures/node3351_c1.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>3.778e-94</dd>
+<dt>P(&gt;=4)</dt><dd>5.239e-310</dd>
+<dt>width</dt><dd>0.0064265918431488205</dd>
+<dt>root channel</dt><dd>nucleus_grid</dd>
+</dl></div>
+</div>
+<h2>multibrot3: best 4 and worst 4</h2>
+<p>best first, then worst; the picture is the walk&#x27;s gate render</p>
+<div class="grid">
+<div class="tile">
+<a href="pictures/node3641_c1.jpg"><img loading="lazy" src="pictures/node3641_c1.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.9189</dd>
+<dt>P(&gt;=4)</dt><dd>6.993e-05</dd>
+<dt>width</dt><dd>0.0000010578379810667692</dd>
+<dt>root channel</dt><dd>nucleus_grid</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node3641_c0.jpg"><img loading="lazy" src="pictures/node3641_c0.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.844</dd>
+<dt>P(&gt;=4)</dt><dd>0.004781</dd>
+<dt>width</dt><dd>0.0000010578379810667692</dd>
+<dt>root channel</dt><dd>nucleus_grid</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node3641_c2.jpg"><img loading="lazy" src="pictures/node3641_c2.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.82</dd>
+<dt>P(&gt;=4)</dt><dd>5.934e-05</dd>
+<dt>width</dt><dd>0.0000010578379810667692</dd>
+<dt>root channel</dt><dd>nucleus_grid</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node3550_c3.jpg"><img loading="lazy" src="pictures/node3550_c3.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.7191</dd>
+<dt>P(&gt;=4)</dt><dd>0.1549</dd>
+<dt>width</dt><dd>0.00000003474093725200115</dd>
+<dt>root channel</dt><dd>nucleus_grid</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node10_c1.jpg"><img loading="lazy" src="pictures/node10_c1.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>4.074e-250</dd>
+<dt>P(&gt;=4)</dt><dd>0</dd>
+<dt>width</dt><dd>0.19786118559790777</dd>
+<dt>root channel</dt><dd>nucleus_grid</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node1871_c1.jpg"><img loading="lazy" src="pictures/node1871_c1.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>9.97e-121</dd>
+<dt>P(&gt;=4)</dt><dd>0</dd>
+<dt>width</dt><dd>0.00000012499021948475768</dd>
+<dt>root channel</dt><dd>nucleus_grid</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node1795_c2.jpg"><img loading="lazy" src="pictures/node1795_c2.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>5.854e-114</dd>
+<dt>P(&gt;=4)</dt><dd>0</dd>
+<dt>width</dt><dd>0.00000033615878169663646</dd>
+<dt>root channel</dt><dd>nucleus_grid</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node1951_c0.jpg"><img loading="lazy" src="pictures/node1951_c0.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>6.12e-68</dd>
+<dt>P(&gt;=4)</dt><dd>7.234e-222</dd>
+<dt>width</dt><dd>0.006044483616143442</dd>
+<dt>root channel</dt><dd>nucleus_grid</dd>
+</dl></div>
+</div>
+<h2>multibrot4: best 4 and worst 4</h2>
+<p>best first, then worst; the picture is the walk&#x27;s gate render</p>
+<div class="grid">
+<div class="tile">
+<a href="pictures/node2893_c0.jpg"><img loading="lazy" src="pictures/node2893_c0.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.9603</dd>
+<dt>P(&gt;=4)</dt><dd>0.0002961</dd>
+<dt>width</dt><dd>0.0000005190138622573108</dd>
+<dt>root channel</dt><dd>nucleus_grid</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node648_c2.jpg"><img loading="lazy" src="pictures/node648_c2.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.9014</dd>
+<dt>P(&gt;=4)</dt><dd>0.0976</dd>
+<dt>width</dt><dd>0.00017571944503817348</dd>
+<dt>root channel</dt><dd>nucleus_grid</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node648_c1.jpg"><img loading="lazy" src="pictures/node648_c1.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.8441</dd>
+<dt>P(&gt;=4)</dt><dd>3.979e-05</dd>
+<dt>width</dt><dd>0.00017571944503817348</dd>
+<dt>root channel</dt><dd>nucleus_grid</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node2851_c0.jpg"><img loading="lazy" src="pictures/node2851_c0.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.8292</dd>
+<dt>P(&gt;=4)</dt><dd>1.429e-05</dd>
+<dt>width</dt><dd>0.000004759234173811745</dd>
+<dt>root channel</dt><dd>nucleus_grid</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node3468_c1.jpg"><img loading="lazy" src="pictures/node3468_c1.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>6.362e-126</dd>
+<dt>P(&gt;=4)</dt><dd>0</dd>
+<dt>width</dt><dd>0.00000022227797213463785</dd>
+<dt>root channel</dt><dd>nucleus_grid</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node21_c3.jpg"><img loading="lazy" src="pictures/node21_c3.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>1.218e-74</dd>
+<dt>P(&gt;=4)</dt><dd>2.088e-243</dd>
+<dt>width</dt><dd>0.028004894663695823</dd>
+<dt>root channel</dt><dd>nucleus_grid</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node3926_c0.jpg"><img loading="lazy" src="pictures/node3926_c0.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>1.135e-21</dd>
+<dt>P(&gt;=4)</dt><dd>2.114e-63</dd>
+<dt>width</dt><dd>0.20517430634546618</dd>
+<dt>root channel</dt><dd>nucleus_grid</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node1402_c0.jpg"><img loading="lazy" src="pictures/node1402_c0.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>4.421e-10</dd>
+<dt>P(&gt;=4)</dt><dd>4.019e-25</dd>
+<dt>width</dt><dd>0.002049142889434871</dd>
+<dt>root channel</dt><dd>nucleus_grid</dd>
+</dl></div>
+</div>
+<h2>multibrot5: best 4 and worst 4</h2>
+<p>best first, then worst; the picture is the walk&#x27;s gate render</p>
+<div class="grid">
+<div class="tile">
+<a href="pictures/node4738_c2.jpg"><img loading="lazy" src="pictures/node4738_c2.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.9847</dd>
+<dt>P(&gt;=4)</dt><dd>0.007973</dd>
+<dt>width</dt><dd>0.0000004758496471019763</dd>
+<dt>root channel</dt><dd>nucleus_grid</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node4738_c1.jpg"><img loading="lazy" src="pictures/node4738_c1.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.9755</dd>
+<dt>P(&gt;=4)</dt><dd>0.0214</dd>
+<dt>width</dt><dd>0.0000004758496471019763</dd>
+<dt>root channel</dt><dd>nucleus_grid</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node4650_c2.jpg"><img loading="lazy" src="pictures/node4650_c2.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.9677</dd>
+<dt>P(&gt;=4)</dt><dd>0.005327</dd>
+<dt>width</dt><dd>0.00043941942526010483</dd>
+<dt>root channel</dt><dd>nucleus_grid</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node4650_c1.jpg"><img loading="lazy" src="pictures/node4650_c1.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.9586</dd>
+<dt>P(&gt;=4)</dt><dd>0.0003006</dd>
+<dt>width</dt><dd>0.00043941942526010483</dd>
+<dt>root channel</dt><dd>nucleus_grid</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node26_c3.jpg"><img loading="lazy" src="pictures/node26_c3.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>2.591e-08</dd>
+<dt>P(&gt;=4)</dt><dd>3.068e-21</dd>
+<dt>width</dt><dd>0.08329882838793097</dd>
+<dt>root channel</dt><dd>nucleus_grid</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node98_c2.jpg"><img loading="lazy" src="pictures/node98_c2.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>3.327e-07</dd>
+<dt>P(&gt;=4)</dt><dd>5.225e-17</dd>
+<dt>width</dt><dd>0.0064159376552214405</dd>
+<dt>root channel</dt><dd>nucleus_grid</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node27_c3.jpg"><img loading="lazy" src="pictures/node27_c3.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>1.229e-06</dd>
+<dt>P(&gt;=4)</dt><dd>1.834e-15</dd>
+<dt>width</dt><dd>0.05205844964286702</dd>
+<dt>root channel</dt><dd>nucleus_grid</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node817_c2.jpg"><img loading="lazy" src="pictures/node817_c2.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>4.32e-06</dd>
+<dt>P(&gt;=4)</dt><dd>4.836e-13</dd>
+<dt>width</dt><dd>0.005004906609254598</dd>
+<dt>root channel</dt><dd>nucleus_grid</dd>
+</dl></div>
+</div>
+<h2>multibrot6: best 4 and worst 4</h2>
+<p>best first, then worst; the picture is the walk&#x27;s gate render</p>
+<div class="grid">
+<div class="tile">
+<a href="pictures/node3935_c0.jpg"><img loading="lazy" src="pictures/node3935_c0.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.1163</dd>
+<dt>P(&gt;=4)</dt><dd>4.479e-06</dd>
+<dt>width</dt><dd>0.00012179090286028997</dd>
+<dt>root channel</dt><dd>viewport_sampler</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node3957_c2.jpg"><img loading="lazy" src="pictures/node3957_c2.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.09449</dd>
+<dt>P(&gt;=4)</dt><dd>0.001239</dd>
+<dt>width</dt><dd>0.000053946505664068284</dd>
+<dt>root channel</dt><dd>viewport_sampler</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node3957_c3.jpg"><img loading="lazy" src="pictures/node3957_c3.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.06899</dd>
+<dt>P(&gt;=4)</dt><dd>0.0001945</dd>
+<dt>width</dt><dd>0.000053946505664068284</dd>
+<dt>root channel</dt><dd>viewport_sampler</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node423_c1.jpg"><img loading="lazy" src="pictures/node423_c1.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.02516</dd>
+<dt>P(&gt;=4)</dt><dd>5.373e-06</dd>
+<dt>width</dt><dd>0.001094027786916355</dd>
+<dt>root channel</dt><dd>viewport_sampler</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node4536_c0.jpg"><img loading="lazy" src="pictures/node4536_c0.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>4.598e-39</dd>
+<dt>P(&gt;=4)</dt><dd>4.735e-128</dd>
+<dt>width</dt><dd>0.00011947389926265741</dd>
+<dt>root channel</dt><dd>viewport_sampler</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node3830_c1.jpg"><img loading="lazy" src="pictures/node3830_c1.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>6.661e-30</dd>
+<dt>P(&gt;=4)</dt><dd>1.368e-96</dd>
+<dt>width</dt><dd>0.0002346555265494004</dd>
+<dt>root channel</dt><dd>viewport_sampler</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node4409_c2.jpg"><img loading="lazy" src="pictures/node4409_c2.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>3.561e-07</dd>
+<dt>P(&gt;=4)</dt><dd>2.232e-15</dd>
+<dt>width</dt><dd>0.03404960387391525</dd>
+<dt>root channel</dt><dd>viewport_sampler</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node40_c2.jpg"><img loading="lazy" src="pictures/node40_c2.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>4.14e-07</dd>
+<dt>P(&gt;=4)</dt><dd>4.237e-20</dd>
+<dt>width</dt><dd>0.022615458932754923</dd>
+<dt>root channel</dt><dd>viewport_sampler</dd>
+</dl></div>
+</div>
+<h2>phoenix: best 4 and worst 4</h2>
+<p>best first, then worst; the picture is the walk&#x27;s gate render</p>
+<div class="grid">
+<div class="tile">
+<a href="pictures/node214_c1.jpg"><img loading="lazy" src="pictures/node214_c1.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.984</dd>
+<dt>P(&gt;=4)</dt><dd>0.9636</dd>
+<dt>width</dt><dd>0.9409082095914474</dd>
+<dt>root channel</dt><dd>phoenix_seed_pool</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node2260_c0.jpg"><img loading="lazy" src="pictures/node2260_c0.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.9776</dd>
+<dt>P(&gt;=4)</dt><dd>0.001041</dd>
+<dt>width</dt><dd>0.000007968129235273439</dd>
+<dt>root channel</dt><dd>phoenix_seed_pool</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node2020_c1.jpg"><img loading="lazy" src="pictures/node2020_c1.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.9744</dd>
+<dt>P(&gt;=4)</dt><dd>0.0001383</dd>
+<dt>width</dt><dd>0.000056063603316726115</dd>
+<dt>root channel</dt><dd>phoenix_seed_pool</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node1706_c3.jpg"><img loading="lazy" src="pictures/node1706_c3.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.9742</dd>
+<dt>P(&gt;=4)</dt><dd>0.0001244</dd>
+<dt>width</dt><dd>0.0003743223750667095</dd>
+<dt>root channel</dt><dd>phoenix_seed_pool</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node80_c0.jpg"><img loading="lazy" src="pictures/node80_c0.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>1.81e-06</dd>
+<dt>P(&gt;=4)</dt><dd>3.212e-12</dd>
+<dt>width</dt><dd>2.234138200995916</dd>
+<dt>root channel</dt><dd>phoenix_seed_pool</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node3726_c2.jpg"><img loading="lazy" src="pictures/node3726_c2.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>5.4e-06</dd>
+<dt>P(&gt;=4)</dt><dd>1.038e-10</dd>
+<dt>width</dt><dd>0.01695458444258661</dd>
+<dt>root channel</dt><dd>phoenix_seed_pool</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node80_c2.jpg"><img loading="lazy" src="pictures/node80_c2.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>7.283e-06</dd>
+<dt>P(&gt;=4)</dt><dd>1.991e-12</dd>
+<dt>width</dt><dd>2.234138200995916</dd>
+<dt>root channel</dt><dd>phoenix_seed_pool</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node3726_c3.jpg"><img loading="lazy" src="pictures/node3726_c3.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>1.022e-05</dd>
+<dt>P(&gt;=4)</dt><dd>1.83e-13</dd>
+<dt>width</dt><dd>0.01695458444258661</dd>
+<dt>root channel</dt><dd>phoenix_seed_pool</dd>
+</dl></div>
+</div>
+<h2>phoenix:classic: best 4 and worst 4</h2>
+<p>best first, then worst; the picture is the walk&#x27;s gate render</p>
+<div class="grid">
+<div class="tile">
+<a href="pictures/node1674_c1.jpg"><img loading="lazy" src="pictures/node1674_c1.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.9738</dd>
+<dt>P(&gt;=4)</dt><dd>1.495e-05</dd>
+<dt>width</dt><dd>0.011255325193450905</dd>
+<dt>root channel</dt><dd>home_view</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node1672_c3.jpg"><img loading="lazy" src="pictures/node1672_c3.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.8794</dd>
+<dt>P(&gt;=4)</dt><dd>5.684e-06</dd>
+<dt>width</dt><dd>0.011076308485402609</dd>
+<dt>root channel</dt><dd>home_view</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node111_c3.jpg"><img loading="lazy" src="pictures/node111_c3.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.8048</dd>
+<dt>P(&gt;=4)</dt><dd>2.999e-05</dd>
+<dt>width</dt><dd>0.8865014759348431</dd>
+<dt>root channel</dt><dd>home_view</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node792_c3.jpg"><img loading="lazy" src="pictures/node792_c3.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>0.6376</dd>
+<dt>P(&gt;=4)</dt><dd>0.0004143</dd>
+<dt>width</dt><dd>0.06324483679279803</dd>
+<dt>root channel</dt><dd>home_view</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node792_c1.jpg"><img loading="lazy" src="pictures/node792_c1.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>2.38e-60</dd>
+<dt>P(&gt;=4)</dt><dd>5.15e-190</dd>
+<dt>width</dt><dd>0.06324483679279803</dd>
+<dt>root channel</dt><dd>home_view</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node81_c2.jpg"><img loading="lazy" src="pictures/node81_c2.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>6.581e-31</dd>
+<dt>P(&gt;=4)</dt><dd>7.22e-91</dd>
+<dt>width</dt><dd>2.4933564162466193</dd>
+<dt>root channel</dt><dd>home_view</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node1329_c0.jpg"><img loading="lazy" src="pictures/node1329_c0.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>4.692e-07</dd>
+<dt>P(&gt;=4)</dt><dd>1.147e-17</dd>
+<dt>width</dt><dd>0.035345251782558464</dd>
+<dt>root channel</dt><dd>home_view</dd>
+</dl></div>
+<div class="tile">
+<a href="pictures/node2781_c2.jpg"><img loading="lazy" src="pictures/node2781_c2.jpg" alt=""></a>
+<dl>
+<dt>P(&gt;=3)</dt><dd>8.541e-07</dd>
+<dt>P(&gt;=4)</dt><dd>1.249e-12</dd>
+<dt>width</dt><dd>0.001811057231895316</dd>
+<dt>root channel</dt><dd>home_view</dd>
+</dl></div>
+</div>
+</body></html>

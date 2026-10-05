@@ -86,6 +86,11 @@
      in from the edge, and how dark it is where it starts. */
   --scroll-shade: 1.25rem;
   --scroll-shade-ink: color-mix(in srgb, var(--ink) 20%, transparent);
+  /* How tall a hosted page's frame is: most of a laptop screen, so the page inside reads
+     as a page and still leaves the command above it in view. */
+  --hosted-height: 40rem;
+  /* A command block's inner air, against the rule round it. */
+  --pre-pad: 0.6rem 0.8rem;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -418,6 +423,44 @@ sub { bottom: -0.25em; }
 }
 
 .intro { margin-top: 1.5rem; color: var(--ink-dim); }
+
+/* A page with neither rail nor site bar, which stands alone and is reached from the one
+   page that links it: the reading column, centred, at the width a figure gets. */
+.page-solo { max-width: var(--wide); margin: 0 auto; }
+/* Its tables are a README's, seven columns of measurements, and take the column too. */
+.page-solo .prose > table { max-width: none; }
+
+/* A command block: what a reader types, one line to a command, scrolling inside itself
+   rather than wrapping, because a wrapped command reads as two. */
+.prose pre {
+  max-width: none;
+  overflow-x: auto;
+  padding: var(--pre-pad);
+  background: var(--bar);
+  border: 1px solid var(--rule);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+/* A page another program wrote, hosted in place: its frame runs to the column, and under
+   it the way to open it alone and the files it was drawn from. */
+.prose > .hosted { max-width: none; margin: 1em 0 1.5em; }
+.hosted iframe {
+  display: block;
+  width: 100%;
+  height: var(--hosted-height);
+  border: 1px solid var(--rule);
+  background: var(--ground);
+}
+.hosted-open { margin: 0.4em 0 0; font-size: 0.875rem; }
+.hosted-files {
+  max-width: var(--measure);
+  margin: 0.3em 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
 
 .toc { margin: 0.6rem 0 0 1.6em; }
 .toc > li { margin-bottom: 1.2rem; }

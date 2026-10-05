@@ -1,0 +1,48 @@
+{
+  "schema": 1,
+  "stamp": "20261005T063202Z",
+  "seats": 12,
+  "broken_chains": [],
+  "files": {
+    "gallery.jsonl": {
+      "source": "artifacts/curation/tentative/20261005T063202Z/gallery.jsonl",
+      "rows": 12,
+      "sliced": 12
+    },
+    "rows.jsonl": {
+      "source": "artifacts/curation/candidate_ledger/rows.jsonl",
+      "rows": 437,
+      "sliced": 18
+    },
+    "scores.jsonl": {
+      "source": "artifacts/curation/candidate_ledger/scores.jsonl",
+      "rows": 437,
+      "sliced": 18
+    },
+    "flatness.jsonl": {
+      "source": "artifacts/curation/candidate_ledger/flatness.jsonl",
+      "rows": 437,
+      "sliced": 18
+    },
+    "pool_scores.jsonl": {
+      "source": "artifacts/gallery_grade_head/pool_scores.jsonl",
+      "rows": 26,
+      "sliced": 10
+    },
+    "supply_scores.jsonl": {
+      "source": "artifacts/curation/supply_scores.jsonl",
+      "rows": 4022,
+      "sliced": 20
+    },
+    "locations.jsonl": {
+      "source": "artifacts/harvest/locations.jsonl",
+      "rows": 4069,
+      "sliced": 20
+    },
+    "walk.jsonl": {
+      "source": "artifacts/harvest/walk.jsonl",
+      "rows": 8010,
+      "sliced": 98
+    }
+  }
+}
