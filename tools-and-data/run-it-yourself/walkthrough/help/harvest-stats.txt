@@ -1,0 +1,11 @@
+usage: fractal-wallpapers harvest stats [-h] [--bundle DIR] [--out-dir OUT_DIR]
+
+Printed, and written as <run>/stats/stats.json and <run>/stats/index.html, a page with the gate
+render of each family's best four and worst four places by the location judge's P(>=3).
+
+options:
+  -h, --help         show this help message and exit
+  --bundle DIR       also write the page into DIR as a portable folder: index.html, page.json, and
+                     only the pictures it shows, re-encoded small; nothing outside DIR is referred
+                     to
+  --out-dir OUT_DIR  the run directory (default: artifacts/harvest)

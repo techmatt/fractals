@@ -1,0 +1,26 @@
+usage: fractal-wallpapers curate embed [-h] [--device DEVICE] [--sample SAMPLE] [--limit LIMIT]
+                                       [--seed SEED] [--unit-seconds UNIT_SECONDS]
+
+The gallery pass picks locations by how far apart they look, so every location the judge admits
+over the junk floor needs one picture that says nothing about a coloring nobody has chosen yet:
+the NEUTRAL RENDER, this location's smooth field through one fixed cyclic map at one fixed small
+geometry. A frozen DINOv2 reads a unit vector off it and the vector is kept forever, keyed by the
+exact location key. Incremental and idempotent: what is already stored is subtracted before
+anything is drawn, so a later harvest's admissions are a second run of this. Exits non-zero when
+the store does not cover the admitted population. NEEDS THE NETWORK THE FIRST TIME ON A MACHINE:
+the encoder is the only third-party weight here and is not re-hosted, so it comes from Hugging
+Face — 84.2 MB into ~/.cache/huggingface, once, pinned to the hub revision `models/embedding.py`
+names. Every run after it is local, and `models.embedding.verify()` hashes what was cached against
+the pin.
+
+options:
+  -h, --help            show this help message and exit
+  --device DEVICE       cuda, cpu, or auto (default)
+  --sample SAMPLE       embed a stratified draw of this many outstanding locations rather than all
+                        of them, spread over the partitions in proportion to their supply. …
+  --limit LIMIT         stop after this many locations; a prefix, not a sample
+  --seed SEED           the seed --sample draws under (default: 0)
+  --unit-seconds UNIT_SECONDS
+                        kill one neutral render that runs past this and carry on (default: 90)
+
+… marks help trimmed to its contract. FRACTAL_WALLPAPERS_HELP=full prints the reasoning whole.

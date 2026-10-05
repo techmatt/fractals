@@ -1,0 +1,22 @@
+usage: fractal-wallpapers judges check [-h] [--out-dir DIR] [--write-expected] [--bundle DIR]
+                                       [--device DEVICE]
+
+Reads data/judges/check.jsonl — recipes, reference pictures as text, expected scores and reference
+render seconds — renders each at its own regime, and holds it to two halves: the picture matches
+(every one of its 32x18 cells' mean colour within 4 of 255 of the reference) and the scores match
+(the render, gallery and palette judges on the picture and the location judge on its place, each
+within 0.0001). Exits non-zero if either half misses. Each render is timed and shown beside the
+reference time from Intel i5-10400F, Windows 10, release engine, one render at a time. Writes
+check.json and a page (default artifacts/judges/check/).
+
+options:
+  -h, --help        show this help message and exit
+  --out-dir DIR     where the pictures and page go
+  --write-expected  rewrite the tracked expected scores, picture prints and reference seconds from
+                    this reading. …
+  --bundle DIR      also write the page into DIR as a portable folder: index.html, page.json, and
+                    only the pictures it shows, re-encoded small; nothing outside DIR is referred
+                    to
+  --device DEVICE   cuda, cpu, or auto (default)
+
+… marks help trimmed to its contract. FRACTAL_WALLPAPERS_HELP=full prints the reasoning whole.

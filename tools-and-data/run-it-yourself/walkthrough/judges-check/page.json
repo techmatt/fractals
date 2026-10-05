@@ -3,54 +3,143 @@
  "title": "Judge check",
  "command": "fractal-wallpapers judges check",
  "intro": [
-  "8 tracked recipes rendered here and scored by all four judges; each line reads expected → actual. Tolerance 0.0001; largest gap 0.",
+  "8 tracked recipes rendered here, each picture compared with its tracked reference and scored by all four judges. Largest picture gap 0 (tolerance 4); largest score gap 0 (tolerance 0.0001). Reference times are from Intel i5-10400F, Windows 10, release engine, one render at a time.",
   "PASS"
  ],
  "sections": [
   {
-   "heading": "Cases",
+   "heading": "Each case",
    "note": "",
+   "table": [
+    [
+     "case",
+     "picture",
+     "scores",
+     "render s (yours · reference)"
+    ],
+    [
+     "julia_mandelbrot_stripe",
+     "match",
+     "match",
+     "0.83 · 0.70"
+    ],
+    [
+     "mandelbrot_tia",
+     "match",
+     "match",
+     "1.04 · 0.89"
+    ],
+    [
+     "phoenix_smooth",
+     "match",
+     "match",
+     "0.39 · 0.34"
+    ],
+    [
+     "multibrot3_smooth_mean_angle",
+     "match",
+     "match",
+     "0.95 · 0.88"
+    ],
+    [
+     "multibrot4_smooth_curvature",
+     "match",
+     "match",
+     "1.02 · 0.89"
+    ],
+    [
+     "julia_multibrot3_threads",
+     "match",
+     "match",
+     "0.21 · 0.17"
+    ],
+    [
+     "julia_multibrot5_smooth_stripe",
+     "match",
+     "match",
+     "0.61 · 0.49"
+    ],
+    [
+     "multibrot5_curvature",
+     "match",
+     "match",
+     "0.92 · 0.79"
+    ]
+   ],
+   "tiles": [],
+   "legend": [
+    [
+     "case",
+     "a tracked recipe the check renders and scores"
+    ],
+    [
+     "picture",
+     "whether your render matches the tracked reference picture: every one of its 32x18 cells' mean colour within 4 of 255"
+    ],
+    [
+     "scores",
+     "whether all four judges' scores are within 0.0001 of the expected ones"
+    ],
+    [
+     "render s (yours · reference)",
+     "seconds your machine took to render the picture, beside the same render on the reference box (Intel i5-10400F, Windows 10, release engine, one render at a time)"
+    ]
+   ],
+   "records": []
+  },
+  {
+   "heading": "Cases",
+   "note": "each judge line reads expected → yours",
    "table": null,
    "tiles": [
     {
      "picture": "pictures/julia_mandelbrot_stripe.jpg",
      "title": "julia_mandelbrot_stripe · stripe",
      "mark": "",
+     "band": "",
      "caption": [
       [
-       "render p_ge2",
+       "picture",
+       "match (gap 0)"
+      ],
+      [
+       "render s (yours · reference)",
+       "0.83 · 0.70"
+      ],
+      [
+       "wallpaper judge P(>=2)",
        "1.00000 → 1.00000"
       ],
       [
-       "render p_ge3",
+       "wallpaper judge P(>=3)",
        "0.99999 → 0.99999"
       ],
       [
-       "render p_ge4",
+       "wallpaper judge P(>=4)",
        "0.99965 → 0.99965"
       ],
       [
-       "gallery_grade p_ge2",
+       "gallery judge P(>=2)",
        "0.99987 → 0.99987"
       ],
       [
-       "gallery_grade p_ge3",
+       "gallery judge P(>=3)",
        "0.99874 → 0.99874"
       ],
       [
-       "gallery_grade p_ge4",
+       "gallery judge P(>=4)",
        "0.99798 → 0.99798"
       ],
       [
-       "palette score",
+       "palette judge score",
        "4.54237 → 4.54237"
       ],
       [
-       "location p_ge3",
+       "location judge P(>=3)",
        "0.99888 → 0.99888"
       ],
       [
-       "location p_ge4",
+       "location judge P(>=4)",
        "0.99813 → 0.99813"
       ]
      ]
@@ -59,41 +148,50 @@
      "picture": "pictures/mandelbrot_tia.jpg",
      "title": "mandelbrot_tia · tia",
      "mark": "",
+     "band": "",
      "caption": [
       [
-       "render p_ge2",
+       "picture",
+       "match (gap 0)"
+      ],
+      [
+       "render s (yours · reference)",
+       "1.04 · 0.89"
+      ],
+      [
+       "wallpaper judge P(>=2)",
        "0.99998 → 0.99998"
       ],
       [
-       "render p_ge3",
+       "wallpaper judge P(>=3)",
        "0.99856 → 0.99856"
       ],
       [
-       "render p_ge4",
+       "wallpaper judge P(>=4)",
        "0.95074 → 0.95074"
       ],
       [
-       "gallery_grade p_ge2",
+       "gallery judge P(>=2)",
        "0.99990 → 0.99990"
       ],
       [
-       "gallery_grade p_ge3",
+       "gallery judge P(>=3)",
        "0.99798 → 0.99798"
       ],
       [
-       "gallery_grade p_ge4",
+       "gallery judge P(>=4)",
        "0.99616 → 0.99616"
       ],
       [
-       "palette score",
+       "palette judge score",
        "4.80612 → 4.80612"
       ],
       [
-       "location p_ge3",
+       "location judge P(>=3)",
        "0.99993 → 0.99993"
       ],
       [
-       "location p_ge4",
+       "location judge P(>=4)",
        "0.99992 → 0.99992"
       ]
      ]
@@ -102,41 +200,50 @@
      "picture": "pictures/phoenix_smooth.jpg",
      "title": "phoenix_smooth · smooth",
      "mark": "",
+     "band": "",
      "caption": [
       [
-       "render p_ge2",
+       "picture",
+       "match (gap 0)"
+      ],
+      [
+       "render s (yours · reference)",
+       "0.39 · 0.34"
+      ],
+      [
+       "wallpaper judge P(>=2)",
        "1.00000 → 1.00000"
       ],
       [
-       "render p_ge3",
+       "wallpaper judge P(>=3)",
        "0.99991 → 0.99991"
       ],
       [
-       "render p_ge4",
+       "wallpaper judge P(>=4)",
        "0.99557 → 0.99557"
       ],
       [
-       "gallery_grade p_ge2",
+       "gallery judge P(>=2)",
        "0.99980 → 0.99980"
       ],
       [
-       "gallery_grade p_ge3",
+       "gallery judge P(>=3)",
        "0.99674 → 0.99674"
       ],
       [
-       "gallery_grade p_ge4",
+       "gallery judge P(>=4)",
        "0.99257 → 0.99257"
       ],
       [
-       "palette score",
+       "palette judge score",
        "5.46567 → 5.46567"
       ],
       [
-       "location p_ge3",
+       "location judge P(>=3)",
        "0.91031 → 0.91031"
       ],
       [
-       "location p_ge4",
+       "location judge P(>=4)",
        "0.00951 → 0.00951"
       ]
      ]
@@ -145,41 +252,50 @@
      "picture": "pictures/multibrot3_smooth_mean_angle.jpg",
      "title": "multibrot3_smooth_mean_angle · smooth_mean_angle",
      "mark": "",
+     "band": "",
      "caption": [
       [
-       "render p_ge2",
+       "picture",
+       "match (gap 0)"
+      ],
+      [
+       "render s (yours · reference)",
+       "0.95 · 0.88"
+      ],
+      [
+       "wallpaper judge P(>=2)",
        "1.00000 → 1.00000"
       ],
       [
-       "render p_ge3",
+       "wallpaper judge P(>=3)",
        "0.99968 → 0.99968"
       ],
       [
-       "render p_ge4",
+       "wallpaper judge P(>=4)",
        "0.99797 → 0.99797"
       ],
       [
-       "gallery_grade p_ge2",
+       "gallery judge P(>=2)",
        "0.99774 → 0.99774"
       ],
       [
-       "gallery_grade p_ge3",
+       "gallery judge P(>=3)",
        "0.99233 → 0.99233"
       ],
       [
-       "gallery_grade p_ge4",
+       "gallery judge P(>=4)",
        "0.98580 → 0.98580"
       ],
       [
-       "palette score",
+       "palette judge score",
        "2.97612 → 2.97612"
       ],
       [
-       "location p_ge3",
+       "location judge P(>=3)",
        "0.99220 → 0.99220"
       ],
       [
-       "location p_ge4",
+       "location judge P(>=4)",
        "0.96358 → 0.96358"
       ]
      ]
@@ -188,41 +304,50 @@
      "picture": "pictures/multibrot4_smooth_curvature.jpg",
      "title": "multibrot4_smooth_curvature · smooth_curvature",
      "mark": "",
+     "band": "",
      "caption": [
       [
-       "render p_ge2",
+       "picture",
+       "match (gap 0)"
+      ],
+      [
+       "render s (yours · reference)",
+       "1.02 · 0.89"
+      ],
+      [
+       "wallpaper judge P(>=2)",
        "1.00000 → 1.00000"
       ],
       [
-       "render p_ge3",
+       "wallpaper judge P(>=3)",
        "0.99958 → 0.99958"
       ],
       [
-       "render p_ge4",
+       "wallpaper judge P(>=4)",
        "0.99446 → 0.99446"
       ],
       [
-       "gallery_grade p_ge2",
+       "gallery judge P(>=2)",
        "0.99950 → 0.99950"
       ],
       [
-       "gallery_grade p_ge3",
+       "gallery judge P(>=3)",
        "0.98955 → 0.98955"
       ],
       [
-       "gallery_grade p_ge4",
+       "gallery judge P(>=4)",
        "0.95734 → 0.95734"
       ],
       [
-       "palette score",
+       "palette judge score",
        "7.65395 → 7.65395"
       ],
       [
-       "location p_ge3",
+       "location judge P(>=3)",
        "0.95628 → 0.95628"
       ],
       [
-       "location p_ge4",
+       "location judge P(>=4)",
        "0.37519 → 0.37519"
       ]
      ]
@@ -231,41 +356,50 @@
      "picture": "pictures/julia_multibrot3_threads.jpg",
      "title": "julia_multibrot3_threads · threads",
      "mark": "",
+     "band": "",
      "caption": [
       [
-       "render p_ge2",
+       "picture",
+       "match (gap 0)"
+      ],
+      [
+       "render s (yours · reference)",
+       "0.21 · 0.17"
+      ],
+      [
+       "wallpaper judge P(>=2)",
        "0.99999 → 0.99999"
       ],
       [
-       "render p_ge3",
+       "wallpaper judge P(>=3)",
        "0.99822 → 0.99822"
       ],
       [
-       "render p_ge4",
+       "wallpaper judge P(>=4)",
        "0.98686 → 0.98686"
       ],
       [
-       "gallery_grade p_ge2",
+       "gallery judge P(>=2)",
        "0.98783 → 0.98783"
       ],
       [
-       "gallery_grade p_ge3",
+       "gallery judge P(>=3)",
        "0.94728 → 0.94728"
       ],
       [
-       "gallery_grade p_ge4",
+       "gallery judge P(>=4)",
        "0.88299 → 0.88299"
       ],
       [
-       "palette score",
+       "palette judge score",
        "3.99946 → 3.99946"
       ],
       [
-       "location p_ge3",
+       "location judge P(>=3)",
        "0.90681 → 0.90681"
       ],
       [
-       "location p_ge4",
+       "location judge P(>=4)",
        "0.00041 → 0.00041"
       ]
      ]
@@ -274,41 +408,50 @@
      "picture": "pictures/julia_multibrot5_smooth_stripe.jpg",
      "title": "julia_multibrot5_smooth_stripe · smooth_stripe",
      "mark": "",
+     "band": "",
      "caption": [
       [
-       "render p_ge2",
+       "picture",
+       "match (gap 0)"
+      ],
+      [
+       "render s (yours · reference)",
+       "0.61 · 0.49"
+      ],
+      [
+       "wallpaper judge P(>=2)",
        "0.99995 → 0.99995"
       ],
       [
-       "render p_ge3",
+       "wallpaper judge P(>=3)",
        "0.99459 → 0.99459"
       ],
       [
-       "render p_ge4",
+       "wallpaper judge P(>=4)",
        "0.97375 → 0.97375"
       ],
       [
-       "gallery_grade p_ge2",
+       "gallery judge P(>=2)",
        "0.98866 → 0.98866"
       ],
       [
-       "gallery_grade p_ge3",
+       "gallery judge P(>=3)",
        "0.95114 → 0.95114"
       ],
       [
-       "gallery_grade p_ge4",
+       "gallery judge P(>=4)",
        "0.87016 → 0.87016"
       ],
       [
-       "palette score",
+       "palette judge score",
        "9.35846 → 9.35846"
       ],
       [
-       "location p_ge3",
+       "location judge P(>=3)",
        "0.40072 → 0.40072"
       ],
       [
-       "location p_ge4",
+       "location judge P(>=4)",
        "0.07255 → 0.07255"
       ]
      ]
@@ -317,45 +460,100 @@
      "picture": "pictures/multibrot5_curvature.jpg",
      "title": "multibrot5_curvature · curvature",
      "mark": "",
+     "band": "",
      "caption": [
       [
-       "render p_ge2",
+       "picture",
+       "match (gap 0)"
+      ],
+      [
+       "render s (yours · reference)",
+       "0.92 · 0.79"
+      ],
+      [
+       "wallpaper judge P(>=2)",
        "0.99820 → 0.99820"
       ],
       [
-       "render p_ge3",
+       "wallpaper judge P(>=3)",
        "0.97308 → 0.97308"
       ],
       [
-       "render p_ge4",
+       "wallpaper judge P(>=4)",
        "0.89859 → 0.89859"
       ],
       [
-       "gallery_grade p_ge2",
+       "gallery judge P(>=2)",
        "0.95853 → 0.95853"
       ],
       [
-       "gallery_grade p_ge3",
+       "gallery judge P(>=3)",
        "0.75806 → 0.75806"
       ],
       [
-       "gallery_grade p_ge4",
+       "gallery judge P(>=4)",
        "0.60694 → 0.60694"
       ],
       [
-       "palette score",
+       "palette judge score",
        "5.37623 → 5.37623"
       ],
       [
-       "location p_ge3",
+       "location judge P(>=3)",
        "0.74847 → 0.74847"
       ],
       [
-       "location p_ge4",
+       "location judge P(>=4)",
        "0.57758 → 0.57758"
       ]
      ]
     }
+   ],
+   "legend": [
+    [
+     "picture",
+     "whether your render matches the tracked reference picture: every one of its 32x18 cells' mean colour within 4 of 255"
+    ],
+    [
+     "render s (yours · reference)",
+     "seconds your machine took to render the picture, beside the same render on the reference box (Intel i5-10400F, Windows 10, release engine, one render at a time)"
+    ],
+    [
+     "wallpaper judge P(>=2)",
+     "the wallpaper judge's probability that the picture rates at least 2 of 5, expected → yours"
+    ],
+    [
+     "wallpaper judge P(>=3)",
+     "the wallpaper judge's probability that the picture rates at least 3 of 5, expected → yours"
+    ],
+    [
+     "wallpaper judge P(>=4)",
+     "the wallpaper judge's probability that the picture rates at least 4 of 5, expected → yours"
+    ],
+    [
+     "gallery judge P(>=2)",
+     "the gallery judge's probability that the picture rates at least 2 of 5, expected → yours"
+    ],
+    [
+     "gallery judge P(>=3)",
+     "the gallery judge's probability that the picture rates at least 3 of 5, expected → yours"
+    ],
+    [
+     "gallery judge P(>=4)",
+     "the gallery judge's probability that the picture rates at least 4 of 5, expected → yours"
+    ],
+    [
+     "palette judge score",
+     "the palette judge's fit of this palette to this place, expected → yours; comparable only between palettes of one place"
+    ],
+    [
+     "location judge P(>=3)",
+     "the location judge's probability that the place rates at least 3 of 5, expected → yours"
+    ],
+    [
+     "location judge P(>=4)",
+     "the location judge's probability that the place rates at least 4 of 5, expected → yours"
+    ]
    ],
    "records": []
   }

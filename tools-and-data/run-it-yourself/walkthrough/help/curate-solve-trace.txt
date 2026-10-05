@@ -1,0 +1,19 @@
+usage: fractal-wallpapers curate solve trace [-h] [--out DIR] [--bundle DIR] [stamp]
+
+For each seat: its gallery.jsonl row, its candidate-ledger row, scores and flatness, its
+pool_scores row, its place's supply_scores and locations.jsonl rows, and the walk.jsonl rows from
+the place back to its lineage's root. Writes sliced copies of each file (only the rows on those
+chains, byte for byte, plus one walk row of every other kind) under files/, counts.json with each
+full file's row count, and a page (default artifacts/curation/trace/<stamp>/). Also follows three
+of each reject: the lowest-scored places, candidates under the pool gate, and candidates that
+cleared it and missed the fine bar. A chain that cannot be followed is listed with the file it
+stopped at.
+
+positional arguments:
+  stamp         the record (default the newest)
+
+options:
+  -h, --help    show this help message and exit
+  --out DIR     write the trace here
+  --bundle DIR  also write the page into DIR as a portable folder: index.html, page.json, and only
+                the pictures it shows, re-encoded small; nothing outside DIR is referred to

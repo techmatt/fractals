@@ -1,0 +1,39 @@
+usage: fractal-wallpapers curate hunt run [-h] --name NAME [--budget SECONDS]
+                                          [--unconditional COUNT] [--conditioned COUNT]
+                                          [--cell CELL] [--work-order PARTITION=WEIGHT]
+                                          [--per-location COUNT] [--mode MODE [MODE ...]]
+                                          [--texture-draw LOW HIGH] [--no-texture-draw]
+                                          [--seed SEED] [--places FILE] [--rebuild-frames]
+                                          [--device DEVICE]
+
+options:
+  -h, --help            show this help message and exit
+  --name NAME           what to call this hunt. …
+  --budget SECONDS      how long the hunt may spend RENDERING (default 1200). …
+  --unconditional COUNT
+                        how many breadth candidates to plan. …
+  --conditioned COUNT   how many candidates to plan against --cell. …
+  --cell CELL           the codebook cell the conditioned leg aims at, e.g. …
+  --work-order PARTITION=WEIGHT
+                        how the conditioned leg spreads over the partitions, repeatable — a
+                        solve's shortage list says where the pool's carriers of that colour
+                        already stand, and this is that list. …
+  --per-location COUNT  how many candidates one location is given (default 3). …
+  --mode MODE [MODE ...]
+                        draw every candidate in the named mode(s), instead of sampling `--per-
+                        location` of them out of `mode_policy.mined()`. …
+  --texture-draw LOW HIGH
+                        give every screened-composite candidate ONE texture weight drawn uniformly
+                        over [LOW, HIGH], in place of the catalog's settled 0.85 — how loud the
+                        texture is over the smooth base, never what it is. …
+  --no-texture-draw     draw no texture weight: every screened composite renders at the catalog's
+                        settled 0.85 and carries no `texture_weight`, which is what every leg did
+                        before 2026-09-18
+  --seed SEED           the seed every draw here is taken under (default 20260826)
+  --places FILE         a places manifest — the same JSONL `curate depth run --floor-places`
+                        takes, one `{schema, key}` a line — restricting BOTH legs to the locations
+                        it names. …
+  --rebuild-frames      derive the frame index off the scan record again before planning
+  --device DEVICE       cuda, cpu, or auto (default)
+
+… marks help trimmed to its contract. FRACTAL_WALLPAPERS_HELP=full prints the reasoning whole.

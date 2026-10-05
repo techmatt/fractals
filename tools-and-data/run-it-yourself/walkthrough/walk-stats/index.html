@@ -32,28 +32,46 @@ th:first-child, td:first-child { text-align: left; }
               overflow-wrap: anywhere; }
 .record mark { background: #ffe08a; color: #1a1a1a; }
 .record .note { color: var(--miss); }
+.legend { color: var(--muted); font-size: 12px; margin: 6px 0 10px; padding: 0;
+          list-style: none; max-width: 110ch; }
+.legend b { color: var(--fg); font-weight: 600; }
+.band { border-radius: 6px; padding: 6px 8px 8px; margin: 8px 0; }
+.band.best { background: rgba(46, 160, 67, .10); }
+.band.worst { background: rgba(207, 34, 46, .09); }
+.band .label { font-weight: 700; font-size: 12px; text-transform: uppercase;
+               letter-spacing: .06em; margin: 0 0 6px; }
+.band.best .label { color: #2e8b47; } .band.worst .label { color: #c0392b; }
 </style></head><body>
 <h1>Harvest stats</h1>
 <p class="command">fractal-wallpapers harvest stats</p>
-<p>4,832 candidates found, 4,069 admitted, 4,069 scored by the location judge (`curate score`).</p>
+<p>4,832 candidates found, 4,022 places kept (47 more survivors landed on a place already kept), 4,022 of them scored by the location judge (`curate score`).</p>
 <p>Scores are the location judge&#x27;s P(&gt;=3) and P(&gt;=4) off supply_scores.jsonl.</p>
 <h2>Per fractal family</h2>
-<table><tr><th>family</th><th>found</th><th>admitted</th><th>scored</th><th>median P(&gt;=3)</th><th>P(&gt;=3) &gt; .5</th><th>P(&gt;=4) &gt; .5</th>
-<tr><td>julia:mandelbrot</td><td>316</td><td>300</td><td>300</td><td>0.6575</td><td>181</td><td>21</td>
-<tr><td>julia:multibrot3</td><td>1020</td><td>993</td><td>993</td><td>0.1838</td><td>263</td><td>57</td>
-<tr><td>julia:multibrot4</td><td>592</td><td>573</td><td>573</td><td>0.1552</td><td>132</td><td>28</td>
-<tr><td>julia:multibrot5</td><td>596</td><td>576</td><td>576</td><td>0.259</td><td>193</td><td>56</td>
-<tr><td>julia:multibrot6</td><td>344</td><td>331</td><td>331</td><td>0.0071</td><td>1</td><td>1</td>
-<tr><td>mandelbrot</td><td>656</td><td>382</td><td>382</td><td>0.0001</td><td>1</td><td>0</td>
-<tr><td>multibrot3</td><td>296</td><td>175</td><td>175</td><td>0.0003</td><td>6</td><td>0</td>
-<tr><td>multibrot4</td><td>212</td><td>112</td><td>112</td><td>0.0052</td><td>12</td><td>0</td>
-<tr><td>multibrot5</td><td>172</td><td>118</td><td>118</td><td>0.0028</td><td>6</td><td>0</td>
-<tr><td>multibrot6</td><td>168</td><td>122</td><td>122</td><td>0.0002</td><td>0</td><td>0</td>
-<tr><td>phoenix</td><td>316</td><td>281</td><td>281</td><td>0.0272</td><td>65</td><td>8</td>
-<tr><td>phoenix:classic</td><td>144</td><td>106</td><td>106</td><td>0.0175</td><td>9</td><td>0</td>
+<table><tr><th>family</th><th>found</th><th>places</th><th>median P(&gt;=3)</th><th>P(&gt;=3) &gt; .5</th><th>P(&gt;=4) &gt; .5</th>
+<tr><td>julia:mandelbrot</td><td>316</td><td>288</td><td>0.6562</td><td>173</td><td>21</td>
+<tr><td>julia:multibrot3</td><td>1020</td><td>984</td><td>0.1839</td><td>262</td><td>57</td>
+<tr><td>julia:multibrot4</td><td>592</td><td>567</td><td>0.1559</td><td>131</td><td>28</td>
+<tr><td>julia:multibrot5</td><td>596</td><td>573</td><td>0.2592</td><td>193</td><td>56</td>
+<tr><td>julia:multibrot6</td><td>344</td><td>327</td><td>0.0071</td><td>1</td><td>1</td>
+<tr><td>mandelbrot</td><td>656</td><td>380</td><td>0.0001</td><td>1</td><td>0</td>
+<tr><td>multibrot3</td><td>296</td><td>173</td><td>0.0003</td><td>6</td><td>0</td>
+<tr><td>multibrot4</td><td>212</td><td>112</td><td>0.0052</td><td>12</td><td>0</td>
+<tr><td>multibrot5</td><td>172</td><td>117</td><td>0.0024</td><td>6</td><td>0</td>
+<tr><td>multibrot6</td><td>168</td><td>119</td><td>0.0002</td><td>0</td><td>0</td>
+<tr><td>phoenix</td><td>316</td><td>277</td><td>0.0272</td><td>63</td><td>8</td>
+<tr><td>phoenix:classic</td><td>144</td><td>105</td><td>0.0173</td><td>9</td><td>0</td>
 </table>
+<ul class="legend">
+<li><b>family</b>: which fractal: the Mandelbrot set, a multibrot of degree 3 to 6, or a Julia or Phoenix set (julia:multibrot3 is the cubic Julia sets)</li>
+<li><b>found</b>: places the walk looked at</li>
+<li><b>places</b>: places it kept</li>
+<li><b>median P(&gt;=3)</b>: the middle P(&gt;=3) of the family&#x27;s kept places</li>
+<li><b>P(&gt;=3) &gt; .5</b>: places the location judge thinks more likely than not worth mining</li>
+<li><b>P(&gt;=4) &gt; .5</b>: places it thinks more likely than not among the best</li>
+</ul>
 <h2>julia:mandelbrot: best 4 and worst 4</h2>
-<p>best first, then worst; the picture is the walk&#x27;s gate render</p>
+<p>ranked on P(&gt;=3); the picture is the walk&#x27;s gate render</p>
+<div class="band best"><div class="label">best</div>
 <div class="grid">
 <div class="tile">
 <a href="pictures/node743_c2.jpg"><img loading="lazy" src="pictures/node743_c2.jpg" alt=""></a>
@@ -87,6 +105,10 @@ th:first-child, td:first-child { text-align: left; }
 <dt>width</dt><dd>0.019578442039436865</dd>
 <dt>root channel</dt><dd>ranked_harvest</dd>
 </dl></div>
+</div>
+</div>
+<div class="band worst"><div class="label">worst</div>
+<div class="grid">
 <div class="tile">
 <a href="pictures/node3364_c0.jpg"><img loading="lazy" src="pictures/node3364_c0.jpg" alt=""></a>
 <dl>
@@ -120,8 +142,16 @@ th:first-child, td:first-child { text-align: left; }
 <dt>root channel</dt><dd>ranked_harvest</dd>
 </dl></div>
 </div>
+</div>
+<ul class="legend">
+<li><b>P(&gt;=3)</b>: the location judge&#x27;s probability that a place is worth mining</li>
+<li><b>P(&gt;=4)</b>: its probability that a place is among the best</li>
+<li><b>width</b>: how wide the view is in the complex plane; smaller is deeper</li>
+<li><b>root channel</b>: where the walk&#x27;s starting point for this place came from</li>
+</ul>
 <h2>julia:multibrot3: best 4 and worst 4</h2>
-<p>best first, then worst; the picture is the walk&#x27;s gate render</p>
+<p>ranked on P(&gt;=3); the picture is the walk&#x27;s gate render</p>
+<div class="band best"><div class="label">best</div>
 <div class="grid">
 <div class="tile">
 <a href="pictures/node2596_c2.jpg"><img loading="lazy" src="pictures/node2596_c2.jpg" alt=""></a>
@@ -155,6 +185,10 @@ th:first-child, td:first-child { text-align: left; }
 <dt>width</dt><dd>0.00014004465398317946</dd>
 <dt>root channel</dt><dd>twin:labels</dd>
 </dl></div>
+</div>
+</div>
+<div class="band worst"><div class="label">worst</div>
+<div class="grid">
 <div class="tile">
 <a href="pictures/node365_c1.jpg"><img loading="lazy" src="pictures/node365_c1.jpg" alt=""></a>
 <dl>
@@ -188,8 +222,16 @@ th:first-child, td:first-child { text-align: left; }
 <dt>root channel</dt><dd>twin:labels</dd>
 </dl></div>
 </div>
+</div>
+<ul class="legend">
+<li><b>P(&gt;=3)</b>: the location judge&#x27;s probability that a place is worth mining</li>
+<li><b>P(&gt;=4)</b>: its probability that a place is among the best</li>
+<li><b>width</b>: how wide the view is in the complex plane; smaller is deeper</li>
+<li><b>root channel</b>: where the walk&#x27;s starting point for this place came from</li>
+</ul>
 <h2>julia:multibrot4: best 4 and worst 4</h2>
-<p>best first, then worst; the picture is the walk&#x27;s gate render</p>
+<p>ranked on P(&gt;=3); the picture is the walk&#x27;s gate render</p>
+<div class="band best"><div class="label">best</div>
 <div class="grid">
 <div class="tile">
 <a href="pictures/node1600_c2.jpg"><img loading="lazy" src="pictures/node1600_c2.jpg" alt=""></a>
@@ -223,6 +265,10 @@ th:first-child, td:first-child { text-align: left; }
 <dt>width</dt><dd>0.11377525886500758</dd>
 <dt>root channel</dt><dd>twin:labels</dd>
 </dl></div>
+</div>
+</div>
+<div class="band worst"><div class="label">worst</div>
+<div class="grid">
 <div class="tile">
 <a href="pictures/node2878_c0.jpg"><img loading="lazy" src="pictures/node2878_c0.jpg" alt=""></a>
 <dl>
@@ -256,8 +302,16 @@ th:first-child, td:first-child { text-align: left; }
 <dt>root channel</dt><dd>twin:labels</dd>
 </dl></div>
 </div>
+</div>
+<ul class="legend">
+<li><b>P(&gt;=3)</b>: the location judge&#x27;s probability that a place is worth mining</li>
+<li><b>P(&gt;=4)</b>: its probability that a place is among the best</li>
+<li><b>width</b>: how wide the view is in the complex plane; smaller is deeper</li>
+<li><b>root channel</b>: where the walk&#x27;s starting point for this place came from</li>
+</ul>
 <h2>julia:multibrot5: best 4 and worst 4</h2>
-<p>best first, then worst; the picture is the walk&#x27;s gate render</p>
+<p>ranked on P(&gt;=3); the picture is the walk&#x27;s gate render</p>
+<div class="band best"><div class="label">best</div>
 <div class="grid">
 <div class="tile">
 <a href="pictures/node1841_c2.jpg"><img loading="lazy" src="pictures/node1841_c2.jpg" alt=""></a>
@@ -291,6 +345,10 @@ th:first-child, td:first-child { text-align: left; }
 <dt>width</dt><dd>0.0013107803636466092</dd>
 <dt>root channel</dt><dd>twin:labels</dd>
 </dl></div>
+</div>
+</div>
+<div class="band worst"><div class="label">worst</div>
+<div class="grid">
 <div class="tile">
 <a href="pictures/node202_c3.jpg"><img loading="lazy" src="pictures/node202_c3.jpg" alt=""></a>
 <dl>
@@ -324,8 +382,16 @@ th:first-child, td:first-child { text-align: left; }
 <dt>root channel</dt><dd>twin:labels</dd>
 </dl></div>
 </div>
+</div>
+<ul class="legend">
+<li><b>P(&gt;=3)</b>: the location judge&#x27;s probability that a place is worth mining</li>
+<li><b>P(&gt;=4)</b>: its probability that a place is among the best</li>
+<li><b>width</b>: how wide the view is in the complex plane; smaller is deeper</li>
+<li><b>root channel</b>: where the walk&#x27;s starting point for this place came from</li>
+</ul>
 <h2>julia:multibrot6: best 4 and worst 4</h2>
-<p>best first, then worst; the picture is the walk&#x27;s gate render</p>
+<p>ranked on P(&gt;=3); the picture is the walk&#x27;s gate render</p>
+<div class="band best"><div class="label">best</div>
 <div class="grid">
 <div class="tile">
 <a href="pictures/node1421_c3.jpg"><img loading="lazy" src="pictures/node1421_c3.jpg" alt=""></a>
@@ -359,6 +425,10 @@ th:first-child, td:first-child { text-align: left; }
 <dt>width</dt><dd>0.524160682178471</dd>
 <dt>root channel</dt><dd>twin:run</dd>
 </dl></div>
+</div>
+</div>
+<div class="band worst"><div class="label">worst</div>
+<div class="grid">
 <div class="tile">
 <a href="pictures/node4339_c0.jpg"><img loading="lazy" src="pictures/node4339_c0.jpg" alt=""></a>
 <dl>
@@ -392,8 +462,16 @@ th:first-child, td:first-child { text-align: left; }
 <dt>root channel</dt><dd>twin:run</dd>
 </dl></div>
 </div>
+</div>
+<ul class="legend">
+<li><b>P(&gt;=3)</b>: the location judge&#x27;s probability that a place is worth mining</li>
+<li><b>P(&gt;=4)</b>: its probability that a place is among the best</li>
+<li><b>width</b>: how wide the view is in the complex plane; smaller is deeper</li>
+<li><b>root channel</b>: where the walk&#x27;s starting point for this place came from</li>
+</ul>
 <h2>mandelbrot: best 4 and worst 4</h2>
-<p>best first, then worst; the picture is the walk&#x27;s gate render</p>
+<p>ranked on P(&gt;=3); the picture is the walk&#x27;s gate render</p>
+<div class="band best"><div class="label">best</div>
 <div class="grid">
 <div class="tile">
 <a href="pictures/node3018_c3.jpg"><img loading="lazy" src="pictures/node3018_c3.jpg" alt=""></a>
@@ -427,6 +505,10 @@ th:first-child, td:first-child { text-align: left; }
 <dt>width</dt><dd>0.00003565346240120391</dd>
 <dt>root channel</dt><dd>nucleus_grid</dd>
 </dl></div>
+</div>
+</div>
+<div class="band worst"><div class="label">worst</div>
+<div class="grid">
 <div class="tile">
 <a href="pictures/node309_c1.jpg"><img loading="lazy" src="pictures/node309_c1.jpg" alt=""></a>
 <dl>
@@ -460,8 +542,16 @@ th:first-child, td:first-child { text-align: left; }
 <dt>root channel</dt><dd>nucleus_grid</dd>
 </dl></div>
 </div>
+</div>
+<ul class="legend">
+<li><b>P(&gt;=3)</b>: the location judge&#x27;s probability that a place is worth mining</li>
+<li><b>P(&gt;=4)</b>: its probability that a place is among the best</li>
+<li><b>width</b>: how wide the view is in the complex plane; smaller is deeper</li>
+<li><b>root channel</b>: where the walk&#x27;s starting point for this place came from</li>
+</ul>
 <h2>multibrot3: best 4 and worst 4</h2>
-<p>best first, then worst; the picture is the walk&#x27;s gate render</p>
+<p>ranked on P(&gt;=3); the picture is the walk&#x27;s gate render</p>
+<div class="band best"><div class="label">best</div>
 <div class="grid">
 <div class="tile">
 <a href="pictures/node3641_c1.jpg"><img loading="lazy" src="pictures/node3641_c1.jpg" alt=""></a>
@@ -495,6 +585,10 @@ th:first-child, td:first-child { text-align: left; }
 <dt>width</dt><dd>0.00000003474093725200115</dd>
 <dt>root channel</dt><dd>nucleus_grid</dd>
 </dl></div>
+</div>
+</div>
+<div class="band worst"><div class="label">worst</div>
+<div class="grid">
 <div class="tile">
 <a href="pictures/node10_c1.jpg"><img loading="lazy" src="pictures/node10_c1.jpg" alt=""></a>
 <dl>
@@ -528,8 +622,16 @@ th:first-child, td:first-child { text-align: left; }
 <dt>root channel</dt><dd>nucleus_grid</dd>
 </dl></div>
 </div>
+</div>
+<ul class="legend">
+<li><b>P(&gt;=3)</b>: the location judge&#x27;s probability that a place is worth mining</li>
+<li><b>P(&gt;=4)</b>: its probability that a place is among the best</li>
+<li><b>width</b>: how wide the view is in the complex plane; smaller is deeper</li>
+<li><b>root channel</b>: where the walk&#x27;s starting point for this place came from</li>
+</ul>
 <h2>multibrot4: best 4 and worst 4</h2>
-<p>best first, then worst; the picture is the walk&#x27;s gate render</p>
+<p>ranked on P(&gt;=3); the picture is the walk&#x27;s gate render</p>
+<div class="band best"><div class="label">best</div>
 <div class="grid">
 <div class="tile">
 <a href="pictures/node2893_c0.jpg"><img loading="lazy" src="pictures/node2893_c0.jpg" alt=""></a>
@@ -563,6 +665,10 @@ th:first-child, td:first-child { text-align: left; }
 <dt>width</dt><dd>0.000004759234173811745</dd>
 <dt>root channel</dt><dd>nucleus_grid</dd>
 </dl></div>
+</div>
+</div>
+<div class="band worst"><div class="label">worst</div>
+<div class="grid">
 <div class="tile">
 <a href="pictures/node3468_c1.jpg"><img loading="lazy" src="pictures/node3468_c1.jpg" alt=""></a>
 <dl>
@@ -596,8 +702,16 @@ th:first-child, td:first-child { text-align: left; }
 <dt>root channel</dt><dd>nucleus_grid</dd>
 </dl></div>
 </div>
+</div>
+<ul class="legend">
+<li><b>P(&gt;=3)</b>: the location judge&#x27;s probability that a place is worth mining</li>
+<li><b>P(&gt;=4)</b>: its probability that a place is among the best</li>
+<li><b>width</b>: how wide the view is in the complex plane; smaller is deeper</li>
+<li><b>root channel</b>: where the walk&#x27;s starting point for this place came from</li>
+</ul>
 <h2>multibrot5: best 4 and worst 4</h2>
-<p>best first, then worst; the picture is the walk&#x27;s gate render</p>
+<p>ranked on P(&gt;=3); the picture is the walk&#x27;s gate render</p>
+<div class="band best"><div class="label">best</div>
 <div class="grid">
 <div class="tile">
 <a href="pictures/node4738_c2.jpg"><img loading="lazy" src="pictures/node4738_c2.jpg" alt=""></a>
@@ -631,6 +745,10 @@ th:first-child, td:first-child { text-align: left; }
 <dt>width</dt><dd>0.00043941942526010483</dd>
 <dt>root channel</dt><dd>nucleus_grid</dd>
 </dl></div>
+</div>
+</div>
+<div class="band worst"><div class="label">worst</div>
+<div class="grid">
 <div class="tile">
 <a href="pictures/node26_c3.jpg"><img loading="lazy" src="pictures/node26_c3.jpg" alt=""></a>
 <dl>
@@ -664,8 +782,16 @@ th:first-child, td:first-child { text-align: left; }
 <dt>root channel</dt><dd>nucleus_grid</dd>
 </dl></div>
 </div>
+</div>
+<ul class="legend">
+<li><b>P(&gt;=3)</b>: the location judge&#x27;s probability that a place is worth mining</li>
+<li><b>P(&gt;=4)</b>: its probability that a place is among the best</li>
+<li><b>width</b>: how wide the view is in the complex plane; smaller is deeper</li>
+<li><b>root channel</b>: where the walk&#x27;s starting point for this place came from</li>
+</ul>
 <h2>multibrot6: best 4 and worst 4</h2>
-<p>best first, then worst; the picture is the walk&#x27;s gate render</p>
+<p>ranked on P(&gt;=3); the picture is the walk&#x27;s gate render</p>
+<div class="band best"><div class="label">best</div>
 <div class="grid">
 <div class="tile">
 <a href="pictures/node3935_c0.jpg"><img loading="lazy" src="pictures/node3935_c0.jpg" alt=""></a>
@@ -699,6 +825,10 @@ th:first-child, td:first-child { text-align: left; }
 <dt>width</dt><dd>0.001094027786916355</dd>
 <dt>root channel</dt><dd>viewport_sampler</dd>
 </dl></div>
+</div>
+</div>
+<div class="band worst"><div class="label">worst</div>
+<div class="grid">
 <div class="tile">
 <a href="pictures/node4536_c0.jpg"><img loading="lazy" src="pictures/node4536_c0.jpg" alt=""></a>
 <dl>
@@ -732,8 +862,16 @@ th:first-child, td:first-child { text-align: left; }
 <dt>root channel</dt><dd>viewport_sampler</dd>
 </dl></div>
 </div>
+</div>
+<ul class="legend">
+<li><b>P(&gt;=3)</b>: the location judge&#x27;s probability that a place is worth mining</li>
+<li><b>P(&gt;=4)</b>: its probability that a place is among the best</li>
+<li><b>width</b>: how wide the view is in the complex plane; smaller is deeper</li>
+<li><b>root channel</b>: where the walk&#x27;s starting point for this place came from</li>
+</ul>
 <h2>phoenix: best 4 and worst 4</h2>
-<p>best first, then worst; the picture is the walk&#x27;s gate render</p>
+<p>ranked on P(&gt;=3); the picture is the walk&#x27;s gate render</p>
+<div class="band best"><div class="label">best</div>
 <div class="grid">
 <div class="tile">
 <a href="pictures/node214_c1.jpg"><img loading="lazy" src="pictures/node214_c1.jpg" alt=""></a>
@@ -767,6 +905,10 @@ th:first-child, td:first-child { text-align: left; }
 <dt>width</dt><dd>0.0003743223750667095</dd>
 <dt>root channel</dt><dd>phoenix_seed_pool</dd>
 </dl></div>
+</div>
+</div>
+<div class="band worst"><div class="label">worst</div>
+<div class="grid">
 <div class="tile">
 <a href="pictures/node80_c0.jpg"><img loading="lazy" src="pictures/node80_c0.jpg" alt=""></a>
 <dl>
@@ -800,8 +942,16 @@ th:first-child, td:first-child { text-align: left; }
 <dt>root channel</dt><dd>phoenix_seed_pool</dd>
 </dl></div>
 </div>
+</div>
+<ul class="legend">
+<li><b>P(&gt;=3)</b>: the location judge&#x27;s probability that a place is worth mining</li>
+<li><b>P(&gt;=4)</b>: its probability that a place is among the best</li>
+<li><b>width</b>: how wide the view is in the complex plane; smaller is deeper</li>
+<li><b>root channel</b>: where the walk&#x27;s starting point for this place came from</li>
+</ul>
 <h2>phoenix:classic: best 4 and worst 4</h2>
-<p>best first, then worst; the picture is the walk&#x27;s gate render</p>
+<p>ranked on P(&gt;=3); the picture is the walk&#x27;s gate render</p>
+<div class="band best"><div class="label">best</div>
 <div class="grid">
 <div class="tile">
 <a href="pictures/node1674_c1.jpg"><img loading="lazy" src="pictures/node1674_c1.jpg" alt=""></a>
@@ -835,6 +985,10 @@ th:first-child, td:first-child { text-align: left; }
 <dt>width</dt><dd>0.06324483679279803</dd>
 <dt>root channel</dt><dd>home_view</dd>
 </dl></div>
+</div>
+</div>
+<div class="band worst"><div class="label">worst</div>
+<div class="grid">
 <div class="tile">
 <a href="pictures/node792_c1.jpg"><img loading="lazy" src="pictures/node792_c1.jpg" alt=""></a>
 <dl>
@@ -868,4 +1022,11 @@ th:first-child, td:first-child { text-align: left; }
 <dt>root channel</dt><dd>home_view</dd>
 </dl></div>
 </div>
+</div>
+<ul class="legend">
+<li><b>P(&gt;=3)</b>: the location judge&#x27;s probability that a place is worth mining</li>
+<li><b>P(&gt;=4)</b>: its probability that a place is among the best</li>
+<li><b>width</b>: how wide the view is in the complex plane; smaller is deeper</li>
+<li><b>root channel</b>: where the walk&#x27;s starting point for this place came from</li>
+</ul>
 </body></html>

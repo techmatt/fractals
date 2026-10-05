@@ -1,11 +1,11 @@
 {
   "schema": 1,
-  "stamp": "20261005T063202Z",
+  "stamp": "20261005T144742Z",
   "seats": 12,
   "broken_chains": [],
   "files": {
     "gallery.jsonl": {
-      "source": "artifacts/curation/tentative/20261005T063202Z/gallery.jsonl",
+      "source": "artifacts/curation/tentative/20261005T144742Z/gallery.jsonl",
       "rows": 12,
       "sliced": 12
     },
@@ -27,22 +27,22 @@
     "pool_scores.jsonl": {
       "source": "artifacts/gallery_grade_head/pool_scores.jsonl",
       "rows": 26,
-      "sliced": 10
+      "sliced": 12
     },
     "supply_scores.jsonl": {
       "source": "artifacts/curation/supply_scores.jsonl",
       "rows": 4022,
-      "sliced": 20
+      "sliced": 18
     },
     "locations.jsonl": {
       "source": "artifacts/harvest/locations.jsonl",
-      "rows": 4069,
-      "sliced": 20
+      "rows": 4022,
+      "sliced": 18
     },
     "walk.jsonl": {
       "source": "artifacts/harvest/walk.jsonl",
       "rows": 8010,
-      "sliced": 98
+      "sliced": 95
     }
   }
 }

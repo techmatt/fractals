@@ -1,0 +1,10 @@
+usage: fractal-wallpapers harvest export [-h] [--out-dir OUT_DIR]
+
+Writes ONE flat file, <run>/locations.jsonl: one row per kept place, joining walk.jsonl's
+candidate rows (refinements applied) to artifacts/curation/supply_scores.jsonl on the location
+key. A place `curate score` has not read yet is present with null scores. Its `view` is relative
+to the run directory. The stores are only read. FORMATS.md's *locations.jsonl* gives every field.
+
+options:
+  -h, --help         show this help message and exit
+  --out-dir OUT_DIR  the run directory (default: artifacts/harvest)

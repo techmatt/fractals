@@ -1060,7 +1060,9 @@ def check_coloring() -> list[str]:
 #: The working-tree endings that are drift. `git ls-files --eol` writes each tracked file
 #: as `i/<eol> w/<eol> attr/<attrs>`, a tab, then the path; `i/` is what the index holds
 #: and `w/` is what is on disk. A binary file reads `-text` on both sides and is never a
-#: hit here.
+#: hit here, and neither is a file the index holds with the same endings it has on disk:
+#: the hosted walkthrough is `-text` so that a bundle's CRLF commits byte for byte, and a
+#: CRLF file that commits as CRLF has not drifted from anything.
 DRIFTED_ENDINGS = frozenset({"w/crlf", "w/mixed"})
 
 
@@ -1245,8 +1247,9 @@ def check_endings() -> list[str]:
     problems = []
     for row in rows:
         flags, _, path = row.partition("\t")
-        drifted = sorted(DRIFTED_ENDINGS.intersection(flags.split()))
-        if drifted:
+        words = flags.split()
+        drifted = sorted(DRIFTED_ENDINGS.intersection(words))
+        if drifted and f"i/{drifted[0][2:]}" not in words:
             problems.append(
                 f"{path}: {drifted[0]} on disk, and nothing else will ever say so — "
                 "the index holds it as LF and the diff is empty"

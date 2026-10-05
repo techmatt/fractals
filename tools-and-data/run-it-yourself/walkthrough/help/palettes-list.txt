@@ -1,0 +1,12 @@
+usage: fractal-wallpapers palettes list [-h] [--kind {cyclic,sequential}] [--json]
+
+One name a line, sorted, each the stem of data/palettes/<name>.json — slugs and display names
+alike, so `Oxblood, Cyan, Cream` is passed with its commas and spaces, quoted. `--kind` narrows to
+cyclic or sequential maps (mirroring is refused on a cyclic one); `--json` writes `[{name, kind}]`
+instead.
+
+options:
+  -h, --help            show this help message and exit
+  --kind {cyclic,sequential}
+                        only maps of this kind
+  --json                print `[{name, kind}]` as JSON

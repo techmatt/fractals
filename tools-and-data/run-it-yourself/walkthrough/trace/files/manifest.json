@@ -1,13 +1,13 @@
 {
   "schema": 1,
-  "stamp": "20261005T063202Z",
-  "taken_at": "2026-10-05T06:32:03Z",
-  "source_commit": "20606267a2e1095241143299d33c0749f8d31b72",
+  "stamp": "20261005T144742Z",
+  "taken_at": "2026-10-05T14:47:43Z",
+  "source_commit": "6ef873b1be8de00ca0d4d02cfa8c133bdc76d232",
   "solve": {
-    "name": "tentative_n12_20261005T063202Z",
-    "record": "artifacts/curation/solve/tentative_n12_20261005T063202Z/solve.json",
-    "taken_at": "2026-10-05T06:32:02Z",
-    "seconds": 1.02,
+    "name": "tentative_n12_20261005T144742Z",
+    "record": "artifacts/curation/solve/tentative_n12_20261005T144742Z/solve.json",
+    "taken_at": "2026-10-05T14:47:42Z",
+    "seconds": 1.41,
     "config": {
       "n": 12,
       "force_fill": true,
@@ -198,7 +198,7 @@
           "threads",
           "itinerary"
         ],
-        "wired": "all three. Weight 0 is out of the labeling rosters, the default mining rosters and gallery emission; 1 and 2 differ at the seat, where `seat_floors` floors a promoted mode at twice a normal one and is the default floor of both the greedy and the solver since 2026-08-31.",
+        "wired": "all three. Weight 0 is out of the labeling rosters, the default mining rosters and the galleries a solve writes; 1 and 2 differ at the seat, where `seat_floors` floors a promoted mode at twice a normal one and is the default floor of both the greedy and the solver since 2026-08-31.",
         "unmined_is": "accepted in every respect but the draw: seated, censused, barred and floored like any other mode, and drawn by no mining leg unasked. A standing about what a mine spends and not a weight; see UNMINED."
       }
     },
@@ -229,11 +229,11 @@
     }
   },
   "pool": {
-    "stamp": "f90b4269549477ca12e306f3d634cecad43000e133de31ed4232cab95055d0cd",
+    "stamp": "9fd16a3a395e584f7978ef51d2ae5696833f1decfc6800e9c1a8b3c9e1fe4155",
     "stamp_is": "sha256 over the sorted candidate keys, as `growth.pool_stamp` takes it. Two records carrying the same stamp were chosen over the same pool \u2014 over the same POOL and not necessarily the same seatable rows, because a quality bar narrows what a pass may seat and is on `solve.config.fine_bar` instead",
-    "candidates": 327,
-    "locations": 109,
-    "reachable_clusters": 104,
+    "candidates": 437,
+    "locations": 138,
+    "reachable_clusters": 132,
     "refused": {
       "niche_mode": 0,
       "rejected": 0,
@@ -243,7 +243,7 @@
       "picture_absent": 0,
       "no_score": 0
     },
-    "ledger_rows": 327,
+    "ledger_rows": 437,
     "ledger_path": "artifacts/curation/candidate_ledger/rows.jsonl"
   },
   "seats": {
@@ -283,7 +283,7 @@
           "axis": "mode",
           "of": "smooth_mean_angle",
           "asked": 1,
-          "held": 1,
+          "held": 2,
           "short": 0
         },
         {
@@ -307,7 +307,7 @@
           "axis": "cell",
           "of": "dark_muted_blue",
           "asked": 0,
-          "held": 0,
+          "held": 1,
           "short": 0
         },
         {
@@ -395,7 +395,7 @@
           "axis": "cell",
           "of": "dark_vivid_azure",
           "asked": 0,
-          "held": 1,
+          "held": 0,
           "short": 0
         },
         {
@@ -435,7 +435,7 @@
           "axis": "cell",
           "of": "dark_vivid_magenta",
           "asked": 0,
-          "held": 1,
+          "held": 0,
           "short": 0
         },
         {
@@ -515,7 +515,7 @@
           "axis": "cell",
           "of": "light_muted_green",
           "asked": 0,
-          "held": 0,
+          "held": 1,
           "short": 0
         },
         {
@@ -523,7 +523,7 @@
           "axis": "cell",
           "of": "light_muted_lime",
           "asked": 0,
-          "held": 1,
+          "held": 0,
           "short": 0
         },
         {
@@ -531,7 +531,7 @@
           "axis": "cell",
           "of": "light_muted_magenta",
           "asked": 0,
-          "held": 0,
+          "held": 1,
           "short": 0
         },
         {
@@ -539,7 +539,7 @@
           "axis": "cell",
           "of": "light_muted_orange",
           "asked": 0,
-          "held": 1,
+          "held": 0,
           "short": 0
         },
         {
@@ -603,7 +603,7 @@
           "axis": "cell",
           "of": "light_vivid_cyan",
           "asked": 0,
-          "held": 1,
+          "held": 0,
           "short": 0
         },
         {
@@ -627,7 +627,7 @@
           "axis": "cell",
           "of": "light_vivid_magenta",
           "asked": 0,
-          "held": 0,
+          "held": 1,
           "short": 0
         },
         {
@@ -635,7 +635,7 @@
           "axis": "cell",
           "of": "light_vivid_orange",
           "asked": 0,
-          "held": 1,
+          "held": 0,
           "short": 0
         },
         {
@@ -651,7 +651,7 @@
           "axis": "cell",
           "of": "light_vivid_red",
           "asked": 0,
-          "held": 0,
+          "held": 1,
           "short": 0
         },
         {
@@ -699,45 +699,46 @@
       },
       "floors_are": "per mode",
       "asked": 4,
-      "represented": 9,
+      "represented": 8,
       "of": 13,
       "per_mode": {
         "smooth": {
           "floor": 0,
-          "seated": 2,
+          "seated": 1,
           "short": 0,
-          "clearing": 37,
+          "clearing": 56,
           "refused_by": {
-            "cell_allowance": 22,
-            "the_leg_had_no_seat_left": 6,
+            "cell_allowance": 28,
+            "location": 10,
+            "the_leg_had_no_seat_left": 8,
             "spiral": 5,
-            "location": 1,
-            "group_cap": 1
+            "group_cap": 4
           }
         },
         "tia": {
           "floor": 0,
           "seated": 1,
           "short": 0,
-          "clearing": 29,
+          "clearing": 39,
           "refused_by": {
-            "cell_allowance": 21,
-            "the_leg_had_no_seat_left": 3,
-            "location": 2,
-            "spiral": 2
+            "cell_allowance": 23,
+            "location": 7,
+            "the_leg_had_no_seat_left": 4,
+            "spiral": 2,
+            "group_cap": 2
           }
         },
         "stripe": {
           "floor": 0,
-          "seated": 1,
+          "seated": 0,
           "short": 0,
-          "clearing": 35,
+          "clearing": 50,
           "refused_by": {
-            "cell_allowance": 27,
-            "spiral": 3,
-            "the_leg_had_no_seat_left": 2,
-            "location": 1,
-            "group_cap": 1
+            "cell_allowance": 34,
+            "location": 5,
+            "the_leg_had_no_seat_left": 5,
+            "spiral": 4,
+            "group_cap": 2
           }
         },
         "curvature": {
@@ -749,110 +750,114 @@
         },
         "smooth_mean_angle": {
           "floor": 1,
-          "seated": 1,
+          "seated": 2,
           "short": 0,
-          "clearing": 29,
+          "clearing": 40,
           "refused_by": {
-            "cell_allowance": 21,
-            "the_leg_had_no_seat_left": 3,
+            "cell_allowance": 29,
+            "the_leg_had_no_seat_left": 4,
             "spiral": 3,
-            "location": 1
+            "location": 1,
+            "group_cap": 1
           }
         },
         "smooth_angle_min": {
           "floor": 1,
           "seated": 1,
           "short": 0,
-          "clearing": 25,
+          "clearing": 35,
           "refused_by": {
-            "cell_allowance": 18,
-            "location": 3,
-            "the_leg_had_no_seat_left": 3
+            "cell_allowance": 17,
+            "location": 7,
+            "the_leg_had_no_seat_left": 6,
+            "spiral": 3,
+            "group_cap": 1
           }
         },
         "smooth_stripe": {
           "floor": 1,
           "seated": 1,
           "short": 0,
-          "clearing": 28,
+          "clearing": 35,
           "refused_by": {
-            "cell_allowance": 18,
-            "the_leg_had_no_seat_left": 3,
+            "cell_allowance": 22,
+            "the_leg_had_no_seat_left": 4,
+            "group_cap": 3,
             "spiral": 3,
-            "location": 2,
-            "group_cap": 1
+            "location": 2
           }
         },
         "smooth_curvature": {
           "floor": 0,
           "seated": 2,
           "short": 0,
-          "clearing": 30,
+          "clearing": 37,
           "refused_by": {
-            "cell_allowance": 24,
-            "location": 2,
-            "group_cap": 1,
-            "the_leg_had_no_seat_left": 1
+            "cell_allowance": 27,
+            "the_leg_had_no_seat_left": 6,
+            "location": 2
           }
         },
         "direct_trap_screen": {
           "floor": 0,
           "seated": 0,
           "short": 0,
-          "clearing": 23,
+          "clearing": 30,
           "refused_by": {
-            "cell_allowance": 14,
-            "location": 3,
+            "cell_allowance": 20,
+            "the_leg_had_no_seat_left": 5,
             "spiral": 3,
-            "the_leg_had_no_seat_left": 3
+            "group_cap": 1,
+            "location": 1
           }
         },
         "direct_trap_multiply": {
           "floor": 0,
           "seated": 0,
           "short": 0,
-          "clearing": 22,
+          "clearing": 26,
           "refused_by": {
-            "cell_allowance": 16,
-            "location": 3,
+            "cell_allowance": 20,
             "spiral": 2,
-            "group_cap": 1
+            "the_leg_had_no_seat_left": 2,
+            "group_cap": 1,
+            "location": 1
           }
         },
         "direct_trap_lines": {
           "floor": 0,
           "seated": 0,
           "short": 0,
-          "clearing": 35,
+          "clearing": 40,
           "refused_by": {
-            "cell_allowance": 24,
-            "the_leg_had_no_seat_left": 4,
+            "cell_allowance": 27,
+            "the_leg_had_no_seat_left": 5,
             "location": 3,
             "spiral": 3,
-            "group_cap": 1
+            "group_cap": 2
           }
         },
         "threads": {
           "floor": 0,
-          "seated": 2,
+          "seated": 3,
           "short": 0,
-          "clearing": 24,
+          "clearing": 36,
           "refused_by": {
-            "cell_allowance": 19,
-            "the_leg_had_no_seat_left": 1,
-            "spiral": 1,
-            "location": 1
+            "cell_allowance": 20,
+            "location": 7,
+            "mode_ceiling": 4,
+            "spiral": 2
           }
         },
         "itinerary": {
           "floor": 1,
           "seated": 1,
           "short": 0,
-          "clearing": 10,
+          "clearing": 13,
           "refused_by": {
-            "cell_allowance": 6,
-            "location": 2,
-            "the_leg_had_no_seat_left": 1
+            "the_leg_had_no_seat_left": 5,
+            "cell_allowance": 5,
+            "location": 2
           }
         }
       },
@@ -875,45 +880,43 @@
       "below_the_floor": [],
       "below_the_floor_count": 0,
       "counts": {
-        "smooth": 2,
+        "threads": 3,
+        "smooth_mean_angle": 2,
         "smooth_curvature": 2,
-        "threads": 2,
         "itinerary": 1,
         "smooth_angle_min": 1,
         "smooth_stripe": 1,
-        "smooth_mean_angle": 1,
         "tia": 1,
-        "stripe": 1
+        "smooth": 1
       }
     },
     "cells": {
-      "held": 24,
+      "held": 23,
       "over_allowance": {},
       "counts": {
         "light_muted_purple": 1,
         "dark_vivid_purple": 1,
         "light_vivid_purple": 1,
+        "light_muted_green": 1,
+        "light_muted_teal": 1,
+        "dark_vivid_orange": 1,
+        "light_vivid_magenta": 1,
+        "light_muted_yellow": 1,
+        "dark_muted_teal": 1,
+        "light_vivid_red": 1,
         "dark_vivid_blue": 1,
         "light_vivid_azure": 1,
         "dark_vivid_red": 1,
         "dark_muted_rose": 1,
         "dark_muted_red": 1,
-        "dark_vivid_magenta": 1,
+        "dark_muted_blue": 1,
         "dark_vivid_rose": 1,
         "light_vivid_rose": 1,
-        "light_vivid_cyan": 1,
-        "dark_vivid_azure": 1,
-        "dark_muted_magenta": 1,
-        "dark_muted_purple": 1,
         "dark_muted_cyan": 1,
         "dark_muted_azure": 1,
-        "light_muted_orange": 1,
-        "light_muted_yellow": 1,
-        "light_muted_lime": 1,
-        "light_muted_teal": 1,
-        "dark_muted_teal": 1,
-        "dark_vivid_orange": 1,
-        "light_vivid_orange": 1
+        "dark_muted_magenta": 1,
+        "light_muted_magenta": 1,
+        "dark_muted_purple": 1
       }
     },
     "cell_floors": {
@@ -933,34 +936,35 @@
           "allowance": 1,
           "seated": 1,
           "short": 0,
-          "clearing": 20,
+          "clearing": 22,
           "refused_by": {
             "cell_allowance": 18,
+            "location": 2,
             "group_cap": 1
           },
-          "deadlocked": 5,
+          "deadlocked": 8,
           "deadlocked_on": {
+            "dark_muted_blue": 4,
             "dark_muted_cyan": 3,
-            "dark_vivid_azure": 2
+            "light_muted_teal": 1
           }
         },
         "dark_muted_blue": {
           "floor": 0,
           "allowance": 1,
-          "seated": 0,
+          "seated": 1,
           "short": 0,
-          "clearing": 24,
+          "clearing": 30,
           "refused_by": {
-            "cell_allowance": 21,
-            "the_leg_had_no_seat_left": 2,
-            "location": 1
+            "cell_allowance": 22,
+            "location": 5,
+            "group_cap": 2
           },
-          "deadlocked": 21,
+          "deadlocked": 11,
           "deadlocked_on": {
-            "dark_muted_azure": 10,
-            "dark_muted_purple": 5,
+            "dark_muted_azure": 6,
             "dark_vivid_blue": 2,
-            "dark_vivid_azure": 2,
+            "dark_muted_purple": 2,
             "light_muted_purple": 1
           }
         },
@@ -969,16 +973,17 @@
           "allowance": 1,
           "seated": 1,
           "short": 0,
-          "clearing": 21,
+          "clearing": 26,
           "refused_by": {
-            "cell_allowance": 16,
-            "location": 3,
-            "group_cap": 1
+            "cell_allowance": 18,
+            "location": 4,
+            "group_cap": 3
           },
-          "deadlocked": 3,
+          "deadlocked": 4,
           "deadlocked_on": {
             "dark_muted_azure": 2,
-            "dark_muted_teal": 1
+            "dark_muted_teal": 1,
+            "light_muted_teal": 1
           }
         },
         "dark_muted_green": {
@@ -986,17 +991,17 @@
           "allowance": 1,
           "seated": 0,
           "short": 0,
-          "clearing": 10,
+          "clearing": 16,
           "refused_by": {
-            "cell_allowance": 4,
+            "cell_allowance": 8,
+            "location": 4,
             "the_leg_had_no_seat_left": 3,
-            "location": 2,
             "spiral": 1
           },
-          "deadlocked": 4,
+          "deadlocked": 8,
           "deadlocked_on": {
-            "light_muted_lime": 2,
-            "dark_muted_teal": 1,
+            "dark_muted_teal": 5,
+            "light_muted_green": 2,
             "light_muted_yellow": 1
           }
         },
@@ -1005,18 +1010,19 @@
           "allowance": 1,
           "seated": 0,
           "short": 0,
-          "clearing": 16,
+          "clearing": 19,
           "refused_by": {
-            "cell_allowance": 7,
-            "the_leg_had_no_seat_left": 5,
-            "spiral": 3,
-            "location": 1
+            "the_leg_had_no_seat_left": 9,
+            "cell_allowance": 4,
+            "spiral": 4,
+            "location": 1,
+            "mode_ceiling": 1
           },
-          "deadlocked": 7,
+          "deadlocked": 4,
           "deadlocked_on": {
-            "light_muted_lime": 4,
             "light_muted_yellow": 2,
-            "dark_muted_rose": 1
+            "dark_muted_rose": 1,
+            "dark_muted_blue": 1
           }
         },
         "dark_muted_magenta": {
@@ -1024,17 +1030,18 @@
           "allowance": 1,
           "seated": 1,
           "short": 0,
-          "clearing": 21,
+          "clearing": 29,
           "refused_by": {
-            "cell_allowance": 16,
-            "location": 3,
-            "group_cap": 1
+            "cell_allowance": 23,
+            "group_cap": 3,
+            "location": 2
           },
-          "deadlocked": 9,
+          "deadlocked": 14,
           "deadlocked_on": {
-            "dark_muted_rose": 7,
-            "light_muted_purple": 1,
-            "dark_muted_purple": 1
+            "dark_muted_rose": 9,
+            "dark_muted_purple": 2,
+            "light_muted_magenta": 2,
+            "light_muted_purple": 1
           }
         },
         "dark_muted_orange": {
@@ -1042,19 +1049,17 @@
           "allowance": 1,
           "seated": 0,
           "short": 0,
-          "clearing": 18,
+          "clearing": 22,
           "refused_by": {
-            "cell_allowance": 11,
-            "spiral": 3,
-            "location": 2,
-            "the_leg_had_no_seat_left": 1,
-            "group_cap": 1
+            "cell_allowance": 12,
+            "spiral": 4,
+            "location": 3,
+            "the_leg_had_no_seat_left": 3
           },
-          "deadlocked": 11,
+          "deadlocked": 12,
           "deadlocked_on": {
-            "dark_muted_red": 4,
-            "light_muted_orange": 3,
-            "dark_vivid_orange": 2,
+            "dark_muted_red": 6,
+            "dark_vivid_orange": 4,
             "light_muted_yellow": 1,
             "dark_muted_azure": 1
           }
@@ -1064,19 +1069,19 @@
           "allowance": 1,
           "seated": 1,
           "short": 0,
-          "clearing": 21,
+          "clearing": 31,
           "refused_by": {
-            "cell_allowance": 17,
-            "location": 2,
-            "group_cap": 1
+            "cell_allowance": 25,
+            "location": 3,
+            "group_cap": 2
           },
-          "deadlocked": 7,
+          "deadlocked": 14,
           "deadlocked_on": {
+            "dark_muted_magenta": 4,
+            "dark_muted_blue": 4,
+            "light_muted_purple": 2,
             "dark_vivid_purple": 1,
-            "dark_muted_azure": 1,
-            "dark_muted_rose": 1,
-            "light_muted_purple": 1,
-            "dark_muted_magenta": 1
+            "dark_muted_rose": 1
           }
         },
         "dark_muted_red": {
@@ -1084,17 +1089,18 @@
           "allowance": 1,
           "seated": 1,
           "short": 0,
-          "clearing": 23,
+          "clearing": 28,
           "refused_by": {
-            "cell_allowance": 22
+            "cell_allowance": 25,
+            "location": 2
           },
           "deadlocked": 8,
           "deadlocked_on": {
             "dark_muted_rose": 3,
-            "light_muted_orange": 2,
+            "dark_vivid_orange": 2,
             "dark_vivid_red": 1,
-            "dark_muted_azure": 1,
-            "dark_vivid_orange": 1
+            "light_muted_yellow": 1,
+            "dark_muted_azure": 1
           }
         },
         "dark_muted_rose": {
@@ -1102,15 +1108,18 @@
           "allowance": 1,
           "seated": 1,
           "short": 0,
-          "clearing": 22,
+          "clearing": 28,
           "refused_by": {
-            "cell_allowance": 20,
+            "cell_allowance": 24,
+            "group_cap": 2,
             "location": 1
           },
-          "deadlocked": 5,
+          "deadlocked": 8,
           "deadlocked_on": {
             "dark_muted_red": 4,
-            "dark_vivid_rose": 1
+            "dark_muted_magenta": 2,
+            "dark_vivid_rose": 1,
+            "light_muted_magenta": 1
           }
         },
         "dark_muted_teal": {
@@ -1118,14 +1127,16 @@
           "allowance": 1,
           "seated": 1,
           "short": 0,
-          "clearing": 13,
+          "clearing": 23,
           "refused_by": {
-            "cell_allowance": 8,
-            "location": 4
+            "cell_allowance": 16,
+            "location": 4,
+            "group_cap": 2
           },
-          "deadlocked": 2,
+          "deadlocked": 5,
           "deadlocked_on": {
-            "dark_muted_cyan": 1,
+            "light_muted_teal": 2,
+            "dark_muted_cyan": 2,
             "dark_muted_azure": 1
           }
         },
@@ -1134,35 +1145,38 @@
           "allowance": 1,
           "seated": 0,
           "short": 0,
-          "clearing": 19,
+          "clearing": 26,
           "refused_by": {
-            "cell_allowance": 7,
-            "the_leg_had_no_seat_left": 6,
+            "the_leg_had_no_seat_left": 12,
+            "cell_allowance": 9,
             "spiral": 3,
-            "location": 2,
-            "group_cap": 1
+            "location": 2
           },
-          "deadlocked": 7,
+          "deadlocked": 9,
           "deadlocked_on": {
-            "light_muted_yellow": 5,
-            "light_muted_lime": 2
+            "light_muted_yellow": 7,
+            "dark_muted_magenta": 1,
+            "dark_vivid_orange": 1
           }
         },
         "dark_vivid_azure": {
           "floor": 0,
           "allowance": 1,
-          "seated": 1,
+          "seated": 0,
           "short": 0,
           "clearing": 14,
           "refused_by": {
-            "cell_allowance": 12,
-            "location": 1
+            "cell_allowance": 9,
+            "the_leg_had_no_seat_left": 4,
+            "spiral": 1
           },
-          "deadlocked": 3,
+          "deadlocked": 9,
           "deadlocked_on": {
+            "light_vivid_azure": 2,
+            "dark_muted_blue": 2,
+            "dark_muted_azure": 1,
             "dark_vivid_purple": 1,
-            "light_vivid_azure": 1,
-            "light_muted_purple": 1
+            "dark_vivid_rose": 1
           }
         },
         "dark_vivid_blue": {
@@ -1170,17 +1184,17 @@
           "allowance": 1,
           "seated": 1,
           "short": 0,
-          "clearing": 19,
+          "clearing": 24,
           "refused_by": {
-            "cell_allowance": 16,
-            "location": 1,
-            "group_cap": 1
+            "cell_allowance": 17,
+            "group_cap": 4,
+            "location": 2
           },
           "deadlocked": 4,
           "deadlocked_on": {
             "light_vivid_azure": 2,
             "dark_vivid_red": 1,
-            "dark_vivid_azure": 1
+            "dark_muted_blue": 1
           }
         },
         "dark_vivid_cyan": {
@@ -1188,15 +1202,16 @@
           "allowance": 1,
           "seated": 0,
           "short": 0,
-          "clearing": 11,
+          "clearing": 14,
           "refused_by": {
-            "cell_allowance": 11
+            "cell_allowance": 10,
+            "group_cap": 2,
+            "location": 1,
+            "the_leg_had_no_seat_left": 1
           },
-          "deadlocked": 11,
+          "deadlocked": 10,
           "deadlocked_on": {
-            "dark_muted_cyan": 9,
-            "dark_muted_teal": 1,
-            "dark_vivid_azure": 1
+            "dark_muted_cyan": 10
           }
         },
         "dark_vivid_green": {
@@ -1204,10 +1219,10 @@
           "allowance": 1,
           "seated": 0,
           "short": 0,
-          "clearing": 10,
+          "clearing": 14,
           "refused_by": {
-            "spiral": 4,
-            "the_leg_had_no_seat_left": 3,
+            "the_leg_had_no_seat_left": 6,
+            "spiral": 5,
             "location": 2,
             "cell_allowance": 1
           },
@@ -1221,32 +1236,36 @@
           "allowance": 1,
           "seated": 0,
           "short": 0,
-          "clearing": 9,
+          "clearing": 11,
           "refused_by": {
-            "cell_allowance": 6,
-            "the_leg_had_no_seat_left": 2,
-            "spiral": 1
+            "cell_allowance": 3,
+            "location": 2,
+            "mode_ceiling": 2,
+            "spiral": 2,
+            "the_leg_had_no_seat_left": 2
           },
-          "deadlocked": 6,
+          "deadlocked": 3,
           "deadlocked_on": {
-            "light_muted_lime": 3,
             "light_muted_yellow": 3
           }
         },
         "dark_vivid_magenta": {
           "floor": 0,
           "allowance": 1,
-          "seated": 1,
+          "seated": 0,
           "short": 0,
-          "clearing": 9,
+          "clearing": 14,
           "refused_by": {
-            "cell_allowance": 6,
-            "group_cap": 1,
-            "location": 1
+            "cell_allowance": 8,
+            "location": 3,
+            "the_leg_had_no_seat_left": 3
           },
-          "deadlocked": 2,
+          "deadlocked": 8,
           "deadlocked_on": {
+            "dark_muted_purple": 1,
+            "light_vivid_magenta": 1,
             "dark_vivid_orange": 1,
+            "light_muted_magenta": 1,
             "dark_vivid_rose": 1
           }
         },
@@ -1255,15 +1274,16 @@
           "allowance": 1,
           "seated": 1,
           "short": 0,
-          "clearing": 16,
+          "clearing": 25,
           "refused_by": {
-            "cell_allowance": 14,
+            "cell_allowance": 19,
+            "location": 4,
             "group_cap": 1
           },
-          "deadlocked": 5,
+          "deadlocked": 4,
           "deadlocked_on": {
-            "light_muted_orange": 3,
-            "dark_muted_red": 1,
+            "dark_muted_red": 2,
+            "dark_vivid_red": 1,
             "light_muted_yellow": 1
           }
         },
@@ -1272,17 +1292,19 @@
           "allowance": 1,
           "seated": 1,
           "short": 0,
-          "clearing": 13,
+          "clearing": 17,
           "refused_by": {
-            "cell_allowance": 11,
-            "location": 1
+            "cell_allowance": 14,
+            "location": 1,
+            "group_cap": 1
           },
-          "deadlocked": 7,
+          "deadlocked": 8,
           "deadlocked_on": {
-            "dark_vivid_blue": 3,
+            "dark_vivid_blue": 2,
             "dark_muted_purple": 2,
-            "dark_vivid_magenta": 1,
-            "light_muted_purple": 1
+            "light_muted_magenta": 1,
+            "light_vivid_magenta": 1,
+            "light_vivid_purple": 1
           }
         },
         "dark_vivid_red": {
@@ -1290,14 +1312,14 @@
           "allowance": 1,
           "seated": 1,
           "short": 0,
-          "clearing": 13,
+          "clearing": 14,
           "refused_by": {
-            "cell_allowance": 12
+            "cell_allowance": 13
           },
-          "deadlocked": 4,
+          "deadlocked": 5,
           "deadlocked_on": {
             "dark_muted_red": 3,
-            "light_vivid_orange": 1
+            "light_vivid_red": 2
           }
         },
         "dark_vivid_rose": {
@@ -1305,16 +1327,16 @@
           "allowance": 1,
           "seated": 1,
           "short": 0,
-          "clearing": 11,
+          "clearing": 18,
           "refused_by": {
-            "cell_allowance": 8,
-            "location": 1,
-            "group_cap": 1
+            "cell_allowance": 9,
+            "location": 6,
+            "group_cap": 2
           },
           "deadlocked": 3,
           "deadlocked_on": {
-            "dark_muted_red": 2,
-            "light_vivid_rose": 1
+            "light_vivid_rose": 2,
+            "dark_muted_red": 1
           }
         },
         "dark_vivid_teal": {
@@ -1322,15 +1344,19 @@
           "allowance": 1,
           "seated": 0,
           "short": 0,
-          "clearing": 7,
+          "clearing": 13,
           "refused_by": {
-            "cell_allowance": 6,
+            "cell_allowance": 9,
+            "group_cap": 2,
+            "location": 1,
             "the_leg_had_no_seat_left": 1
           },
-          "deadlocked": 6,
+          "deadlocked": 9,
           "deadlocked_on": {
-            "dark_muted_teal": 5,
-            "light_muted_teal": 1
+            "dark_muted_teal": 4,
+            "light_muted_teal": 3,
+            "dark_muted_cyan": 1,
+            "light_muted_green": 1
           }
         },
         "dark_vivid_yellow": {
@@ -1340,15 +1366,14 @@
           "short": 0,
           "clearing": 8,
           "refused_by": {
-            "the_leg_had_no_seat_left": 3,
+            "the_leg_had_no_seat_left": 4,
             "cell_allowance": 3,
-            "spiral": 1,
-            "group_cap": 1
+            "spiral": 1
           },
           "deadlocked": 3,
           "deadlocked_on": {
             "light_muted_yellow": 2,
-            "light_muted_lime": 1
+            "dark_vivid_orange": 1
           }
         },
         "light_muted_azure": {
@@ -1356,17 +1381,18 @@
           "allowance": 1,
           "seated": 0,
           "short": 0,
-          "clearing": 13,
+          "clearing": 14,
           "refused_by": {
-            "cell_allowance": 9,
-            "spiral": 2,
-            "the_leg_had_no_seat_left": 2
+            "cell_allowance": 7,
+            "spiral": 3,
+            "the_leg_had_no_seat_left": 3,
+            "location": 1
           },
-          "deadlocked": 9,
+          "deadlocked": 7,
           "deadlocked_on": {
-            "dark_muted_azure": 4,
+            "dark_muted_azure": 3,
             "light_vivid_azure": 2,
-            "dark_vivid_azure": 2,
+            "dark_muted_blue": 1,
             "light_muted_teal": 1
           }
         },
@@ -1375,19 +1401,20 @@
           "allowance": 1,
           "seated": 0,
           "short": 0,
-          "clearing": 12,
+          "clearing": 14,
           "refused_by": {
-            "cell_allowance": 7,
+            "cell_allowance": 9,
             "spiral": 3,
             "location": 1,
             "group_cap": 1
           },
-          "deadlocked": 7,
+          "deadlocked": 9,
           "deadlocked_on": {
-            "dark_muted_azure": 4,
+            "dark_muted_azure": 3,
+            "light_muted_yellow": 2,
+            "dark_vivid_purple": 1,
             "light_muted_purple": 1,
-            "light_vivid_purple": 1,
-            "light_muted_yellow": 1
+            "dark_muted_blue": 1
           }
         },
         "light_muted_cyan": {
@@ -1395,153 +1422,99 @@
           "allowance": 1,
           "seated": 0,
           "short": 0,
-          "clearing": 20,
+          "clearing": 27,
           "refused_by": {
-            "cell_allowance": 16,
-            "the_leg_had_no_seat_left": 3,
-            "location": 1
+            "cell_allowance": 18,
+            "the_leg_had_no_seat_left": 5,
+            "location": 4
           },
-          "deadlocked": 16,
+          "deadlocked": 18,
           "deadlocked_on": {
-            "light_muted_teal": 9,
+            "light_muted_teal": 13,
             "dark_muted_cyan": 3,
-            "dark_vivid_azure": 2,
-            "dark_muted_azure": 1,
-            "light_vivid_azure": 1
+            "light_vivid_azure": 2
           }
         },
         "light_muted_green": {
           "floor": 0,
           "allowance": 1,
-          "seated": 0,
+          "seated": 1,
           "short": 0,
-          "clearing": 17,
+          "clearing": 22,
           "refused_by": {
-            "cell_allowance": 12,
-            "location": 4,
-            "the_leg_had_no_seat_left": 1
+            "cell_allowance": 16,
+            "location": 5
           },
-          "deadlocked": 12,
+          "deadlocked": 2,
           "deadlocked_on": {
-            "light_muted_lime": 9,
-            "light_muted_teal": 3
+            "light_muted_teal": 2
           }
         },
         "light_muted_lime": {
           "floor": 0,
           "allowance": 1,
-          "seated": 1,
+          "seated": 0,
           "short": 0,
-          "clearing": 31,
+          "clearing": 37,
           "refused_by": {
-            "cell_allowance": 28,
-            "location": 2
+            "cell_allowance": 22,
+            "the_leg_had_no_seat_left": 7,
+            "location": 3,
+            "mode_ceiling": 2,
+            "spiral": 2,
+            "group_cap": 1
           },
-          "deadlocked": 6,
+          "deadlocked": 22,
           "deadlocked_on": {
-            "light_muted_yellow": 5,
-            "light_muted_teal": 1
+            "light_muted_green": 10,
+            "light_muted_yellow": 9,
+            "dark_muted_purple": 2,
+            "dark_muted_blue": 1
           }
         },
         "light_muted_magenta": {
           "floor": 0,
           "allowance": 1,
-          "seated": 0,
+          "seated": 1,
           "short": 0,
-          "clearing": 23,
+          "clearing": 30,
           "refused_by": {
-            "cell_allowance": 15,
-            "location": 3,
-            "spiral": 3,
-            "the_leg_had_no_seat_left": 2
+            "cell_allowance": 24,
+            "location": 4,
+            "group_cap": 1
           },
-          "deadlocked": 15,
+          "deadlocked": 8,
           "deadlocked_on": {
-            "light_muted_purple": 5,
-            "dark_muted_magenta": 4,
-            "dark_muted_rose": 2,
-            "dark_vivid_purple": 1,
-            "dark_vivid_blue": 1
+            "light_muted_purple": 4,
+            "dark_vivid_blue": 1,
+            "light_vivid_magenta": 1,
+            "dark_muted_rose": 1,
+            "dark_muted_magenta": 1
           }
         },
         "light_muted_orange": {
           "floor": 0,
           "allowance": 1,
-          "seated": 1,
+          "seated": 0,
           "short": 0,
-          "clearing": 25,
+          "clearing": 27,
           "refused_by": {
-            "cell_allowance": 22,
-            "location": 2
+            "cell_allowance": 20,
+            "the_leg_had_no_seat_left": 3,
+            "location": 2,
+            "group_cap": 1,
+            "spiral": 1
           },
-          "deadlocked": 9,
+          "deadlocked": 20,
           "deadlocked_on": {
-            "light_muted_yellow": 5,
-            "dark_vivid_orange": 1,
-            "dark_muted_red": 1,
-            "dark_muted_magenta": 1,
+            "light_muted_yellow": 12,
+            "dark_muted_red": 3,
+            "dark_vivid_orange": 3,
+            "light_vivid_red": 1,
             "light_muted_teal": 1
           }
         },
         "light_muted_purple": {
-          "floor": 0,
-          "allowance": 1,
-          "seated": 1,
-          "short": 0,
-          "clearing": 15,
-          "refused_by": {
-            "cell_allowance": 13,
-            "location": 1
-          },
-          "deadlocked": 4,
-          "deadlocked_on": {
-            "dark_muted_purple": 1,
-            "dark_vivid_purple": 1,
-            "light_vivid_purple": 1,
-            "light_muted_lime": 1
-          }
-        },
-        "light_muted_red": {
-          "floor": 0,
-          "allowance": 1,
-          "seated": 0,
-          "short": 0,
-          "clearing": 17,
-          "refused_by": {
-            "cell_allowance": 11,
-            "spiral": 4,
-            "the_leg_had_no_seat_left": 2
-          },
-          "deadlocked": 11,
-          "deadlocked_on": {
-            "light_muted_orange": 6,
-            "dark_muted_red": 3,
-            "dark_vivid_red": 1,
-            "light_muted_yellow": 1
-          }
-        },
-        "light_muted_rose": {
-          "floor": 0,
-          "allowance": 1,
-          "seated": 0,
-          "short": 0,
-          "clearing": 18,
-          "refused_by": {
-            "cell_allowance": 10,
-            "spiral": 4,
-            "the_leg_had_no_seat_left": 3,
-            "location": 1
-          },
-          "deadlocked": 10,
-          "deadlocked_on": {
-            "dark_muted_rose": 4,
-            "dark_vivid_rose": 1,
-            "light_vivid_rose": 1,
-            "dark_muted_magenta": 1,
-            "light_muted_orange": 1
-          }
-        },
-        "light_muted_teal": {
           "floor": 0,
           "allowance": 1,
           "seated": 1,
@@ -1551,10 +1524,68 @@
             "cell_allowance": 20,
             "location": 1
           },
-          "deadlocked": 4,
+          "deadlocked": 11,
           "deadlocked_on": {
-            "light_muted_lime": 2,
-            "dark_muted_azure": 1,
+            "light_muted_magenta": 5,
+            "dark_muted_purple": 3,
+            "dark_vivid_purple": 2,
+            "light_vivid_purple": 1
+          }
+        },
+        "light_muted_red": {
+          "floor": 0,
+          "allowance": 1,
+          "seated": 0,
+          "short": 0,
+          "clearing": 21,
+          "refused_by": {
+            "cell_allowance": 13,
+            "spiral": 4,
+            "location": 2,
+            "the_leg_had_no_seat_left": 2
+          },
+          "deadlocked": 13,
+          "deadlocked_on": {
+            "dark_muted_red": 6,
+            "light_vivid_red": 4,
+            "light_muted_magenta": 2,
+            "light_muted_yellow": 1
+          }
+        },
+        "light_muted_rose": {
+          "floor": 0,
+          "allowance": 1,
+          "seated": 0,
+          "short": 0,
+          "clearing": 25,
+          "refused_by": {
+            "cell_allowance": 15,
+            "location": 4,
+            "spiral": 3,
+            "the_leg_had_no_seat_left": 2,
+            "group_cap": 1
+          },
+          "deadlocked": 15,
+          "deadlocked_on": {
+            "light_muted_magenta": 10,
+            "dark_muted_rose": 3,
+            "dark_vivid_rose": 1,
+            "dark_muted_red": 1
+          }
+        },
+        "light_muted_teal": {
+          "floor": 0,
+          "allowance": 1,
+          "seated": 1,
+          "short": 0,
+          "clearing": 30,
+          "refused_by": {
+            "cell_allowance": 26,
+            "location": 3
+          },
+          "deadlocked": 5,
+          "deadlocked_on": {
+            "light_muted_green": 4,
             "dark_muted_teal": 1
           }
         },
@@ -1563,16 +1594,16 @@
           "allowance": 1,
           "seated": 1,
           "short": 0,
-          "clearing": 34,
+          "clearing": 44,
           "refused_by": {
-            "cell_allowance": 31,
-            "location": 2
+            "cell_allowance": 39,
+            "location": 3,
+            "group_cap": 1
           },
-          "deadlocked": 9,
+          "deadlocked": 2,
           "deadlocked_on": {
-            "light_muted_orange": 4,
-            "light_muted_lime": 3,
-            "dark_vivid_orange": 2
+            "dark_vivid_orange": 1,
+            "light_muted_green": 1
           }
         },
         "light_vivid_azure": {
@@ -1580,14 +1611,13 @@
           "allowance": 1,
           "seated": 1,
           "short": 0,
-          "clearing": 10,
+          "clearing": 13,
           "refused_by": {
-            "cell_allowance": 8,
-            "location": 1
+            "cell_allowance": 11,
+            "group_cap": 1
           },
-          "deadlocked": 2,
+          "deadlocked": 1,
           "deadlocked_on": {
-            "dark_vivid_azure": 1,
             "dark_vivid_blue": 1
           }
         },
@@ -1596,30 +1626,37 @@
           "allowance": 1,
           "seated": 0,
           "short": 0,
-          "clearing": 8,
+          "clearing": 12,
           "refused_by": {
-            "cell_allowance": 3,
-            "location": 3,
+            "cell_allowance": 10,
             "spiral": 2
           },
-          "deadlocked": 3,
+          "deadlocked": 10,
           "deadlocked_on": {
+            "dark_vivid_blue": 3,
+            "light_vivid_azure": 2,
             "light_vivid_purple": 2,
-            "dark_muted_purple": 1
+            "dark_muted_purple": 1,
+            "dark_vivid_purple": 1
           }
         },
         "light_vivid_cyan": {
           "floor": 0,
           "allowance": 1,
-          "seated": 1,
+          "seated": 0,
           "short": 0,
-          "clearing": 5,
+          "clearing": 9,
           "refused_by": {
-            "cell_allowance": 4
+            "cell_allowance": 5,
+            "the_leg_had_no_seat_left": 2,
+            "group_cap": 1,
+            "spiral": 1
           },
-          "deadlocked": 3,
+          "deadlocked": 5,
           "deadlocked_on": {
-            "dark_muted_cyan": 3
+            "dark_muted_cyan": 3,
+            "light_muted_teal": 1,
+            "light_vivid_azure": 1
           }
         },
         "light_vivid_green": {
@@ -1627,16 +1664,18 @@
           "allowance": 1,
           "seated": 0,
           "short": 0,
-          "clearing": 9,
+          "clearing": 15,
           "refused_by": {
-            "the_leg_had_no_seat_left": 4,
-            "spiral": 2,
-            "cell_allowance": 2,
+            "the_leg_had_no_seat_left": 7,
+            "spiral": 3,
+            "cell_allowance": 3,
+            "mode_ceiling": 1,
             "location": 1
           },
-          "deadlocked": 2,
+          "deadlocked": 3,
           "deadlocked_on": {
-            "light_muted_lime": 1,
+            "dark_muted_blue": 1,
+            "light_muted_green": 1,
             "dark_vivid_blue": 1
           }
         },
@@ -1645,47 +1684,51 @@
           "allowance": 1,
           "seated": 0,
           "short": 0,
-          "clearing": 9,
+          "clearing": 10,
           "refused_by": {
-            "the_leg_had_no_seat_left": 4,
-            "cell_allowance": 3,
-            "location": 1,
-            "spiral": 1
+            "the_leg_had_no_seat_left": 3,
+            "mode_ceiling": 3,
+            "location": 2,
+            "spiral": 2
           },
-          "deadlocked": 3,
-          "deadlocked_on": {
-            "light_muted_lime": 2,
-            "light_vivid_orange": 1
-          }
+          "deadlocked": 0,
+          "deadlocked_on": {}
         },
         "light_vivid_magenta": {
           "floor": 0,
           "allowance": 1,
-          "seated": 0,
+          "seated": 1,
           "short": 0,
-          "clearing": 5,
+          "clearing": 12,
           "refused_by": {
-            "cell_allowance": 5
+            "cell_allowance": 7,
+            "location": 2,
+            "group_cap": 2
           },
-          "deadlocked": 5,
+          "deadlocked": 4,
           "deadlocked_on": {
-            "dark_vivid_blue": 3,
-            "light_vivid_rose": 1,
-            "light_vivid_purple": 1
+            "dark_vivid_blue": 2,
+            "dark_vivid_purple": 1,
+            "light_vivid_rose": 1
           }
         },
         "light_vivid_orange": {
           "floor": 0,
           "allowance": 1,
-          "seated": 1,
+          "seated": 0,
           "short": 0,
-          "clearing": 9,
+          "clearing": 10,
           "refused_by": {
-            "cell_allowance": 8
+            "cell_allowance": 6,
+            "the_leg_had_no_seat_left": 2,
+            "location": 1,
+            "spiral": 1
           },
-          "deadlocked": 2,
+          "deadlocked": 6,
           "deadlocked_on": {
-            "dark_vivid_red": 2
+            "dark_vivid_red": 3,
+            "light_vivid_red": 2,
+            "dark_vivid_orange": 1
           }
         },
         "light_vivid_purple": {
@@ -1693,14 +1736,15 @@
           "allowance": 1,
           "seated": 1,
           "short": 0,
-          "clearing": 8,
+          "clearing": 12,
           "refused_by": {
-            "cell_allowance": 7
+            "cell_allowance": 8,
+            "location": 3
           },
-          "deadlocked": 4,
+          "deadlocked": 5,
           "deadlocked_on": {
-            "dark_vivid_blue": 1,
-            "dark_vivid_magenta": 1,
+            "light_vivid_magenta": 2,
+            "dark_muted_blue": 1,
             "dark_vivid_purple": 1,
             "light_muted_purple": 1
           }
@@ -1708,20 +1752,17 @@
         "light_vivid_red": {
           "floor": 0,
           "allowance": 1,
-          "seated": 0,
+          "seated": 1,
           "short": 0,
-          "clearing": 11,
+          "clearing": 14,
           "refused_by": {
-            "cell_allowance": 9,
-            "the_leg_had_no_seat_left": 1,
-            "spiral": 1
+            "cell_allowance": 12,
+            "location": 1
           },
-          "deadlocked": 9,
+          "deadlocked": 4,
           "deadlocked_on": {
-            "dark_vivid_red": 5,
-            "light_vivid_orange": 2,
-            "light_muted_orange": 1,
-            "dark_vivid_magenta": 1
+            "dark_vivid_red": 3,
+            "light_vivid_rose": 1
           }
         },
         "light_vivid_rose": {
@@ -1729,14 +1770,16 @@
           "allowance": 1,
           "seated": 1,
           "short": 0,
-          "clearing": 6,
+          "clearing": 11,
           "refused_by": {
-            "cell_allowance": 5
+            "cell_allowance": 6,
+            "location": 3,
+            "group_cap": 1
           },
           "deadlocked": 2,
           "deadlocked_on": {
-            "dark_vivid_rose": 1,
-            "dark_vivid_magenta": 1
+            "light_muted_magenta": 1,
+            "dark_vivid_rose": 1
           }
         },
         "light_vivid_teal": {
@@ -1744,15 +1787,17 @@
           "allowance": 1,
           "seated": 0,
           "short": 0,
-          "clearing": 6,
+          "clearing": 10,
           "refused_by": {
-            "cell_allowance": 5,
-            "the_leg_had_no_seat_left": 1
+            "cell_allowance": 6,
+            "the_leg_had_no_seat_left": 4
           },
-          "deadlocked": 5,
+          "deadlocked": 6,
           "deadlocked_on": {
-            "light_muted_teal": 4,
-            "dark_vivid_blue": 1
+            "light_muted_teal": 3,
+            "dark_vivid_blue": 1,
+            "light_muted_green": 1,
+            "light_vivid_azure": 1
           }
         },
         "light_vivid_yellow": {
@@ -1760,35 +1805,37 @@
           "allowance": 1,
           "seated": 0,
           "short": 0,
-          "clearing": 14,
+          "clearing": 16,
           "refused_by": {
-            "cell_allowance": 9,
-            "spiral": 2,
-            "the_leg_had_no_seat_left": 2,
-            "location": 1
+            "cell_allowance": 6,
+            "the_leg_had_no_seat_left": 4,
+            "spiral": 3,
+            "location": 2,
+            "group_cap": 1
           },
-          "deadlocked": 9,
+          "deadlocked": 6,
           "deadlocked_on": {
-            "light_vivid_orange": 5,
-            "dark_vivid_orange": 3,
-            "light_muted_yellow": 1
+            "light_vivid_red": 2,
+            "light_muted_yellow": 2,
+            "dark_vivid_orange": 2
           }
         }
       }
     },
     "families": {
-      "held": 9,
+      "held": 10,
       "over_allowance": {},
       "counts": {
-        "orange": 2,
-        "red": 2,
-        "rose": 2,
         "magenta": 2,
-        "cyan": 2,
+        "red": 2,
+        "blue": 2,
+        "rose": 2,
         "purple": 1,
-        "blue": 1,
+        "green": 1,
+        "teal": 1,
+        "orange": 1,
         "yellow": 1,
-        "teal": 1
+        "cyan": 1
       }
     },
     "groups": {
@@ -1797,28 +1844,28 @@
       "realized_max": 1,
       "at_the_cap": 12,
       "counts_top20": {
-        "map:Cyan Vault": 1,
-        "map:Mint Field, Teal Well": 1,
+        "m21": 1,
+        "m35": 1,
         "map:Nebula Veil": 1,
+        "map:Olive Ember Ramp": 1,
         "map:Rose Against Cobalt": 1,
-        "map:Wisteria Nightfall": 1,
-        "map:brisbee": 1,
+        "map:cet_diverging_linear_bjr_30_55_c53": 1,
         "map:commons_Julia-Menge_-0.8_0.156i": 1,
-        "map:scattering-25": 1,
-        "map:torque-25": 1,
+        "map:dinlappi": 1,
+        "map:house-of-ivory-25": 1,
+        "map:labani": 1,
         "map:wallhaven_wallhaven-kwg7v6": 1,
-        "map:wallhaven_wallhaven-ym8rqk": 1,
-        "map:wallhaven_wallhaven-yxlvkk": 1
+        "map:wallhaven_wallhaven-ym8rqk": 1
       },
       "over_cap": {}
     },
     "refusals_while_choosing": {
-      "cell_allowance": 13,
+      "location": 16,
+      "cell_allowance": 14,
+      "group_cap": 2,
       "spiral": 2,
-      "location": 0,
-      "group_cap": 0,
+      "mode_ceiling": 1,
       "family_allowance": 0,
-      "mode_ceiling": 0,
       "picture_unreadable": 0,
       "twin": 0
     },
@@ -1826,46 +1873,49 @@
   },
   "counts": {
     "mode": {
-      "smooth": 2,
+      "threads": 3,
       "smooth_curvature": 2,
-      "threads": 2,
+      "smooth_mean_angle": 2,
       "itinerary": 1,
+      "smooth": 1,
       "smooth_angle_min": 1,
-      "smooth_mean_angle": 1,
       "smooth_stripe": 1,
-      "stripe": 1,
       "tia": 1
     },
     "hue_family": {
-      "cyan": 2,
+      "blue": 2,
       "magenta": 2,
-      "orange": 2,
       "red": 2,
-      "blue": 1,
+      "cyan": 1,
+      "green": 1,
+      "orange": 1,
       "purple": 1,
       "rose": 1,
-      "teal": 1
+      "yellow": 1
     },
     "cell": {
+      "dark_muted_blue": 1,
       "dark_muted_cyan": 1,
       "dark_muted_magenta": 1,
-      "dark_vivid_azure": 1,
       "dark_vivid_blue": 1,
-      "dark_vivid_magenta": 1,
       "dark_vivid_orange": 1,
       "dark_vivid_red": 1,
       "dark_vivid_rose": 1,
-      "light_muted_orange": 1,
+      "light_muted_green": 1,
       "light_muted_purple": 1,
-      "light_muted_teal": 1,
-      "light_vivid_cyan": 1
+      "light_muted_yellow": 1,
+      "light_vivid_magenta": 1,
+      "light_vivid_red": 1
     },
     "partition": {
       "julia:multibrot3": 4,
-      "julia:mandelbrot": 3,
-      "multibrot4": 2,
-      "multibrot5": 2,
-      "multibrot6": 1
+      "julia:mandelbrot": 2,
+      "julia:multibrot5": 1,
+      "multibrot3": 1,
+      "multibrot4": 1,
+      "multibrot5": 1,
+      "multibrot6": 1,
+      "phoenix:classic": 1
     },
     "centered": {
       "False": 12

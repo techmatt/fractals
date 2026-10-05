@@ -385,12 +385,18 @@ stands on no other figure's place); `tools-labels` (`tools_labels.py`) three ban
 
 ### Run the pipeline yourself
 
-*(run_it_yourself_page_ckpt161 and its addendum.)* `tools-and-data/run-it-yourself/` is a
-worked example of the wallpapers README's path from a fresh install, for a coder who has
-cloned `fractal-wallpapers`. It is linked once, from the first Gallery locations paragraph
-of Tools and data. It is in neither the rail nor the site bar, and it is indexed. One
-section per stage gives the stage's sentence, its command blocks and its rows of the
-README's cost table. Under them sits the **inspection page that stage's own command wrote,
+*(run_it_yourself_page_ckpt161 and its addendum; revised by run_it_yourself_revise_ckpt161.)*
+`tools-and-data/run-it-yourself/` is a worked example of the wallpapers README's path from a
+fresh install, for a coder who has cloned `fractal-wallpapers`. It is linked once, from the
+first Gallery locations paragraph of Tools and data. It is in neither the rail nor the site
+bar, and it is indexed. One section per stage gives the stage's sentences and its command
+blocks, each followed by a closed **All options** fold holding every command's `--help`
+from the walkthrough's `help/`, verbatim. There is no cost table: that lives in the
+wallpapers README only. Render one picture shows each of the README's two render commands
+with its picture and render time from `render/`, then a table of every setting one render
+takes, read from `parameters.json` alone. Its families, modes, palettes and three knobs link
+into the article, and the maker refuses a fragment the target page does not carry, or a
+mode its `MODE_SECTION` does not place. Under the commands sits the **inspection page that stage's own command wrote,
 hosted unchanged** in an `<iframe>`, with a link to open it alone and a link to each JSON
 file in its bundle, labelled with the command that made it. The site draws none of those
 pages. `fractal-wallpapers walkthrough` gathers them into one folder of bundles, and
@@ -400,13 +406,14 @@ pages. `fractal-wallpapers walkthrough` gathers them into one folder of bundles,
     python -m builder.run_it_yourself page
 
 `import` replaces `walkthrough/` whole, so a bundle the new run lacks does not linger. It
-also reads the README once for the command blocks and the cost table and writes them to
+also reads the README once for the command blocks and writes them to
 `builder/data/run-it-yourself.json`. `page` rebuilds from that record and the imported
 folder alone. The page's prose and its numbers are literals in the module. **Hosted pages
 are not this site's pages**: `paths.HOSTED_DIRS` keeps them out of `site_pages`, so no head,
 icon or bar is asked of them, and `check`'s `links` still reads them through
 `hosted_pages`. `.gitattributes` marks the folder `-text`, because a bundle's
-`summary.json` is written with CRLF and normalizing it on commit would change its bytes.
+`summary.json` is written with CRLF and normalizing it on commit would change its bytes;
+`check`'s `endings` reads such a file as clean, because its index holds the same CRLF.
 
 ## The contents rail is derived, never kept
 

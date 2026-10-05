@@ -1,0 +1,14 @@
+usage: fractal-wallpapers walkthrough [-h] [--out DIR] [--stamp STAMP] [--run DIR]
+
+The last step of the README's path. Writes, into one folder: judges-check/, walk-stats/,
+candidates/, gallery/ and trace/, each a portable bundle (index.html, page.json and only the
+pictures it shows, re-encoded small); the harvest's summary.json, stats.json and the keep list's
+keep.jsonl; and an index.html linking them. Nothing is rendered or judged again: the first three
+are drawn from the page.json their own commands left, and a page whose command was not run is
+listed with that command. Default artifacts/walkthrough/.
+
+options:
+  -h, --help     show this help message and exit
+  --out DIR      the folder (default artifacts/walkthrough)
+  --stamp STAMP  the record to show and trace (default the newest one made here)
+  --run DIR      the harvest whose stats and summary go in (default artifacts/harvest)

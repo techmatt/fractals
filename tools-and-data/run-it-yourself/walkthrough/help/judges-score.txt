@@ -1,0 +1,26 @@
+usage: fractal-wallpapers judges score [-h] [--manifest FILE] [--location FILE]
+                                       [--judge {render,gallery_grade,palette,location}]
+                                       [--json PATH] [--page] [--out-dir DIR] [--device DEVICE]
+                                       [PICTURE ...]
+
+GEOMETRY: the render and gallery judges were fit on 640x360 candidate pictures (rendered at 2x
+supersample) and read any picture stretched to 384x224 with no crop, so a 16:9 picture is the kind
+whose score means what a gallery's does. The palette judge reads a picture squashed to 224x224 and
+returns one score that is comparable only between pictures of the same place in different
+palettes. The location judge reads a PLACE, not your picture: it renders the place's own
+640x360ss2 smooth view.
+
+positional arguments:
+  PICTURE               a picture file
+
+options:
+  -h, --help            show this help message and exit
+  --manifest FILE       a text file of picture paths, one a line
+  --location FILE       a JSONL of location records ({family, viewport, render}) for the location
+                        judge
+  --judge {render,gallery_grade,palette,location}
+                        only this judge (repeatable; default all four)
+  --json PATH           also write the scores as JSON here
+  --page                also write a page (default artifacts/judges/score/)
+  --out-dir DIR         where --page writes
+  --device DEVICE       cuda, cpu, or auto (default)

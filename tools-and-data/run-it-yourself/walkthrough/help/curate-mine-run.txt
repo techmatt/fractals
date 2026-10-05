@@ -1,0 +1,17 @@
+usage: fractal-wallpapers curate mine run [-h] --name NAME [--budget SECONDS] [--rate SECONDS]
+                                          [--k COUNT] [--per-location COUNT] [--seed SEED]
+                                          [--device DEVICE]
+
+options:
+  -h, --help            show this help message and exit
+  --name NAME           what to call this mine. …
+  --budget SECONDS      how long the mine may spend RENDERING (default 7200). …
+  --rate SECONDS        seconds a candidate, measured on THIS mine's target population, which is
+                        what sizes the arms. …
+  --k COUNT             how many fresh palettes the DEEPEN arm offers one location (default 12). …
+  --per-location COUNT  how many candidates a breadth arm gives one location (default 3), the same
+                        on both so they differ only in the draw
+  --seed SEED           the seed every draw here is taken under (default 20260826)
+  --device DEVICE       cuda, cpu, or auto (default)
+
+… marks help trimmed to its contract. FRACTAL_WALLPAPERS_HELP=full prints the reasoning whole.

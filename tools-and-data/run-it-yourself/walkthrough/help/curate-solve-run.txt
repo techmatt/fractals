@@ -1,0 +1,137 @@
+usage: fractal-wallpapers curate solve run [-h] [--name NAME] [--n N] [--locations COUNT]
+                                           [--rows-per-seat ROWS] [--draw-seed SEED]
+                                           [--allow-unranked] [--target CELL=FRACTION]
+                                           [--mode-floor SEATS] [--flat-floor]
+                                           [--group-cap {identity,proportional}] [--themed CELL]
+                                           [--themed-cap SEATS] [--themed-radius COSINE]
+                                           [--collection NAME] [--neutral-radius COSINE]
+                                           [--no-preselection] [--no-diversity] [--fine-bar SCORE]
+                                           [--force-fill] [--forced PATH] [--no-pins]
+                                           [--fold {pool,delete}] [--spiral-cap SHARE]
+                                           [--cell-floor {on,off}] [--mode-ceiling MODE=SHARE]
+                                           [--key {cascade,p_ge4}] [--explain-keys PATH]
+                                           [--no-swap] [--swap-seconds SECONDS]
+                                           [--augment {on,off}] [--augment-depth {2,3}]
+                                           [--augment-seconds SECONDS] [--explain-seats-of NAME]
+                                           [--no-render] [--release-regime WxHssN]
+                                           [--workers WORKERS] [--no-sheet] [--sheet-out PATH]
+
+The solve itself, under whatever this invocation asks for. `run` rewrites `--name` every time,
+which is a decision rather than a handle — a solve worth pointing at later is a `record`.
+
+options:
+  -h, --help            show this help message and exit
+
+what to call it:
+  `run` rewrites --name every time; `record` stamps --solve-name and never writes over it
+
+  --name NAME           what to call this pass's output directory (default `n<N>`). …
+
+how big, and how much of the pool it reaches:
+  --n N                 how many wallpapers to seat (default 20, the size a leg is read at). …
+  --locations COUNT     let the pass reach only this many strongest CLUSTERS — a kept place plus
+                        every place the neutral pre-selection folded into it — ranked by their
+                        best candidate on the fine head's p_fine where it has read the row and raw
+                        P(>=4) where it has not. …
+  --rows-per-seat ROWS  how many view rows each stratum keeps per seat it could contribute
+                        (default 2). …
+  --draw-seed SEED      the seed the view's band-blind stride offsets are drawn under (default 0).
+                        …
+  --allow-unranked      choose even though the key cannot read every clearing candidate. …
+  --collection NAME     seat ONE COLLECTION — a hue family or a production mode — at the size
+                        `curation.targets.TARGETS` sets for it. …
+  --fine-bar SCORE      narrow the pool to the rows the gallery-grade head reads at p_fine(>=4) >=
+                        SCORE, BEFORE anything else runs — the per-mode bars, the neutral pre-
+                        selection and the view are all taken over what is left, so a barred pass
+                        is a whole pass and not a filtered reading of an unbarred one. …
+  --force-fill          seat as many as an EARLY pool allows: the fine bar and the per-mode bars
+                        stop refusing and the best rows available seat, while every distinctness
+                        rule still holds. …
+  --forced PATH         a MANIFEST of candidate keys, one per line, this pass lifts to the top of
+                        the fine column BEFORE the bar, the neutral pre-selection and the cascade
+                        — so a forced row clears `--fine-bar`, is its cluster's survivor and is
+                        offered ahead of every unforced row. …
+  --no-pins             seat NONE of the pinned list, for a comparison. …
+  --fold {pool,delete}  what the neutral pre-selection does with a place it folds into another. …
+
+the demands:
+  every one of these is counted with its shortfall recorded: unfilled beats padded, and no
+  demand is ever met by a fallback leg
+
+  --target CELL=FRACTION
+                        demand that at least this share of the REALIZED seats be dominant in this
+                        colour cell. …
+  --mode-floor SEATS    an ARTIFICIAL flat mode floor, one number for every accepted mode. …
+  --flat-floor          solve under the FLAT mode floor instead of the per-mode rule — floor(n /
+                        100) seats for every accepted mode, which is what every gallery before
+                        2026-08-31 was seated under. …
+  --group-cap {identity,proportional}
+                        which palette-group cap to run under. …
+  --spiral-cap SHARE    cap the share of seats filled from a location the spiral probe calls a
+                        spiral: at most ceil(SHARE * seats filled), the same spelling a colour
+                        target is stated in. …
+  --cell-floor {on,off}
+                        the COLOUR FLOOR: at least floor(kf * t * seats filled) seats dominant in
+                        each of the 48 chromatic cells — kf = 1 against the ceiling's k = 3, one
+                        fair share against three, so 20 of a thousand seats where the allowance is
+                        63. …
+  --mode-ceiling MODE=SHARE
+                        cap the share of seats one MODE may take: at most ceil(SHARE * seats
+                        filled), the spiral cap's own arithmetic and the same spelling a colour
+                        target is stated in. …
+
+a themed gallery:
+  one dominant colour cell at the relaxed bar; the other two are ignored without --themed
+
+  --themed CELL         choose a THEMED gallery: one dominant colour cell, over a pool of the rows
+                        that cell's dominance block claims, at the RELAXED bar — P(>=3) >= 0.5 for
+                        every accepted mode rather than the per-mode rule, because a single-cell
+                        pool is q3-grade material and at the per-mode bars there is no pool. …
+  --themed-cap SEATS    the palette-group cap a THEMED pass runs under, overriding the computed
+                        one. …
+  --themed-radius COSINE
+                        the radius the themed diversity rule refuses inside (default 0.07). …
+
+the distinctness rules:
+  --neutral-radius COSINE
+                        the neutral pre-selection radius applied at pool construction (default
+                        0.02). …
+  --no-preselection     choose from the whole clearing pool, with no neutral pre-selection
+  --no-diversity        choose without the diversity rule, which is the only rule that opens a
+                        picture. …
+
+the objective and the search:
+  --key {cascade,p_ge4}
+                        the sort key the pool is walked in AND the quantity the objective is
+                        stated in. …
+  --explain-keys PATH   a MANIFEST of candidate keys, one per line, whose fate this pass records
+                        ONE AT A TIME into `rejection.explained` — every key named comes back
+                        `seated`, `not in the pool`, or the first rule that refused it. …
+  --no-swap             take the greedy seed and stop. …
+  --swap-seconds SECONDS
+                        a wall budget for the SWAP LOOP alone. …
+  --augment {on,off}    the augmenting-chain stage: eject one seat, insert TWO in its room. …
+  --augment-depth {2,3}
+                        how long a chain may be: 2 is one ejection and two inserts, 3 is one more
+                        eject/insert pair. …
+  --augment-seconds SECONDS
+                        a wall budget for the AUGMENT STAGE alone. …
+  --explain-seats-of NAME
+                        an earlier solve record whose seats this pass explains ONE AT A TIME, into
+                        `rejection.explained`: every key it seated comes back either `seated` or
+                        with the rule that refused it here. …
+
+the release leg and the sheet:
+  --no-render           take every decision and make no release picture. …
+  --release-regime WxHssN
+                        the geometry the release leg renders at (default 1280x720ss2, which is
+                        what every leg that ships a wallpaper ships; 2560x1440ss4 is what the
+                        first three gallery passes shipped at)
+  --workers WORKERS     worker processes the release leg renders over (default 3, which is this
+                        machine's render pool; each spawns below-normal by construction)
+  --no-sheet            take every decision and build no contact sheet
+  --sheet-out PATH      write the contact sheet there instead of beside the record, which is what
+                        a before/after over several variants wants — one directory of sheets to
+                        look at
+
+… marks help trimmed to its contract. FRACTAL_WALLPAPERS_HELP=full prints the reasoning whole.

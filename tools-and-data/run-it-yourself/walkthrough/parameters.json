@@ -1,0 +1,4865 @@
+{
+ "schema": 1,
+ "settable_by": {
+  "flag": "fractal-wallpapers render --<flag>; a mode parameter is --param NAME=VALUE",
+  "spec": "only through a spec JSON: fractal-engine render <spec.json>, whose keys are FORMATS.md's *The render spec*"
+ },
+ "families": {
+  "mandelbrot": {
+   "flag": true,
+   "degree": "2, fixed",
+   "takes": []
+  },
+  "multibrot": {
+   "flag": true,
+   "degree": "an integer, 3 to 6",
+   "takes": [
+    "degree"
+   ]
+  },
+  "julia": {
+   "flag": true,
+   "degree": "an integer, 2 to 6",
+   "takes": [
+    "degree",
+    "c (required)"
+   ]
+  },
+  "phoenix": {
+   "flag": true,
+   "degree": "2, fixed",
+   "takes": [
+    "c (default 0.5667 0)",
+    "p (default -0.5 0)",
+    "z_prev (default 0 0)"
+   ]
+  },
+  "phoenix_m": {
+   "flag": false,
+   "degree": "2, fixed",
+   "takes": [
+    "p"
+   ],
+   "note": "the Phoenix parameter plane: the pixel is c"
+  },
+  "fractional_multibrot": {
+   "flag": false,
+   "degree": "a decimal string in [1.8, 5.0]",
+   "takes": [
+    "degree"
+   ],
+   "note": "render only, with no home view: center_re, center_im and width are required"
+  }
+ },
+ "walked_families": [
+  "mandelbrot",
+  "multibrot3",
+  "multibrot4",
+  "multibrot5",
+  "multibrot6",
+  "julia:mandelbrot",
+  "julia:multibrot3",
+  "julia:multibrot4",
+  "julia:multibrot5",
+  "julia:multibrot6",
+  "phoenix",
+  "phoenix:classic"
+ ],
+ "frame": {
+  "center_re": {
+   "flag": "--center-re",
+   "default": null,
+   "range": "a decimal string",
+   "unsaid": "the family's home view"
+  },
+  "center_im": {
+   "flag": "--center-im",
+   "default": null,
+   "range": "a decimal string",
+   "unsaid": "the family's home view"
+  },
+  "width": {
+   "flag": "--width",
+   "default": null,
+   "range": "a decimal string, > 0",
+   "unsaid": "the family's home width"
+  },
+  "resolution": {
+   "flag": "--resolution",
+   "default": [
+    1920,
+    1080
+   ],
+   "range": "two integers, each > 0",
+   "unsaid": null
+  },
+  "supersample": {
+   "flag": "--supersample",
+   "default": 2,
+   "range": "an integer, >= 1",
+   "unsaid": null
+  },
+  "maxiter": {
+   "flag": "--maxiter",
+   "default": null,
+   "range": "an integer, >= 1 (an explorer link holds it to 50-2,000,000)",
+   "unsaid": "the depth policy's cap for the view's width"
+  }
+ },
+ "modes": [
+  {
+   "name": "smooth",
+   "tier": "production",
+   "production": true,
+   "identity": "Fractional escape time: the spine every composite builds on.",
+   "params": {}
+  },
+  {
+   "name": "tia",
+   "tier": "production",
+   "production": true,
+   "identity": "Triangle-inequality average: fine engraved banding.",
+   "params": {}
+  },
+  {
+   "name": "stripe",
+   "tier": "production",
+   "production": true,
+   "identity": "Stripe average at density 6: combed flowing striations.",
+   "params": {
+    "density": {
+     "default": 6.0,
+     "min": 0.0,
+     "max": null,
+     "range": "positive"
+    }
+   }
+  },
+  {
+   "name": "exp_smoothing",
+   "tier": "production",
+   "production": true,
+   "identity": "Sum of exp(-|z|) over the orbit: an averaging alternative to smooth.",
+   "params": {}
+  },
+  {
+   "name": "gaussian_int",
+   "tier": "production",
+   "production": true,
+   "identity": "Closest approach to the integer lattice: a tiled, beaded field.",
+   "params": {}
+  },
+  {
+   "name": "trap_circle",
+   "tier": "production",
+   "production": true,
+   "identity": "Closest approach to the unit circle, read through a log curve.",
+   "params": {
+    "radius": {
+     "default": 1.0,
+     "min": 0.0,
+     "max": null,
+     "range": "positive"
+    }
+   }
+  },
+  {
+   "name": "curvature",
+   "tier": "production",
+   "production": true,
+   "identity": "Mean turning angle of the orbit.",
+   "params": {}
+  },
+  {
+   "name": "smooth_mean_angle",
+   "tier": "production",
+   "production": true,
+   "identity": "Smooth base, screened with the lattice trap's spread angle.",
+   "params": {
+    "weight": {
+     "default": 0.85,
+     "min": 0.0,
+     "max": 1.0,
+     "range": "between 0 and 1"
+    }
+   }
+  },
+  {
+   "name": "smooth_angle_min",
+   "tier": "production",
+   "production": true,
+   "identity": "Smooth base, screened with the angle at the lattice's closest approach.",
+   "params": {
+    "weight": {
+     "default": 0.85,
+     "min": 0.0,
+     "max": 1.0,
+     "range": "between 0 and 1"
+    }
+   }
+  },
+  {
+   "name": "smooth_trap_circle",
+   "tier": "production",
+   "production": true,
+   "identity": "Smooth base, screened with the circle trap: structure in the interior.",
+   "params": {
+    "radius": {
+     "default": 1.0,
+     "min": 0.0,
+     "max": null,
+     "range": "positive"
+    },
+    "weight": {
+     "default": 0.85,
+     "min": 0.0,
+     "max": 1.0,
+     "range": "between 0 and 1"
+    }
+   }
+  },
+  {
+   "name": "smooth_stripe",
+   "tier": "production",
+   "production": true,
+   "identity": "Smooth base, screened with the stripe average.",
+   "params": {
+    "density": {
+     "default": 6.0,
+     "min": 0.0,
+     "max": null,
+     "range": "positive"
+    },
+    "weight": {
+     "default": 0.85,
+     "min": 0.0,
+     "max": 1.0,
+     "range": "between 0 and 1"
+    }
+   }
+  },
+  {
+   "name": "smooth_curvature",
+   "tier": "production",
+   "production": true,
+   "identity": "Smooth base, screened with curvature.",
+   "params": {
+    "weight": {
+     "default": 0.85,
+     "min": 0.0,
+     "max": 1.0,
+     "range": "between 0 and 1"
+    }
+   }
+  },
+  {
+   "name": "direct_trap_ring",
+   "tier": "production",
+   "production": true,
+   "identity": "Direct trap, ring shape, screened over black: the cleanest of the family.",
+   "params": {
+    "opacity": {
+     "default": 0.45,
+     "min": 0.0,
+     "max": 1.0,
+     "range": "between 0 and 1"
+    },
+    "radius": {
+     "default": 1.0,
+     "min": 0.0,
+     "max": null,
+     "range": "positive"
+    },
+    "threshold": {
+     "default": 0.0597,
+     "min": 0.0,
+     "max": null,
+     "range": "positive"
+    }
+   }
+  },
+  {
+   "name": "direct_trap_screen",
+   "tier": "production",
+   "production": true,
+   "identity": "Direct trap, cross shape, screened over black: bright thorns.",
+   "params": {
+    "opacity": {
+     "default": 0.15,
+     "min": 0.0,
+     "max": 1.0,
+     "range": "between 0 and 1"
+    },
+    "radius": {
+     "default": 1.0,
+     "min": 0.0,
+     "max": null,
+     "range": "positive"
+    },
+    "threshold": {
+     "default": 0.05,
+     "min": 0.0,
+     "max": null,
+     "range": "positive"
+    }
+   }
+  },
+  {
+   "name": "direct_trap_multiply",
+   "tier": "production",
+   "production": true,
+   "identity": "Direct trap, cross shape, multiplied over white: dark lace on light.",
+   "params": {
+    "opacity": {
+     "default": 0.2,
+     "min": 0.0,
+     "max": 1.0,
+     "range": "between 0 and 1"
+    },
+    "radius": {
+     "default": 1.0,
+     "min": 0.0,
+     "max": null,
+     "range": "positive"
+    },
+    "threshold": {
+     "default": 0.1,
+     "min": 0.0,
+     "max": null,
+     "range": "positive"
+    }
+   }
+  },
+  {
+   "name": "direct_trap_lines",
+   "tier": "production",
+   "production": true,
+   "identity": "Direct trap on the real axis: the narrowest, most directional member.",
+   "params": {
+    "opacity": {
+     "default": 0.45,
+     "min": 0.0,
+     "max": 1.0,
+     "range": "between 0 and 1"
+    },
+    "radius": {
+     "default": 1.0,
+     "min": 0.0,
+     "max": null,
+     "range": "positive"
+    },
+    "threshold": {
+     "default": 0.0807,
+     "min": 0.0,
+     "max": null,
+     "range": "positive"
+    }
+   }
+  },
+  {
+   "name": "threads",
+   "tier": "production",
+   "production": true,
+   "identity": "Smooth base plus the accumulated cross trap: sparse organic flow.",
+   "params": {
+    "sigma": {
+     "default": 0.15,
+     "min": 0.0,
+     "max": null,
+     "range": "positive"
+    },
+    "weight": {
+     "default": 0.5,
+     "min": 0.0,
+     "max": 1.0,
+     "range": "between 0 and 1"
+    }
+   }
+  },
+  {
+   "name": "itinerary",
+   "tier": "production",
+   "production": true,
+   "identity": "Smooth base whose palette position the orbit's angular address shifts. The address opens at z1 on a dynamical plane and at z0 on a parameter one.",
+   "params": {
+    "shift": {
+     "default": 0.5,
+     "min": null,
+     "max": null,
+     "range": "a number"
+    }
+   }
+  },
+  {
+   "name": "tail_itinerary",
+   "tier": "production",
+   "production": true,
+   "identity": "Smooth base shifted by the LAST symbols of the orbit's angular address, rather than the first. Reads the same on both planes.",
+   "params": {
+    "shift": {
+     "default": 0.5,
+     "min": null,
+     "max": null,
+     "range": "a number"
+    }
+   }
+  },
+  {
+   "name": "de",
+   "tier": "niche",
+   "production": false,
+   "identity": "Distance to the set itself, read through a log curve. No lighting.",
+   "params": {}
+  }
+ ],
+ "default_mode": "smooth",
+ "palette": {
+  "gamma": {
+   "flag": "--gamma",
+   "default": 1.0,
+   "range": "> 0",
+   "says": "power on the normalized field"
+  },
+  "cycles": {
+   "flag": "--cycles",
+   "default": 1.0,
+   "range": "> 0",
+   "says": "times the map repeats over the field"
+  },
+  "phase": {
+   "flag": "--phase",
+   "default": 0.0,
+   "range": "any finite",
+   "says": "turns the map is rotated by"
+  },
+  "reverse": {
+   "flag": "--reverse",
+   "default": false,
+   "range": "true or false",
+   "says": "run the map backwards"
+  },
+  "mirror": {
+   "flag": "--mirror",
+   "default": false,
+   "range": "true or false",
+   "says": "fold the map out and back; refused on a cyclic map (`palettes list --kind`)"
+  },
+  "transfer": {
+   "flag": "--transfer",
+   "default": "value",
+   "range": "value (default), edge:W with W >= 0, or rank",
+   "says": "what the map is indexed by"
+  },
+  "rolloff": {
+   "flag": "--rolloff",
+   "default": "none",
+   "range": "none (default), soft_knee:K with K in [0, 1), reinhard, or aces",
+   "says": "how the brightest values are compressed"
+  },
+  "scale": {
+   "flag": "--scale",
+   "default": "leveled",
+   "range": "leveled or absolute",
+   "says": "leveled (default) spreads the map over the field's own range; absolute indexes it by the raw count, where --period and --knee apply and gamma, cycles and transfer do not"
+  },
+  "lambda": {
+   "flag": "--lambda",
+   "default": 1.0,
+   "range": "in [0, 1]",
+   "says": "Box-Cox"
+  },
+  "period": {
+   "flag": "--period",
+   "default": 1.0,
+   "range": "> 0",
+   "says": "absolute scale only"
+  },
+  "knee": {
+   "flag": "--knee",
+   "default": null,
+   "range": "> 0",
+   "says": "absolute scale only"
+  }
+ },
+ "colormaps": [
+  {
+   "name": "02591_vermilionlakes_2560x1600",
+   "kind": "cyclic"
+  },
+  {
+   "name": "02595_oiawindmills_2560x1600",
+   "kind": "cyclic"
+  },
+  {
+   "name": "02596_lakehawea_2560x1600",
+   "kind": "cyclic"
+  },
+  {
+   "name": "02598_asgardrealmofthegods_2560x1600",
+   "kind": "cyclic"
+  },
+  {
+   "name": "02604_platform_2560x1600",
+   "kind": "cyclic"
+  },
+  {
+   "name": "02605_journeytoheaven_2560x1600",
+   "kind": "cyclic"
+  },
+  {
+   "name": "103420",
+   "kind": "cyclic"
+  },
+  {
+   "name": "2pi1Zz6",
+   "kind": "cyclic"
+  },
+  {
+   "name": "72kcy - Imgur",
+   "kind": "cyclic"
+  },
+  {
+   "name": "795548-3840x2160-desktop-4k-fractal-background",
+   "kind": "cyclic"
+  },
+  {
+   "name": "795549-3840x2160-desktop-4k-fractal-background",
+   "kind": "cyclic"
+  },
+  {
+   "name": "795565-3840x2160-desktop-4k-fractal-wallpaper-image",
+   "kind": "cyclic"
+  },
+  {
+   "name": "abstract-3d-wallpapers",
+   "kind": "cyclic"
+  },
+  {
+   "name": "abstract-wallpaper-backgrounds-hd",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Abyss to Foam",
+   "kind": "cyclic"
+  },
+  {
+   "name": "adrift-concept-art-14463-1920x1200",
+   "kind": "cyclic"
+  },
+  {
+   "name": "afmhot",
+   "kind": "sequential"
+  },
+  {
+   "name": "agates-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "ahli",
+   "kind": "cyclic"
+  },
+  {
+   "name": "along-the-starry-way-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "amarettoboso",
+   "kind": "cyclic"
+  },
+  {
+   "name": "amazing-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Amber Highlands",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Amber Signal",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Amber Through Teal and Lime",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Amethyst Veil",
+   "kind": "cyclic"
+  },
+  {
+   "name": "anathema-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "anodize-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "antiques-and-aqua-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Arcade Black",
+   "kind": "cyclic"
+  },
+  {
+   "name": "ariel-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Ash Ember Arc",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Ash Gold",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Ash Rose Vault",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Ashen Orchid",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Aster Bloom",
+   "kind": "cyclic"
+  },
+  {
+   "name": "at-the-beach-hd-wallpaper-1920x1200",
+   "kind": "cyclic"
+  },
+  {
+   "name": "atlas_grey",
+   "kind": "sequential"
+  },
+  {
+   "name": "Aurora Curtain",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Aurora Undertow",
+   "kind": "cyclic"
+  },
+  {
+   "name": "autumn",
+   "kind": "sequential"
+  },
+  {
+   "name": "azarn",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Azure & Coal",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Azure Monolith",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Azure, Gold, Oxblood",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Bauhaus Primary",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Bauhaus Workshop",
+   "kind": "cyclic"
+  },
+  {
+   "name": "benediction-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "berlin",
+   "kind": "sequential"
+  },
+  {
+   "name": "birds-of-paradise-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Black Iris",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Black Lacquer, Teal Seal",
+   "kind": "cyclic"
+  },
+  {
+   "name": "black-widow-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "blacklight-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Bleached Bronze",
+   "kind": "cyclic"
+  },
+  {
+   "name": "blinan",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Blossom Triad",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Blue Held, Amber Struck",
+   "kind": "cyclic"
+  },
+  {
+   "name": "blue_orange",
+   "kind": "sequential"
+  },
+  {
+   "name": "bluebird-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "blueroot",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Blues",
+   "kind": "sequential"
+  },
+  {
+   "name": "Blush and Bracken",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Blush Room, Wine Dark",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Blush Vault",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Boho Cloth",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Boho Dust",
+   "kind": "cyclic"
+  },
+  {
+   "name": "bone",
+   "kind": "sequential"
+  },
+  {
+   "name": "Bone & Bruise",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Bone & Deep Petrol",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Bone and Blush",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Bone and Deep Green",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Bone and Moss",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Bone and Verdigris",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Bone Orchard Rose",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Bone Vault",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Boulevard Gold",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Bracken and Bone",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Bramble at Dusk",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Brass Tide",
+   "kind": "cyclic"
+  },
+  {
+   "name": "BrBG",
+   "kind": "sequential"
+  },
+  {
+   "name": "brisbee",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Bronze Fern",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Bruised Velvet",
+   "kind": "cyclic"
+  },
+  {
+   "name": "BuGn",
+   "kind": "sequential"
+  },
+  {
+   "name": "BuPu",
+   "kind": "sequential"
+  },
+  {
+   "name": "Burgundy & Coal",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Buried Fire",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Burnished Deep",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Burnt Boulevard",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Butter Fathom",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Butter Storm",
+   "kind": "cyclic"
+  },
+  {
+   "name": "bwr",
+   "kind": "sequential"
+  },
+  {
+   "name": "calypsos-domain-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Candle & Wine",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Candle Ramp",
+   "kind": "cyclic"
+  },
+  {
+   "name": "carried-away-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "celestial-domain-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Cellar & Yew",
+   "kind": "cyclic"
+  },
+  {
+   "name": "cet_cyclic_bgrmb_35_70_c75",
+   "kind": "cyclic"
+  },
+  {
+   "name": "cet_cyclic_mrybm_35_75_c68",
+   "kind": "cyclic"
+  },
+  {
+   "name": "cet_cyclic_mrybm_35_75_c68_s25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "cet_cyclic_mybm_20_100_c48",
+   "kind": "cyclic"
+  },
+  {
+   "name": "cet_cyclic_mybm_20_100_c48_s25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "cet_cyclic_mygbm_30_95_c78",
+   "kind": "cyclic"
+  },
+  {
+   "name": "cet_cyclic_mygbm_30_95_c78_s25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "cet_cyclic_mygbm_50_90_c46",
+   "kind": "cyclic"
+  },
+  {
+   "name": "cet_cyclic_mygbm_50_90_c46_s25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "cet_cyclic_protanopic_deuteranopic_bwyk_16_96_c31",
+   "kind": "cyclic"
+  },
+  {
+   "name": "cet_cyclic_protanopic_deuteranopic_wywb_55_96_c33",
+   "kind": "cyclic"
+  },
+  {
+   "name": "cet_cyclic_rygcbmr_50_90_c64",
+   "kind": "cyclic"
+  },
+  {
+   "name": "cet_cyclic_rygcbmr_50_90_c64_s25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "cet_cyclic_tritanopic_cwrk_40_100_c20",
+   "kind": "cyclic"
+  },
+  {
+   "name": "cet_cyclic_tritanopic_wrwc_70_100_c20",
+   "kind": "cyclic"
+  },
+  {
+   "name": "cet_cyclic_wrkbw_10_90_c43",
+   "kind": "cyclic"
+  },
+  {
+   "name": "cet_cyclic_wrkbw_10_90_c43_s25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "cet_cyclic_wrwbw_40_90_c42",
+   "kind": "cyclic"
+  },
+  {
+   "name": "cet_cyclic_wrwbw_40_90_c42_s25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "cet_cyclic_ymcgy_60_90_c67",
+   "kind": "cyclic"
+  },
+  {
+   "name": "cet_cyclic_ymcgy_60_90_c67_s25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "cet_diverging_bkr_55_10_c35",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_diverging_bky_60_10_c30",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_diverging_bwg_20_95_c41",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_diverging_bwr_20_95_c54",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_diverging_bwr_40_95_c42",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_diverging_bwr_55_98_c37",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_diverging_gkr_60_10_c40",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_diverging_gwr_55_95_c38",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_diverging_linear_bjr_30_55_c53",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_diverging_linear_bjy_30_90_c45",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_diverging_linear_protanopic_deuteranopic_bjy_57_89_c34",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_diverging_protanopic_deuteranopic_bwy_60_95_c32",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_diverging_rainbow_bgymr_45_85_c67",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_diverging_tritanopic_cwr_75_98_c20",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_linear_bgy_10_95_c74",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_linear_bgyw_15_100_c67",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_linear_bgyw_15_100_c68",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_linear_bgyw_20_98_c66",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_linear_blue_95_50_c20",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_linear_bmw_5_95_c86",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_linear_bmw_5_95_c89",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_linear_bmy_10_95_c71",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_linear_bmy_10_95_c78",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_linear_gow_60_85_c27",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_linear_gow_65_90_c35",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_linear_kbc_5_95_c73",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_linear_kbgoy_20_95_c57",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_linear_kbgyw_10_98_c63",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_linear_kbgyw_5_98_c62",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_linear_kgy_5_95_c69",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_linear_kry_0_97_c73",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_linear_kry_5_95_c72",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_linear_kry_5_98_c75",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_linear_kryw_0_100_c71",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_linear_kryw_5_100_c64",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_linear_kryw_5_100_c67",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_linear_protanopic_deuteranopic_kbjyw_5_95_c25",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_linear_protanopic_deuteranopic_kbw_5_95_c34",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_linear_protanopic_deuteranopic_kbw_5_98_c40",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_linear_protanopic_deuteranopic_kyw_5_95_c49",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_linear_tritanopic_kcw_5_95_c22",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_linear_tritanopic_krjcw_5_95_c24",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_linear_tritanopic_krjcw_5_98_c46",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_linear_tritanopic_krw_5_95_c46",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_linear_wcmr_100_45_c42",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_linear_worb_100_25_c53",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_linear_wyor_100_45_c55",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_rainbow_bgyr_10_90_c83",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_rainbow_bgyr_35_85_c72",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_rainbow_bgyr_35_85_c73",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_rainbow_bgyrm_35_85_c69",
+   "kind": "sequential"
+  },
+  {
+   "name": "cet_rainbow_bgyrm_35_85_c71",
+   "kind": "sequential"
+  },
+  {
+   "name": "chaidai",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Chalcedony",
+   "kind": "cyclic"
+  },
+  {
+   "name": "chalk-drawing-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Chart & Compass",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Chartreuse Eclipse",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Chartreuse Furnace",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Chartreuse Nocturne",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Chartreuse Vault",
+   "kind": "cyclic"
+  },
+  {
+   "name": "chiaris-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Chrome Violet Hour",
+   "kind": "cyclic"
+  },
+  {
+   "name": "chronoscope-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Cinnabar Cathedral",
+   "kind": "cyclic"
+  },
+  {
+   "name": "circulation",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Cirrus & Ember",
+   "kind": "cyclic"
+  },
+  {
+   "name": "citadel",
+   "kind": "cyclic"
+  },
+  {
+   "name": "city_of_lights",
+   "kind": "cyclic"
+  },
+  {
+   "name": "cividis",
+   "kind": "sequential"
+  },
+  {
+   "name": "Claret Ember",
+   "kind": "cyclic"
+  },
+  {
+   "name": "cmr.amber",
+   "kind": "sequential"
+  },
+  {
+   "name": "cmr.amethyst",
+   "kind": "sequential"
+  },
+  {
+   "name": "cmr.apple",
+   "kind": "sequential"
+  },
+  {
+   "name": "cmr.arctic",
+   "kind": "sequential"
+  },
+  {
+   "name": "cmr.bubblegum",
+   "kind": "sequential"
+  },
+  {
+   "name": "cmr.chroma",
+   "kind": "sequential"
+  },
+  {
+   "name": "cmr.copper",
+   "kind": "cyclic"
+  },
+  {
+   "name": "cmr.copper_s",
+   "kind": "cyclic"
+  },
+  {
+   "name": "cmr.cosmic",
+   "kind": "sequential"
+  },
+  {
+   "name": "cmr.dusk",
+   "kind": "sequential"
+  },
+  {
+   "name": "cmr.eclipse",
+   "kind": "sequential"
+  },
+  {
+   "name": "cmr.ember",
+   "kind": "sequential"
+  },
+  {
+   "name": "cmr.emerald",
+   "kind": "sequential"
+  },
+  {
+   "name": "cmr.emergency",
+   "kind": "cyclic"
+  },
+  {
+   "name": "cmr.emergency_s",
+   "kind": "cyclic"
+  },
+  {
+   "name": "cmr.fall",
+   "kind": "sequential"
+  },
+  {
+   "name": "cmr.flamingo",
+   "kind": "sequential"
+  },
+  {
+   "name": "cmr.freeze",
+   "kind": "sequential"
+  },
+  {
+   "name": "cmr.fusion",
+   "kind": "cyclic"
+  },
+  {
+   "name": "cmr.gem",
+   "kind": "sequential"
+  },
+  {
+   "name": "cmr.ghostlight",
+   "kind": "sequential"
+  },
+  {
+   "name": "cmr.gothic",
+   "kind": "sequential"
+  },
+  {
+   "name": "cmr.guppy",
+   "kind": "sequential"
+  },
+  {
+   "name": "cmr.holly",
+   "kind": "cyclic"
+  },
+  {
+   "name": "cmr.horizon",
+   "kind": "sequential"
+  },
+  {
+   "name": "cmr.iceburn",
+   "kind": "sequential"
+  },
+  {
+   "name": "cmr.infinity",
+   "kind": "cyclic"
+  },
+  {
+   "name": "cmr.infinity_s",
+   "kind": "cyclic"
+  },
+  {
+   "name": "cmr.jungle",
+   "kind": "sequential"
+  },
+  {
+   "name": "cmr.lavender",
+   "kind": "sequential"
+  },
+  {
+   "name": "cmr.lilac",
+   "kind": "sequential"
+  },
+  {
+   "name": "cmr.neon",
+   "kind": "sequential"
+  },
+  {
+   "name": "cmr.nuclear",
+   "kind": "sequential"
+  },
+  {
+   "name": "cmr.ocean",
+   "kind": "sequential"
+  },
+  {
+   "name": "cmr.pepper",
+   "kind": "sequential"
+  },
+  {
+   "name": "cmr.pride",
+   "kind": "cyclic"
+  },
+  {
+   "name": "cmr.prinsenvlag",
+   "kind": "sequential"
+  },
+  {
+   "name": "cmr.rainforest",
+   "kind": "sequential"
+  },
+  {
+   "name": "cmr.redshift",
+   "kind": "sequential"
+  },
+  {
+   "name": "cmr.sapphire",
+   "kind": "sequential"
+  },
+  {
+   "name": "cmr.savanna",
+   "kind": "sequential"
+  },
+  {
+   "name": "cmr.seasons",
+   "kind": "cyclic"
+  },
+  {
+   "name": "cmr.seasons_s",
+   "kind": "cyclic"
+  },
+  {
+   "name": "cmr.seaweed",
+   "kind": "sequential"
+  },
+  {
+   "name": "cmr.sepia",
+   "kind": "sequential"
+  },
+  {
+   "name": "cmr.sunburst",
+   "kind": "sequential"
+  },
+  {
+   "name": "cmr.swamp",
+   "kind": "sequential"
+  },
+  {
+   "name": "cmr.torch",
+   "kind": "sequential"
+  },
+  {
+   "name": "cmr.toxic",
+   "kind": "sequential"
+  },
+  {
+   "name": "cmr.tree",
+   "kind": "sequential"
+  },
+  {
+   "name": "cmr.tropical",
+   "kind": "sequential"
+  },
+  {
+   "name": "cmr.viola",
+   "kind": "cyclic"
+  },
+  {
+   "name": "cmr.voltage",
+   "kind": "sequential"
+  },
+  {
+   "name": "cmr.waterlily",
+   "kind": "sequential"
+  },
+  {
+   "name": "cmr.watermelon",
+   "kind": "sequential"
+  },
+  {
+   "name": "cmr.wildfire",
+   "kind": "sequential"
+  },
+  {
+   "name": "CMRmap",
+   "kind": "sequential"
+  },
+  {
+   "name": "Coal & Coal-Fire",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Coal & Malachite",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Coal Amber",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Coal Rose",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Coalglow",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Cobalt & Celadon",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Cobalt & Coal",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Cobalt Against Gold",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Cobalt Detonation",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Cobalt Furnace Ultra",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Cobalt Meets Blush",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Cobalt Meets Rust",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Cobalt Monody",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Cobalt Orchid",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Cobalt Without Daylight",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Cobalt, Crimson, Gold",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Cobalt-Rust Double Flare",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Cochineal & Cream",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Cold Fern Ramp",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Cold Forge",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Cold Iron Ascent",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Cold Sweep",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Coldhearth",
+   "kind": "cyclic"
+  },
+  {
+   "name": "colourwheel-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "commons_2125_Mandelbulb_3D",
+   "kind": "cyclic"
+  },
+  {
+   "name": "commons_Chaos_Clock_-_The_Steampunk_Spell-Shaper",
+   "kind": "cyclic"
+  },
+  {
+   "name": "commons_Js17eta",
+   "kind": "cyclic"
+  },
+  {
+   "name": "commons_Julia-Menge_-0.8_0.156i",
+   "kind": "cyclic"
+  },
+  {
+   "name": "commons_Julia-Menge_83372617338",
+   "kind": "cyclic"
+  },
+  {
+   "name": "commons_Julia_Fractal_rendered_in_Paint.NET",
+   "kind": "cyclic"
+  },
+  {
+   "name": "commons_Julia_set_spiral",
+   "kind": "cyclic"
+  },
+  {
+   "name": "commons_Kalles_Fraktaler_adventurous-forest_00024_1.17e222",
+   "kind": "cyclic"
+  },
+  {
+   "name": "commons_Mandelbrot_3__E1_BB_94_Chu_E1_BB_93n_Chu_E1_BB_93n__C4_90_E1_BB_99t_Bi_E1_BA_BFn",
+   "kind": "cyclic"
+  },
+  {
+   "name": "commons_Mandelbrot_3_B_C3_B4ng_Xoay",
+   "kind": "cyclic"
+  },
+  {
+   "name": "commons_Mandelbrot_3_D_C6_B0_C6_A1ng_X_E1_BB_89_C_E1_BB_95_Sinh",
+   "kind": "cyclic"
+  },
+  {
+   "name": "commons_Mandelbrot_3_Xo_C3_A1y_B_C3_A1nh_Ng_E1_BB_8Dt",
+   "kind": "cyclic"
+  },
+  {
+   "name": "commons_Mandelbrot_4_B_C3_B4ng_Ho_C3_A0ng_D_C3_A3",
+   "kind": "cyclic"
+  },
+  {
+   "name": "commons_Mandelbrot_4_H_E1_BB_93__E1_BB_90c",
+   "kind": "cyclic"
+  },
+  {
+   "name": "commons_Mandelbrot_5__E1_BB_90c_D_C3_A3y_B_C3_B4ng",
+   "kind": "cyclic"
+  },
+  {
+   "name": "commons_Mandelbrot_5_B_C3_B4ng_Ng_C5_A9_Gi_C3_A1c",
+   "kind": "cyclic"
+  },
+  {
+   "name": "commons_Mandelbrot_5_Ba__E1_BB_90c",
+   "kind": "cyclic"
+  },
+  {
+   "name": "commons_Mandelbrot_6__C4_90_E1_BA_A7u_R_E1_BB_93ng",
+   "kind": "cyclic"
+  },
+  {
+   "name": "commons_Mandelbrot_6_Hai_Ng_C3_A2n_H_C3_A0",
+   "kind": "cyclic"
+  },
+  {
+   "name": "commons_Mandelbrot_6_Ph_C3_A1o_B_C3_B4ng",
+   "kind": "cyclic"
+  },
+  {
+   "name": "commons_Mandelbrot_6_R_E1_BB_ABng_Nhi_E1_BB_87t__C4_90_E1_BB_9Bi",
+   "kind": "cyclic"
+  },
+  {
+   "name": "commons_Mandelbrot_B_C3_A1nh_Ng_E1_BB_8Dt",
+   "kind": "cyclic"
+  },
+  {
+   "name": "commons_Mandelbrot_B_C3_B4ng_Tuy_E1_BA_BFt",
+   "kind": "cyclic"
+  },
+  {
+   "name": "commons_Mandelbrot_C_C3_A2y_Trong_R_E1_BB_ABng_2",
+   "kind": "cyclic"
+  },
+  {
+   "name": "commons_Mandelbrot_Hai__E1_BB_90c_M_E1_BB_8Bn",
+   "kind": "cyclic"
+  },
+  {
+   "name": "commons_Mandelbrot_M_E1_BB_8Dc_Rau",
+   "kind": "cyclic"
+  },
+  {
+   "name": "commons_Mandelbrot_M_E1_BB_99t__C4_90_C3_A0n__E1_BB_90c",
+   "kind": "cyclic"
+  },
+  {
+   "name": "commons_Mandelbrot_set-35-k_3D10-filter01",
+   "kind": "cyclic"
+  },
+  {
+   "name": "commons_Mandelbrot_V_C3_A0nh__C4_90_C3_A0i__E1_BB_90c_M_E1_BB_8Bn",
+   "kind": "cyclic"
+  },
+  {
+   "name": "commons_Ms-0557-0645",
+   "kind": "cyclic"
+  },
+  {
+   "name": "commons_Spiralarm_Julia-Menge_-0_2C5R_0I_01072019_16K",
+   "kind": "cyclic"
+  },
+  {
+   "name": "congruity-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "consequences-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "contra-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "coolwarm",
+   "kind": "sequential"
+  },
+  {
+   "name": "copper",
+   "kind": "sequential"
+  },
+  {
+   "name": "Copper Bloom, Teal Fleck",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Copper Fathom",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Copper Meets Tide",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Copper on Slate",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Copper on Verdigris",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Copper Reef",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Copper Tide",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Copper Verdigris",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Copper Vespers",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Copper, Sage & Petrol",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Coral in the Trench",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Coral Nocturne",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Coral Signal",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Coral Tideline",
+   "kind": "cyclic"
+  },
+  {
+   "name": "corkscrew-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "corporeal-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "cosmic-forces-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Counter Chrome",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Court of Thorns",
+   "kind": "cyclic"
+  },
+  {
+   "name": "creeping-frost-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Crimson Ice Duet",
+   "kind": "cyclic"
+  },
+  {
+   "name": "crisis-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "crystal-flood-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "cubehelix",
+   "kind": "sequential"
+  },
+  {
+   "name": "curlv",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Cyan & Ember",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Cyan Coal, One Coral",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Cyan Tide",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Cyan Vault",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Cyan, Magenta, Amber",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Cyanotype Furnace",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Damson and Ore",
+   "kind": "cyclic"
+  },
+  {
+   "name": "deadly-nightshade-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "death-cd-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "debutalis",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Deco Lacquer",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Deco Malachite",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Deep Azure & Coral",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Deep Cold Run",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Deep Current",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Deep Iris Rise",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Deep Rose Vault",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Deep Verdigris Sweep",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Deep Wood, One Ember",
+   "kind": "cyclic"
+  },
+  {
+   "name": "deepsea-life-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Delft Deep",
+   "kind": "cyclic"
+  },
+  {
+   "name": "delphic-oracle-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "desert-nights-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "desire-framed-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "dessert-union-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "dimensionality-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "dinlappi",
+   "kind": "cyclic"
+  },
+  {
+   "name": "dolphin-dance-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "doublevision",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Dove & Apricot",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Drape & Shadow",
+   "kind": "cyclic"
+  },
+  {
+   "name": "dreamcatcher-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "duckol",
+   "kind": "cyclic"
+  },
+  {
+   "name": "dynamo-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "eagles-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "early-may-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "edge-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "eirene-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Ember Against Steel",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Ember Gate",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Ember Gilt",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Ember Gradient",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Ember in Green Ash",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Ember in Orchid Ash",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Ember in Smoke",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Ember Over Tidewater",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Ember Rising",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Ember Rose Ramp",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Ember Standard",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Ember Terracotta",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Ember to Lime",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Ember Triad",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Ember Undertow",
+   "kind": "cyclic"
+  },
+  {
+   "name": "embrace-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Emerald Furnace",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Emerald Ingot",
+   "kind": "cyclic"
+  },
+  {
+   "name": "emergence",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Ensign",
+   "kind": "cyclic"
+  },
+  {
+   "name": "ephemera-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "etheric-frontier-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "evening-radiance-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "exile-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Faded Gilt",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Faded Salon",
+   "kind": "cyclic"
+  },
+  {
+   "name": "fairys-hollow-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Fanned Coals",
+   "kind": "cyclic"
+  },
+  {
+   "name": "fantasy-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Fathom Ice",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Fen Fire",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Fern Drift",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Fern Ladder",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Field at Dusk",
+   "kind": "cyclic"
+  },
+  {
+   "name": "fiery-descent-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Fire, One Cobalt Chip",
+   "kind": "cyclic"
+  },
+  {
+   "name": "flamed-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "flaming-wings-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "flit-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "flow-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "flyline",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Foam & Olive",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Foam Over Indigo",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Forest Bloom",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Forest Kiln",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Forest to Foam",
+   "kind": "cyclic"
+  },
+  {
+   "name": "forestal",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Forge and Frost",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Forge Ascent",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Forge Sweep",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Forge to White",
+   "kind": "cyclic"
+  },
+  {
+   "name": "forgery-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Formica Neon",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Foxglove & Iron",
+   "kind": "cyclic"
+  },
+  {
+   "name": "fractal_abstraction_lines_130499_2560x1600",
+   "kind": "cyclic"
+  },
+  {
+   "name": "fractal_flowers_abstract_104352_2560x1600",
+   "kind": "cyclic"
+  },
+  {
+   "name": "fractal_shine_stripes_130177_2560x1600",
+   "kind": "cyclic"
+  },
+  {
+   "name": "fractal_stripes_bends_lines_116839_2560x1600",
+   "kind": "cyclic"
+  },
+  {
+   "name": "fractalscape-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "freedor",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Frost & Cinder",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Frost Orchid",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Fuchsia & Acid",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Fuchsia & Coal",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Fuchsia Beacon",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Fuchsia Cliffside",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Fuchsia Ironworks",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Furnace Rose",
+   "kind": "cyclic"
+  },
+  {
+   "name": "fury-of-the-waves-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "garcya.us_fantasy_wallpaper074",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Garnet Tide",
+   "kind": "cyclic"
+  },
+  {
+   "name": "gedoo",
+   "kind": "cyclic"
+  },
+  {
+   "name": "gemini-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Gilded Moss",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Gilt and Rose",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Gilt Triad",
+   "kind": "cyclic"
+  },
+  {
+   "name": "gist_earth",
+   "kind": "sequential"
+  },
+  {
+   "name": "gist_heat",
+   "kind": "sequential"
+  },
+  {
+   "name": "gist_rainbow",
+   "kind": "sequential"
+  },
+  {
+   "name": "gist_stern",
+   "kind": "sequential"
+  },
+  {
+   "name": "Glacier Ascent",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Glacier Drift",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Glacier Meridian",
+   "kind": "cyclic"
+  },
+  {
+   "name": "glassworks-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "glory-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "glowdon",
+   "kind": "cyclic"
+  },
+  {
+   "name": "GnBu",
+   "kind": "sequential"
+  },
+  {
+   "name": "gnuplot",
+   "kind": "sequential"
+  },
+  {
+   "name": "gnuplot2",
+   "kind": "sequential"
+  },
+  {
+   "name": "Gold Cliff Sage",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Gold Field, Blood Spark",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Gold Leaf on Lacquer",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Gold Leaf, Deep Water",
+   "kind": "cyclic"
+  },
+  {
+   "name": "golden-egg-closeup-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "gossamer-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "grace-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Green Against Oxblood",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Green and Magenta",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Green Fire, Black Ash",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Green Flag, Blue Water",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Green Hour",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Green Triad Dusk",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Green Vault",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Green Water Drift",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Green Water, Blue Deep",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Green, Cobalt, Amber",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Green, Gold, Magenta",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Green, Violet, Bone",
+   "kind": "cyclic"
+  },
+  {
+   "name": "green-dragon-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "green-spine-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Greens",
+   "kind": "sequential"
+  },
+  {
+   "name": "gurundin",
+   "kind": "cyclic"
+  },
+  {
+   "name": "happy-hours-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "harbinger-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Harbour Sand",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Harbour Spark",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Harvest Wallpaper",
+   "kind": "cyclic"
+  },
+  {
+   "name": "hawthorn-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "hazy-summer-garden-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "heather-and-sage-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "hellid-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "helping-hands-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "hemispheres-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "High Cyan, Low Gold",
+   "kind": "cyclic"
+  },
+  {
+   "name": "High Gold",
+   "kind": "cyclic"
+  },
+  {
+   "name": "hoarfrost-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "holey-trinity-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Hollow Lantern",
+   "kind": "cyclic"
+  },
+  {
+   "name": "hollow-worlds-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "hot",
+   "kind": "sequential"
+  },
+  {
+   "name": "house-of-ivory-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "hsv",
+   "kind": "cyclic"
+  },
+  {
+   "name": "hyperborean-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Ice Sage Ramp",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Ice Shaft",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Ice Spire",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Ice Verdant Ramp",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Ice Walk",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Ice with an Ember",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Ice-to-Ember Cliff",
+   "kind": "cyclic"
+  },
+  {
+   "name": "illusion-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "incursion-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Indigo & Old Gold",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Indigo Descent",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Indigo Kindling",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Indigo Marquee",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Indigo Nocturne",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Indigo Rungs",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Indigo Teal Crests",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Indigo Tideline",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Indigo Walk to Lime",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Indigo, Cyan, Teal, Foam",
+   "kind": "cyclic"
+  },
+  {
+   "name": "inferno",
+   "kind": "sequential"
+  },
+  {
+   "name": "infinity-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Ink & Fuchsia Flare",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Inkfall",
+   "kind": "cyclic"
+  },
+  {
+   "name": "intermission-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Iris Ascension",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Ivory Gilt",
+   "kind": "cyclic"
+  },
+  {
+   "name": "jadanti",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Jade in Amethyst Light",
+   "kind": "cyclic"
+  },
+  {
+   "name": "jade-serpent-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "jet",
+   "kind": "sequential"
+  },
+  {
+   "name": "jiradin",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Jqmsl",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Jungle Canopy",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Jungle Floor",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Khaki Cathedral",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Kiln Triad",
+   "kind": "cyclic"
+  },
+  {
+   "name": "kirin-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "krinshinda",
+   "kind": "cyclic"
+  },
+  {
+   "name": "kyoto-lanterns-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "labani",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Lacquer & Bone",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Ladder to Ice",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Lagoon Neon",
+   "kind": "cyclic"
+  },
+  {
+   "name": "lambent-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "lander",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Lantern in the Deep",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Lantern Rose",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Lavender Bleach",
+   "kind": "cyclic"
+  },
+  {
+   "name": "let-there-be-light-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "lethe-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "ley-lines-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Lichen and Ink",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Lilac Drift, Plum Trough",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Lilac Vellum",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Lime and Cobalt",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Lime Ash Ember",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Lime on Black Glass",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Lime, Cobalt, Oxblood",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Lime, Sage & Teal Dusk",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Lime, Steel, Rose",
+   "kind": "cyclic"
+  },
+  {
+   "name": "liquid-fire-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "locomotion-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Long Autumn",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Madder Lantern",
+   "kind": "cyclic"
+  },
+  {
+   "name": "magic-mushroom-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "magma",
+   "kind": "sequential"
+  },
+  {
+   "name": "magnificat-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Malachite & Rose",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Malachite and Rose",
+   "kind": "cyclic"
+  },
+  {
+   "name": "malign-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "managua",
+   "kind": "sequential"
+  },
+  {
+   "name": "Marsh Lantern",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Mauve Hollow",
+   "kind": "cyclic"
+  },
+  {
+   "name": "mean-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "meditation-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "meloni",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Memphis Blackboard",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Memphis Chalkline",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Mesa Noon",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Mesa Shadow",
+   "kind": "cyclic"
+  },
+  {
+   "name": "metal-emblem-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "metamorph-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Midnight Regalia",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Mineral Verdigris & Copper",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Mint & Wine Air",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Mint Field, Teal Well",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Mist Field, Ink Well",
+   "kind": "cyclic"
+  },
+  {
+   "name": "molten-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "moon-over-mandelbrot-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "morning-at-misty-vale-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Moss & Rust",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Moss and Ore",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Moss Under Snow",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Moss, Clay & Gold",
+   "kind": "cyclic"
+  },
+  {
+   "name": "mossy-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "mSL22 - Imgur",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Mustard Field",
+   "kind": "cyclic"
+  },
+  {
+   "name": "muswirla",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Muted Triune",
+   "kind": "cyclic"
+  },
+  {
+   "name": "MyFractal01",
+   "kind": "cyclic"
+  },
+  {
+   "name": "MyFractal03",
+   "kind": "cyclic"
+  },
+  {
+   "name": "MyFractal04",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Navy to Foam",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Nebula Flare",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Nebula Veil",
+   "kind": "cyclic"
+  },
+  {
+   "name": "necromancer-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Neon Bramble",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Neon Causeway",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Neon Grid",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Neon Pop Flash",
+   "kind": "cyclic"
+  },
+  {
+   "name": "neptunes-garden-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "neuron-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Nightbloom Signal",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Nightfall Azure",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Nightfall Spectrum",
+   "kind": "cyclic"
+  },
+  {
+   "name": "nightingale-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Nineties Arcade",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Nineties Dusk",
+   "kind": "cyclic"
+  },
+  {
+   "name": "nipy_spectral",
+   "kind": "sequential"
+  },
+  {
+   "name": "no-mans-land-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "not-yet-lost-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "nova-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "ocean",
+   "kind": "sequential"
+  },
+  {
+   "name": "Ochre Against Steel",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Ochre Loam",
+   "kind": "cyclic"
+  },
+  {
+   "name": "of-strange-design-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Olive Ash",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Olive Cellar",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Olive Ember Ramp",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Olive Field, Violet Spark",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Olive Turn",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Olive, Ash-Blue & Rose",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Olive, Blood, Cobalt",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Olive, Green, Ochre",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Olive, Lime, Foam",
+   "kind": "cyclic"
+  },
+  {
+   "name": "One Coal Alight",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Opal & Ink",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Opal Drift",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Opal Field, Sapphire Spark",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Oranges",
+   "kind": "sequential"
+  },
+  {
+   "name": "Orchid & Goldshadow",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Orchid Deep",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Orchid Furnace",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Orchid Procession",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Orchid Triad",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Orchid Triad Ember",
+   "kind": "cyclic"
+  },
+  {
+   "name": "OrRd",
+   "kind": "sequential"
+  },
+  {
+   "name": "Oxblood & Petrol Seam",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Oxblood Procession",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Oxblood Standard",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Oxblood Thicket",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Oxblood, Amber, Teal",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Oxblood, Cyan, Cream",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Oxblood, Ochre, Petrol",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Oxblood, One Cold Spark",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Oxide & Copper Edge",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Oxide and Ember",
+   "kind": "cyclic"
+  },
+  {
+   "name": "pacific-shore-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "paezing",
+   "kind": "cyclic"
+  },
+  {
+   "name": "pageantry-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "painted-day-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Pale Aurora",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Pale Ember Over Teal",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Pale Fire Rose",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Pale Harbor",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Pale Moss Field",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Pale Orchid, Deep Well",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Pale Reed Hollow",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Pale Reef, Three Lights",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Pale Reliquary",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Pale Triad",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Pale Verdigris, Copper Heart",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Patina Brass",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Peacock Nocturne",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Peacock Regalia",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Peat & Rose Smoke",
+   "kind": "cyclic"
+  },
+  {
+   "name": "pebbles-shore-light-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "peekaboo-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Periwinkle Room",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Petal Drift",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Petal Dusk",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Petrol & Amber",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Petrol & Coal",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Petrol & Coral",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Petrol & Flame",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Petrol Bloom",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Petrol Boundary",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Petrol Dawn",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Petrol Depths",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Petrol Depths, Ember Spark",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Petrol Monolith",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Petrol Noon",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Petrol to Powder",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Petrol, One Coral",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Pewter Bloom",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Phosphor Deep",
+   "kind": "cyclic"
+  },
+  {
+   "name": "phylum-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "pilgrim",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Pine and Frost",
+   "kind": "cyclic"
+  },
+  {
+   "name": "pink",
+   "kind": "sequential"
+  },
+  {
+   "name": "PiYG",
+   "kind": "sequential"
+  },
+  {
+   "name": "plasma",
+   "kind": "sequential"
+  },
+  {
+   "name": "Plum Anvil",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Plum Cut with Gold",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Plum Gilding",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Plum in Ash",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Plum Reliquary",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Plum Walk",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Plum, Cobalt, Acid",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Plum, Gold & Moss",
+   "kind": "cyclic"
+  },
+  {
+   "name": "plummet-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "polished-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Porcelain Azure",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Porcelain Field",
+   "kind": "cyclic"
+  },
+  {
+   "name": "portal-of-fire-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "PRGn",
+   "kind": "sequential"
+  },
+  {
+   "name": "Prism on Ice",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Prism Veil",
+   "kind": "cyclic"
+  },
+  {
+   "name": "PuBu",
+   "kind": "sequential"
+  },
+  {
+   "name": "PuBuGn",
+   "kind": "sequential"
+  },
+  {
+   "name": "Pumpkin Cellar",
+   "kind": "cyclic"
+  },
+  {
+   "name": "PuOr",
+   "kind": "sequential"
+  },
+  {
+   "name": "PuRd",
+   "kind": "sequential"
+  },
+  {
+   "name": "Purples",
+   "kind": "sequential"
+  },
+  {
+   "name": "quiet-waiting-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "radian",
+   "kind": "cyclic"
+  },
+  {
+   "name": "ragnetic_field",
+   "kind": "cyclic"
+  },
+  {
+   "name": "rainbow",
+   "kind": "sequential"
+  },
+  {
+   "name": "rainbow-country-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "ransom-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "RdBu",
+   "kind": "sequential"
+  },
+  {
+   "name": "RdGy",
+   "kind": "sequential"
+  },
+  {
+   "name": "RdPu",
+   "kind": "sequential"
+  },
+  {
+   "name": "RdYlBu",
+   "kind": "sequential"
+  },
+  {
+   "name": "RdYlGn",
+   "kind": "sequential"
+  },
+  {
+   "name": "re-entry-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "red-octavo-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Reds",
+   "kind": "sequential"
+  },
+  {
+   "name": "Reed Walk",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Reef at Midnight",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Reef Triad",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Reef Without Sun",
+   "kind": "cyclic"
+  },
+  {
+   "name": "reelati",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Regalia & Sulphur",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Regatta Ice",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Reliquary",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Reliquary Vespers",
+   "kind": "cyclic"
+  },
+  {
+   "name": "rideon",
+   "kind": "cyclic"
+  },
+  {
+   "name": "riding-on-the-tide-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "rite-of-passage-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "riven-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "river-of-light-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "rolling",
+   "kind": "cyclic"
+  },
+  {
+   "name": "rondo",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Rose Above",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Rose Against Cobalt",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Rose Against Steel",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Rose and Verdigris",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Rose Eclipse",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Rose Field, Sapphire Cut",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Rose Furnace",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Rose Hour Spark",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Rose in Ash",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Rose Quartz Deep",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Rose Quartz Meadow",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Rose Quartz Ramp",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Rose Quartz Vault",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Rose Reactor",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Rose Slate Khaki",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Rose Smoke",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Rose Triad",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Rose Under Ice",
+   "kind": "cyclic"
+  },
+  {
+   "name": "rose-pillow-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "roundabout",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Rust & Rainlight",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Rust Against Petrol",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Rust in the Slate Vault",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Rust Kiln",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Rust Lagoon",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Rust to Olive",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Rust to Plum",
+   "kind": "cyclic"
+  },
+  {
+   "name": "sacred-grove-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "sad-eyes-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Sage & Signal",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Sage Ascendant",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Sage Ascending",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Sage Ember",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Sage Ladder",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Sage Over Oxblood",
+   "kind": "cyclic"
+  },
+  {
+   "name": "sanctuary-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Sapphire & Coal",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Sapphire & Dusk Rose",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Sapphire Against Rose",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Sapphire Bloom",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Sapphire in Blush",
+   "kind": "cyclic"
+  },
+  {
+   "name": "sapphire-dreams-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "satin-ends-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "scarlet-admiral-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "scattering-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "sci-fi-new-worlds-alien-fiction-selection-earth-space-planets-393423",
+   "kind": "cyclic"
+  },
+  {
+   "name": "scifi-my-current-lol-1652484",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Sea Glass Dawn",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Sea Glass Drift",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Sea Glass Vault",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Sea-Glass & Ash",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Seafoam Dusk",
+   "kind": "cyclic"
+  },
+  {
+   "name": "seaweed-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "seismic",
+   "kind": "sequential"
+  },
+  {
+   "name": "shadalu",
+   "kind": "cyclic"
+  },
+  {
+   "name": "shaki",
+   "kind": "cyclic"
+  },
+  {
+   "name": "shartook",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Sherbet Flare",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Shoal, One Coral",
+   "kind": "cyclic"
+  },
+  {
+   "name": "sholmes",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Signal & Sulphur",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Signal Triad",
+   "kind": "cyclic"
+  },
+  {
+   "name": "silk-scarves-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "singularity-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Siren, Lights Out",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Sixties Cellar",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Sixties Poster",
+   "kind": "cyclic"
+  },
+  {
+   "name": "skyroads-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "skyroads-blue-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "skyward-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Slate & Wine",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Slate and Dusty Rose",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Slate Ascension",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Slate Ladder",
+   "kind": "cyclic"
+  },
+  {
+   "name": "sleeper-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Slow Combustion",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Smoke & Madder",
+   "kind": "cyclic"
+  },
+  {
+   "name": "smokey-green-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "smooth-sailing-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "solipstic",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Sorbet Cellar",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Sorbet Vault",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Sorrel Triad",
+   "kind": "cyclic"
+  },
+  {
+   "name": "sparks",
+   "kind": "cyclic"
+  },
+  {
+   "name": "sparx-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Spectral",
+   "kind": "sequential"
+  },
+  {
+   "name": "Spice Procession",
+   "kind": "cyclic"
+  },
+  {
+   "name": "spirit-of-the-dream-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Split Lime",
+   "kind": "cyclic"
+  },
+  {
+   "name": "spring",
+   "kind": "sequential"
+  },
+  {
+   "name": "stained_glass",
+   "kind": "cyclic"
+  },
+  {
+   "name": "standard-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Steel & Coals",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Steel & Ember",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Steel and Straw",
+   "kind": "cyclic"
+  },
+  {
+   "name": "strange-creature-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Straw and Teal",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Struck Flint",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Sulphur & Plum",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Sulphur in the Vault",
+   "kind": "cyclic"
+  },
+  {
+   "name": "summer",
+   "kind": "sequential"
+  },
+  {
+   "name": "summer-dusk-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "sun-god-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "sun-kissed-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "sunsets-wake-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "taladee",
+   "kind": "cyclic"
+  },
+  {
+   "name": "tapestry-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Tarnished Amber",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Teal & Coral Tide",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Teal Against Coral",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Teal Against Rust",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Teal Amber Orchid",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Teal Ash",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Teal Depths, Coral Spark",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Teal Ember Cliff",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Teal Family, Amber Spark",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Teal Flare, Amber Fall",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Teal, Magenta, Gold",
+   "kind": "cyclic"
+  },
+  {
+   "name": "technology-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "ten-leaf-clover-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Terminal Flare",
+   "kind": "cyclic"
+  },
+  {
+   "name": "terrain",
+   "kind": "sequential"
+  },
+  {
+   "name": "tethered",
+   "kind": "cyclic"
+  },
+  {
+   "name": "the-four-quarters-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "the-outsiders-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "the_light_fantastic",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Three Candles",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Three Coals",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Three Coals in Ash",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Three Fires",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Three Hues, Kept Apart",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Three Jewels",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Three Jewels, Pale Room",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Three Minerals on Coal",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Three-Jewel Bloom",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Three-Metal",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Three-Point Fire-Ice",
+   "kind": "cyclic"
+  },
+  {
+   "name": "tictac",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Tidepool",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Tidewater, No Sky",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Tidewater, Two Crests",
+   "kind": "cyclic"
+  },
+  {
+   "name": "to-the-bone-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Tobacco Bloom",
+   "kind": "cyclic"
+  },
+  {
+   "name": "torment-of-the-skies-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "torque-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "touch",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Tourmaline Rose",
+   "kind": "cyclic"
+  },
+  {
+   "name": "toxic-spire-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "trade-winds-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "transcendence-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "tri-state",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Triad Nocturne",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Triad Patina",
+   "kind": "cyclic"
+  },
+  {
+   "name": "triangulate-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "triglandal",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Trinity of Ash",
+   "kind": "cyclic"
+  },
+  {
+   "name": "turbo",
+   "kind": "sequential"
+  },
+  {
+   "name": "Turkish Grind",
+   "kind": "cyclic"
+  },
+  {
+   "name": "twilight",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Twilight Bridge",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Twilight Procession",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Twilight Triad",
+   "kind": "cyclic"
+  },
+  {
+   "name": "twilight_shifted",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Twin Mineral Peaks",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Twin Sapphires",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Twin Sconces",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Two Golds",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Ultraviolet Siren",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Umber & Ember",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Umber Ground",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Umber Procession",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Umber Rise",
+   "kind": "cyclic"
+  },
+  {
+   "name": "under-a-brighter-sky-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "unfolding-creation-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "variations-on-a-floorplan-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Varnish and Bone",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Verdant Ascent",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Verdant Mist",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Verdant Triad",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Verdigris & Coal",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Verdigris & Copper",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Verdigris & Fuchsia",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Verdigris & One Spark",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Verdigris Coal",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Verdigris Flare",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Verdigris Furnace",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Verdigris Hollow",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Verdigris Khaki",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Verdigris to Lime, One Rose",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Verdigris Walk",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Vermilion Chapel",
+   "kind": "cyclic"
+  },
+  {
+   "name": "vibe-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Vice Nightfall",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Violet Ascension",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Violet Cellar",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Violet Kindled",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Violet, Cyan, Ochre",
+   "kind": "cyclic"
+  },
+  {
+   "name": "viridis",
+   "kind": "sequential"
+  },
+  {
+   "name": "visionary-spires-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "visions-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "vitality-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "wallhaven_wallhaven-0125mv",
+   "kind": "cyclic"
+  },
+  {
+   "name": "wallhaven_wallhaven-0w8gpp",
+   "kind": "cyclic"
+  },
+  {
+   "name": "wallhaven_wallhaven-1jo7vv",
+   "kind": "cyclic"
+  },
+  {
+   "name": "wallhaven_wallhaven-1joljg",
+   "kind": "cyclic"
+  },
+  {
+   "name": "wallhaven_wallhaven-2ex5zg",
+   "kind": "cyclic"
+  },
+  {
+   "name": "wallhaven_wallhaven-398e39",
+   "kind": "cyclic"
+  },
+  {
+   "name": "wallhaven_wallhaven-39lg2d",
+   "kind": "cyclic"
+  },
+  {
+   "name": "wallhaven_wallhaven-3z1jkd",
+   "kind": "cyclic"
+  },
+  {
+   "name": "wallhaven_wallhaven-422xr6",
+   "kind": "cyclic"
+  },
+  {
+   "name": "wallhaven_wallhaven-45pqz1",
+   "kind": "cyclic"
+  },
+  {
+   "name": "wallhaven_wallhaven-47xzoe",
+   "kind": "cyclic"
+  },
+  {
+   "name": "wallhaven_wallhaven-4omjp5",
+   "kind": "cyclic"
+  },
+  {
+   "name": "wallhaven_wallhaven-4xy8el",
+   "kind": "cyclic"
+  },
+  {
+   "name": "wallhaven_wallhaven-5dpzz5",
+   "kind": "cyclic"
+  },
+  {
+   "name": "wallhaven_wallhaven-6d3zz6",
+   "kind": "cyclic"
+  },
+  {
+   "name": "wallhaven_wallhaven-8xz1mk",
+   "kind": "cyclic"
+  },
+  {
+   "name": "wallhaven_wallhaven-95k3qx",
+   "kind": "cyclic"
+  },
+  {
+   "name": "wallhaven_wallhaven-d67kpg",
+   "kind": "cyclic"
+  },
+  {
+   "name": "wallhaven_wallhaven-d6yv9m",
+   "kind": "cyclic"
+  },
+  {
+   "name": "wallhaven_wallhaven-dg6v93",
+   "kind": "cyclic"
+  },
+  {
+   "name": "wallhaven_wallhaven-dped2l",
+   "kind": "cyclic"
+  },
+  {
+   "name": "wallhaven_wallhaven-e7v1ll",
+   "kind": "cyclic"
+  },
+  {
+   "name": "wallhaven_wallhaven-g8ev1l",
+   "kind": "cyclic"
+  },
+  {
+   "name": "wallhaven_wallhaven-g8p1ol",
+   "kind": "cyclic"
+  },
+  {
+   "name": "wallhaven_wallhaven-k97v5q",
+   "kind": "cyclic"
+  },
+  {
+   "name": "wallhaven_wallhaven-kwg7v6",
+   "kind": "cyclic"
+  },
+  {
+   "name": "wallhaven_wallhaven-m9v5l9",
+   "kind": "cyclic"
+  },
+  {
+   "name": "wallhaven_wallhaven-nm6938",
+   "kind": "cyclic"
+  },
+  {
+   "name": "wallhaven_wallhaven-nrl8ym",
+   "kind": "cyclic"
+  },
+  {
+   "name": "wallhaven_wallhaven-oxgk7p",
+   "kind": "cyclic"
+  },
+  {
+   "name": "wallhaven_wallhaven-oxxve5",
+   "kind": "cyclic"
+  },
+  {
+   "name": "wallhaven_wallhaven-vg1rzm",
+   "kind": "cyclic"
+  },
+  {
+   "name": "wallhaven_wallhaven-we6oqp",
+   "kind": "cyclic"
+  },
+  {
+   "name": "wallhaven_wallhaven-xl8gmd",
+   "kind": "cyclic"
+  },
+  {
+   "name": "wallhaven_wallhaven-ym8rqk",
+   "kind": "cyclic"
+  },
+  {
+   "name": "wallhaven_wallhaven-yxlvkk",
+   "kind": "cyclic"
+  },
+  {
+   "name": "wallhaven_wallhaven-zxv17j",
+   "kind": "cyclic"
+  },
+  {
+   "name": "wallpaper-supernova",
+   "kind": "cyclic"
+  },
+  {
+   "name": "waltzing-in-shadows-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Warm Core in the Deep",
+   "kind": "cyclic"
+  },
+  {
+   "name": "warp-angels-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "watercolours-in-the-rain-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "watersprite-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "western-winds-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "wheelance",
+   "kind": "cyclic"
+  },
+  {
+   "name": "whispers-on-golden-sand-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Widow's Gold",
+   "kind": "cyclic"
+  },
+  {
+   "name": "windy-peak-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Wine & Ember",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Wine & Slate Candle",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Wine Step",
+   "kind": "cyclic"
+  },
+  {
+   "name": "winter",
+   "kind": "sequential"
+  },
+  {
+   "name": "Wisteria Nightfall",
+   "kind": "cyclic"
+  },
+  {
+   "name": "within-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "xelan-25",
+   "kind": "cyclic"
+  },
+  {
+   "name": "xuahakin",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Y2K Bubblegum",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Y2K Chrome",
+   "kind": "cyclic"
+  },
+  {
+   "name": "Yew Without Moon",
+   "kind": "cyclic"
+  },
+  {
+   "name": "YlGn",
+   "kind": "sequential"
+  },
+  {
+   "name": "YlGnBu",
+   "kind": "sequential"
+  },
+  {
+   "name": "YlOrBr",
+   "kind": "sequential"
+  },
+  {
+   "name": "YlOrRd",
+   "kind": "sequential"
+  },
+  {
+   "name": "zhgiu1cypaac1",
+   "kind": "cyclic"
+  }
+ ],
+ "spec_only": {
+  "curve": "linear, sqrt, log or scurve: an explicit coloring's `transform`",
+  "coloring": "a full coloring object in place of a named mode",
+  "colormap_dir": "where the colormap files are (default data/palettes)",
+  "allow_unresolvable_in_f64": "allow a frame too deep for f64 to resolve (default false)"
+ },
+ "flags": [
+  {
+   "flag": "--family",
+   "dest": "family",
+   "group": "the recurrence",
+   "default": "mandelbrot",
+   "choices": [
+    "mandelbrot",
+    "multibrot",
+    "julia",
+    "phoenix"
+   ],
+   "help": "which recurrence to iterate (default: mandelbrot)"
+  },
+  {
+   "flag": "--degree",
+   "dest": "degree",
+   "group": "the recurrence",
+   "default": 2,
+   "choices": null,
+   "help": "exponent d in z^d + c, for multibrot (3-6) and julia (2-6); a non-integer degree is the engine's `fractional_multibrot`, reached through a spec JSON (FORMATS.md's *The render spec*)"
+  },
+  {
+   "flag": "--c",
+   "dest": "c",
+   "group": "the recurrence",
+   "default": null,
+   "choices": null,
+   "help": "fixed constant c: required for julia, optional for phoenix"
+  },
+  {
+   "flag": "--p",
+   "dest": "p",
+   "group": "the recurrence",
+   "default": null,
+   "choices": null,
+   "help": "phoenix coefficient of z_(n-1) (default: -0.5 0)"
+  },
+  {
+   "flag": "--z-prev",
+   "dest": "z_prev",
+   "group": "the recurrence",
+   "default": null,
+   "choices": null,
+   "help": "phoenix slice coordinate z_(-1) (default: 0 0)"
+  },
+  {
+   "flag": "--center-re",
+   "dest": "center_re",
+   "group": "the frame",
+   "default": null,
+   "choices": null,
+   "help": "view center, real part (default: the family's home)"
+  },
+  {
+   "flag": "--center-im",
+   "dest": "center_im",
+   "group": "the frame",
+   "default": null,
+   "choices": null,
+   "help": "view center, imaginary part"
+  },
+  {
+   "flag": "--width",
+   "dest": "width",
+   "group": "the frame",
+   "default": null,
+   "choices": null,
+   "help": "view width in plane units (default: the family's home width)"
+  },
+  {
+   "flag": "--resolution",
+   "dest": "resolution",
+   "group": "the frame",
+   "default": [
+    1920,
+    1080
+   ],
+   "choices": null,
+   "help": "output size in pixels (default: 1920 1080)"
+  },
+  {
+   "flag": "--supersample",
+   "dest": "supersample",
+   "group": "the frame",
+   "default": 2,
+   "choices": null,
+   "help": "samples per output pixel, per axis (default: 2)"
+  },
+  {
+   "flag": "--mode",
+   "dest": "mode",
+   "group": "the coloring",
+   "default": null,
+   "choices": null,
+   "help": "named coloring (default: smooth); see the modes subcommand"
+  },
+  {
+   "flag": "--discrete",
+   "dest": "discrete",
+   "group": "the coloring",
+   "default": null,
+   "choices": null,
+   "help": "color from the INTEGER iteration count instead of a named mode: flat bands, the picture the smooth count exists to fix. Give CYCLE to repeat the gradient every CYCLE iterations. A teaching mode — it is not in the catalog, so nothing that draws a mode can reach it"
+  },
+  {
+   "flag": "--colormap",
+   "dest": "colormap",
+   "group": "the coloring",
+   "default": "twilight_shifted",
+   "choices": null,
+   "help": "colormap name under data/palettes (default: twilight_shifted); `fractal-wallpapers palettes list` prints every name"
+  },
+  {
+   "flag": "--maxiter",
+   "dest": "maxiter",
+   "group": "the coloring",
+   "default": null,
+   "choices": null,
+   "help": "iteration cap; omit to let the depth-aware policy choose"
+  },
+  {
+   "flag": "--gamma",
+   "dest": "gamma",
+   "group": "the palette",
+   "default": null,
+   "choices": null,
+   "help": "> 0, power on the normalized field (1)"
+  },
+  {
+   "flag": "--cycles",
+   "dest": "cycles",
+   "group": "the palette",
+   "default": null,
+   "choices": null,
+   "help": "> 0, times the map repeats over the field (1)"
+  },
+  {
+   "flag": "--phase",
+   "dest": "phase",
+   "group": "the palette",
+   "default": null,
+   "choices": null,
+   "help": "any finite, turns the map is rotated by (0)"
+  },
+  {
+   "flag": "--reverse",
+   "dest": "reverse",
+   "group": "the palette",
+   "default": false,
+   "choices": null,
+   "help": "run the map backwards"
+  },
+  {
+   "flag": "--mirror",
+   "dest": "mirror",
+   "group": "the palette",
+   "default": false,
+   "choices": null,
+   "help": "fold the map out and back; refused on a cyclic map (`palettes list --kind`)"
+  },
+  {
+   "flag": "--transfer",
+   "dest": "transfer",
+   "group": "the palette",
+   "default": null,
+   "choices": null,
+   "help": "value (default), edge:W with W >= 0, or rank — what the map is indexed by"
+  },
+  {
+   "flag": "--rolloff",
+   "dest": "rolloff",
+   "group": "the palette",
+   "default": null,
+   "choices": null,
+   "help": "none (default), soft_knee:K with K in [0, 1), reinhard, or aces — how the brightest values are compressed"
+  },
+  {
+   "flag": "--scale",
+   "dest": "scale",
+   "group": "the palette",
+   "default": null,
+   "choices": [
+    "leveled",
+    "absolute"
+   ],
+   "help": "leveled (default) spreads the map over the field's own range; absolute indexes it by the raw count, where --period and --knee apply and gamma, cycles and transfer do not"
+  },
+  {
+   "flag": "--lambda",
+   "dest": "box_cox",
+   "group": "the palette",
+   "default": null,
+   "choices": null,
+   "help": "in [0, 1], Box-Cox (1)"
+  },
+  {
+   "flag": "--period",
+   "dest": "period",
+   "group": "the palette",
+   "default": null,
+   "choices": null,
+   "help": "> 0, absolute scale only (1)"
+  },
+  {
+   "flag": "--knee",
+   "dest": "knee",
+   "group": "the palette",
+   "default": null,
+   "choices": null,
+   "help": "> 0, absolute scale only (none)"
+  },
+  {
+   "flag": "--param",
+   "dest": "param",
+   "group": "the palette",
+   "default": null,
+   "choices": null,
+   "help": "a mode parameter, repeatable: density (stripe, smooth_stripe), radius (trap_circle, smooth_trap_circle, direct traps), sigma (threads), weight (the smooth_* composites and threads, in [0, 1]), shift (itinerary, tail_itinerary), threshold and opacity (direct_trap_*). `modes` lists the modes"
+  },
+  {
+   "flag": "--location",
+   "dest": "location",
+   "group": "a record instead of flags",
+   "default": null,
+   "choices": null,
+   "help": "a location record to render instead of spelling one out: the {family, viewport, render} object a ledger row, a label row and a release record all already carry"
+  },
+  {
+   "flag": "--manifest",
+   "dest": "manifest",
+   "group": "a record instead of flags",
+   "default": null,
+   "choices": null,
+   "help": "a JSONL of location records to render, one picture per row, into --out-dir — a label row, a ledger candidate carrying its cap flat, a release decision row and a hand-written {family, viewport, maxiter, mode, colormap} all read. The coloring goes nested under `render` or flat beside `family`, whichever the writer prefers, because this repository's own records are written both ways. A row that spells one member both ways and disagrees with itself is refused, and so is a row carrying a whole picture — a curve, a palette pass, a mode's own settings — which belongs at --recipe FILE, because a location record is a place and a geometry and drawing one of those would be the right coordinates in the wrong picture. A file rather than a list of paths, because a batch is hundreds of rows and a Windows command line is not"
+  },
+  {
+   "flag": "--recipe",
+   "dest": "recipe",
+   "group": "a record instead of flags",
+   "default": null,
+   "choices": null,
+   "help": "a stored RECIPE — everything the picture is a function of, not only the place. A published record's `recipes.jsonl` (one {key, recipe} row per seat, name one with --key) or a single recipe block copied out of one. The difference from --location is the curve, the palette block, the mode's settings and the levelling band, none of which a location record carries — so a seat drawn through --location is the right coordinates in the wrong colours. The levelling is re-derived the way the candidate path derived it, and the band the recipe names is checked against this checkout's before anything is drawn"
+  },
+  {
+   "flag": "--key",
+   "dest": "key",
+   "group": "a record instead of flags",
+   "default": null,
+   "choices": null,
+   "help": "which recipe of a --recipe file to draw: a seat's full key or any unique prefix of one, so the eight-character alias a record prints works"
+  },
+  {
+   "flag": "--out",
+   "dest": "out",
+   "group": "the output",
+   "default": "artifacts\\render.png",
+   "choices": null,
+   "help": "output PNG path (default: artifacts/render.png)"
+  },
+  {
+   "flag": "--out-dir",
+   "dest": "out_dir",
+   "group": "the output",
+   "default": "artifacts\\renders",
+   "choices": null,
+   "help": "where a --manifest run's pictures go (default: artifacts/renders). Each is named by its row and a digest of its own recipe, and renders.jsonl beside them is the join back to the records"
+  },
+  {
+   "flag": "--limit",
+   "dest": "limit",
+   "group": "the output",
+   "default": null,
+   "choices": null,
+   "help": "render only the first N rows of a manifest"
+  },
+  {
+   "flag": "--resume",
+   "dest": "resume",
+   "group": "the output",
+   "default": false,
+   "choices": null,
+   "help": "skip a row whose picture is already on disk"
+  }
+ ]
+}

@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "command": "fractal-wallpapers walkthrough --stamp 20261005T063202Z",
-  "stamp": "20261005T063202Z",
+  "command": "fractal-wallpapers walkthrough --stamp 20261005T144742Z",
+  "stamp": "20261005T144742Z",
   "pages": [
     {
       "folder": "judges-check",
@@ -9,7 +9,7 @@
       "made_by": null,
       "command": "fractal-wallpapers judges check",
       "files": 10,
-      "bytes": 169190
+      "bytes": 179413
     },
     {
       "folder": "walk-stats",
@@ -17,31 +17,31 @@
       "made_by": null,
       "command": "fractal-wallpapers harvest stats",
       "files": 98,
-      "bytes": 1551680
+      "bytes": 1566080
     },
     {
       "folder": "candidates",
       "title": "Candidate pool",
       "made_by": null,
       "command": "fractal-wallpapers curate candidate-ledger browse",
-      "files": 44,
-      "bytes": 742676
+      "files": 47,
+      "bytes": 788495
     },
     {
       "folder": "gallery",
-      "title": "Gallery 20261005T063202Z",
+      "title": "Gallery 20261005T144742Z",
       "made_by": null,
-      "command": "fractal-wallpapers walkthrough --stamp 20261005T063202Z",
+      "command": "fractal-wallpapers walkthrough --stamp 20261005T144742Z",
       "files": 14,
-      "bytes": 229744
+      "bytes": 245642
     },
     {
       "folder": "trace",
-      "title": "Trace of 20261005T063202Z",
+      "title": "Trace of 20261005T144742Z",
       "made_by": null,
-      "command": "fractal-wallpapers walkthrough --stamp 20261005T063202Z",
+      "command": "fractal-wallpapers walkthrough --stamp 20261005T144742Z",
       "files": 30,
-      "bytes": 1266531
+      "bytes": 1299110
     }
   ],
   "files": [
@@ -57,5 +57,43 @@
       "name": "keep.jsonl",
       "source": "artifacts/curation/tentative/keep.jsonl"
     }
+  ],
+  "renders": [
+    {
+      "name": "render",
+      "picture": "render.jpg",
+      "seconds": 1.92
+    },
+    {
+      "name": "render-link",
+      "picture": "render-link.jpg",
+      "seconds": 4.39
+    }
+  ],
+  "help": [
+    "fetch-weights.txt",
+    "render.txt",
+    "modes.txt",
+    "palettes-list.txt",
+    "judges-check.txt",
+    "judges-score.txt",
+    "harvest.txt",
+    "curate-score.txt",
+    "harvest-export.txt",
+    "harvest-stats.txt",
+    "curate-embed.txt",
+    "curate-hunt-run.txt",
+    "curate-hunt-merge.txt",
+    "curate-candidate-ledger-browse.txt",
+    "gallery-grade-score-pool.txt",
+    "curate-solve-run.txt",
+    "curate-solve-record.txt",
+    "curate-solve-browse.txt",
+    "curate-solve-release.txt",
+    "curate-mine-run.txt",
+    "curate-mine-merge.txt",
+    "curate-solve-trace.txt",
+    "walkthrough.txt",
+    "fractal-engine-render-link.txt"
   ]
 }

@@ -1,0 +1,19 @@
+usage: fractal-wallpapers curate solve browse [-h] [--stamp STAMP] [--spacing] [--out PATH]
+                                              [--bundle DIR] [--viewer]
+                                              [STAMP ...]
+
+positional arguments:
+  STAMP          the stamp, which `--stamp` also names. …
+
+options:
+  -h, --help     show this help message and exit
+  --stamp STAMP  which record to write again (default the newest)
+  --spacing      print what the PRESENTATION ORDER bought this record, and write no page. …
+  --out PATH     write the page HERE instead of beside the record's rows, with every thumbnail
+                 resolved relative to where it lands. …
+  --bundle DIR   also write the page into DIR as a portable folder: index.html, page.json, and
+                 only the pictures it shows, re-encoded small; nothing outside DIR is referred to
+  --viewer       write the page to the VIEWER directory — `curation.tentative.viewer_dir()`, one
+                 place with no stamp in its name — instead of beside the record's rows. …
+
+… marks help trimmed to its contract. FRACTAL_WALLPAPERS_HELP=full prints the reasoning whole.

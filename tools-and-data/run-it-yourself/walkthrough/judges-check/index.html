@@ -32,124 +32,180 @@ th:first-child, td:first-child { text-align: left; }
               overflow-wrap: anywhere; }
 .record mark { background: #ffe08a; color: #1a1a1a; }
 .record .note { color: var(--miss); }
+.legend { color: var(--muted); font-size: 12px; margin: 6px 0 10px; padding: 0;
+          list-style: none; max-width: 110ch; }
+.legend b { color: var(--fg); font-weight: 600; }
+.band { border-radius: 6px; padding: 6px 8px 8px; margin: 8px 0; }
+.band.best { background: rgba(46, 160, 67, .10); }
+.band.worst { background: rgba(207, 34, 46, .09); }
+.band .label { font-weight: 700; font-size: 12px; text-transform: uppercase;
+               letter-spacing: .06em; margin: 0 0 6px; }
+.band.best .label { color: #2e8b47; } .band.worst .label { color: #c0392b; }
 </style></head><body>
 <h1>Judge check</h1>
 <p class="command">fractal-wallpapers judges check</p>
-<p>8 tracked recipes rendered here and scored by all four judges; each line reads expected → actual. Tolerance 0.0001; largest gap 0.</p>
+<p>8 tracked recipes rendered here, each picture compared with its tracked reference and scored by all four judges. Largest picture gap 0 (tolerance 4); largest score gap 0 (tolerance 0.0001). Reference times are from Intel i5-10400F, Windows 10, release engine, one render at a time.</p>
 <p>PASS</p>
+<h2>Each case</h2>
+<table><tr><th>case</th><th>picture</th><th>scores</th><th>render s (yours · reference)</th>
+<tr><td>julia_mandelbrot_stripe</td><td>match</td><td>match</td><td>0.83 · 0.70</td>
+<tr><td>mandelbrot_tia</td><td>match</td><td>match</td><td>1.04 · 0.89</td>
+<tr><td>phoenix_smooth</td><td>match</td><td>match</td><td>0.39 · 0.34</td>
+<tr><td>multibrot3_smooth_mean_angle</td><td>match</td><td>match</td><td>0.95 · 0.88</td>
+<tr><td>multibrot4_smooth_curvature</td><td>match</td><td>match</td><td>1.02 · 0.89</td>
+<tr><td>julia_multibrot3_threads</td><td>match</td><td>match</td><td>0.21 · 0.17</td>
+<tr><td>julia_multibrot5_smooth_stripe</td><td>match</td><td>match</td><td>0.61 · 0.49</td>
+<tr><td>multibrot5_curvature</td><td>match</td><td>match</td><td>0.92 · 0.79</td>
+</table>
+<ul class="legend">
+<li><b>case</b>: a tracked recipe the check renders and scores</li>
+<li><b>picture</b>: whether your render matches the tracked reference picture: every one of its 32x18 cells&#x27; mean colour within 4 of 255</li>
+<li><b>scores</b>: whether all four judges&#x27; scores are within 0.0001 of the expected ones</li>
+<li><b>render s (yours · reference)</b>: seconds your machine took to render the picture, beside the same render on the reference box (Intel i5-10400F, Windows 10, release engine, one render at a time)</li>
+</ul>
 <h2>Cases</h2>
+<p>each judge line reads expected → yours</p>
 <div class="grid">
 <div class="tile">
 <a href="pictures/julia_mandelbrot_stripe.jpg"><img loading="lazy" src="pictures/julia_mandelbrot_stripe.jpg" alt=""></a>
 <div class="title">julia_mandelbrot_stripe · stripe</div>
 <dl>
-<dt>render p_ge2</dt><dd>1.00000 → 1.00000</dd>
-<dt>render p_ge3</dt><dd>0.99999 → 0.99999</dd>
-<dt>render p_ge4</dt><dd>0.99965 → 0.99965</dd>
-<dt>gallery_grade p_ge2</dt><dd>0.99987 → 0.99987</dd>
-<dt>gallery_grade p_ge3</dt><dd>0.99874 → 0.99874</dd>
-<dt>gallery_grade p_ge4</dt><dd>0.99798 → 0.99798</dd>
-<dt>palette score</dt><dd>4.54237 → 4.54237</dd>
-<dt>location p_ge3</dt><dd>0.99888 → 0.99888</dd>
-<dt>location p_ge4</dt><dd>0.99813 → 0.99813</dd>
+<dt>picture</dt><dd>match (gap 0)</dd>
+<dt>render s (yours · reference)</dt><dd>0.83 · 0.70</dd>
+<dt>wallpaper judge P(&gt;=2)</dt><dd>1.00000 → 1.00000</dd>
+<dt>wallpaper judge P(&gt;=3)</dt><dd>0.99999 → 0.99999</dd>
+<dt>wallpaper judge P(&gt;=4)</dt><dd>0.99965 → 0.99965</dd>
+<dt>gallery judge P(&gt;=2)</dt><dd>0.99987 → 0.99987</dd>
+<dt>gallery judge P(&gt;=3)</dt><dd>0.99874 → 0.99874</dd>
+<dt>gallery judge P(&gt;=4)</dt><dd>0.99798 → 0.99798</dd>
+<dt>palette judge score</dt><dd>4.54237 → 4.54237</dd>
+<dt>location judge P(&gt;=3)</dt><dd>0.99888 → 0.99888</dd>
+<dt>location judge P(&gt;=4)</dt><dd>0.99813 → 0.99813</dd>
 </dl></div>
 <div class="tile">
 <a href="pictures/mandelbrot_tia.jpg"><img loading="lazy" src="pictures/mandelbrot_tia.jpg" alt=""></a>
 <div class="title">mandelbrot_tia · tia</div>
 <dl>
-<dt>render p_ge2</dt><dd>0.99998 → 0.99998</dd>
-<dt>render p_ge3</dt><dd>0.99856 → 0.99856</dd>
-<dt>render p_ge4</dt><dd>0.95074 → 0.95074</dd>
-<dt>gallery_grade p_ge2</dt><dd>0.99990 → 0.99990</dd>
-<dt>gallery_grade p_ge3</dt><dd>0.99798 → 0.99798</dd>
-<dt>gallery_grade p_ge4</dt><dd>0.99616 → 0.99616</dd>
-<dt>palette score</dt><dd>4.80612 → 4.80612</dd>
-<dt>location p_ge3</dt><dd>0.99993 → 0.99993</dd>
-<dt>location p_ge4</dt><dd>0.99992 → 0.99992</dd>
+<dt>picture</dt><dd>match (gap 0)</dd>
+<dt>render s (yours · reference)</dt><dd>1.04 · 0.89</dd>
+<dt>wallpaper judge P(&gt;=2)</dt><dd>0.99998 → 0.99998</dd>
+<dt>wallpaper judge P(&gt;=3)</dt><dd>0.99856 → 0.99856</dd>
+<dt>wallpaper judge P(&gt;=4)</dt><dd>0.95074 → 0.95074</dd>
+<dt>gallery judge P(&gt;=2)</dt><dd>0.99990 → 0.99990</dd>
+<dt>gallery judge P(&gt;=3)</dt><dd>0.99798 → 0.99798</dd>
+<dt>gallery judge P(&gt;=4)</dt><dd>0.99616 → 0.99616</dd>
+<dt>palette judge score</dt><dd>4.80612 → 4.80612</dd>
+<dt>location judge P(&gt;=3)</dt><dd>0.99993 → 0.99993</dd>
+<dt>location judge P(&gt;=4)</dt><dd>0.99992 → 0.99992</dd>
 </dl></div>
 <div class="tile">
 <a href="pictures/phoenix_smooth.jpg"><img loading="lazy" src="pictures/phoenix_smooth.jpg" alt=""></a>
 <div class="title">phoenix_smooth · smooth</div>
 <dl>
-<dt>render p_ge2</dt><dd>1.00000 → 1.00000</dd>
-<dt>render p_ge3</dt><dd>0.99991 → 0.99991</dd>
-<dt>render p_ge4</dt><dd>0.99557 → 0.99557</dd>
-<dt>gallery_grade p_ge2</dt><dd>0.99980 → 0.99980</dd>
-<dt>gallery_grade p_ge3</dt><dd>0.99674 → 0.99674</dd>
-<dt>gallery_grade p_ge4</dt><dd>0.99257 → 0.99257</dd>
-<dt>palette score</dt><dd>5.46567 → 5.46567</dd>
-<dt>location p_ge3</dt><dd>0.91031 → 0.91031</dd>
-<dt>location p_ge4</dt><dd>0.00951 → 0.00951</dd>
+<dt>picture</dt><dd>match (gap 0)</dd>
+<dt>render s (yours · reference)</dt><dd>0.39 · 0.34</dd>
+<dt>wallpaper judge P(&gt;=2)</dt><dd>1.00000 → 1.00000</dd>
+<dt>wallpaper judge P(&gt;=3)</dt><dd>0.99991 → 0.99991</dd>
+<dt>wallpaper judge P(&gt;=4)</dt><dd>0.99557 → 0.99557</dd>
+<dt>gallery judge P(&gt;=2)</dt><dd>0.99980 → 0.99980</dd>
+<dt>gallery judge P(&gt;=3)</dt><dd>0.99674 → 0.99674</dd>
+<dt>gallery judge P(&gt;=4)</dt><dd>0.99257 → 0.99257</dd>
+<dt>palette judge score</dt><dd>5.46567 → 5.46567</dd>
+<dt>location judge P(&gt;=3)</dt><dd>0.91031 → 0.91031</dd>
+<dt>location judge P(&gt;=4)</dt><dd>0.00951 → 0.00951</dd>
 </dl></div>
 <div class="tile">
 <a href="pictures/multibrot3_smooth_mean_angle.jpg"><img loading="lazy" src="pictures/multibrot3_smooth_mean_angle.jpg" alt=""></a>
 <div class="title">multibrot3_smooth_mean_angle · smooth_mean_angle</div>
 <dl>
-<dt>render p_ge2</dt><dd>1.00000 → 1.00000</dd>
-<dt>render p_ge3</dt><dd>0.99968 → 0.99968</dd>
-<dt>render p_ge4</dt><dd>0.99797 → 0.99797</dd>
-<dt>gallery_grade p_ge2</dt><dd>0.99774 → 0.99774</dd>
-<dt>gallery_grade p_ge3</dt><dd>0.99233 → 0.99233</dd>
-<dt>gallery_grade p_ge4</dt><dd>0.98580 → 0.98580</dd>
-<dt>palette score</dt><dd>2.97612 → 2.97612</dd>
-<dt>location p_ge3</dt><dd>0.99220 → 0.99220</dd>
-<dt>location p_ge4</dt><dd>0.96358 → 0.96358</dd>
+<dt>picture</dt><dd>match (gap 0)</dd>
+<dt>render s (yours · reference)</dt><dd>0.95 · 0.88</dd>
+<dt>wallpaper judge P(&gt;=2)</dt><dd>1.00000 → 1.00000</dd>
+<dt>wallpaper judge P(&gt;=3)</dt><dd>0.99968 → 0.99968</dd>
+<dt>wallpaper judge P(&gt;=4)</dt><dd>0.99797 → 0.99797</dd>
+<dt>gallery judge P(&gt;=2)</dt><dd>0.99774 → 0.99774</dd>
+<dt>gallery judge P(&gt;=3)</dt><dd>0.99233 → 0.99233</dd>
+<dt>gallery judge P(&gt;=4)</dt><dd>0.98580 → 0.98580</dd>
+<dt>palette judge score</dt><dd>2.97612 → 2.97612</dd>
+<dt>location judge P(&gt;=3)</dt><dd>0.99220 → 0.99220</dd>
+<dt>location judge P(&gt;=4)</dt><dd>0.96358 → 0.96358</dd>
 </dl></div>
 <div class="tile">
 <a href="pictures/multibrot4_smooth_curvature.jpg"><img loading="lazy" src="pictures/multibrot4_smooth_curvature.jpg" alt=""></a>
 <div class="title">multibrot4_smooth_curvature · smooth_curvature</div>
 <dl>
-<dt>render p_ge2</dt><dd>1.00000 → 1.00000</dd>
-<dt>render p_ge3</dt><dd>0.99958 → 0.99958</dd>
-<dt>render p_ge4</dt><dd>0.99446 → 0.99446</dd>
-<dt>gallery_grade p_ge2</dt><dd>0.99950 → 0.99950</dd>
-<dt>gallery_grade p_ge3</dt><dd>0.98955 → 0.98955</dd>
-<dt>gallery_grade p_ge4</dt><dd>0.95734 → 0.95734</dd>
-<dt>palette score</dt><dd>7.65395 → 7.65395</dd>
-<dt>location p_ge3</dt><dd>0.95628 → 0.95628</dd>
-<dt>location p_ge4</dt><dd>0.37519 → 0.37519</dd>
+<dt>picture</dt><dd>match (gap 0)</dd>
+<dt>render s (yours · reference)</dt><dd>1.02 · 0.89</dd>
+<dt>wallpaper judge P(&gt;=2)</dt><dd>1.00000 → 1.00000</dd>
+<dt>wallpaper judge P(&gt;=3)</dt><dd>0.99958 → 0.99958</dd>
+<dt>wallpaper judge P(&gt;=4)</dt><dd>0.99446 → 0.99446</dd>
+<dt>gallery judge P(&gt;=2)</dt><dd>0.99950 → 0.99950</dd>
+<dt>gallery judge P(&gt;=3)</dt><dd>0.98955 → 0.98955</dd>
+<dt>gallery judge P(&gt;=4)</dt><dd>0.95734 → 0.95734</dd>
+<dt>palette judge score</dt><dd>7.65395 → 7.65395</dd>
+<dt>location judge P(&gt;=3)</dt><dd>0.95628 → 0.95628</dd>
+<dt>location judge P(&gt;=4)</dt><dd>0.37519 → 0.37519</dd>
 </dl></div>
 <div class="tile">
 <a href="pictures/julia_multibrot3_threads.jpg"><img loading="lazy" src="pictures/julia_multibrot3_threads.jpg" alt=""></a>
 <div class="title">julia_multibrot3_threads · threads</div>
 <dl>
-<dt>render p_ge2</dt><dd>0.99999 → 0.99999</dd>
-<dt>render p_ge3</dt><dd>0.99822 → 0.99822</dd>
-<dt>render p_ge4</dt><dd>0.98686 → 0.98686</dd>
-<dt>gallery_grade p_ge2</dt><dd>0.98783 → 0.98783</dd>
-<dt>gallery_grade p_ge3</dt><dd>0.94728 → 0.94728</dd>
-<dt>gallery_grade p_ge4</dt><dd>0.88299 → 0.88299</dd>
-<dt>palette score</dt><dd>3.99946 → 3.99946</dd>
-<dt>location p_ge3</dt><dd>0.90681 → 0.90681</dd>
-<dt>location p_ge4</dt><dd>0.00041 → 0.00041</dd>
+<dt>picture</dt><dd>match (gap 0)</dd>
+<dt>render s (yours · reference)</dt><dd>0.21 · 0.17</dd>
+<dt>wallpaper judge P(&gt;=2)</dt><dd>0.99999 → 0.99999</dd>
+<dt>wallpaper judge P(&gt;=3)</dt><dd>0.99822 → 0.99822</dd>
+<dt>wallpaper judge P(&gt;=4)</dt><dd>0.98686 → 0.98686</dd>
+<dt>gallery judge P(&gt;=2)</dt><dd>0.98783 → 0.98783</dd>
+<dt>gallery judge P(&gt;=3)</dt><dd>0.94728 → 0.94728</dd>
+<dt>gallery judge P(&gt;=4)</dt><dd>0.88299 → 0.88299</dd>
+<dt>palette judge score</dt><dd>3.99946 → 3.99946</dd>
+<dt>location judge P(&gt;=3)</dt><dd>0.90681 → 0.90681</dd>
+<dt>location judge P(&gt;=4)</dt><dd>0.00041 → 0.00041</dd>
 </dl></div>
 <div class="tile">
 <a href="pictures/julia_multibrot5_smooth_stripe.jpg"><img loading="lazy" src="pictures/julia_multibrot5_smooth_stripe.jpg" alt=""></a>
 <div class="title">julia_multibrot5_smooth_stripe · smooth_stripe</div>
 <dl>
-<dt>render p_ge2</dt><dd>0.99995 → 0.99995</dd>
-<dt>render p_ge3</dt><dd>0.99459 → 0.99459</dd>
-<dt>render p_ge4</dt><dd>0.97375 → 0.97375</dd>
-<dt>gallery_grade p_ge2</dt><dd>0.98866 → 0.98866</dd>
-<dt>gallery_grade p_ge3</dt><dd>0.95114 → 0.95114</dd>
-<dt>gallery_grade p_ge4</dt><dd>0.87016 → 0.87016</dd>
-<dt>palette score</dt><dd>9.35846 → 9.35846</dd>
-<dt>location p_ge3</dt><dd>0.40072 → 0.40072</dd>
-<dt>location p_ge4</dt><dd>0.07255 → 0.07255</dd>
+<dt>picture</dt><dd>match (gap 0)</dd>
+<dt>render s (yours · reference)</dt><dd>0.61 · 0.49</dd>
+<dt>wallpaper judge P(&gt;=2)</dt><dd>0.99995 → 0.99995</dd>
+<dt>wallpaper judge P(&gt;=3)</dt><dd>0.99459 → 0.99459</dd>
+<dt>wallpaper judge P(&gt;=4)</dt><dd>0.97375 → 0.97375</dd>
+<dt>gallery judge P(&gt;=2)</dt><dd>0.98866 → 0.98866</dd>
+<dt>gallery judge P(&gt;=3)</dt><dd>0.95114 → 0.95114</dd>
+<dt>gallery judge P(&gt;=4)</dt><dd>0.87016 → 0.87016</dd>
+<dt>palette judge score</dt><dd>9.35846 → 9.35846</dd>
+<dt>location judge P(&gt;=3)</dt><dd>0.40072 → 0.40072</dd>
+<dt>location judge P(&gt;=4)</dt><dd>0.07255 → 0.07255</dd>
 </dl></div>
 <div class="tile">
 <a href="pictures/multibrot5_curvature.jpg"><img loading="lazy" src="pictures/multibrot5_curvature.jpg" alt=""></a>
 <div class="title">multibrot5_curvature · curvature</div>
 <dl>
-<dt>render p_ge2</dt><dd>0.99820 → 0.99820</dd>
-<dt>render p_ge3</dt><dd>0.97308 → 0.97308</dd>
-<dt>render p_ge4</dt><dd>0.89859 → 0.89859</dd>
-<dt>gallery_grade p_ge2</dt><dd>0.95853 → 0.95853</dd>
-<dt>gallery_grade p_ge3</dt><dd>0.75806 → 0.75806</dd>
-<dt>gallery_grade p_ge4</dt><dd>0.60694 → 0.60694</dd>
-<dt>palette score</dt><dd>5.37623 → 5.37623</dd>
-<dt>location p_ge3</dt><dd>0.74847 → 0.74847</dd>
-<dt>location p_ge4</dt><dd>0.57758 → 0.57758</dd>
+<dt>picture</dt><dd>match (gap 0)</dd>
+<dt>render s (yours · reference)</dt><dd>0.92 · 0.79</dd>
+<dt>wallpaper judge P(&gt;=2)</dt><dd>0.99820 → 0.99820</dd>
+<dt>wallpaper judge P(&gt;=3)</dt><dd>0.97308 → 0.97308</dd>
+<dt>wallpaper judge P(&gt;=4)</dt><dd>0.89859 → 0.89859</dd>
+<dt>gallery judge P(&gt;=2)</dt><dd>0.95853 → 0.95853</dd>
+<dt>gallery judge P(&gt;=3)</dt><dd>0.75806 → 0.75806</dd>
+<dt>gallery judge P(&gt;=4)</dt><dd>0.60694 → 0.60694</dd>
+<dt>palette judge score</dt><dd>5.37623 → 5.37623</dd>
+<dt>location judge P(&gt;=3)</dt><dd>0.74847 → 0.74847</dd>
+<dt>location judge P(&gt;=4)</dt><dd>0.57758 → 0.57758</dd>
 </dl></div>
 </div>
+<ul class="legend">
+<li><b>picture</b>: whether your render matches the tracked reference picture: every one of its 32x18 cells&#x27; mean colour within 4 of 255</li>
+<li><b>render s (yours · reference)</b>: seconds your machine took to render the picture, beside the same render on the reference box (Intel i5-10400F, Windows 10, release engine, one render at a time)</li>
+<li><b>wallpaper judge P(&gt;=2)</b>: the wallpaper judge&#x27;s probability that the picture rates at least 2 of 5, expected → yours</li>
+<li><b>wallpaper judge P(&gt;=3)</b>: the wallpaper judge&#x27;s probability that the picture rates at least 3 of 5, expected → yours</li>
+<li><b>wallpaper judge P(&gt;=4)</b>: the wallpaper judge&#x27;s probability that the picture rates at least 4 of 5, expected → yours</li>
+<li><b>gallery judge P(&gt;=2)</b>: the gallery judge&#x27;s probability that the picture rates at least 2 of 5, expected → yours</li>
+<li><b>gallery judge P(&gt;=3)</b>: the gallery judge&#x27;s probability that the picture rates at least 3 of 5, expected → yours</li>
+<li><b>gallery judge P(&gt;=4)</b>: the gallery judge&#x27;s probability that the picture rates at least 4 of 5, expected → yours</li>
+<li><b>palette judge score</b>: the palette judge&#x27;s fit of this palette to this place, expected → yours; comparable only between palettes of one place</li>
+<li><b>location judge P(&gt;=3)</b>: the location judge&#x27;s probability that the place rates at least 3 of 5, expected → yours</li>
+<li><b>location judge P(&gt;=4)</b>: the location judge&#x27;s probability that the place rates at least 4 of 5, expected → yours</li>
+</ul>
 </body></html>

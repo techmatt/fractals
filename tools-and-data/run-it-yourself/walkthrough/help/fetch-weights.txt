@@ -1,0 +1,20 @@
+usage: fractal-wallpapers fetch-weights [-h] [--head HEAD] [--check] [--verify-release]
+                                        [--repo REPO] [--ref REF] [--into DIR]
+
+options:
+  -h, --help        show this help message and exit
+  --head HEAD       fetch only this head instead of all of them
+  --check           verify the manifest against the local tree and download nothing: every head
+                    present, every entry complete, every named artifact on disk and hashing true,
+                    and all four naming ONE tag — since 2026-09-14 every head ships in one dated
+                    release, and a row left on an older tag is a head that 404s while the rest
+                    come down
+  --verify-release  clone the public repository into a temporary directory and run `fetch-weights`
+                    and `--check` THERE. …
+  --repo REPO       which repository --verify-release clones (default
+                    https://github.com/techmatt/fractal-wallpapers.git). …
+  --ref REF         which branch --verify-release clones (default main). …
+  --into DIR        keep the --verify-release clone here instead of a temporary directory that is
+                    deleted afterwards. …
+
+… marks help trimmed to its contract. FRACTAL_WALLPAPERS_HELP=full prints the reasoning whole.

@@ -1,0 +1,18 @@
+usage: fractal-wallpapers curate candidate-ledger browse [-h] [--best BEST] [--sample SAMPLE]
+                                                         [--seed SEED] [--out DIR] [--bundle DIR]
+
+Reads the ledger and its score sidecar and renders nothing: the pool's size by mode and by fractal
+family, then the best N candidates by the render judge's P(>=4) and a seeded random N, each
+picture beside its scores (the gallery judge's p_fine where `gallery-grade score-pool` has read
+it). Writes summary.json and index.html to artifacts/curation/candidate_page/ unless --out says
+otherwise.
+
+options:
+  -h, --help       show this help message and exit
+  --best BEST      best candidates shown (24)
+  --sample SAMPLE  random candidates shown (24)
+  --seed SEED      the random draw's seed (0)
+  --out DIR        write the page and summary here
+  --bundle DIR     also write the page into DIR as a portable folder: index.html, page.json, and
+                   only the pictures it shows, re-encoded small; nothing outside DIR is referred
+                   to

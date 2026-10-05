@@ -1,0 +1,168 @@
+usage: fractal-wallpapers harvest [-h] [--seed SEED] [--batch BATCH]
+                                  [--minutes MINUTES | --finish-by HH:MM] [--batches BATCHES]
+                                  [--release-slots RELEASE_SLOTS] [--strange-share STRANGE_SHARE]
+                                  [--strange-modes STRANGE_MODES]
+                                  [--release-workers RELEASE_WORKERS] [--seeds SEEDS] [--no-twins]
+                                  [--root-channel {proven,viewport_sampler}]
+                                  [--sampler-rungs SAMPLER_RUNGS]
+                                  [--sampler-widest SAMPLER_WIDEST]
+                                  [--sampler-narrowest SAMPLER_NARROWEST]
+                                  [--root-expansions ROOT_EXPANSIONS]
+                                  [--dynamical-root-expansions DYNAMICAL_ROOT_EXPANSIONS]
+                                  [--candidates CANDIDATES] [--node-width NODE_WIDTH]
+                                  [--colormap COLORMAP] [--probe PROBE] [--refine-per-walk K]
+                                  [--refine-margin DELTA] [--neighborhood | --no-neighborhood]
+                                  [--partition {mandelbrot,multibrot3,multibrot4,multibrot5,multibrot6,julia:mandelbrot,julia:multibrot3,julia:multibrot4,julia:multibrot5,julia:multibrot6,phoenix,phoenix:classic}]
+                                  [--floor FLOOR] [--discount DISCOUNT] [--prices PRICES]
+                                  [--low-water LOW_WATER] [--cooldown COOLDOWN]
+                                  [--refill-share REFILL_SHARE] [--lineage-cap LINEAGE_CAP]
+                                  [--lineage-discount LINEAGE_DISCOUNT]
+                                  [--lineage-discount-floor LINEAGE_DISCOUNT_FLOOR]
+                                  [--exploration-floor EXPLORATION_FLOOR]
+                                  [--exploration-start EXPLORATION_START]
+                                  [--exploration-ema EXPLORATION_EMA] [--no-exploration]
+                                  [--no-saturation] [--ledgers LEDGERS] [--out-dir OUT_DIR]
+                                  [--foci] [--plane-grace-rungs PLANE_GRACE_RUNGS]
+                                  [--score-workers SCORE_WORKERS] [--device DEVICE] [--no-scoring]
+                                  {export,stats} ...
+
+Run batches until the active-time budget is spent, dividing each batch's slots between partitions
+by how far each one is below its intended share of the release. Checkpoints at every batch
+boundary and resumes from the checkpoint if one is there, so a killed run continues rather than
+restarting.
+
+positional arguments:
+  {export,stats}
+    export              join the run's kept places to the location judge's scores, as one file
+    stats               per fractal family: found, places, scores, and the best and worst four
+
+options:
+  -h, --help            show this help message and exit
+
+the run and its clock:
+  --seed SEED           run seed (default: 0)
+  --batch BATCH         node slots per batch
+  --minutes MINUTES     active-minute budget across every session of this run (default: 10; 0 for
+                        none)
+  --finish-by HH:MM     derive --minutes from a wall-clock finish time instead of naming it: the
+                        span to the next HH:MM, less the release leg (--release-slots), the
+                        closing re-score, the ledger load and a margin, converted from wall to
+                        ACTIVE minutes. …
+  --batches BATCHES     stop after this many batches, whatever the clock says
+
+the release leg the clock reserves for:
+  read only with --finish-by, which turns a release ceiling into minutes it holds back; none of
+  it is passed to `curate run`
+
+  --release-slots RELEASE_SLOTS
+                        the release ceiling the curation leg will be asked for (default: 10, the
+                        diagnostic release a run keeps). …
+  --strange-share STRANGE_SHARE
+                        the share of those slots the strange judge will fill (default: 0.6). …
+  --strange-modes STRANGE_MODES
+                        modes the strange judge will draw at each location (default: curation's
+                        own). …
+  --release-workers RELEASE_WORKERS
+                        worker processes the release leg will run at, which is what the reserved
+                        rate is scaled to (default: 4, the count every release on record was
+                        measured at). …
+
+where roots come from:
+  --seeds SEEDS         a JSONL seed file for the parameter planes (default: the tracked plane
+                        seed pool, data/discovery/plane_seed_pool.jsonl)
+  --no-twins            do not derive Julia parameters from admitted parameter-plane locations;
+                        the three higher-degree Julia partitions then have no channel at all and
+                        say so
+  --root-channel {proven,viewport_sampler}
+                        draw roots from this channel as well as the partition's own pool;
+                        repeatable. …
+  --sampler-rungs SAMPLER_RUNGS
+                        octaves in from the home width the viewport sampler draws over on the
+                        PINNED plane, each rung a 2^k x 2^k jittered grid at width home/2^k
+                        (default: 4, which is 340 frames). …
+  --sampler-widest SAMPLER_WIDEST
+                        the widest root the viewport sampler hands over on a PARAMETER plane;
+                        every rung of the straddle refinement whose cell width lies inside the
+                        band is served (default: 0.1)
+  --sampler-narrowest SAMPLER_NARROWEST
+                        the narrowest, which decides how deep the refinement goes. …
+
+how far each walk runs:
+  --root-expansions ROOT_EXPANSIONS
+                        expansions a root on a PARAMETER plane may pay for, its reframings
+                        included (default: 12)
+  --dynamical-root-expansions DYNAMICAL_ROOT_EXPANSIONS
+                        the same, for a root on a DYNAMICAL plane — julia and phoenix alike. …
+  --candidates CANDIDATES
+                        candidates drawn per node
+
+the frame the gates read:
+  a scored run refuses any other geometry and any other map: the head reads this frame as a tile
+
+  --node-width NODE_WIDTH
+                        node render width in pixels. …
+  --colormap COLORMAP   colormap the gate renders are drawn through. …
+
+the reframing operators:
+  --probe PROBE         probability the reframing probe fires on an admission (default: 0.25)
+  --refine-per-walk K   how many of this walk's best gate survivors have their FRAMING refined
+                        when the walk closes, best first by the seating statistic. …
+  --refine-margin DELTA
+                        how much better a framing has to read before it is adopted, in NATS of
+                        log-odds on P(>=4). …
+  --neighborhood        enumerate neighbouring nuclei (on by default; the expensive operator)
+  --no-neighborhood     fire only the snap and the lateral step, and pay neither the neighbourhood
+                        enumeration's clock nor its frontier
+
+how the clock is divided:
+  --partition {mandelbrot,multibrot3,multibrot4,multibrot5,multibrot6,julia:mandelbrot,julia:multibrot3,julia:multibrot4,julia:multibrot5,julia:multibrot6,phoenix,phoenix:classic}
+                        keep the books for this partition alone (repeatable; default: every one).
+                        …
+  --floor FLOOR         the share of the clock every partition floors at (default: 0.05)
+  --discount DISCOUNT   what an unlabelled machine-scored find is worth against the deficit
+                        (default: 0.2); 0 reproduces the labels-only deficit exactly
+  --prices PRICES       a cost-to-find seed table other than the shipped one
+  --low-water LOW_WATER
+                        a partition below this many nodes is starved
+  --cooldown COOLDOWN   batches a partition waits between refills
+  --refill-share REFILL_SHARE
+                        share of the loop's clock refills may spend (default: 0.25)
+  --lineage-cap LINEAGE_CAP
+                        admissions any one lineage may book before the walk stops expanding it
+                        (default: 0, no cap). …
+  --lineage-discount LINEAGE_DISCOUNT
+                        how fast a lineage's contest credit decays with what it has already booked
+                        this run: credit x= max(floor, 1/(1+k*n)) (default: 0.5; 0 turns the
+                        discount off). …
+  --lineage-discount-floor LINEAGE_DISCOUNT_FLOOR
+                        the floor that discount never falls below (default: 0.2)
+  --exploration-floor EXPLORATION_FLOOR
+                        share of the post-floor slots reserved for lineages no run has ever booked
+                        an admission from, which the share never falls below (default: 0.25)
+  --exploration-start EXPLORATION_START
+                        what that share opens at before it has priced itself (default: 0.45)
+  --exploration-ema EXPLORATION_EMA
+                        per-served-batch smoothing weight for the share's self-pricing (default:
+                        0.15)
+  --no-exploration      allocate the whole post-floor batch by deficit; no protected share
+  --no-saturation       do not read earlier runs' ledgers; every place ranks as untouched
+
+what it reads and writes:
+  --ledgers LEDGERS     where earlier runs' ledgers live (default: artifacts)
+  --out-dir OUT_DIR     the run directory (default: artifacts/harvest)
+  --foci                record each expanded node's kept focus set beside its candidates: where
+                        the peaks were, which blurring scales found each one, how alone it stands
+                        and how far the nearest kept neighbour is. …
+
+the gates and the scoring:
+  --plane-grace-rungs PLANE_GRACE_RUNGS
+                        rungs below a parameter-plane seed root that the expansion junk floor does
+                        not act on (default: 5; 0 gates every rung). …
+  --score-workers SCORE_WORKERS
+                        worker processes rendering views the head reads that nobody has drawn
+                        (default: 1; 1 renders in this process). …
+  --device DEVICE       cuda, cpu, or auto (default)
+  --no-scoring          run the null scorer: structural gates only, every row left unclassed and
+                        invisible to the standing deficit
+
+… marks help trimmed to its contract. FRACTAL_WALLPAPERS_HELP=full prints the reasoning whole.

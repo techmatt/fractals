@@ -3,8 +3,8 @@
  "title": "Candidate pool",
  "command": "fractal-wallpapers curate candidate-ledger browse",
  "intro": [
-  "327 candidates over 109 places; 327 scored by the render judge, 0 read by the gallery judge (`gallery-grade score-pool`).",
-  "P(>=4) is the render judge's; the bar column counts rows at or over 0.5, the height a mode's own bar starts from."
+  "437 candidates over 138 places; 437 scored by the render judge, 26 read by the gallery judge (`gallery-grade score-pool`).",
+  "The wallpaper judge is the render judge; the bar column counts pictures at or over 0.5, the height a mode's own bar starts from."
  ],
  "sections": [
   {
@@ -13,110 +13,136 @@
    "table": [
     [
      "mode",
-     "rows",
-     "scored",
-     "P(>=4) >= bar",
-     "median P(>=4)",
-     "places"
+     "pictures",
+     "judged",
+     "at the bar",
+     "median wallpaper judge P(>=4)",
+     "places drawn"
     ],
     [
      "direct_trap_lines",
-     35,
-     35,
+     40,
+     40,
      0,
-     0.001,
-     35
+     0.0012,
+     40
     ],
     [
      "direct_trap_multiply",
-     22,
-     22,
+     26,
+     26,
      0,
-     0.0005,
-     22
+     0.0004,
+     26
     ],
     [
      "direct_trap_screen",
-     23,
-     23,
-     0,
-     0.0014,
-     23
-    ],
-    [
-     "itinerary",
-     10,
-     10,
-     0,
-     0.0041,
-     10
-    ],
-    [
-     "smooth",
-     37,
-     37,
-     2,
-     0.0014,
-     35
-    ],
-    [
-     "smooth_angle_min",
-     25,
-     25,
-     2,
-     0.0007,
-     25
-    ],
-    [
-     "smooth_curvature",
      30,
      30,
-     1,
-     0.0016,
+     0,
+     0.0015,
      30
     ],
     [
-     "smooth_mean_angle",
-     29,
-     29,
-     1,
-     0.002,
+     "itinerary",
+     13,
+     13,
+     0,
+     0.0039,
+     13
+    ],
+    [
+     "smooth",
+     56,
+     56,
+     6,
+     0.0021,
+     48
+    ],
+    [
+     "smooth_angle_min",
+     35,
+     35,
+     2,
+     0.0012,
      29
+    ],
+    [
+     "smooth_curvature",
+     37,
+     37,
+     1,
+     0.0016,
+     37
+    ],
+    [
+     "smooth_mean_angle",
+     40,
+     40,
+     2,
+     0.0018,
+     40
     ],
     [
      "smooth_stripe",
-     28,
-     28,
-     2,
+     35,
+     35,
+     4,
      0.0025,
-     28
-    ],
-    [
-     "stripe",
-     35,
-     35,
-     3,
-     0.0017,
      35
     ],
     [
+     "stripe",
+     50,
+     50,
+     4,
+     0.0041,
+     45
+    ],
+    [
      "threads",
-     24,
-     24,
-     1,
-     0.0072,
-     24
+     36,
+     36,
+     4,
+     0.0131,
+     31
     ],
     [
      "tia",
-     29,
-     29,
-     1,
-     0.0053,
-     29
+     39,
+     39,
+     3,
+     0.0078,
+     34
     ]
    ],
    "tiles": [],
+   "legend": [
+    [
+     "mode",
+     "the coloring: how each point's escape is turned into a colour"
+    ],
+    [
+     "pictures",
+     "candidate pictures in the pool"
+    ],
+    [
+     "judged",
+     "pictures the wallpaper judge has read"
+    ],
+    [
+     "at the bar",
+     "pictures whose wallpaper judge P(>=4) is at least 0.5, where a coloring's own bar starts"
+    ],
+    [
+     "median wallpaper judge P(>=4)",
+     "the middle wallpaper judge P(>=4) of those pictures"
+    ],
+    [
+     "places drawn",
+     "different places the pictures were drawn from"
+    ]
+   ],
    "records": []
   },
   {
@@ -124,84 +150,84 @@
    "note": "",
    "table": [
     [
-     "partition",
-     "rows",
-     "scored",
-     "P(>=4) >= bar",
-     "median P(>=4)",
-     "places"
+     "family",
+     "pictures",
+     "judged",
+     "at the bar",
+     "median wallpaper judge P(>=4)",
+     "places drawn"
     ],
     [
      "julia:mandelbrot",
-     36,
-     36,
-     3,
-     0.002,
-     12
+     53,
+     53,
+     5,
+     0.0031,
+     16
     ],
     [
      "julia:multibrot3",
-     36,
-     36,
-     3,
-     0.0033,
-     12
+     53,
+     53,
+     9,
+     0.005,
+     16
     ],
     [
      "julia:multibrot4",
-     36,
-     36,
+     48,
+     48,
      0,
-     0.006,
-     12
+     0.0048,
+     16
     ],
     [
      "julia:multibrot5",
-     33,
-     33,
-     1,
-     0.0024,
-     11
+     50,
+     50,
+     3,
+     0.0037,
+     15
     ],
     [
      "julia:multibrot6",
-     33,
-     33,
+     45,
+     45,
      0,
      0.0014,
-     11
+     15
     ],
     [
      "mandelbrot",
-     33,
-     33,
+     39,
+     39,
      0,
      0.0001,
-     11
+     13
     ],
     [
      "multibrot3",
-     33,
-     33,
-     1,
-     0.0022,
-     11
+     36,
+     36,
+     2,
+     0.0027,
+     12
     ],
     [
      "multibrot4",
-     33,
-     33,
+     44,
+     44,
      2,
-     0.0022,
-     11
+     0.0019,
+     15
     ],
     [
      "multibrot5",
-     33,
-     33,
-     2,
-     0.0019,
-     11
+     41,
+     41,
+     4,
+     0.0024,
+     12
     ],
     [
      "multibrot6",
@@ -213,26 +239,52 @@
     ],
     [
      "phoenix",
-     9,
-     9,
+     10,
+     10,
      0,
-     0.0019,
-     3
+     0.0024,
+     4
     ],
     [
      "phoenix:classic",
-     9,
-     9,
+     15,
+     15,
      1,
-     0.0005,
+     0.0477,
      3
     ]
    ],
    "tiles": [],
+   "legend": [
+    [
+     "family",
+     "which fractal: the Mandelbrot set, a multibrot of degree 3 to 6, or a Julia or Phoenix set (julia:multibrot3 is the cubic Julia sets)"
+    ],
+    [
+     "pictures",
+     "candidate pictures in the pool"
+    ],
+    [
+     "judged",
+     "pictures the wallpaper judge has read"
+    ],
+    [
+     "at the bar",
+     "pictures whose wallpaper judge P(>=4) is at least 0.5, where a coloring's own bar starts"
+    ],
+    [
+     "median wallpaper judge P(>=4)",
+     "the middle wallpaper judge P(>=4) of those pictures"
+    ],
+    [
+     "places drawn",
+     "different places the pictures were drawn from"
+    ]
+   ],
    "records": []
   },
   {
-   "heading": "Best 24 by P(>=4)",
+   "heading": "Best 24 by the wallpaper judge's P(>=4)",
    "note": "",
    "table": null,
    "tiles": [
@@ -240,18 +292,19 @@
      "picture": "pictures/8c09db64d0a2751f.jpg",
      "title": "8c09db64d0a2751f",
      "mark": "",
+     "band": "",
      "caption": [
       [
-       "P(>=4)",
+       "wallpaper judge P(>=4)",
        0.9964534193850384
       ],
       [
-       "P(>=3)",
+       "wallpaper judge P(>=3)",
        0.9999276587467383
       ],
       [
-       "p_fine(>=4)",
-       null
+       "gallery judge",
+       0.0302038653933961
       ],
       [
        "mode",
@@ -267,18 +320,19 @@
      "picture": "pictures/9adc62578a671d84.jpg",
      "title": "9adc62578a671d84",
      "mark": "",
+     "band": "",
      "caption": [
       [
-       "P(>=4)",
+       "wallpaper judge P(>=4)",
        0.9957638327399297
       ],
       [
-       "P(>=3)",
+       "wallpaper judge P(>=3)",
        0.9994419643205186
       ],
       [
-       "p_fine(>=4)",
-       null
+       "gallery judge",
+       0.011534257991941141
       ],
       [
        "mode",
@@ -291,21 +345,50 @@
      ]
     },
     {
+     "picture": "pictures/afa964e54f92d35f.jpg",
+     "title": "afa964e54f92d35f",
+     "mark": "",
+     "band": "",
+     "caption": [
+      [
+       "wallpaper judge P(>=4)",
+       0.9951297004813645
+      ],
+      [
+       "wallpaper judge P(>=3)",
+       0.9997935234656153
+      ],
+      [
+       "gallery judge",
+       0.21322692302169477
+      ],
+      [
+       "mode",
+       "smooth_stripe"
+      ],
+      [
+       "family",
+       "multibrot3"
+      ]
+     ]
+    },
+    {
      "picture": "pictures/c7b72d8fad21245d.jpg",
      "title": "c7b72d8fad21245d",
      "mark": "",
+     "band": "",
      "caption": [
       [
-       "P(>=4)",
+       "wallpaper judge P(>=4)",
        0.994313181816339
       ],
       [
-       "P(>=3)",
+       "wallpaper judge P(>=3)",
        0.9999747831759563
       ],
       [
-       "p_fine(>=4)",
-       null
+       "gallery judge",
+       0.008393743410459294
       ],
       [
        "mode",
@@ -318,21 +401,50 @@
      ]
     },
     {
+     "picture": "pictures/3e0cf363144af765.jpg",
+     "title": "3e0cf363144af765",
+     "mark": "",
+     "band": "",
+     "caption": [
+      [
+       "wallpaper judge P(>=4)",
+       0.9784721489425061
+      ],
+      [
+       "wallpaper judge P(>=3)",
+       0.9993691847450451
+      ],
+      [
+       "gallery judge",
+       0.07781498573547614
+      ],
+      [
+       "mode",
+       "threads"
+      ],
+      [
+       "family",
+       "julia:multibrot3"
+      ]
+     ]
+    },
+    {
      "picture": "pictures/f5821b7075623251.jpg",
      "title": "f5821b7075623251",
      "mark": "",
+     "band": "",
      "caption": [
       [
-       "P(>=4)",
+       "wallpaper judge P(>=4)",
        0.9661641345535227
       ],
       [
-       "P(>=3)",
+       "wallpaper judge P(>=3)",
        0.9971576082321298
       ],
       [
-       "p_fine(>=4)",
-       null
+       "gallery judge",
+       0.0041876149354482745
       ],
       [
        "mode",
@@ -348,18 +460,19 @@
      "picture": "pictures/7da670fbc19714b3.jpg",
      "title": "7da670fbc19714b3",
      "mark": "",
+     "band": "",
      "caption": [
       [
-       "P(>=4)",
+       "wallpaper judge P(>=4)",
        0.9660519145913222
       ],
       [
-       "P(>=3)",
+       "wallpaper judge P(>=3)",
        0.9987531832838765
       ],
       [
-       "p_fine(>=4)",
-       null
+       "gallery judge",
+       0.0007770884142690645
       ],
       [
        "mode",
@@ -372,21 +485,134 @@
      ]
     },
     {
+     "picture": "pictures/eb7d48730f8f23e1.jpg",
+     "title": "eb7d48730f8f23e1",
+     "mark": "",
+     "band": "",
+     "caption": [
+      [
+       "wallpaper judge P(>=4)",
+       0.9383933289165803
+      ],
+      [
+       "wallpaper judge P(>=3)",
+       0.9921287169775639
+      ],
+      [
+       "gallery judge",
+       0.0009088797155082538
+      ],
+      [
+       "mode",
+       "smooth"
+      ],
+      [
+       "family",
+       "julia:multibrot3"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/4ac1749087febd72.jpg",
+     "title": "4ac1749087febd72",
+     "mark": "",
+     "band": "",
+     "caption": [
+      [
+       "wallpaper judge P(>=4)",
+       0.9197395073023926
+      ],
+      [
+       "wallpaper judge P(>=3)",
+       0.986944542924645
+      ],
+      [
+       "gallery judge",
+       0.0066246001979856995
+      ],
+      [
+       "mode",
+       "smooth"
+      ],
+      [
+       "family",
+       "julia:multibrot3"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/3ef83880e67fead6.jpg",
+     "title": "3ef83880e67fead6",
+     "mark": "",
+     "band": "",
+     "caption": [
+      [
+       "wallpaper judge P(>=4)",
+       0.8960320921395912
+      ],
+      [
+       "wallpaper judge P(>=3)",
+       0.9934238208362562
+      ],
+      [
+       "gallery judge",
+       0.0069574042292482145
+      ],
+      [
+       "mode",
+       "tia"
+      ],
+      [
+       "family",
+       "julia:multibrot5"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/c7acc1dc0be998a4.jpg",
+     "title": "c7acc1dc0be998a4",
+     "mark": "",
+     "band": "",
+     "caption": [
+      [
+       "wallpaper judge P(>=4)",
+       0.8659382595925675
+      ],
+      [
+       "wallpaper judge P(>=3)",
+       0.9984149274493354
+      ],
+      [
+       "gallery judge",
+       0.001542525890986899
+      ],
+      [
+       "mode",
+       "threads"
+      ],
+      [
+       "family",
+       "multibrot5"
+      ]
+     ]
+    },
+    {
      "picture": "pictures/70b15eef0b859a8f.jpg",
      "title": "70b15eef0b859a8f",
      "mark": "",
+     "band": "",
      "caption": [
       [
-       "P(>=4)",
+       "wallpaper judge P(>=4)",
        0.8529611288063258
       ],
       [
-       "P(>=3)",
+       "wallpaper judge P(>=3)",
        0.9953595651800514
       ],
       [
-       "p_fine(>=4)",
-       null
+       "gallery judge",
+       0.018829376638200872
       ],
       [
        "mode",
@@ -402,18 +628,19 @@
      "picture": "pictures/edae02e39f622de6.jpg",
      "title": "edae02e39f622de6",
      "mark": "",
+     "band": "",
      "caption": [
       [
-       "P(>=4)",
+       "wallpaper judge P(>=4)",
        0.8181218411986025
       ],
       [
-       "P(>=3)",
+       "wallpaper judge P(>=3)",
        0.9957339414924001
       ],
       [
-       "p_fine(>=4)",
-       null
+       "gallery judge",
+       0.04768581881438372
       ],
       [
        "mode",
@@ -426,21 +653,50 @@
      ]
     },
     {
-     "picture": "pictures/d09c440c99d59329.jpg",
-     "title": "d09c440c99d59329",
+     "picture": "pictures/924b098720ba9a27.jpg",
+     "title": "924b098720ba9a27",
      "mark": "",
+     "band": "",
      "caption": [
       [
-       "P(>=4)",
-       0.6957435458057504
+       "wallpaper judge P(>=4)",
+       0.8166940395612435
       ],
       [
-       "P(>=3)",
-       0.9895851844852708
+       "wallpaper judge P(>=3)",
+       0.9823468542304903
       ],
       [
-       "p_fine(>=4)",
-       null
+       "gallery judge",
+       0.019618634983902924
+      ],
+      [
+       "mode",
+       "smooth_stripe"
+      ],
+      [
+       "family",
+       "julia:multibrot3"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/ace5e9c72ed41ed7.jpg",
+     "title": "ace5e9c72ed41ed7",
+     "mark": "",
+     "band": "",
+     "caption": [
+      [
+       "wallpaper judge P(>=4)",
+       0.7624105007647187
+      ],
+      [
+       "wallpaper judge P(>=3)",
+       0.9859298273757169
+      ],
+      [
+       "gallery judge",
+       0.005359757803025352
       ],
       [
        "mode",
@@ -453,21 +709,78 @@
      ]
     },
     {
+     "picture": "pictures/d09c440c99d59329.jpg",
+     "title": "d09c440c99d59329",
+     "mark": "",
+     "band": "",
+     "caption": [
+      [
+       "wallpaper judge P(>=4)",
+       0.6957435458057504
+      ],
+      [
+       "wallpaper judge P(>=3)",
+       0.9895851844852708
+      ],
+      [
+       "gallery judge",
+       0.00027363490778874145
+      ],
+      [
+       "mode",
+       "threads"
+      ],
+      [
+       "family",
+       "multibrot5"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/43dafa78cb385ca4.jpg",
+     "title": "43dafa78cb385ca4",
+     "mark": "",
+     "band": "",
+     "caption": [
+      [
+       "wallpaper judge P(>=4)",
+       0.6580075819001324
+      ],
+      [
+       "wallpaper judge P(>=3)",
+       0.9957947693136946
+      ],
+      [
+       "gallery judge",
+       0.005321200974173965
+      ],
+      [
+       "mode",
+       "smooth"
+      ],
+      [
+       "family",
+       "julia:multibrot3"
+      ]
+     ]
+    },
+    {
      "picture": "pictures/ec719647139349d4.jpg",
      "title": "ec719647139349d4",
      "mark": "",
+     "band": "",
      "caption": [
       [
-       "P(>=4)",
+       "wallpaper judge P(>=4)",
        0.653807742217448
       ],
       [
-       "P(>=3)",
+       "wallpaper judge P(>=3)",
        0.9522184136581453
       ],
       [
-       "p_fine(>=4)",
-       null
+       "gallery judge",
+       0.0706264388186068
       ],
       [
        "mode",
@@ -483,18 +796,47 @@
      "picture": "pictures/e0c4610ea0bbfc98.jpg",
      "title": "e0c4610ea0bbfc98",
      "mark": "",
+     "band": "",
      "caption": [
       [
-       "P(>=4)",
+       "wallpaper judge P(>=4)",
        0.6307176955367063
       ],
       [
-       "P(>=3)",
+       "wallpaper judge P(>=3)",
        0.8874067262327512
       ],
       [
-       "p_fine(>=4)",
-       null
+       "gallery judge",
+       0.0019013461700874866
+      ],
+      [
+       "mode",
+       "stripe"
+      ],
+      [
+       "family",
+       "julia:mandelbrot"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/de7c62dc780e6967.jpg",
+     "title": "de7c62dc780e6967",
+     "mark": "",
+     "band": "",
+     "caption": [
+      [
+       "wallpaper judge P(>=4)",
+       0.6066770848020163
+      ],
+      [
+       "wallpaper judge P(>=3)",
+       0.9534354876436697
+      ],
+      [
+       "gallery judge",
+       0.10147607431434817
       ],
       [
        "mode",
@@ -510,18 +852,19 @@
      "picture": "pictures/ad80bcf85c2b2d81.jpg",
      "title": "ad80bcf85c2b2d81",
      "mark": "",
+     "band": "",
      "caption": [
       [
-       "P(>=4)",
+       "wallpaper judge P(>=4)",
        0.6018919593578097
       ],
       [
-       "P(>=3)",
+       "wallpaper judge P(>=3)",
        0.9714515686049057
       ],
       [
-       "p_fine(>=4)",
-       null
+       "gallery judge",
+       0.00024061366669875998
       ],
       [
        "mode",
@@ -534,21 +877,50 @@
      ]
     },
     {
+     "picture": "pictures/13e3796073b1af0a.jpg",
+     "title": "13e3796073b1af0a",
+     "mark": "",
+     "band": "",
+     "caption": [
+      [
+       "wallpaper judge P(>=4)",
+       0.5552287268229968
+      ],
+      [
+       "wallpaper judge P(>=3)",
+       0.9805306394458048
+      ],
+      [
+       "gallery judge",
+       0.04461908271087461
+      ],
+      [
+       "mode",
+       "smooth"
+      ],
+      [
+       "family",
+       "julia:multibrot3"
+      ]
+     ]
+    },
+    {
      "picture": "pictures/7128242ea9100dda.jpg",
      "title": "7128242ea9100dda",
      "mark": "",
+     "band": "",
      "caption": [
       [
-       "P(>=4)",
+       "wallpaper judge P(>=4)",
        0.5224570728345532
       ],
       [
-       "P(>=3)",
+       "wallpaper judge P(>=3)",
        0.8341848589702426
       ],
       [
-       "p_fine(>=4)",
-       null
+       "gallery judge",
+       1.533339595271104e-05
       ],
       [
        "mode",
@@ -564,18 +936,19 @@
      "picture": "pictures/1f8c1812bd1ad646.jpg",
      "title": "1f8c1812bd1ad646",
      "mark": "",
+     "band": "",
      "caption": [
       [
-       "P(>=4)",
+       "wallpaper judge P(>=4)",
        0.5118110832504187
       ],
       [
-       "P(>=3)",
+       "wallpaper judge P(>=3)",
        0.9115911020780411
       ],
       [
-       "p_fine(>=4)",
-       null
+       "gallery judge",
+       0.00023146309023209827
       ],
       [
        "mode",
@@ -586,304 +959,29 @@
        "phoenix:classic"
       ]
      ]
-    },
-    {
-     "picture": "pictures/1b71e1b08184dfff.jpg",
-     "title": "1b71e1b08184dfff",
-     "mark": "",
-     "caption": [
-      [
-       "P(>=4)",
-       0.36018332160444394
-      ],
-      [
-       "P(>=3)",
-       0.6807949944378696
-      ],
-      [
-       "p_fine(>=4)",
-       null
-      ],
-      [
-       "mode",
-       "itinerary"
-      ],
-      [
-       "family",
-       "julia:multibrot3"
-      ]
-     ]
-    },
-    {
-     "picture": "pictures/5e1168b43fbda59c.jpg",
-     "title": "5e1168b43fbda59c",
-     "mark": "",
-     "caption": [
-      [
-       "P(>=4)",
-       0.3024219765374768
-      ],
-      [
-       "P(>=3)",
-       0.7248342026455912
-      ],
-      [
-       "p_fine(>=4)",
-       null
-      ],
-      [
-       "mode",
-       "smooth"
-      ],
-      [
-       "family",
-       "multibrot5"
-      ]
-     ]
-    },
-    {
-     "picture": "pictures/68527bc4a9cec1d9.jpg",
-     "title": "68527bc4a9cec1d9",
-     "mark": "",
-     "caption": [
-      [
-       "P(>=4)",
-       0.23836484501215485
-      ],
-      [
-       "P(>=3)",
-       0.6315798492697973
-      ],
-      [
-       "p_fine(>=4)",
-       null
-      ],
-      [
-       "mode",
-       "smooth_stripe"
-      ],
-      [
-       "family",
-       "julia:multibrot3"
-      ]
-     ]
-    },
-    {
-     "picture": "pictures/102e7fce7c2bbeb6.jpg",
-     "title": "102e7fce7c2bbeb6",
-     "mark": "",
-     "caption": [
-      [
-       "P(>=4)",
-       0.23323567095485812
-      ],
-      [
-       "P(>=3)",
-       0.8653340050600999
-      ],
-      [
-       "p_fine(>=4)",
-       null
-      ],
-      [
-       "mode",
-       "threads"
-      ],
-      [
-       "family",
-       "julia:multibrot5"
-      ]
-     ]
-    },
-    {
-     "picture": "pictures/8e9d8de15943083f.jpg",
-     "title": "8e9d8de15943083f",
-     "mark": "",
-     "caption": [
-      [
-       "P(>=4)",
-       0.1948775062276374
-      ],
-      [
-       "P(>=3)",
-       0.7919717467002229
-      ],
-      [
-       "p_fine(>=4)",
-       null
-      ],
-      [
-       "mode",
-       "threads"
-      ],
-      [
-       "family",
-       "julia:mandelbrot"
-      ]
-     ]
-    },
-    {
-     "picture": "pictures/22949accab08d893.jpg",
-     "title": "22949accab08d893",
-     "mark": "",
-     "caption": [
-      [
-       "P(>=4)",
-       0.19195442671591328
-      ],
-      [
-       "P(>=3)",
-       0.44471829535431373
-      ],
-      [
-       "p_fine(>=4)",
-       null
-      ],
-      [
-       "mode",
-       "smooth_curvature"
-      ],
-      [
-       "family",
-       "julia:multibrot4"
-      ]
-     ]
-    },
-    {
-     "picture": "pictures/01483005a98b2ba4.jpg",
-     "title": "01483005a98b2ba4",
-     "mark": "",
-     "caption": [
-      [
-       "P(>=4)",
-       0.18356404890124225
-      ],
-      [
-       "P(>=3)",
-       0.9303323578529161
-      ],
-      [
-       "p_fine(>=4)",
-       null
-      ],
-      [
-       "mode",
-       "smooth_curvature"
-      ],
-      [
-       "family",
-       "multibrot6"
-      ]
-     ]
-    },
-    {
-     "picture": "pictures/b9cc98e437ca8f35.jpg",
-     "title": "b9cc98e437ca8f35",
-     "mark": "",
-     "caption": [
-      [
-       "P(>=4)",
-       0.14740192161874063
-      ],
-      [
-       "P(>=3)",
-       0.9560498814260247
-      ],
-      [
-       "p_fine(>=4)",
-       null
-      ],
-      [
-       "mode",
-       "tia"
-      ],
-      [
-       "family",
-       "julia:multibrot3"
-      ]
-     ]
-    },
-    {
-     "picture": "pictures/c51eeef282592ec4.jpg",
-     "title": "c51eeef282592ec4",
-     "mark": "",
-     "caption": [
-      [
-       "P(>=4)",
-       0.14564128138009355
-      ],
-      [
-       "P(>=3)",
-       0.9966774628095868
-      ],
-      [
-       "p_fine(>=4)",
-       null
-      ],
-      [
-       "mode",
-       "stripe"
-      ],
-      [
-       "family",
-       "multibrot3"
-      ]
-     ]
-    },
-    {
-     "picture": "pictures/3a883a8048f93329.jpg",
-     "title": "3a883a8048f93329",
-     "mark": "",
-     "caption": [
-      [
-       "P(>=4)",
-       0.140724268679783
-      ],
-      [
-       "P(>=3)",
-       0.835899371788436
-      ],
-      [
-       "p_fine(>=4)",
-       null
-      ],
-      [
-       "mode",
-       "threads"
-      ],
-      [
-       "family",
-       "julia:multibrot3"
-      ]
-     ]
-    },
-    {
-     "picture": "pictures/ecb8d41aad217091.jpg",
-     "title": "ecb8d41aad217091",
-     "mark": "",
-     "caption": [
-      [
-       "P(>=4)",
-       0.12874257590760071
-      ],
-      [
-       "P(>=3)",
-       0.3880943872118795
-      ],
-      [
-       "p_fine(>=4)",
-       null
-      ],
-      [
-       "mode",
-       "smooth_angle_min"
-      ],
-      [
-       "family",
-       "julia:multibrot4"
-      ]
-     ]
     }
+   ],
+   "legend": [
+    [
+     "wallpaper judge P(>=4)",
+     "the wallpaper judge's probability that a picture is good"
+    ],
+    [
+     "wallpaper judge P(>=3)",
+     "its probability that a picture is at least decent"
+    ],
+    [
+     "gallery judge",
+     "the gallery judge's score; the gallery normally takes pictures above 0.03"
+    ],
+    [
+     "mode",
+     "the coloring: how each point's escape is turned into a colour"
+    ],
+    [
+     "family",
+     "which fractal: the Mandelbrot set, a multibrot of degree 3 to 6, or a Julia or Phoenix set (julia:multibrot3 is the cubic Julia sets)"
+    ]
    ],
    "records": []
   },
@@ -893,133 +991,26 @@
    "table": null,
    "tiles": [
     {
-     "picture": "pictures/995ea67b0326f567.jpg",
-     "title": "995ea67b0326f567",
+     "picture": "pictures/f7d8968a2de56c56.jpg",
+     "title": "f7d8968a2de56c56",
      "mark": "",
+     "band": "",
      "caption": [
       [
-       "P(>=4)",
-       0.0014301414936591609
+       "wallpaper judge P(>=4)",
+       0.021278213013444867
       ],
       [
-       "P(>=3)",
-       0.9785131726701312
+       "wallpaper judge P(>=3)",
+       0.9945827215897599
       ],
       [
-       "p_fine(>=4)",
+       "gallery judge",
        null
       ],
       [
        "mode",
-       "smooth"
-      ],
-      [
-       "family",
-       "multibrot3"
-      ]
-     ]
-    },
-    {
-     "picture": "pictures/a86a4aa3f01abe63.jpg",
-     "title": "a86a4aa3f01abe63",
-     "mark": "",
-     "caption": [
-      [
-       "P(>=4)",
-       0.000720264510440867
-      ],
-      [
-       "P(>=3)",
-       0.07313337873780527
-      ],
-      [
-       "p_fine(>=4)",
-       null
-      ],
-      [
-       "mode",
-       "smooth"
-      ],
-      [
-       "family",
-       "julia:multibrot5"
-      ]
-     ]
-    },
-    {
-     "picture": "pictures/0c3012280fa7b977.jpg",
-     "title": "0c3012280fa7b977",
-     "mark": "",
-     "caption": [
-      [
-       "P(>=4)",
-       0.0031291971055126783
-      ],
-      [
-       "P(>=3)",
-       0.2547522104616548
-      ],
-      [
-       "p_fine(>=4)",
-       null
-      ],
-      [
-       "mode",
-       "tia"
-      ],
-      [
-       "family",
-       "julia:mandelbrot"
-      ]
-     ]
-    },
-    {
-     "picture": "pictures/68527bc4a9cec1d9.jpg",
-     "title": "68527bc4a9cec1d9",
-     "mark": "",
-     "caption": [
-      [
-       "P(>=4)",
-       0.23836484501215485
-      ],
-      [
-       "P(>=3)",
-       0.6315798492697973
-      ],
-      [
-       "p_fine(>=4)",
-       null
-      ],
-      [
-       "mode",
-       "smooth_stripe"
-      ],
-      [
-       "family",
-       "julia:multibrot3"
-      ]
-     ]
-    },
-    {
-     "picture": "pictures/d09c440c99d59329.jpg",
-     "title": "d09c440c99d59329",
-     "mark": "",
-     "caption": [
-      [
-       "P(>=4)",
-       0.6957435458057504
-      ],
-      [
-       "P(>=3)",
-       0.9895851844852708
-      ],
-      [
-       "p_fine(>=4)",
-       null
-      ],
-      [
-       "mode",
-       "threads"
+       "smooth_curvature"
       ],
       [
        "family",
@@ -1028,20 +1019,525 @@
      ]
     },
     {
-     "picture": "pictures/c70fdea60addac31.jpg",
-     "title": "c70fdea60addac31",
+     "picture": "pictures/7128242ea9100dda.jpg",
+     "title": "7128242ea9100dda",
      "mark": "",
+     "band": "",
      "caption": [
       [
-       "P(>=4)",
-       1.7905935101253361e-06
+       "wallpaper judge P(>=4)",
+       0.5224570728345532
       ],
       [
-       "P(>=3)",
-       0.00010118371329094489
+       "wallpaper judge P(>=3)",
+       0.8341848589702426
       ],
       [
-       "p_fine(>=4)",
+       "gallery judge",
+       1.533339595271104e-05
+      ],
+      [
+       "mode",
+       "smooth_angle_min"
+      ],
+      [
+       "family",
+       "julia:multibrot3"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/e0883df23ebe9102.jpg",
+     "title": "e0883df23ebe9102",
+     "mark": "",
+     "band": "",
+     "caption": [
+      [
+       "wallpaper judge P(>=4)",
+       0.000595783052807692
+      ],
+      [
+       "wallpaper judge P(>=3)",
+       0.036559593994694106
+      ],
+      [
+       "gallery judge",
+       null
+      ],
+      [
+       "mode",
+       "direct_trap_screen"
+      ],
+      [
+       "family",
+       "multibrot4"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/7b7b37ab428d6604.jpg",
+     "title": "7b7b37ab428d6604",
+     "mark": "",
+     "band": "",
+     "caption": [
+      [
+       "wallpaper judge P(>=4)",
+       0.00789502832864703
+      ],
+      [
+       "wallpaper judge P(>=3)",
+       0.8832305439754962
+      ],
+      [
+       "gallery judge",
+       null
+      ],
+      [
+       "mode",
+       "smooth"
+      ],
+      [
+       "family",
+       "phoenix:classic"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/093a952c09f7d7bb.jpg",
+     "title": "093a952c09f7d7bb",
+     "mark": "",
+     "band": "",
+     "caption": [
+      [
+       "wallpaper judge P(>=4)",
+       0.004866717419624536
+      ],
+      [
+       "wallpaper judge P(>=3)",
+       0.19256609357779877
+      ],
+      [
+       "gallery judge",
+       null
+      ],
+      [
+       "mode",
+       "tia"
+      ],
+      [
+       "family",
+       "julia:multibrot4"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/4851052450230c0a.jpg",
+     "title": "4851052450230c0a",
+     "mark": "",
+     "band": "",
+     "caption": [
+      [
+       "wallpaper judge P(>=4)",
+       0.00013206046375829257
+      ],
+      [
+       "wallpaper judge P(>=3)",
+       0.0019708367757256093
+      ],
+      [
+       "gallery judge",
+       null
+      ],
+      [
+       "mode",
+       "smooth_mean_angle"
+      ],
+      [
+       "family",
+       "multibrot5"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/9689d3d93ee01bf4.jpg",
+     "title": "9689d3d93ee01bf4",
+     "mark": "",
+     "band": "",
+     "caption": [
+      [
+       "wallpaper judge P(>=4)",
+       0.11370706307691014
+      ],
+      [
+       "wallpaper judge P(>=3)",
+       0.5923972116793366
+      ],
+      [
+       "gallery judge",
+       null
+      ],
+      [
+       "mode",
+       "smooth_curvature"
+      ],
+      [
+       "family",
+       "julia:multibrot5"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/91393f826516e92e.jpg",
+     "title": "91393f826516e92e",
+     "mark": "",
+     "band": "",
+     "caption": [
+      [
+       "wallpaper judge P(>=4)",
+       0.344027966946667
+      ],
+      [
+       "wallpaper judge P(>=3)",
+       0.6020933423121425
+      ],
+      [
+       "gallery judge",
+       null
+      ],
+      [
+       "mode",
+       "stripe"
+      ],
+      [
+       "family",
+       "julia:mandelbrot"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/76cb14bce34dfc93.jpg",
+     "title": "76cb14bce34dfc93",
+     "mark": "",
+     "band": "",
+     "caption": [
+      [
+       "wallpaper judge P(>=4)",
+       5.1716595097749396e-05
+      ],
+      [
+       "wallpaper judge P(>=3)",
+       0.0013831248327592688
+      ],
+      [
+       "gallery judge",
+       null
+      ],
+      [
+       "mode",
+       "smooth_angle_min"
+      ],
+      [
+       "family",
+       "mandelbrot"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/eae287e71a7b4e14.jpg",
+     "title": "eae287e71a7b4e14",
+     "mark": "",
+     "band": "",
+     "caption": [
+      [
+       "wallpaper judge P(>=4)",
+       0.000768180020930573
+      ],
+      [
+       "wallpaper judge P(>=3)",
+       0.03188443598780183
+      ],
+      [
+       "gallery judge",
+       null
+      ],
+      [
+       "mode",
+       "smooth_mean_angle"
+      ],
+      [
+       "family",
+       "julia:multibrot3"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/f3eb884d335d5841.jpg",
+     "title": "f3eb884d335d5841",
+     "mark": "",
+     "band": "",
+     "caption": [
+      [
+       "wallpaper judge P(>=4)",
+       0.007682904494199358
+      ],
+      [
+       "wallpaper judge P(>=3)",
+       0.27672047357615037
+      ],
+      [
+       "gallery judge",
+       null
+      ],
+      [
+       "mode",
+       "tia"
+      ],
+      [
+       "family",
+       "julia:multibrot4"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/5583a04aed37807c.jpg",
+     "title": "5583a04aed37807c",
+     "mark": "",
+     "band": "",
+     "caption": [
+      [
+       "wallpaper judge P(>=4)",
+       0.013733900153641444
+      ],
+      [
+       "wallpaper judge P(>=3)",
+       0.9201925666022194
+      ],
+      [
+       "gallery judge",
+       null
+      ],
+      [
+       "mode",
+       "threads"
+      ],
+      [
+       "family",
+       "julia:multibrot4"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/8c09db64d0a2751f.jpg",
+     "title": "8c09db64d0a2751f",
+     "mark": "",
+     "band": "",
+     "caption": [
+      [
+       "wallpaper judge P(>=4)",
+       0.9964534193850384
+      ],
+      [
+       "wallpaper judge P(>=3)",
+       0.9999276587467383
+      ],
+      [
+       "gallery judge",
+       0.0302038653933961
+      ],
+      [
+       "mode",
+       "smooth_stripe"
+      ],
+      [
+       "family",
+       "multibrot4"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/67770901b3206aea.jpg",
+     "title": "67770901b3206aea",
+     "mark": "",
+     "band": "",
+     "caption": [
+      [
+       "wallpaper judge P(>=4)",
+       0.00490335950794037
+      ],
+      [
+       "wallpaper judge P(>=3)",
+       0.9687049316880331
+      ],
+      [
+       "gallery judge",
+       null
+      ],
+      [
+       "mode",
+       "smooth"
+      ],
+      [
+       "family",
+       "julia:mandelbrot"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/ab8deb44f62d6115.jpg",
+     "title": "ab8deb44f62d6115",
+     "mark": "",
+     "band": "",
+     "caption": [
+      [
+       "wallpaper judge P(>=4)",
+       0.009157017535831058
+      ],
+      [
+       "wallpaper judge P(>=3)",
+       0.6218266000991858
+      ],
+      [
+       "gallery judge",
+       null
+      ],
+      [
+       "mode",
+       "stripe"
+      ],
+      [
+       "family",
+       "multibrot5"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/3ef83880e67fead6.jpg",
+     "title": "3ef83880e67fead6",
+     "mark": "",
+     "band": "",
+     "caption": [
+      [
+       "wallpaper judge P(>=4)",
+       0.8960320921395912
+      ],
+      [
+       "wallpaper judge P(>=3)",
+       0.9934238208362562
+      ],
+      [
+       "gallery judge",
+       0.0069574042292482145
+      ],
+      [
+       "mode",
+       "tia"
+      ],
+      [
+       "family",
+       "julia:multibrot5"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/95d29121c74f04c1.jpg",
+     "title": "95d29121c74f04c1",
+     "mark": "",
+     "band": "",
+     "caption": [
+      [
+       "wallpaper judge P(>=4)",
+       0.0002039432668117745
+      ],
+      [
+       "wallpaper judge P(>=3)",
+       0.003079475087198725
+      ],
+      [
+       "gallery judge",
+       null
+      ],
+      [
+       "mode",
+       "direct_trap_multiply"
+      ],
+      [
+       "family",
+       "julia:multibrot5"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/237f6cdb1878889f.jpg",
+     "title": "237f6cdb1878889f",
+     "mark": "",
+     "band": "",
+     "caption": [
+      [
+       "wallpaper judge P(>=4)",
+       2.6719667884043216e-05
+      ],
+      [
+       "wallpaper judge P(>=3)",
+       0.0002888955925616281
+      ],
+      [
+       "gallery judge",
+       null
+      ],
+      [
+       "mode",
+       "smooth_mean_angle"
+      ],
+      [
+       "family",
+       "julia:multibrot5"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/4ef74b256c29ec9a.jpg",
+     "title": "4ef74b256c29ec9a",
+     "mark": "",
+     "band": "",
+     "caption": [
+      [
+       "wallpaper judge P(>=4)",
+       0.002692567722349745
+      ],
+      [
+       "wallpaper judge P(>=3)",
+       0.018906265765639356
+      ],
+      [
+       "gallery judge",
+       null
+      ],
+      [
+       "mode",
+       "smooth_mean_angle"
+      ],
+      [
+       "family",
+       "julia:multibrot6"
+      ]
+     ]
+    },
+    {
+     "picture": "pictures/df2f27bc00a26de4.jpg",
+     "title": "df2f27bc00a26de4",
+     "mark": "",
+     "band": "",
+     "caption": [
+      [
+       "wallpaper judge P(>=4)",
+       0.00040514575513900535
+      ],
+      [
+       "wallpaper judge P(>=3)",
+       0.010149674934033494
+      ],
+      [
+       "gallery judge",
        null
       ],
       [
@@ -1055,209 +1551,21 @@
      ]
     },
     {
-     "picture": "pictures/a35c3b628560e608.jpg",
-     "title": "a35c3b628560e608",
+     "picture": "pictures/184541f4d9ddd42f.jpg",
+     "title": "184541f4d9ddd42f",
      "mark": "",
+     "band": "",
      "caption": [
       [
-       "P(>=4)",
-       0.018396253560690756
+       "wallpaper judge P(>=4)",
+       0.005975514564804527
       ],
       [
-       "P(>=3)",
-       0.5931520468124961
+       "wallpaper judge P(>=3)",
+       0.5838994799734503
       ],
       [
-       "p_fine(>=4)",
-       null
-      ],
-      [
-       "mode",
-       "tia"
-      ],
-      [
-       "family",
-       "multibrot3"
-      ]
-     ]
-    },
-    {
-     "picture": "pictures/7b206f43e1a85599.jpg",
-     "title": "7b206f43e1a85599",
-     "mark": "",
-     "caption": [
-      [
-       "P(>=4)",
-       0.001501992216926318
-      ],
-      [
-       "P(>=3)",
-       0.20098905681939636
-      ],
-      [
-       "p_fine(>=4)",
-       null
-      ],
-      [
-       "mode",
-       "smooth_mean_angle"
-      ],
-      [
-       "family",
-       "julia:multibrot4"
-      ]
-     ]
-    },
-    {
-     "picture": "pictures/c2ec6473ca21d1b3.jpg",
-     "title": "c2ec6473ca21d1b3",
-     "mark": "",
-     "caption": [
-      [
-       "P(>=4)",
-       0.0009547950538133994
-      ],
-      [
-       "P(>=3)",
-       0.5480665312080896
-      ],
-      [
-       "p_fine(>=4)",
-       null
-      ],
-      [
-       "mode",
-       "tia"
-      ],
-      [
-       "family",
-       "multibrot4"
-      ]
-     ]
-    },
-    {
-     "picture": "pictures/919b7e57082d0e97.jpg",
-     "title": "919b7e57082d0e97",
-     "mark": "",
-     "caption": [
-      [
-       "P(>=4)",
-       7.322015592691955e-06
-      ],
-      [
-       "P(>=3)",
-       0.00018219693861067023
-      ],
-      [
-       "p_fine(>=4)",
-       null
-      ],
-      [
-       "mode",
-       "smooth_angle_min"
-      ],
-      [
-       "family",
-       "multibrot5"
-      ]
-     ]
-    },
-    {
-     "picture": "pictures/ec719647139349d4.jpg",
-     "title": "ec719647139349d4",
-     "mark": "",
-     "caption": [
-      [
-       "P(>=4)",
-       0.653807742217448
-      ],
-      [
-       "P(>=3)",
-       0.9522184136581453
-      ],
-      [
-       "p_fine(>=4)",
-       null
-      ],
-      [
-       "mode",
-       "stripe"
-      ],
-      [
-       "family",
-       "julia:mandelbrot"
-      ]
-     ]
-    },
-    {
-     "picture": "pictures/577d8272ab1e2ced.jpg",
-     "title": "577d8272ab1e2ced",
-     "mark": "",
-     "caption": [
-      [
-       "P(>=4)",
-       0.040139314720743904
-      ],
-      [
-       "P(>=3)",
-       0.9203965984792881
-      ],
-      [
-       "p_fine(>=4)",
-       null
-      ],
-      [
-       "mode",
-       "stripe"
-      ],
-      [
-       "family",
-       "julia:multibrot3"
-      ]
-     ]
-    },
-    {
-     "picture": "pictures/d0285d6116ce549c.jpg",
-     "title": "d0285d6116ce549c",
-     "mark": "",
-     "caption": [
-      [
-       "P(>=4)",
-       0.0013655147849793979
-      ],
-      [
-       "P(>=3)",
-       0.019750034353085772
-      ],
-      [
-       "p_fine(>=4)",
-       null
-      ],
-      [
-       "mode",
-       "direct_trap_lines"
-      ],
-      [
-       "family",
-       "julia:mandelbrot"
-      ]
-     ]
-    },
-    {
-     "picture": "pictures/36e02c2bf8f431cc.jpg",
-     "title": "36e02c2bf8f431cc",
-     "mark": "",
-     "caption": [
-      [
-       "P(>=4)",
-       0.05564766159783779
-      ],
-      [
-       "P(>=3)",
-       0.33263826168376115
-      ],
-      [
-       "p_fine(>=4)",
+       "gallery judge",
        null
       ],
       [
@@ -1266,57 +1574,31 @@
       ],
       [
        "family",
-       "julia:multibrot3"
+       "multibrot3"
       ]
      ]
     },
     {
-     "picture": "pictures/7128242ea9100dda.jpg",
-     "title": "7128242ea9100dda",
+     "picture": "pictures/b5fcc0f9facf9735.jpg",
+     "title": "b5fcc0f9facf9735",
      "mark": "",
+     "band": "",
      "caption": [
       [
-       "P(>=4)",
-       0.5224570728345532
+       "wallpaper judge P(>=4)",
+       0.005993455180287814
       ],
       [
-       "P(>=3)",
-       0.8341848589702426
+       "wallpaper judge P(>=3)",
+       0.0538018567041248
       ],
       [
-       "p_fine(>=4)",
+       "gallery judge",
        null
       ],
       [
        "mode",
-       "smooth_angle_min"
-      ],
-      [
-       "family",
-       "julia:multibrot3"
-      ]
-     ]
-    },
-    {
-     "picture": "pictures/216e52c4fbdbd97c.jpg",
-     "title": "216e52c4fbdbd97c",
-     "mark": "",
-     "caption": [
-      [
-       "P(>=4)",
-       0.0012023972155955007
-      ],
-      [
-       "P(>=3)",
-       0.028023691803450858
-      ],
-      [
-       "p_fine(>=4)",
-       null
-      ],
-      [
-       "mode",
-       "direct_trap_lines"
+       "stripe"
       ],
       [
        "family",
@@ -1325,101 +1607,49 @@
      ]
     },
     {
-     "picture": "pictures/f4093dca8e9c0936.jpg",
-     "title": "f4093dca8e9c0936",
+     "picture": "pictures/edddbd78a9b37c93.jpg",
+     "title": "edddbd78a9b37c93",
      "mark": "",
+     "band": "",
      "caption": [
       [
-       "P(>=4)",
-       0.002437534770912261
+       "wallpaper judge P(>=4)",
+       0.06116989394505537
       ],
       [
-       "P(>=3)",
-       0.021939840218681745
+       "wallpaper judge P(>=3)",
+       0.9664369343048153
       ],
       [
-       "p_fine(>=4)",
+       "gallery judge",
        null
       ],
       [
        "mode",
-       "smooth_angle_min"
+       "smooth_mean_angle"
       ],
       [
        "family",
-       "multibrot5"
+       "julia:mandelbrot"
       ]
      ]
     },
     {
-     "picture": "pictures/6218f5b3a3344442.jpg",
-     "title": "6218f5b3a3344442",
+     "picture": "pictures/47416bc03edb449f.jpg",
+     "title": "47416bc03edb449f",
      "mark": "",
+     "band": "",
      "caption": [
       [
-       "P(>=4)",
-       0.004768310090224405
+       "wallpaper judge P(>=4)",
+       5.9933305851061746e-05
       ],
       [
-       "P(>=3)",
-       0.2436175352182838
+       "wallpaper judge P(>=3)",
+       0.0013155826765868443
       ],
       [
-       "p_fine(>=4)",
-       null
-      ],
-      [
-       "mode",
-       "threads"
-      ],
-      [
-       "family",
-       "julia:multibrot4"
-      ]
-     ]
-    },
-    {
-     "picture": "pictures/d760b6083d9e0dd0.jpg",
-     "title": "d760b6083d9e0dd0",
-     "mark": "",
-     "caption": [
-      [
-       "P(>=4)",
-       0.0006482819857298065
-      ],
-      [
-       "P(>=3)",
-       0.009682386939622567
-      ],
-      [
-       "p_fine(>=4)",
-       null
-      ],
-      [
-       "mode",
-       "smooth_curvature"
-      ],
-      [
-       "family",
-       "multibrot3"
-      ]
-     ]
-    },
-    {
-     "picture": "pictures/f0964ce4fd4b66a8.jpg",
-     "title": "f0964ce4fd4b66a8",
-     "mark": "",
-     "caption": [
-      [
-       "P(>=4)",
-       0.03813898643983171
-      ],
-      [
-       "P(>=3)",
-       0.960246283796479
-      ],
-      [
-       "p_fine(>=4)",
+       "gallery judge",
        null
       ],
       [
@@ -1428,118 +1658,32 @@
       ],
       [
        "family",
-       "multibrot4"
-      ]
-     ]
-    },
-    {
-     "picture": "pictures/3a883a8048f93329.jpg",
-     "title": "3a883a8048f93329",
-     "mark": "",
-     "caption": [
-      [
-       "P(>=4)",
-       0.140724268679783
-      ],
-      [
-       "P(>=3)",
-       0.835899371788436
-      ],
-      [
-       "p_fine(>=4)",
-       null
-      ],
-      [
-       "mode",
-       "threads"
-      ],
-      [
-       "family",
-       "julia:multibrot3"
-      ]
-     ]
-    },
-    {
-     "picture": "pictures/7c736fd6a3aeccca.jpg",
-     "title": "7c736fd6a3aeccca",
-     "mark": "",
-     "caption": [
-      [
-       "P(>=4)",
-       0.003224570074892039
-      ],
-      [
-       "P(>=3)",
-       0.4932932992500958
-      ],
-      [
-       "p_fine(>=4)",
-       null
-      ],
-      [
-       "mode",
-       "direct_trap_multiply"
-      ],
-      [
-       "family",
-       "multibrot3"
-      ]
-     ]
-    },
-    {
-     "picture": "pictures/22949accab08d893.jpg",
-     "title": "22949accab08d893",
-     "mark": "",
-     "caption": [
-      [
-       "P(>=4)",
-       0.19195442671591328
-      ],
-      [
-       "P(>=3)",
-       0.44471829535431373
-      ],
-      [
-       "p_fine(>=4)",
-       null
-      ],
-      [
-       "mode",
-       "smooth_curvature"
-      ],
-      [
-       "family",
-       "julia:multibrot4"
-      ]
-     ]
-    },
-    {
-     "picture": "pictures/19a7da9fb7e5db32.jpg",
-     "title": "19a7da9fb7e5db32",
-     "mark": "",
-     "caption": [
-      [
-       "P(>=4)",
-       0.0030162944797894843
-      ],
-      [
-       "P(>=3)",
-       0.04416807440725299
-      ],
-      [
-       "p_fine(>=4)",
-       null
-      ],
-      [
-       "mode",
-       "direct_trap_lines"
-      ],
-      [
-       "family",
-       "multibrot3"
+       "julia:multibrot5"
       ]
      ]
     }
+   ],
+   "legend": [
+    [
+     "wallpaper judge P(>=4)",
+     "the wallpaper judge's probability that a picture is good"
+    ],
+    [
+     "wallpaper judge P(>=3)",
+     "its probability that a picture is at least decent"
+    ],
+    [
+     "gallery judge",
+     "the gallery judge's score; the gallery normally takes pictures above 0.03"
+    ],
+    [
+     "mode",
+     "the coloring: how each point's escape is turned into a colour"
+    ],
+    [
+     "family",
+     "which fractal: the Mandelbrot set, a multibrot of degree 3 to 6, or a Julia or Phoenix set (julia:multibrot3 is the cubic Julia sets)"
+    ]
    ],
    "records": []
   }

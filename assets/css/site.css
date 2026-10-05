@@ -453,6 +453,13 @@ sub { bottom: -0.25em; }
   background: var(--ground);
 }
 .hosted-open { margin: 0.4em 0 0; font-size: 0.875rem; }
+
+/* A picture a command on the page drew, at the column's width, with its time under it. */
+.prose > .render-shot { max-width: none; margin: 1em 0; }
+.render-shot img { display: block; width: 100%; height: auto; }
+.render-shot .table-note { margin: 0.4em 0 1em; }
+/* The table of what one render takes: a flag is one token and never breaks at its dashes. */
+.parameters code { white-space: nowrap; }
 .hosted-files {
   max-width: var(--measure);
   margin: 0.3em 0 0;

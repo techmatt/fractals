@@ -1,27 +1,28 @@
 {
   "schema": 1,
-  "run": "C:\\Code\\fresh-install-test\\sample2\\artifacts\\harvest",
+  "run": "artifacts/harvest",
   "found": 4832,
-  "admitted": 4069,
-  "scored": 4069,
+  "places": 4022,
+  "repeats": 47,
+  "scored": 4022,
   "families": {
     "julia:mandelbrot": {
       "found": 316,
-      "admitted": 300,
-      "scored": 300,
+      "places": 288,
+      "scored": 288,
       "p_ge3": {
         "min": 0.0001,
         "q1": 0.2159,
-        "median": 0.6575,
-        "q3": 0.9043,
+        "median": 0.6562,
+        "q3": 0.9033,
         "max": 0.9937,
-        "over_half": 181
+        "over_half": 173
       },
       "p_ge4": {
         "min": 0.0,
         "q1": 0.0001,
-        "median": 0.0003,
-        "q3": 0.0143,
+        "median": 0.0004,
+        "q3": 0.0193,
         "max": 0.9872,
         "over_half": 21
       },
@@ -40,21 +41,21 @@
     },
     "julia:multibrot3": {
       "found": 1020,
-      "admitted": 993,
-      "scored": 993,
+      "places": 984,
+      "scored": 984,
       "p_ge3": {
         "min": 0.0,
         "q1": 0.0424,
-        "median": 0.1838,
-        "q3": 0.5269,
+        "median": 0.1839,
+        "q3": 0.5352,
         "max": 0.9996,
-        "over_half": 263
+        "over_half": 262
       },
       "p_ge4": {
         "min": 0.0,
         "q1": 0.0,
         "median": 0.0003,
-        "q3": 0.0091,
+        "q3": 0.0094,
         "max": 0.9996,
         "over_half": 57
       },
@@ -73,21 +74,21 @@
     },
     "julia:multibrot4": {
       "found": 592,
-      "admitted": 573,
-      "scored": 573,
+      "places": 567,
+      "scored": 567,
       "p_ge3": {
         "min": 0.0001,
-        "q1": 0.0371,
-        "median": 0.1552,
-        "q3": 0.4528,
+        "q1": 0.0369,
+        "median": 0.1559,
+        "q3": 0.4541,
         "max": 0.9994,
-        "over_half": 132
+        "over_half": 131
       },
       "p_ge4": {
         "min": 0.0,
         "q1": 0.0,
         "median": 0.0001,
-        "q3": 0.0023,
+        "q3": 0.0021,
         "max": 0.9994,
         "over_half": 28
       },
@@ -106,13 +107,13 @@
     },
     "julia:multibrot5": {
       "found": 596,
-      "admitted": 576,
-      "scored": 576,
+      "places": 573,
+      "scored": 573,
       "p_ge3": {
         "min": 0.0002,
-        "q1": 0.0549,
-        "median": 0.259,
-        "q3": 0.6457,
+        "q1": 0.0554,
+        "median": 0.2592,
+        "q3": 0.6469,
         "max": 0.9993,
         "over_half": 193
       },
@@ -120,7 +121,7 @@
         "min": 0.0,
         "q1": 0.0,
         "median": 0.0005,
-        "q3": 0.0175,
+        "q3": 0.0174,
         "max": 0.9992,
         "over_half": 56
       },
@@ -139,8 +140,8 @@
     },
     "julia:multibrot6": {
       "found": 344,
-      "admitted": 331,
-      "scored": 331,
+      "places": 327,
+      "scored": 327,
       "p_ge3": {
         "min": 0.0,
         "q1": 0.0015,
@@ -172,8 +173,8 @@
     },
     "mandelbrot": {
       "found": 656,
-      "admitted": 382,
-      "scored": 382,
+      "places": 380,
+      "scored": 380,
       "p_ge3": {
         "min": 0.0,
         "q1": 0.0,
@@ -205,13 +206,13 @@
     },
     "multibrot3": {
       "found": 296,
-      "admitted": 175,
-      "scored": 175,
+      "places": 173,
+      "scored": 173,
       "p_ge3": {
         "min": 0.0,
         "q1": 0.0,
         "median": 0.0003,
-        "q3": 0.0036,
+        "q3": 0.0039,
         "max": 0.9189,
         "over_half": 6
       },
@@ -238,7 +239,7 @@
     },
     "multibrot4": {
       "found": 212,
-      "admitted": 112,
+      "places": 112,
       "scored": 112,
       "p_ge3": {
         "min": 0.0,
@@ -271,13 +272,13 @@
     },
     "multibrot5": {
       "found": 172,
-      "admitted": 118,
-      "scored": 118,
+      "places": 117,
+      "scored": 117,
       "p_ge3": {
         "min": 0.0,
         "q1": 0.0003,
-        "median": 0.0028,
-        "q3": 0.0241,
+        "median": 0.0024,
+        "q3": 0.0244,
         "max": 0.9847,
         "over_half": 6
       },
@@ -304,8 +305,8 @@
     },
     "multibrot6": {
       "found": 168,
-      "admitted": 122,
-      "scored": 122,
+      "places": 119,
+      "scored": 119,
       "p_ge3": {
         "min": 0.0,
         "q1": 0.0,
@@ -337,21 +338,21 @@
     },
     "phoenix": {
       "found": 316,
-      "admitted": 281,
-      "scored": 281,
+      "places": 277,
+      "scored": 277,
       "p_ge3": {
         "min": 0.0,
-        "q1": 0.0026,
+        "q1": 0.0025,
         "median": 0.0272,
-        "q3": 0.4447,
+        "q3": 0.44,
         "max": 0.984,
-        "over_half": 65
+        "over_half": 63
       },
       "p_ge4": {
         "min": 0.0,
         "q1": 0.0,
         "median": 0.0001,
-        "q3": 0.0031,
+        "q3": 0.0033,
         "max": 0.9663,
         "over_half": 8
       },
@@ -370,13 +371,13 @@
     },
     "phoenix:classic": {
       "found": 144,
-      "admitted": 106,
-      "scored": 106,
+      "places": 105,
+      "scored": 105,
       "p_ge3": {
         "min": 0.0,
         "q1": 0.0005,
-        "median": 0.0175,
-        "q3": 0.2089,
+        "median": 0.0173,
+        "q3": 0.2169,
         "max": 0.9738,
         "over_half": 9
       },

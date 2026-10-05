@@ -1,0 +1,21 @@
+usage: fractal-engine render-link --link <URL|query> --size WxH [--ss N]
+                                  [--out FILE.png|FILE.jpg] [--data DIR]
+
+Draw an explorer link at a size, and write it with the link embedded in the
+picture's metadata, so the picture reopens its view when dropped on the
+explorer. The link is read as text: it is a complete recipe (family, view,
+iteration cap, coloring, palette and its knobs), and nothing is fetched from
+the network. Python, the judges and the weights are not needed.
+
+  --link URL|query  a whole explorer URL, or only its query (the part after ?)
+  --size WxH        the picture's size in pixels, e.g. 2560x1440; required
+  --ss N            samples per pixel per axis, a whole number >= 1 (default 3)
+  --out FILE        where to write it; .png or .jpg (default render-link.png)
+  --data DIR        the checkout's data/ holding the palettes, the anchors and
+                    the levelling band (default: $FRACTAL_ENGINE_DATA, else the
+                    first data/ found walking up from the working directory,
+                    then from the executable)
+  --help            print this and exit
+
+A deep (dv=) link is read and refused: deep rendering is not built yet.
+FORMATS.md's *The explorer link* lists every key a link may carry.

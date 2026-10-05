@@ -1,0 +1,95 @@
+usage: fractal-wallpapers curate solve record [-h] [--solve-name SOLVE_NAME] [--n N] [--no-keep]
+                                              [--fine-bar SCORE] [--force-fill] [--forced PATH]
+                                              [--no-pins] [--fold {pool,delete}]
+                                              [--spiral-cap SHARE] [--cell-floor {on,off}]
+                                              [--mode-ceiling MODE=SHARE] [--key {cascade,p_ge4}]
+                                              [--explain-keys PATH] [--no-swap]
+                                              [--swap-seconds SECONDS] [--augment {on,off}]
+                                              [--augment-depth {2,3}] [--augment-seconds SECONDS]
+                                              [--themed CELL] [--themed-cap SEATS]
+                                              [--themed-radius COSINE] [--collection NAME]
+
+A RECORD is `run` with nothing changed, which is the whole claim it makes: it writes the seats
+under a UTC stamp that is never written over, so a person can point at a picture and be
+understood. It writes `gallery.jsonl` (one row per seat, carrying the ledger recipe key that IS
+the ID, a short alias, the mode, the partition, the dominant colour cell and hue family,
+`centered`, the rank and P(>=4), the seat order and the stored picture), `manifest.json` beside
+it, and a self-contained page. It reads the flags below and no others — every one `run` carries
+and this does not is a flag a record could not pass through, so naming it here is refused rather
+than dropped on the floor.
+
+options:
+  -h, --help            show this help message and exit
+
+what to call it, and how big:
+  --solve-name SOLVE_NAME
+                        what to call the solve's own output directory under
+                        artifacts/curation/solve (default `tentative_n<N>_<stamp>`, the record's
+                        own stamp, so successive records at the same N coexist). …
+  --n N                 how many wallpapers to seat (default 1000, the size a record is kept at,
+                        where a `run` reads a leg at 20)
+  --no-keep             record without putting the stamp on the keep list (default: kept, so a
+                        merge's prune spares its seats' pictures until `curate solve release
+                        <stamp>`). …
+
+the pool it solves over:
+  --fine-bar SCORE      narrow the pool to the rows the gallery-grade head reads at p_fine(>=4) >=
+                        SCORE, BEFORE anything else runs — the per-mode bars, the neutral pre-
+                        selection and the view are all taken over what is left, so a barred pass
+                        is a whole pass and not a filtered reading of an unbarred one. …
+  --force-fill          seat as many as an EARLY pool allows: the fine bar and the per-mode bars
+                        stop refusing and the best rows available seat, while every distinctness
+                        rule still holds. …
+  --forced PATH         a MANIFEST of candidate keys, one per line, this pass lifts to the top of
+                        the fine column BEFORE the bar, the neutral pre-selection and the cascade
+                        — so a forced row clears `--fine-bar`, is its cluster's survivor and is
+                        offered ahead of every unforced row. …
+  --no-pins             seat NONE of the pinned list, for a comparison. …
+  --fold {pool,delete}  what the neutral pre-selection does with a place it folds into another. …
+
+the demands:
+  --spiral-cap SHARE    cap the share of seats filled from a location the spiral probe calls a
+                        spiral: at most ceil(SHARE * seats filled), the same spelling a colour
+                        target is stated in. …
+  --cell-floor {on,off}
+                        the COLOUR FLOOR: at least floor(kf * t * seats filled) seats dominant in
+                        each of the 48 chromatic cells — kf = 1 against the ceiling's k = 3, one
+                        fair share against three, so 20 of a thousand seats where the allowance is
+                        63. …
+  --mode-ceiling MODE=SHARE
+                        cap the share of seats one MODE may take: at most ceil(SHARE * seats
+                        filled), the spiral cap's own arithmetic and the same spelling a colour
+                        target is stated in. …
+
+the objective and the search:
+  --key {cascade,p_ge4}
+                        the sort key the pool is walked in AND the quantity the objective is
+                        stated in. …
+  --explain-keys PATH   a MANIFEST of candidate keys, one per line, whose fate this pass records
+                        ONE AT A TIME into `rejection.explained` — every key named comes back
+                        `seated`, `not in the pool`, or the first rule that refused it. …
+  --no-swap             take the greedy seed and stop. …
+  --swap-seconds SECONDS
+                        a wall budget for the SWAP LOOP alone. …
+  --augment {on,off}    the augmenting-chain stage: eject one seat, insert TWO in its room. …
+  --augment-depth {2,3}
+                        how long a chain may be: 2 is one ejection and two inserts, 3 is one more
+                        eject/insert pair. …
+  --augment-seconds SECONDS
+                        a wall budget for the AUGMENT STAGE alone. …
+
+which gallery:
+  a themed gallery, or a collection; the general gallery without either
+
+  --themed CELL         choose a THEMED gallery: one dominant colour cell, over a pool of the rows
+                        that cell's dominance block claims, at the RELAXED bar — P(>=3) >= 0.5 for
+                        every accepted mode rather than the per-mode rule, because a single-cell
+                        pool is q3-grade material and at the per-mode bars there is no pool. …
+  --themed-cap SEATS    the palette-group cap a THEMED pass runs under, overriding the computed
+                        one. …
+  --themed-radius COSINE
+                        the radius the themed diversity rule refuses inside (default 0.07). …
+  --collection NAME     seat ONE COLLECTION — a hue family or a production mode — at the size
+                        `curation.targets.TARGETS` sets for it. …
+
+… marks help trimmed to its contract. FRACTAL_WALLPAPERS_HELP=full prints the reasoning whole.

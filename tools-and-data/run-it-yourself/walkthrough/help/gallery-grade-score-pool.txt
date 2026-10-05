@@ -1,0 +1,27 @@
+usage: fractal-wallpapers gallery-grade score-pool [-h] [--band {ap_ge3,auc_ge4}]
+                                                   [--corpus {as_built,corrected,twelve_sheets}]
+                                                   [--recipe {drop_high_asymmetric,inherited}]
+                                                   [--device DEVICE]
+
+Writes the column `curate solve --key cascade` resolves its order from. It opens each candidate's
+stored 640x360 JPEG once and renders nothing. The rows are a cascade's SECOND stage: ranking the
+whole file would rank rows this head never saw the like of, and the solve applies it above the bar
+and only there.
+
+options:
+  -h, --help            show this help message and exit
+  --band {ap_ge3,auc_ge4}
+                        which stopping rule this run is fitted under (default auc_ge4)
+  --corpus {as_built,corrected,twelve_sheets}
+                        which rows this is about (default twelve_sheets, the ADOPTED corpus — a
+                        refit on a grown store names its own, so that a forgotten flag cannot
+                        overwrite the join and split a shipped run refers to)
+  --recipe {drop_high_asymmetric,inherited}
+                        which knobs this run is fitted under (default drop_high_asymmetric, the
+                        ADOPTED recipe): drop_high_asymmetric — dropout 0.4 and stochastic depth
+                        0.2, every cutpoint's negative term at 2x, a fixed 30-epoch horizon with
+                        the AUC(>=4) checkpoint, and a learned per-batch offset dropped at
+                        inference. …
+  --device DEVICE       cuda, cpu, or auto (default)
+
+… marks help trimmed to its contract. FRACTAL_WALLPAPERS_HELP=full prints the reasoning whole.

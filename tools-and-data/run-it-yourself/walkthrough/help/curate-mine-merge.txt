@@ -1,0 +1,7 @@
+usage: fractal-wallpapers curate mine merge [-h] --name NAME
+
+options:
+  -h, --help   show this help message and exit
+  --name NAME  what to call this mine. …
+
+… marks help trimmed to its contract. FRACTAL_WALLPAPERS_HELP=full prints the reasoning whole.

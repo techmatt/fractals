@@ -1,0 +1,12 @@
+usage: fractal-wallpapers curate solve release [-h] STAMP [STAMP ...]
+
+`solve record` keeps what it records: the stamp goes on the keep list
+(artifacts/curation/tentative/keep.jsonl) and every merge's prune spares the pictures its seats
+name. This undoes that for the stamps named. The folder stays and is still readable by its stamp;
+the published records are kept by code and cannot be released here.
+
+positional arguments:
+  STAMP       a record's stamp
+
+options:
+  -h, --help  show this help message and exit

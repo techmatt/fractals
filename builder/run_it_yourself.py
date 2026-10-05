@@ -3,10 +3,15 @@
     python -m builder.run_it_yourself import <walkthrough> [--readme README.md]
     python -m builder.run_it_yourself page
 
-*(run_it_yourself_page_ckpt161.)* `tools-and-data/run-it-yourself/` walks a reader through
-the wallpapers README's path, one section per stage: the stage's sentence, its command
-block, its rows of the README's cost table, and then the inspection page that stage's own
-command wrote, hosted in place. **The site draws none of those pages.** `fractal-wallpapers
+*(run_it_yourself_page_ckpt161, revised by run_it_yourself_revise_ckpt161.)*
+`tools-and-data/run-it-yourself/` walks a reader through the wallpapers README's path, one
+section per stage: the stage's sentences, its command blocks, each followed by a closed
+"All options" fold holding that command's `--help` from the walkthrough's `help/`, and then
+the inspection page that stage's own command wrote, hosted in place. Render one picture
+shows the README's two render commands with the pictures and times in `render/`, and a
+table of every setting one render takes, read from `parameters.json` and linked into the
+article where it explains a family, a mode, or a knob. The README's cost table stays in
+the README. **The site draws none of those pages.** `fractal-wallpapers
 walkthrough` gathers them into one folder of self-contained bundles, and `import` copies
 that folder here byte for byte, under `walkthrough/`, so the page rebuilds without the
 clone it came from. The bundles are hosted pages rather than this site's pages:
@@ -16,7 +21,7 @@ resolves every href in them. `.gitattributes` exempts the folder from end-of-lin
 normalization, because a bundle's JSON may be written with CRLF and a byte rewritten on
 commit is a byte changed.
 
-`import` also reads the README once, for the command blocks and the cost table, and writes
+`import` also reads the README once, for the command blocks, and writes
 what it read to `builder/data/run-it-yourself.json`; `page` reads that record and the
 imported folder and nothing else. The README to read is the one whose numbers describe the
 run the walkthrough came from, which can be a commit after the clone that made it: name it
@@ -62,102 +67,169 @@ INTRO = [
     "You do not need a GPU. The judges run several times faster with one, but most of the "
     "time goes to rendering, which runs on the CPU either way. The whole example takes about "
     "45 minutes on a CPU install and about 27 with CUDA, and leaves about 1.1 GB on disk.",
-    "The files below are slices: the twelve pictures in the final gallery, traced back "
-    "through every stage, plus a few that were rejected along the way. Each file's fields "
-    f"are defined in [FORMATS.md]({FORMATS}) in the repository.",
+    "The pages embedded below are the ones the repository's own commands write, taken from "
+    "my run. Follow one picture, at the end, traces the twelve pictures of the final gallery "
+    "back through every file, along with a few that were rejected along the way. Each file's "
+    f"fields are defined in [FORMATS.md]({FORMATS}) in the repository.",
 ]
 
-#: After the Walk section's cost rows.
-RUN_LINE = (
-    "The full ten-minute run found 4,069 places, mined 327 candidates from them, and seated "
-    "2 of 12 at the default bars."
-)
-
-#: One stage a section, in pipeline order: heading, sentence, the README's steps whose
-#: command blocks it shows (`install` is the Install section's), the cost-table rows it
-#: owns by their first cell, and the bundle it hosts.
+#: One stage a section, in pipeline order: heading, its sentences (`lead` before the
+#: commands, `after` between them and the bundle), the README's steps whose command blocks
+#: it shows (`install` is the Install section's), and the bundle it hosts. The numbers are
+#: the walkthrough run's: 4,022 places is `stats.json`'s `places`, and 327 and 109 are the
+#: README's step 5.
 STAGES = [
     {
         "heading": "Install",
-        "sentence": "The CPU and CUDA installs differ only in which PyTorch they pull.",
+        "lead": [
+            "The code is Rust and Python. The Rust engine draws every picture, and you can "
+            "build and use it alone if rendering is all you want. Python runs the pipeline "
+            "around it and the judges, which are neural networks in PyTorch.",
+            "The CPU and CUDA installs differ only in which PyTorch they pull.",
+        ],
         "steps": ["install"],
-        "cost": [],
     },
     {
         "heading": "Render one picture",
-        "sentence": (
+        "lead": [
             "One command draws one picture from a family, a view, a rendering mode, and a palette."
-        ),
+        ],
         "steps": ["1"],
-        "cost": ["full-size wallpaper"],
+        "render": True,
     },
     {
-        "heading": "Check the judges",
-        "sentence": (
-            "This renders eight fixed pictures, scores them with all four judges, and "
-            "compares the scores to the ones I got. If your numbers match, your install "
-            "matches mine."
-        ),
+        "heading": "Check your install",
+        "lead": [
+            "This renders eight fixed pictures and compares them to mine, then scores them "
+            "with all four judges and compares the scores. It also shows how long each render "
+            "took on my machine and on yours. If the pictures and the numbers match, your "
+            "install matches mine."
+        ],
         "steps": ["2"],
-        "cost": ["palette judge"],
         "bundle": "judges-check",
     },
     {
         "heading": "Walk for locations",
-        "sentence": (
+        "lead": [
             "The walk explores each fractal family for a fixed amount of time and records "
             "the places it finds, and the location judge then scores each place. No two "
-            "walks find the same places."
-        ),
+            "walks find the same places.",
+            "In my run, ten minutes of walking found 4,022 places, and ten minutes of mining "
+            "made 327 candidate pictures from the best 109 of them. Only 2 of those pictures "
+            "were good enough for the gallery at its usual standard.",
+        ],
         "steps": ["3"],
-        "cost": ["walk frame (gate render)", "location judge"],
-        "after_cost": RUN_LINE,
         "bundle": "walk-stats",
         "whole": ["summary.json", "stats.json"],
     },
     {
         "heading": "Mine candidates",
-        "sentence": (
+        "lead": [
             "Mining takes the best-scoring places, tries rendering modes and palettes on "
             "each, and keeps the pictures the wallpaper judge likes."
-        ),
+        ],
         "steps": ["4", "5"],
-        "cost": ["embedding (DINOv2)", "mined candidate", "wallpaper (render) judge"],
         "bundle": "candidates",
     },
     {
         "heading": "Grade and solve a gallery",
-        "sentence": (
+        "lead": [
             "The gallery judge grades the candidates, and the solve picks a set that is "
-            "good and varied. After ten minutes of mining only a handful of pictures clear "
-            "the bars, so the gallery shown here was made with the forced fill, which seats "
-            "the best of whatever the pool holds."
-        ),
+            "good and varied. After ten minutes of mining only a couple of pictures meet the "
+            "gallery's usual standard, so for the gallery shown here I told it to ignore that "
+            "standard and take the twelve best pictures it had."
+        ],
         "steps": ["6", "7", "8"],
-        "cost": ["gallery judge", "solve seat"],
         "bundle": "gallery",
         "whole": ["keep.jsonl"],
     },
     {
         "heading": "Continue from your own pool",
-        "sentence": (
-            "Every later run adds to the same pool. A merge prunes weaker pictures, and the "
-            "galleries you recorded keep theirs."
-        ),
+        "lead": [
+            "Every later run adds to the same collection of candidates. Merging new ones in "
+            "also throws out the weakest, but never a picture in a gallery you have saved."
+        ],
         "steps": ["9"],
-        "cost": [],
     },
     {
         "heading": "Follow one picture",
-        "sentence": "Here is one gallery picture as it appears in each file.",
+        "lead": ["Here is one gallery picture as it appears in each file."],
         "steps": ["10"],
-        "cost": [],
         "bundle": "trace",
     },
 ]
 
-#: The site's names for what the README's table calls by the code's (the naming rule).
-COST_NAMES = {"wallpaper (render) judge": "wallpaper judge"}
+#: Render one picture's second sentence, between its two commands.
+RENDER_LINK = (
+    "Every picture on this site and in Mandelnaut Explorer carries a link that holds its "
+    "whole recipe. This command reads the link's text and draws the same picture on your "
+    "machine, at any size, without going online."
+)
+
+#: Alt text for `render/`'s pictures, by `render.json`'s name. Written by looking at them,
+#: so a re-export that draws a different view owes a new line here.
+RENDER_ALT = {
+    "render": (
+        "A whole Julia set in stripe mode: a band of spirals and starbursts across the "
+        "center, with streaming stripes above and below."
+    ),
+    "render-link": (
+        "A Julia set in the tia mode: clusters of glowing red points among teal fronds, in "
+        "the Oxblood, Cyan, Cream palette."
+    ),
+}
+
+ARTICLE = "../../article"
+
+#: Where the site introduces each family `parameters.json` names.
+FAMILY_HREF = {
+    "mandelbrot": "escape-time-fractals.html#the-mandelbrot-set",
+    "multibrot": "escape-time-fractals.html#multibrot-sets",
+    "julia": "escape-time-fractals.html#julia-sets",
+    "phoenix": "escape-time-fractals.html#phoenix-fractals",
+    "phoenix_m": "escape-time-fractals.html#phoenix-fractals",
+    "fractional_multibrot": "escape-time-fractals.html#fractional-degrees",
+}
+
+#: Each mode's own section of Rendering modes; a mode the page names under no heading of
+#: its own links to the page.
+MODES_PAGE = "rendering-modes.html"
+MODE_SECTION = {
+    "tia": "fields-from-the-orbits-path",
+    "stripe": "fields-from-the-orbits-path",
+    "curvature": "fields-from-the-orbits-path",
+    "gaussian_int": "orbit-traps",
+    "trap_circle": "orbit-traps",
+    "smooth_mean_angle": "blending-modes-together",
+    "smooth_angle_min": "blending-modes-together",
+    "smooth_trap_circle": "blending-modes-together",
+    "smooth_stripe": "blending-modes-together",
+    "smooth_curvature": "blending-modes-together",
+    "threads": "blending-modes-together",
+    "itinerary": "the-itinerary-mode",
+    "tail_itinerary": "the-itinerary-mode",
+    "direct_trap_ring": "direct-traps",
+    "direct_trap_screen": "direct-traps",
+    "direct_trap_multiply": "direct-traps",
+    "direct_trap_lines": "direct-traps",
+    "de": "beyond-this-catalog",
+}
+MODE_PAGE_ONLY = {"smooth", "exp_smoothing"}
+
+#: The frame's settings, in the table's words, and where the site explains one.
+FRAME = {
+    "center_re": ("view center, real part", None),
+    "center_im": ("view center, imaginary part", None),
+    "width": ("view width", None),
+    "resolution": ("size", None),
+    "supersample": ("supersampling", "rendering-fundamentals.html#supersampling"),
+    "maxiter": ("iteration cap", "rendering-fundamentals.html#iteration-caps"),
+}
+
+#: The palette knobs Color palettes explains.
+KNOB_HREF = {
+    knob: "color-palettes.html#applying-a-palette" for knob in ("gamma", "cycles", "phase")
+}
 
 #: The whole files the walkthrough carries beside its bundles: the command that writes
 #: each, and its section of FORMATS.md.
@@ -203,14 +275,12 @@ class RunItYourselfError(RuntimeError):
 # ---------------------------------------------------------------------------- import
 
 
-def _readme(readme: str) -> dict:
-    """The README's command blocks, by step, and its cost table."""
+def _readme(readme: str) -> dict[str, list[str]]:
+    """The README's command blocks, by step."""
     lines = readme.split("\n")
     blocks: dict[str, list[str]] = {}
     step = None
     fence: list[str] | None = None
-    cost: list[list[str]] = []
-    in_cost = False
     for line in lines:
         if fence is not None:
             if line.startswith("```"):
@@ -225,34 +295,25 @@ def _readme(readme: str) -> dict:
             continue
         if line.startswith("## "):
             step = "install" if line == "## Install" else None
-            in_cost = False
         elif line.startswith("### "):
             step = None
-            in_cost = line == "### What each stage costs"
         elif numbered := re.match(r"\*\*(\d+)\. ", line):
             step = numbered.group(1)
-        elif in_cost and line.startswith("|"):
-            cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
-            if not all(set(cell) <= {"-", " "} for cell in cells):
-                cost.append(cells)
-    if not cost:
-        raise RunItYourselfError("the README has no 'What each stage costs' table")
-    return {"blocks": blocks, "cost": cost}
+    return blocks
 
 
 def import_walkthrough(source: Path, readme_path: Path, readme_from: str) -> None:
     if not (source / "walkthrough.json").is_file():
         raise RunItYourselfError(f"{source}: no walkthrough.json — not a walkthrough folder")
     readme = readme_path.read_bytes()
-    parsed = _readme(readme.decode("utf-8"))
+    blocks = _readme(readme.decode("utf-8"))
     for stage in STAGES:
         for step in stage["steps"]:
-            if step not in parsed["blocks"]:
+            if step not in blocks:
                 raise RunItYourselfError(f"the README has no command block for step {step}")
-        named = {row[0] for row in parsed["cost"][1:]}
-        missing = [name for name in stage["cost"] if name not in named]
-        if missing:
-            raise RunItYourselfError(f"the README's cost table has no row {missing[0]!r}")
+    for name in ("render/render.json", "parameters.json", "help"):
+        if not (source / name).exists():
+            raise RunItYourselfError(f"{source}: no {name} — a walkthrough from before ckpt161")
     if HOSTED.exists():
         shutil.rmtree(HOSTED)
     shutil.copytree(source, HOSTED, copy_function=shutil.copy2)
@@ -262,10 +323,9 @@ def import_walkthrough(source: Path, readme_path: Path, readme_from: str) -> Non
         if path.read_bytes() != (source / path.relative_to(HOSTED)).read_bytes():
             raise RunItYourselfError(f"{path}: not the byte-for-byte copy of its source")
     record = {
-        "schema": 1,
+        "schema": 2,
         "readme": {"read": readme_from, "sha256": hashlib.sha256(readme).hexdigest()},
-        "blocks": parsed["blocks"],
-        "cost": parsed["cost"],
+        "blocks": blocks,
     }
     RECORD.write_text(
         json.dumps(record, indent=2, ensure_ascii=False) + LF, encoding="utf-8", newline=LF
@@ -297,14 +357,274 @@ def _slug(heading: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", heading.lower()).strip("-")
 
 
-def _cost_table(cost: list[list[str]], names: list[str]) -> str:
-    head, rows = cost[0], {row[0]: row for row in cost[1:]}
-    lines = ["<table>", "<tr>" + "".join(f"<th>{_inline(cell)}</th>" for cell in head) + "</tr>"]
-    for name in names:
-        row = [COST_NAMES.get(name, name), *rows[name][1:]]
-        lines.append("<tr>" + "".join(f"<td>{_inline(cell)}</td>" for cell in row) + "</tr>")
+def _commands(block: str) -> list[str]:
+    """A command block's commands, each with its continuation lines."""
+    out: list[str] = []
+    joining = False
+    for line in block.split(LF):
+        if joining:
+            out[-1] += LF + line
+        else:
+            out.append(line)
+        joining = line.rstrip().endswith("\\")
+    return out
+
+
+def _program(command: str) -> tuple[str, str] | None:
+    """A command's program and subcommand as typed, and its `help/` file, or None."""
+    words = command.split("#")[0].split()
+    for at, word in enumerate(words):
+        name = word.rsplit("/", 1)[-1]
+        if name in ("fractal-wallpapers", "fractal-engine"):
+            sub = []
+            for rest in words[at + 1 :]:
+                if rest.startswith(("-", "<", "\\")):
+                    break
+                sub.append(rest)
+            if not sub:
+                continue  # a clone URL or a directory, not a command
+            typed = " ".join([name, *sub])
+            stem = "-".join(sub if name == "fractal-wallpapers" else [name, *sub])
+            return typed, f"{stem}.txt"
+    return None
+
+
+def _block(block: str) -> str:
+    return f"<pre><code>{html.escape(block, quote=False)}</code></pre>"
+
+
+def _options(typed: str, help_file: str, titled: bool) -> str:
+    path = HOSTED / "help" / help_file
+    if not path.is_file():
+        raise RunItYourselfError(f"{path}: no --help transcript for {typed}")
+    summary = f"All options for <code>{text(typed)}</code>" if titled else "All options"
+    body = path.read_text(encoding="utf-8").rstrip(LF)
+    return LF.join(
+        [
+            '<details class="fold">',
+            f"<summary>{summary}</summary>",
+            _block(body),
+            "</details>",
+        ]
+    )
+
+
+def _blocks_with_options(blocks: list[str]) -> list[str]:
+    """Each command block, then a closed fold of every command's `--help` under it."""
+    helped = [_program(c) for block in blocks for c in _commands(block)]
+    titled = len({one for one in helped if one}) > 1
+    out = []
+    for block in blocks:
+        out.append(_block(block))
+        seen = []
+        for command in _commands(block):
+            found = _program(command)
+            if found and found not in seen:
+                seen.append(found)
+                out.append(_options(*found, titled))
+    return out
+
+
+def _href(target: str) -> str:
+    """A link into the article, held to an id the page actually carries."""
+    page, _, fragment = target.partition("#")
+    source = SITE_ROOT / "article" / page
+    if fragment and f'id="{fragment}"' not in source.read_text(encoding="utf-8"):
+        raise RunItYourselfError(f"article/{page} has no #{fragment}")
+    return f"{ARTICLE}/{target}"
+
+
+def _a(words: str, target: str | None) -> str:
+    if target is None:
+        return text(words)
+    return f'<a href="{attribute(_href(target))}">{text(words)}</a>'
+
+
+def _mode_target(name: str) -> str:
+    if name in MODE_PAGE_ONLY:
+        return MODES_PAGE
+    if name not in MODE_SECTION:
+        raise RunItYourselfError(f"mode {name!r} has no place on Rendering modes in this maker")
+    return f"{MODES_PAGE}#{MODE_SECTION[name]}"
+
+
+def _number(value) -> str:
+    if isinstance(value, bool):
+        return "on" if value else "off"
+    if value is None:
+        return "none"
+    if isinstance(value, list):
+        return " ".join(_number(one) for one in value)
+    if isinstance(value, float) and value.is_integer():
+        return str(int(value))
+    return str(value)
+
+
+def _fold_cell(summary: str, items: list[str]) -> str:
+    return f"<details><summary>{summary}</summary>{', '.join(items)}</details>"
+
+
+def _parameters(params: dict) -> str:
+    """Everything a reader can set on one render, from `parameters.json` alone."""
+    flags = {entry["dest"]: entry for entry in params["flags"]}
+    families = params["families"]
+    rows: list[tuple[str, str, str, str]] = []
+
+    def flag_of(dest: str) -> str:
+        return f"<code>{text(flags[dest]['flag'])}</code>" if dest in flags else "spec only"
+
+    family_values = []
+    for name, family in families.items():
+        line = _a(name, FAMILY_HREF[name])
+        if not family["flag"]:
+            line += " (spec only)"
+        family_values.append(line)
+    rows.append(
+        (
+            _a("family", "escape-time-fractals.html#the-projects-families"),
+            flag_of("family"),
+            ", ".join(family_values),
+            text(flags["family"]["default"]),
+        )
+    )
+    rows.append(
+        (
+            "degree",
+            flag_of("degree"),
+            "<br>".join(f"{text(name)}: {text(f['degree'])}" for name, f in families.items()),
+            text(_number(flags["degree"]["default"])),
+        )
+    )
+    for constant in ("c", "p", "z_prev"):
+        uses = []
+        for name, family in families.items():
+            for take in family["takes"]:
+                said = re.fullmatch(rf"{constant} \((.+)\)", take)
+                if said:
+                    value = said.group(1).removeprefix("default ")
+                    uses.append(f"{text(name)}: {text(value)}")
+                elif take == constant:
+                    uses.append(f"{text(name)}: no default given")
+        rows.append((constant, flag_of(constant), "a point, RE IM", "<br>".join(uses)))
+    for key, (words, target) in FRAME.items():
+        one = params["frame"][key]
+        default = one["unsaid"] if one["default"] is None else _number(one["default"])
+        rows.append(
+            (
+                _a(words, target),
+                f"<code>{text(one['flag'])}</code>",
+                text(one["range"]),
+                text(default),
+            )
+        )
+    modes = [
+        _a(m["name"], _mode_target(m["name"]))
+        + ("" if m["production"] else f" ({text(m['tier'])})")
+        for m in params["modes"]
+    ]
+    rows.append(
+        (
+            _a("rendering mode", MODES_PAGE),
+            flag_of("mode"),
+            ", ".join(modes),
+            text(params["default_mode"]),
+        )
+    )
+    knobs: dict[str, dict] = {}
+    for mode in params["modes"]:
+        for knob, said in mode["params"].items():
+            entry = knobs.setdefault(knob, {"range": said["range"], "defaults": {}})
+            entry["defaults"].setdefault(_number(said["default"]), []).append(mode["name"])
+    knob_lines = []
+    for knob, entry in knobs.items():
+        defaults = "; ".join(
+            f"{value} in {', '.join(names)}" for value, names in entry["defaults"].items()
+        )
+        knob_lines.append(f"{text(knob)}: {text(entry['range'])}, default {text(defaults)}")
+    rows.append(
+        (
+            "mode parameter",
+            "<code>--param NAME=VALUE</code>",
+            f"<details><summary>{len(knobs)} parameters, each for its own modes</summary>"
+            + "<br>".join(knob_lines)
+            + "</details>",
+            "per mode",
+        )
+    )
+    names = [text(m["name"]) for m in params["colormaps"]]
+    rows.append(
+        (
+            _a("palette", "color-palettes.html"),
+            flag_of("colormap"),
+            _fold_cell(f"{len(names):,} palettes", names),
+            text(flags["colormap"]["default"]),
+        )
+    )
+    for knob, one in params["palette"].items():
+        rows.append(
+            (
+                _a(knob, KNOB_HREF.get(knob)) + f", {_inline(one['says'])}",
+                f"<code>{text(one['flag'])}</code>",
+                _inline(one["range"]),
+                text(_number(one["default"])),
+            )
+        )
+    for key, says in params["spec_only"].items():
+        rows.append((text(key), "spec only", _inline(says), ""))
+    head = ("setting", "flag", "values", "default")
+    lines = [
+        '<table class="parameters">',
+        "<tr>" + "".join(f"<th>{cell}</th>" for cell in head) + "</tr>",
+    ]
+    lines += ["<tr>" + "".join(f"<td>{cell}</td>" for cell in row) + "</tr>" for row in rows]
     lines.append("</table>")
+    # `parameters.json` spells the spec route with the FORMATS.md section in asterisks;
+    # the section becomes a link and the asterisks, which would be an italic, go.
+    spec = params["settable_by"]["spec"].replace(
+        "FORMATS.md's *The render spec*", f"[FORMATS.md's render spec]({FORMATS}#the-render-spec)"
+    )
+    if "*" in spec:
+        raise RunItYourselfError(f"parameters.json's settable_by.spec moved: {spec!r}")
+    lines.append(f'<p class="table-note">Spec only means settable {_inline(spec)}.</p>')
     return LF.join(lines)
+
+
+def _render(record: dict) -> list[str]:
+    """Render one picture: each command, its picture and time, then the parameter table."""
+    renders = json.loads((HOSTED / "render" / "render.json").read_text(encoding="utf-8"))
+    by_name = {one["name"]: one for one in renders["renders"]}
+    commands = [c for block in record["blocks"]["1"] for c in _commands(block)]
+    out = []
+    for at, command in enumerate(commands):
+        typed, help_file = _program(command)
+        name = typed.split(" ")[-1] if typed.startswith("fractal-engine") else "render"
+        made = by_name[name]
+        alt = RENDER_ALT.get(name)
+        if not alt:
+            raise RunItYourselfError(f"render/{made['picture']} has no alt text in RENDER_ALT")
+        across, down = made["rendered_at"]
+        width, height = made["shown_at"], made["shown_at"] * down // across
+        seconds = made["seconds"]
+        said = f"{seconds:.1f}".removesuffix(".0") if seconds < 10 else f"{round(seconds):,}"
+        unit = "second" if said == "1" else "seconds"
+        if at:
+            out.append(f"<p>{_inline(RENDER_LINK)}</p>")
+        out.append(_block(command))
+        out.append(_options(typed, help_file, True))
+        out.append(
+            LF.join(
+                [
+                    '<div class="render-shot">',
+                    f'<img src="walkthrough/render/{attribute(made["picture"])}" width="{width}" '
+                    f'height="{height}" alt="{attribute(alt)}" loading="lazy">',
+                    f'<p class="table-note">{said} {unit} on my machine.</p>',
+                    "</div>",
+                ]
+            )
+        )
+    params = json.loads((HOSTED / "parameters.json").read_text(encoding="utf-8"))
+    out.append(_parameters(params))
+    return out
 
 
 def _file(href: str, name: str, command: str, anchor: str | None, note: str = "") -> str:
@@ -368,14 +688,13 @@ def page(_args=None) -> None:
     for stage in STAGES:
         heading = stage["heading"]
         body.append(f'<h2 id="{_slug(heading)}">{text(heading)}</h2>')
-        body.append(f"<p>{_inline(stage['sentence'])}</p>")
-        for step in stage["steps"]:
-            for block in record["blocks"][step]:
-                body.append(f"<pre><code>{html.escape(block, quote=False)}</code></pre>")
-        if stage["cost"]:
-            body.append(_cost_table(record["cost"], stage["cost"]))
-        if stage.get("after_cost"):
-            body.append(f"<p>{_inline(stage['after_cost'])}</p>")
+        body += [f"<p>{_inline(sentence)}</p>" for sentence in stage["lead"]]
+        if stage.get("render"):
+            body += _render(record)
+        else:
+            body += _blocks_with_options(
+                [b for step in stage["steps"] for b in record["blocks"][step]]
+            )
         if stage.get("bundle"):
             body.append(_hosted(stage["bundle"], walkthrough, counts, stage.get("whole", [])))
     where = OUT / "index.html"

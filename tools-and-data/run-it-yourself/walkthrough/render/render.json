@@ -1,0 +1,56 @@
+{
+  "schema": 1,
+  "renders": [
+    {
+      "name": "render",
+      "command": [
+        "fractal-wallpapers",
+        "render",
+        "--family",
+        "julia",
+        "--c",
+        "-0.75",
+        "0.11",
+        "--center-re",
+        "0",
+        "--center-im",
+        "0",
+        "--width",
+        "3",
+        "--mode",
+        "stripe",
+        "--cycles",
+        "2",
+        "--out",
+        "artifacts/first.png"
+      ],
+      "rendered_at": [
+        1920,
+        1080
+      ],
+      "seconds": 1.92,
+      "picture": "render.jpg",
+      "shown_at": 1280
+    },
+    {
+      "name": "render-link",
+      "command": [
+        "engine/target/release/fractal-engine",
+        "render-link",
+        "--size",
+        "2560x1440",
+        "--out",
+        "artifacts/seat.png",
+        "--link",
+        "https://techmatt.github.io/fractals/explorer/?v=4&f=julia&cx=-1.2540170796954613&cy=-0.07161459637319667&m=tia&x=-0.336363658629224&y=-0.06271709146615745&w=0.5659066537374874&p=Oxblood%2C%20Cyan%2C%20Cream&phase=0.597858"
+      ],
+      "rendered_at": [
+        2560,
+        1440
+      ],
+      "seconds": 4.39,
+      "picture": "render-link.jpg",
+      "shown_at": 1280
+    }
+  ]
+}

@@ -1,0 +1,96 @@
+usage: fractal-wallpapers render [-h] [--family {mandelbrot,multibrot,julia,phoenix}]
+                                 [--degree DEGREE] [--c RE IM] [--p RE IM] [--z-prev RE IM]
+                                 [--center-re CENTER_RE] [--center-im CENTER_IM] [--width WIDTH]
+                                 [--resolution W H] [--supersample SUPERSAMPLE] [--mode MODE]
+                                 [--discrete [CYCLE]] [--colormap COLORMAP] [--maxiter MAXITER]
+                                 [--gamma GAMMA] [--cycles CYCLES] [--phase PHASE] [--reverse]
+                                 [--mirror] [--transfer KIND] [--rolloff KIND]
+                                 [--scale {leveled,absolute}] [--lambda BOX_COX] [--period PERIOD]
+                                 [--knee KNEE] [--param NAME=VALUE] [--location FILE]
+                                 [--manifest FILE] [--recipe FILE] [--key KEY] [--out OUT]
+                                 [--out-dir OUT_DIR] [--limit LIMIT] [--resume]
+
+Render one location. Coordinates and family constants are given as decimal strings and are
+recorded exactly as written.
+
+options:
+  -h, --help            show this help message and exit
+
+the recurrence:
+  --family {mandelbrot,multibrot,julia,phoenix}
+                        which recurrence to iterate (default: mandelbrot)
+  --degree DEGREE       exponent d in z^d + c, for multibrot (3-6) and julia (2-6); a non-integer
+                        degree is the engine's `fractional_multibrot`, reached through a spec JSON
+                        (FORMATS.md's *The render spec*)
+  --c RE IM             fixed constant c: required for julia, optional for phoenix
+  --p RE IM             phoenix coefficient of z_(n-1) (default: -0.5 0)
+  --z-prev RE IM        phoenix slice coordinate z_(-1) (default: 0 0)
+
+the frame:
+  --center-re CENTER_RE
+                        view center, real part (default: the family's home)
+  --center-im CENTER_IM
+                        view center, imaginary part
+  --width WIDTH         view width in plane units (default: the family's home width)
+  --resolution W H      output size in pixels (default: 1920 1080)
+  --supersample SUPERSAMPLE
+                        samples per output pixel, per axis (default: 2)
+
+the coloring:
+  the cap is here because what it bounds is the count the colormap reads
+
+  --mode MODE           named coloring (default: smooth); see the modes subcommand
+  --discrete [CYCLE]    color from the INTEGER iteration count instead of a named mode: flat
+                        bands, the picture the smooth count exists to fix. …
+  --colormap COLORMAP   colormap name under data/palettes (default: twilight_shifted); `fractal-
+                        wallpapers palettes list` prints every name
+  --maxiter MAXITER     iteration cap; omit to let the depth-aware policy choose
+
+the palette:
+  how the colormap is spent; each is the engine's identity when unsaid
+
+  --gamma GAMMA         > 0, power on the normalized field (1)
+  --cycles CYCLES       > 0, times the map repeats over the field (1)
+  --phase PHASE         any finite, turns the map is rotated by (0)
+  --reverse             run the map backwards
+  --mirror              fold the map out and back; refused on a cyclic map (`palettes list
+                        --kind`)
+  --transfer KIND       value (default), edge:W with W >= 0, or rank — what the map is indexed by
+  --rolloff KIND        none (default), soft_knee:K with K in [0, 1), reinhard, or aces — how the
+                        brightest values are compressed
+  --scale {leveled,absolute}
+                        leveled (default) spreads the map over the field's own range; absolute
+                        indexes it by the raw count, where --period and --knee apply and gamma,
+                        cycles and transfer do not
+  --lambda BOX_COX      in [0, 1], Box-Cox (1)
+  --period PERIOD       > 0, absolute scale only (1)
+  --knee KNEE           > 0, absolute scale only (none)
+  --param NAME=VALUE    a mode parameter, repeatable: density (stripe, smooth_stripe), radius
+                        (trap_circle, smooth_trap_circle, direct traps), sigma (threads), weight
+                        (the smooth_* composites and threads, in [0, 1]), shift (itinerary,
+                        tail_itinerary), threshold and opacity (direct_trap_*). …
+
+a record instead of flags:
+  either one names what the flags above would have spelled out
+
+  --location FILE       a location record to render instead of spelling one out: the {family,
+                        viewport, render} object a ledger row, a label row and a release record
+                        all already carry
+  --manifest FILE       a JSONL of location records to render, one picture per row, into --out-dir
+                        — a label row, a ledger candidate carrying its cap flat, a release
+                        decision row and a hand-written {family, viewport, maxiter, mode,
+                        colormap} all read. …
+  --recipe FILE         a stored RECIPE — everything the picture is a function of, not only the
+                        place. …
+  --key KEY             which recipe of a --recipe file to draw: a seat's full key or any unique
+                        prefix of one, so the eight-character alias a record prints works
+
+the output:
+  --out is the single render; the other three are the --manifest batch
+
+  --out OUT             output PNG path (default: artifacts/render.png)
+  --out-dir OUT_DIR     where a --manifest run's pictures go (default: artifacts/renders). …
+  --limit LIMIT         render only the first N rows of a manifest
+  --resume              skip a row whose picture is already on disk
+
+… marks help trimmed to its contract. FRACTAL_WALLPAPERS_HELP=full prints the reasoning whole.

@@ -26,8 +26,9 @@
 <section class="prose">
 <p>Everything on this site was made by the code in the <a href="https://github.com/techmatt/fractal-wallpapers">fractal-wallpapers repository</a>, and you can run all of it yourself. This page walks through a fresh install on one machine and shows a small sample of what each stage writes, so you can check your own run against it. I ran each stage for about ten minutes. That is enough to see every file and a first small gallery, but nowhere near enough to find many good wallpapers.</p>
 <p>You do not need a GPU. The judges run several times faster with one, but most of the time goes to rendering, which runs on the CPU either way. The whole example takes about 45 minutes on a CPU install and about 27 with CUDA, and leaves about 1.1 GB on disk.</p>
-<p>The files below are slices: the twelve pictures in the final gallery, traced back through every stage, plus a few that were rejected along the way. Each file's fields are defined in <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md">FORMATS.md</a> in the repository.</p>
+<p>The pages embedded below are the ones the repository's own commands write, taken from my run. Follow one picture, at the end, traces the twelve pictures of the final gallery back through every file, along with a few that were rejected along the way. Each file's fields are defined in <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md">FORMATS.md</a> in the repository.</p>
 <h2 id="install">Install</h2>
+<p>The code is Rust and Python. The Rust engine draws every picture, and you can build and use it alone if rendering is all you want. Python runs the pipeline around it and the judges, which are neural networks in PyTorch.</p>
 <p>The CPU and CUDA installs differ only in which PyTorch they pull.</p>
 <pre><code>git clone https://github.com/techmatt/fractal-wallpapers
 cd fractal-wallpapers
@@ -35,25 +36,230 @@ uv sync --extra models --extra solve              # CPU torch, any machine
 uv sync --extra cuda --extra solve                # or: CUDA torch, an NVIDIA card (Windows, Linux x86_64)
 cargo build --release --manifest-path engine/Cargo.toml
 .venv/Scripts/fractal-wallpapers fetch-weights    # Linux/macOS: .venv/bin/fractal-wallpapers</code></pre>
+<details class="fold">
+<summary>All options</summary>
+<pre><code>usage: fractal-wallpapers fetch-weights [-h] [--head HEAD] [--check] [--verify-release]
+                                        [--repo REPO] [--ref REF] [--into DIR]
+
+options:
+  -h, --help        show this help message and exit
+  --head HEAD       fetch only this head instead of all of them
+  --check           verify the manifest against the local tree and download nothing: every head
+                    present, every entry complete, every named artifact on disk and hashing true,
+                    and all four naming ONE tag — since 2026-09-14 every head ships in one dated
+                    release, and a row left on an older tag is a head that 404s while the rest
+                    come down
+  --verify-release  clone the public repository into a temporary directory and run `fetch-weights`
+                    and `--check` THERE. …
+  --repo REPO       which repository --verify-release clones (default
+                    https://github.com/techmatt/fractal-wallpapers.git). …
+  --ref REF         which branch --verify-release clones (default main). …
+  --into DIR        keep the --verify-release clone here instead of a temporary directory that is
+                    deleted afterwards. …
+
+… marks help trimmed to its contract. FRACTAL_WALLPAPERS_HELP=full prints the reasoning whole.</code></pre>
+</details>
 <pre><code>python -m venv .venv
 .venv/Scripts/pip install -e ".[models,solve]"   # Linux/macOS: .venv/bin/pip</code></pre>
 <h2 id="render-one-picture">Render one picture</h2>
 <p>One command draws one picture from a family, a view, a rendering mode, and a palette.</p>
+<pre><code>fractal-wallpapers render --family julia --c -0.75 0.11 --center-re 0 --center-im 0 \
+  --width 3 --mode stripe --cycles 2 --out artifacts/first.png</code></pre>
+<details class="fold">
+<summary>All options for <code>fractal-wallpapers render</code></summary>
+<pre><code>usage: fractal-wallpapers render [-h] [--family {mandelbrot,multibrot,julia,phoenix}]
+                                 [--degree DEGREE] [--c RE IM] [--p RE IM] [--z-prev RE IM]
+                                 [--center-re CENTER_RE] [--center-im CENTER_IM] [--width WIDTH]
+                                 [--resolution W H] [--supersample SUPERSAMPLE] [--mode MODE]
+                                 [--discrete [CYCLE]] [--colormap COLORMAP] [--maxiter MAXITER]
+                                 [--gamma GAMMA] [--cycles CYCLES] [--phase PHASE] [--reverse]
+                                 [--mirror] [--transfer KIND] [--rolloff KIND]
+                                 [--scale {leveled,absolute}] [--lambda BOX_COX] [--period PERIOD]
+                                 [--knee KNEE] [--param NAME=VALUE] [--location FILE]
+                                 [--manifest FILE] [--recipe FILE] [--key KEY] [--out OUT]
+                                 [--out-dir OUT_DIR] [--limit LIMIT] [--resume]
+
+Render one location. Coordinates and family constants are given as decimal strings and are
+recorded exactly as written.
+
+options:
+  -h, --help            show this help message and exit
+
+the recurrence:
+  --family {mandelbrot,multibrot,julia,phoenix}
+                        which recurrence to iterate (default: mandelbrot)
+  --degree DEGREE       exponent d in z^d + c, for multibrot (3-6) and julia (2-6); a non-integer
+                        degree is the engine's `fractional_multibrot`, reached through a spec JSON
+                        (FORMATS.md's *The render spec*)
+  --c RE IM             fixed constant c: required for julia, optional for phoenix
+  --p RE IM             phoenix coefficient of z_(n-1) (default: -0.5 0)
+  --z-prev RE IM        phoenix slice coordinate z_(-1) (default: 0 0)
+
+the frame:
+  --center-re CENTER_RE
+                        view center, real part (default: the family's home)
+  --center-im CENTER_IM
+                        view center, imaginary part
+  --width WIDTH         view width in plane units (default: the family's home width)
+  --resolution W H      output size in pixels (default: 1920 1080)
+  --supersample SUPERSAMPLE
+                        samples per output pixel, per axis (default: 2)
+
+the coloring:
+  the cap is here because what it bounds is the count the colormap reads
+
+  --mode MODE           named coloring (default: smooth); see the modes subcommand
+  --discrete [CYCLE]    color from the INTEGER iteration count instead of a named mode: flat
+                        bands, the picture the smooth count exists to fix. …
+  --colormap COLORMAP   colormap name under data/palettes (default: twilight_shifted); `fractal-
+                        wallpapers palettes list` prints every name
+  --maxiter MAXITER     iteration cap; omit to let the depth-aware policy choose
+
+the palette:
+  how the colormap is spent; each is the engine's identity when unsaid
+
+  --gamma GAMMA         &gt; 0, power on the normalized field (1)
+  --cycles CYCLES       &gt; 0, times the map repeats over the field (1)
+  --phase PHASE         any finite, turns the map is rotated by (0)
+  --reverse             run the map backwards
+  --mirror              fold the map out and back; refused on a cyclic map (`palettes list
+                        --kind`)
+  --transfer KIND       value (default), edge:W with W &gt;= 0, or rank — what the map is indexed by
+  --rolloff KIND        none (default), soft_knee:K with K in [0, 1), reinhard, or aces — how the
+                        brightest values are compressed
+  --scale {leveled,absolute}
+                        leveled (default) spreads the map over the field's own range; absolute
+                        indexes it by the raw count, where --period and --knee apply and gamma,
+                        cycles and transfer do not
+  --lambda BOX_COX      in [0, 1], Box-Cox (1)
+  --period PERIOD       &gt; 0, absolute scale only (1)
+  --knee KNEE           &gt; 0, absolute scale only (none)
+  --param NAME=VALUE    a mode parameter, repeatable: density (stripe, smooth_stripe), radius
+                        (trap_circle, smooth_trap_circle, direct traps), sigma (threads), weight
+                        (the smooth_* composites and threads, in [0, 1]), shift (itinerary,
+                        tail_itinerary), threshold and opacity (direct_trap_*). …
+
+a record instead of flags:
+  either one names what the flags above would have spelled out
+
+  --location FILE       a location record to render instead of spelling one out: the {family,
+                        viewport, render} object a ledger row, a label row and a release record
+                        all already carry
+  --manifest FILE       a JSONL of location records to render, one picture per row, into --out-dir
+                        — a label row, a ledger candidate carrying its cap flat, a release
+                        decision row and a hand-written {family, viewport, maxiter, mode,
+                        colormap} all read. …
+  --recipe FILE         a stored RECIPE — everything the picture is a function of, not only the
+                        place. …
+  --key KEY             which recipe of a --recipe file to draw: a seat's full key or any unique
+                        prefix of one, so the eight-character alias a record prints works
+
+the output:
+  --out is the single render; the other three are the --manifest batch
+
+  --out OUT             output PNG path (default: artifacts/render.png)
+  --out-dir OUT_DIR     where a --manifest run's pictures go (default: artifacts/renders). …
+  --limit LIMIT         render only the first N rows of a manifest
+  --resume              skip a row whose picture is already on disk
+
+… marks help trimmed to its contract. FRACTAL_WALLPAPERS_HELP=full prints the reasoning whole.</code></pre>
+</details>
+<div class="render-shot">
+<img src="walkthrough/render/render.jpg" width="1280" height="720" alt="A whole Julia set in stripe mode: a band of spirals and starbursts across the center, with streaming stripes above and below." loading="lazy">
+<p class="table-note">1.9 seconds on my machine.</p>
+</div>
+<p>Every picture on this site and in Mandelnaut Explorer carries a link that holds its whole recipe. This command reads the link's text and draws the same picture on your machine, at any size, without going online.</p>
 <pre><code>engine/target/release/fractal-engine render-link --size 2560x1440 --out artifacts/seat.png \
-  --link "https://techmatt.github.io/fractals/explorer/?v=4&amp;f=julia&amp;cx=-1.2540170796954613&amp;cy=-0.07161459637319667&amp;m=tia&amp;x=-0.336363658629224&amp;y=-0.06271709146615745&amp;w=0.5659066537374874&amp;p=Oxblood%2C%20Cyan%2C%20Cream&amp;phase=0.597858"
-fractal-wallpapers render --family mandelbrot --center-re -0.7436438870371587 \
-  --center-im 0.13182590420531197 --width 0.00001 --mode stripe --cycles 2 --out artifacts/first.png</code></pre>
-<table>
-<tr><th>stage</th><th>rendered at</th><th>the network reads</th><th>engine s / picture</th><th>judge ms / picture, CPU · CUDA</th><th>bytes / picture</th><th>in the sample run</th></tr>
-<tr><td>full-size wallpaper</td><td>2560x1440, ss3</td><td>—</td><td>5–31</td><td>—</td><td>2.2 MB JPEG</td><td>not made</td></tr>
+  --link "https://techmatt.github.io/fractals/explorer/?v=4&amp;f=julia&amp;cx=-1.2540170796954613&amp;cy=-0.07161459637319667&amp;m=tia&amp;x=-0.336363658629224&amp;y=-0.06271709146615745&amp;w=0.5659066537374874&amp;p=Oxblood%2C%20Cyan%2C%20Cream&amp;phase=0.597858"</code></pre>
+<details class="fold">
+<summary>All options for <code>fractal-engine render-link</code></summary>
+<pre><code>usage: fractal-engine render-link --link &lt;URL|query&gt; --size WxH [--ss N]
+                                  [--out FILE.png|FILE.jpg] [--data DIR]
+
+Draw an explorer link at a size, and write it with the link embedded in the
+picture's metadata, so the picture reopens its view when dropped on the
+explorer. The link is read as text: it is a complete recipe (family, view,
+iteration cap, coloring, palette and its knobs), and nothing is fetched from
+the network. Python, the judges and the weights are not needed.
+
+  --link URL|query  a whole explorer URL, or only its query (the part after ?)
+  --size WxH        the picture's size in pixels, e.g. 2560x1440; required
+  --ss N            samples per pixel per axis, a whole number &gt;= 1 (default 3)
+  --out FILE        where to write it; .png or .jpg (default render-link.png)
+  --data DIR        the checkout's data/ holding the palettes, the anchors and
+                    the levelling band (default: $FRACTAL_ENGINE_DATA, else the
+                    first data/ found walking up from the working directory,
+                    then from the executable)
+  --help            print this and exit
+
+A deep (dv=) link is read and refused: deep rendering is not built yet.
+FORMATS.md's *The explorer link* lists every key a link may carry.</code></pre>
+</details>
+<div class="render-shot">
+<img src="walkthrough/render/render-link.jpg" width="1280" height="720" alt="A Julia set in the tia mode: clusters of glowing red points among teal fronds, in the Oxblood, Cyan, Cream palette." loading="lazy">
+<p class="table-note">4.4 seconds on my machine.</p>
+</div>
+<table class="parameters">
+<tr><th>setting</th><th>flag</th><th>values</th><th>default</th></tr>
+<tr><td><a href="../../article/escape-time-fractals.html#the-projects-families">family</a></td><td><code>--family</code></td><td><a href="../../article/escape-time-fractals.html#the-mandelbrot-set">mandelbrot</a>, <a href="../../article/escape-time-fractals.html#multibrot-sets">multibrot</a>, <a href="../../article/escape-time-fractals.html#julia-sets">julia</a>, <a href="../../article/escape-time-fractals.html#phoenix-fractals">phoenix</a>, <a href="../../article/escape-time-fractals.html#phoenix-fractals">phoenix_m</a> (spec only), <a href="../../article/escape-time-fractals.html#fractional-degrees">fractional_multibrot</a> (spec only)</td><td>mandelbrot</td></tr>
+<tr><td>degree</td><td><code>--degree</code></td><td>mandelbrot: 2, fixed<br>multibrot: an integer, 3 to 6<br>julia: an integer, 2 to 6<br>phoenix: 2, fixed<br>phoenix_m: 2, fixed<br>fractional_multibrot: a decimal string in [1.8, 5.0]</td><td>2</td></tr>
+<tr><td>c</td><td><code>--c</code></td><td>a point, RE IM</td><td>julia: required<br>phoenix: 0.5667 0</td></tr>
+<tr><td>p</td><td><code>--p</code></td><td>a point, RE IM</td><td>phoenix: -0.5 0<br>phoenix_m: no default given</td></tr>
+<tr><td>z_prev</td><td><code>--z-prev</code></td><td>a point, RE IM</td><td>phoenix: 0 0</td></tr>
+<tr><td>view center, real part</td><td><code>--center-re</code></td><td>a decimal string</td><td>the family's home view</td></tr>
+<tr><td>view center, imaginary part</td><td><code>--center-im</code></td><td>a decimal string</td><td>the family's home view</td></tr>
+<tr><td>view width</td><td><code>--width</code></td><td>a decimal string, &gt; 0</td><td>the family's home width</td></tr>
+<tr><td>size</td><td><code>--resolution</code></td><td>two integers, each &gt; 0</td><td>1920 1080</td></tr>
+<tr><td><a href="../../article/rendering-fundamentals.html#supersampling">supersampling</a></td><td><code>--supersample</code></td><td>an integer, &gt;= 1</td><td>2</td></tr>
+<tr><td><a href="../../article/rendering-fundamentals.html#iteration-caps">iteration cap</a></td><td><code>--maxiter</code></td><td>an integer, &gt;= 1 (an explorer link holds it to 50-2,000,000)</td><td>the depth policy's cap for the view's width</td></tr>
+<tr><td><a href="../../article/rendering-modes.html">rendering mode</a></td><td><code>--mode</code></td><td><a href="../../article/rendering-modes.html">smooth</a>, <a href="../../article/rendering-modes.html#fields-from-the-orbits-path">tia</a>, <a href="../../article/rendering-modes.html#fields-from-the-orbits-path">stripe</a>, <a href="../../article/rendering-modes.html">exp_smoothing</a>, <a href="../../article/rendering-modes.html#orbit-traps">gaussian_int</a>, <a href="../../article/rendering-modes.html#orbit-traps">trap_circle</a>, <a href="../../article/rendering-modes.html#fields-from-the-orbits-path">curvature</a>, <a href="../../article/rendering-modes.html#blending-modes-together">smooth_mean_angle</a>, <a href="../../article/rendering-modes.html#blending-modes-together">smooth_angle_min</a>, <a href="../../article/rendering-modes.html#blending-modes-together">smooth_trap_circle</a>, <a href="../../article/rendering-modes.html#blending-modes-together">smooth_stripe</a>, <a href="../../article/rendering-modes.html#blending-modes-together">smooth_curvature</a>, <a href="../../article/rendering-modes.html#direct-traps">direct_trap_ring</a>, <a href="../../article/rendering-modes.html#direct-traps">direct_trap_screen</a>, <a href="../../article/rendering-modes.html#direct-traps">direct_trap_multiply</a>, <a href="../../article/rendering-modes.html#direct-traps">direct_trap_lines</a>, <a href="../../article/rendering-modes.html#blending-modes-together">threads</a>, <a href="../../article/rendering-modes.html#the-itinerary-mode">itinerary</a>, <a href="../../article/rendering-modes.html#the-itinerary-mode">tail_itinerary</a>, <a href="../../article/rendering-modes.html#beyond-this-catalog">de</a> (niche)</td><td>smooth</td></tr>
+<tr><td>mode parameter</td><td><code>--param NAME=VALUE</code></td><td><details><summary>7 parameters, each for its own modes</summary>density: positive, default 6 in stripe, smooth_stripe<br>radius: positive, default 1 in trap_circle, smooth_trap_circle, direct_trap_ring, direct_trap_screen, direct_trap_multiply, direct_trap_lines<br>weight: between 0 and 1, default 0.85 in smooth_mean_angle, smooth_angle_min, smooth_trap_circle, smooth_stripe, smooth_curvature; 0.5 in threads<br>opacity: between 0 and 1, default 0.45 in direct_trap_ring, direct_trap_lines; 0.15 in direct_trap_screen; 0.2 in direct_trap_multiply<br>threshold: positive, default 0.0597 in direct_trap_ring; 0.05 in direct_trap_screen; 0.1 in direct_trap_multiply; 0.0807 in direct_trap_lines<br>sigma: positive, default 0.15 in threads<br>shift: a number, default 0.5 in itinerary, tail_itinerary</details></td><td>per mode</td></tr>
+<tr><td><a href="../../article/color-palettes.html">palette</a></td><td><code>--colormap</code></td><td><details><summary>1,022 palettes</summary>02591_vermilionlakes_2560x1600, 02595_oiawindmills_2560x1600, 02596_lakehawea_2560x1600, 02598_asgardrealmofthegods_2560x1600, 02604_platform_2560x1600, 02605_journeytoheaven_2560x1600, 103420, 2pi1Zz6, 72kcy - Imgur, 795548-3840x2160-desktop-4k-fractal-background, 795549-3840x2160-desktop-4k-fractal-background, 795565-3840x2160-desktop-4k-fractal-wallpaper-image, abstract-3d-wallpapers, abstract-wallpaper-backgrounds-hd, Abyss to Foam, adrift-concept-art-14463-1920x1200, afmhot, agates-25, ahli, along-the-starry-way-25, amarettoboso, amazing-25, Amber Highlands, Amber Signal, Amber Through Teal and Lime, Amethyst Veil, anathema-25, anodize-25, antiques-and-aqua-25, Arcade Black, ariel-25, Ash Ember Arc, Ash Gold, Ash Rose Vault, Ashen Orchid, Aster Bloom, at-the-beach-hd-wallpaper-1920x1200, atlas_grey, Aurora Curtain, Aurora Undertow, autumn, azarn, Azure &amp; Coal, Azure Monolith, Azure, Gold, Oxblood, Bauhaus Primary, Bauhaus Workshop, benediction-25, berlin, birds-of-paradise-25, Black Iris, Black Lacquer, Teal Seal, black-widow-25, blacklight-25, Bleached Bronze, blinan, Blossom Triad, Blue Held, Amber Struck, blue_orange, bluebird-25, blueroot, Blues, Blush and Bracken, Blush Room, Wine Dark, Blush Vault, Boho Cloth, Boho Dust, bone, Bone &amp; Bruise, Bone &amp; Deep Petrol, Bone and Blush, Bone and Deep Green, Bone and Moss, Bone and Verdigris, Bone Orchard Rose, Bone Vault, Boulevard Gold, Bracken and Bone, Bramble at Dusk, Brass Tide, BrBG, brisbee, Bronze Fern, Bruised Velvet, BuGn, BuPu, Burgundy &amp; Coal, Buried Fire, Burnished Deep, Burnt Boulevard, Butter Fathom, Butter Storm, bwr, calypsos-domain-25, Candle &amp; Wine, Candle Ramp, carried-away-25, celestial-domain-25, Cellar &amp; Yew, cet_cyclic_bgrmb_35_70_c75, cet_cyclic_mrybm_35_75_c68, cet_cyclic_mrybm_35_75_c68_s25, cet_cyclic_mybm_20_100_c48, cet_cyclic_mybm_20_100_c48_s25, cet_cyclic_mygbm_30_95_c78, cet_cyclic_mygbm_30_95_c78_s25, cet_cyclic_mygbm_50_90_c46, cet_cyclic_mygbm_50_90_c46_s25, cet_cyclic_protanopic_deuteranopic_bwyk_16_96_c31, cet_cyclic_protanopic_deuteranopic_wywb_55_96_c33, cet_cyclic_rygcbmr_50_90_c64, cet_cyclic_rygcbmr_50_90_c64_s25, cet_cyclic_tritanopic_cwrk_40_100_c20, cet_cyclic_tritanopic_wrwc_70_100_c20, cet_cyclic_wrkbw_10_90_c43, cet_cyclic_wrkbw_10_90_c43_s25, cet_cyclic_wrwbw_40_90_c42, cet_cyclic_wrwbw_40_90_c42_s25, cet_cyclic_ymcgy_60_90_c67, cet_cyclic_ymcgy_60_90_c67_s25, cet_diverging_bkr_55_10_c35, cet_diverging_bky_60_10_c30, cet_diverging_bwg_20_95_c41, cet_diverging_bwr_20_95_c54, cet_diverging_bwr_40_95_c42, cet_diverging_bwr_55_98_c37, cet_diverging_gkr_60_10_c40, cet_diverging_gwr_55_95_c38, cet_diverging_linear_bjr_30_55_c53, cet_diverging_linear_bjy_30_90_c45, cet_diverging_linear_protanopic_deuteranopic_bjy_57_89_c34, cet_diverging_protanopic_deuteranopic_bwy_60_95_c32, cet_diverging_rainbow_bgymr_45_85_c67, cet_diverging_tritanopic_cwr_75_98_c20, cet_linear_bgy_10_95_c74, cet_linear_bgyw_15_100_c67, cet_linear_bgyw_15_100_c68, cet_linear_bgyw_20_98_c66, cet_linear_blue_95_50_c20, cet_linear_bmw_5_95_c86, cet_linear_bmw_5_95_c89, cet_linear_bmy_10_95_c71, cet_linear_bmy_10_95_c78, cet_linear_gow_60_85_c27, cet_linear_gow_65_90_c35, cet_linear_kbc_5_95_c73, cet_linear_kbgoy_20_95_c57, cet_linear_kbgyw_10_98_c63, cet_linear_kbgyw_5_98_c62, cet_linear_kgy_5_95_c69, cet_linear_kry_0_97_c73, cet_linear_kry_5_95_c72, cet_linear_kry_5_98_c75, cet_linear_kryw_0_100_c71, cet_linear_kryw_5_100_c64, cet_linear_kryw_5_100_c67, cet_linear_protanopic_deuteranopic_kbjyw_5_95_c25, cet_linear_protanopic_deuteranopic_kbw_5_95_c34, cet_linear_protanopic_deuteranopic_kbw_5_98_c40, cet_linear_protanopic_deuteranopic_kyw_5_95_c49, cet_linear_tritanopic_kcw_5_95_c22, cet_linear_tritanopic_krjcw_5_95_c24, cet_linear_tritanopic_krjcw_5_98_c46, cet_linear_tritanopic_krw_5_95_c46, cet_linear_wcmr_100_45_c42, cet_linear_worb_100_25_c53, cet_linear_wyor_100_45_c55, cet_rainbow_bgyr_10_90_c83, cet_rainbow_bgyr_35_85_c72, cet_rainbow_bgyr_35_85_c73, cet_rainbow_bgyrm_35_85_c69, cet_rainbow_bgyrm_35_85_c71, chaidai, Chalcedony, chalk-drawing-25, Chart &amp; Compass, Chartreuse Eclipse, Chartreuse Furnace, Chartreuse Nocturne, Chartreuse Vault, chiaris-25, Chrome Violet Hour, chronoscope-25, Cinnabar Cathedral, circulation, Cirrus &amp; Ember, citadel, city_of_lights, cividis, Claret Ember, cmr.amber, cmr.amethyst, cmr.apple, cmr.arctic, cmr.bubblegum, cmr.chroma, cmr.copper, cmr.copper_s, cmr.cosmic, cmr.dusk, cmr.eclipse, cmr.ember, cmr.emerald, cmr.emergency, cmr.emergency_s, cmr.fall, cmr.flamingo, cmr.freeze, cmr.fusion, cmr.gem, cmr.ghostlight, cmr.gothic, cmr.guppy, cmr.holly, cmr.horizon, cmr.iceburn, cmr.infinity, cmr.infinity_s, cmr.jungle, cmr.lavender, cmr.lilac, cmr.neon, cmr.nuclear, cmr.ocean, cmr.pepper, cmr.pride, cmr.prinsenvlag, cmr.rainforest, cmr.redshift, cmr.sapphire, cmr.savanna, cmr.seasons, cmr.seasons_s, cmr.seaweed, cmr.sepia, cmr.sunburst, cmr.swamp, cmr.torch, cmr.toxic, cmr.tree, cmr.tropical, cmr.viola, cmr.voltage, cmr.waterlily, cmr.watermelon, cmr.wildfire, CMRmap, Coal &amp; Coal-Fire, Coal &amp; Malachite, Coal Amber, Coal Rose, Coalglow, Cobalt &amp; Celadon, Cobalt &amp; Coal, Cobalt Against Gold, Cobalt Detonation, Cobalt Furnace Ultra, Cobalt Meets Blush, Cobalt Meets Rust, Cobalt Monody, Cobalt Orchid, Cobalt Without Daylight, Cobalt, Crimson, Gold, Cobalt-Rust Double Flare, Cochineal &amp; Cream, Cold Fern Ramp, Cold Forge, Cold Iron Ascent, Cold Sweep, Coldhearth, colourwheel-25, commons_2125_Mandelbulb_3D, commons_Chaos_Clock_-_The_Steampunk_Spell-Shaper, commons_Js17eta, commons_Julia-Menge_-0.8_0.156i, commons_Julia-Menge_83372617338, commons_Julia_Fractal_rendered_in_Paint.NET, commons_Julia_set_spiral, commons_Kalles_Fraktaler_adventurous-forest_00024_1.17e222, commons_Mandelbrot_3__E1_BB_94_Chu_E1_BB_93n_Chu_E1_BB_93n__C4_90_E1_BB_99t_Bi_E1_BA_BFn, commons_Mandelbrot_3_B_C3_B4ng_Xoay, commons_Mandelbrot_3_D_C6_B0_C6_A1ng_X_E1_BB_89_C_E1_BB_95_Sinh, commons_Mandelbrot_3_Xo_C3_A1y_B_C3_A1nh_Ng_E1_BB_8Dt, commons_Mandelbrot_4_B_C3_B4ng_Ho_C3_A0ng_D_C3_A3, commons_Mandelbrot_4_H_E1_BB_93__E1_BB_90c, commons_Mandelbrot_5__E1_BB_90c_D_C3_A3y_B_C3_B4ng, commons_Mandelbrot_5_B_C3_B4ng_Ng_C5_A9_Gi_C3_A1c, commons_Mandelbrot_5_Ba__E1_BB_90c, commons_Mandelbrot_6__C4_90_E1_BA_A7u_R_E1_BB_93ng, commons_Mandelbrot_6_Hai_Ng_C3_A2n_H_C3_A0, commons_Mandelbrot_6_Ph_C3_A1o_B_C3_B4ng, commons_Mandelbrot_6_R_E1_BB_ABng_Nhi_E1_BB_87t__C4_90_E1_BB_9Bi, commons_Mandelbrot_B_C3_A1nh_Ng_E1_BB_8Dt, commons_Mandelbrot_B_C3_B4ng_Tuy_E1_BA_BFt, commons_Mandelbrot_C_C3_A2y_Trong_R_E1_BB_ABng_2, commons_Mandelbrot_Hai__E1_BB_90c_M_E1_BB_8Bn, commons_Mandelbrot_M_E1_BB_8Dc_Rau, commons_Mandelbrot_M_E1_BB_99t__C4_90_C3_A0n__E1_BB_90c, commons_Mandelbrot_set-35-k_3D10-filter01, commons_Mandelbrot_V_C3_A0nh__C4_90_C3_A0i__E1_BB_90c_M_E1_BB_8Bn, commons_Ms-0557-0645, commons_Spiralarm_Julia-Menge_-0_2C5R_0I_01072019_16K, congruity-25, consequences-25, contra-25, coolwarm, copper, Copper Bloom, Teal Fleck, Copper Fathom, Copper Meets Tide, Copper on Slate, Copper on Verdigris, Copper Reef, Copper Tide, Copper Verdigris, Copper Vespers, Copper, Sage &amp; Petrol, Coral in the Trench, Coral Nocturne, Coral Signal, Coral Tideline, corkscrew-25, corporeal-25, cosmic-forces-25, Counter Chrome, Court of Thorns, creeping-frost-25, Crimson Ice Duet, crisis-25, crystal-flood-25, cubehelix, curlv, Cyan &amp; Ember, Cyan Coal, One Coral, Cyan Tide, Cyan Vault, Cyan, Magenta, Amber, Cyanotype Furnace, Damson and Ore, deadly-nightshade-25, death-cd-25, debutalis, Deco Lacquer, Deco Malachite, Deep Azure &amp; Coral, Deep Cold Run, Deep Current, Deep Iris Rise, Deep Rose Vault, Deep Verdigris Sweep, Deep Wood, One Ember, deepsea-life-25, Delft Deep, delphic-oracle-25, desert-nights-25, desire-framed-25, dessert-union-25, dimensionality-25, dinlappi, dolphin-dance-25, doublevision, Dove &amp; Apricot, Drape &amp; Shadow, dreamcatcher-25, duckol, dynamo-25, eagles-25, early-may-25, edge-25, eirene-25, Ember Against Steel, Ember Gate, Ember Gilt, Ember Gradient, Ember in Green Ash, Ember in Orchid Ash, Ember in Smoke, Ember Over Tidewater, Ember Rising, Ember Rose Ramp, Ember Standard, Ember Terracotta, Ember to Lime, Ember Triad, Ember Undertow, embrace-25, Emerald Furnace, Emerald Ingot, emergence, Ensign, ephemera-25, etheric-frontier-25, evening-radiance-25, exile-25, Faded Gilt, Faded Salon, fairys-hollow-25, Fanned Coals, fantasy-25, Fathom Ice, Fen Fire, Fern Drift, Fern Ladder, Field at Dusk, fiery-descent-25, Fire, One Cobalt Chip, flamed-25, flaming-wings-25, flit-25, flow-25, flyline, Foam &amp; Olive, Foam Over Indigo, Forest Bloom, Forest Kiln, Forest to Foam, forestal, Forge and Frost, Forge Ascent, Forge Sweep, Forge to White, forgery-25, Formica Neon, Foxglove &amp; Iron, fractal_abstraction_lines_130499_2560x1600, fractal_flowers_abstract_104352_2560x1600, fractal_shine_stripes_130177_2560x1600, fractal_stripes_bends_lines_116839_2560x1600, fractalscape-25, freedor, Frost &amp; Cinder, Frost Orchid, Fuchsia &amp; Acid, Fuchsia &amp; Coal, Fuchsia Beacon, Fuchsia Cliffside, Fuchsia Ironworks, Furnace Rose, fury-of-the-waves-25, garcya.us_fantasy_wallpaper074, Garnet Tide, gedoo, gemini-25, Gilded Moss, Gilt and Rose, Gilt Triad, gist_earth, gist_heat, gist_rainbow, gist_stern, Glacier Ascent, Glacier Drift, Glacier Meridian, glassworks-25, glory-25, glowdon, GnBu, gnuplot, gnuplot2, Gold Cliff Sage, Gold Field, Blood Spark, Gold Leaf on Lacquer, Gold Leaf, Deep Water, golden-egg-closeup-25, gossamer-25, grace-25, Green Against Oxblood, Green and Magenta, Green Fire, Black Ash, Green Flag, Blue Water, Green Hour, Green Triad Dusk, Green Vault, Green Water Drift, Green Water, Blue Deep, Green, Cobalt, Amber, Green, Gold, Magenta, Green, Violet, Bone, green-dragon-25, green-spine-25, Greens, gurundin, happy-hours-25, harbinger-25, Harbour Sand, Harbour Spark, Harvest Wallpaper, hawthorn-25, hazy-summer-garden-25, heather-and-sage-25, hellid-25, helping-hands-25, hemispheres-25, High Cyan, Low Gold, High Gold, hoarfrost-25, holey-trinity-25, Hollow Lantern, hollow-worlds-25, hot, house-of-ivory-25, hsv, hyperborean-25, Ice Sage Ramp, Ice Shaft, Ice Spire, Ice Verdant Ramp, Ice Walk, Ice with an Ember, Ice-to-Ember Cliff, illusion-25, incursion-25, Indigo &amp; Old Gold, Indigo Descent, Indigo Kindling, Indigo Marquee, Indigo Nocturne, Indigo Rungs, Indigo Teal Crests, Indigo Tideline, Indigo Walk to Lime, Indigo, Cyan, Teal, Foam, inferno, infinity-25, Ink &amp; Fuchsia Flare, Inkfall, intermission-25, Iris Ascension, Ivory Gilt, jadanti, Jade in Amethyst Light, jade-serpent-25, jet, jiradin, Jqmsl, Jungle Canopy, Jungle Floor, Khaki Cathedral, Kiln Triad, kirin-25, krinshinda, kyoto-lanterns-25, labani, Lacquer &amp; Bone, Ladder to Ice, Lagoon Neon, lambent-25, lander, Lantern in the Deep, Lantern Rose, Lavender Bleach, let-there-be-light-25, lethe-25, ley-lines-25, Lichen and Ink, Lilac Drift, Plum Trough, Lilac Vellum, Lime and Cobalt, Lime Ash Ember, Lime on Black Glass, Lime, Cobalt, Oxblood, Lime, Sage &amp; Teal Dusk, Lime, Steel, Rose, liquid-fire-25, locomotion-25, Long Autumn, Madder Lantern, magic-mushroom-25, magma, magnificat-25, Malachite &amp; Rose, Malachite and Rose, malign-25, managua, Marsh Lantern, Mauve Hollow, mean-25, meditation-25, meloni, Memphis Blackboard, Memphis Chalkline, Mesa Noon, Mesa Shadow, metal-emblem-25, metamorph-25, Midnight Regalia, Mineral Verdigris &amp; Copper, Mint &amp; Wine Air, Mint Field, Teal Well, Mist Field, Ink Well, molten-25, moon-over-mandelbrot-25, morning-at-misty-vale-25, Moss &amp; Rust, Moss and Ore, Moss Under Snow, Moss, Clay &amp; Gold, mossy-25, mSL22 - Imgur, Mustard Field, muswirla, Muted Triune, MyFractal01, MyFractal03, MyFractal04, Navy to Foam, Nebula Flare, Nebula Veil, necromancer-25, Neon Bramble, Neon Causeway, Neon Grid, Neon Pop Flash, neptunes-garden-25, neuron-25, Nightbloom Signal, Nightfall Azure, Nightfall Spectrum, nightingale-25, Nineties Arcade, Nineties Dusk, nipy_spectral, no-mans-land-25, not-yet-lost-25, nova-25, ocean, Ochre Against Steel, Ochre Loam, of-strange-design-25, Olive Ash, Olive Cellar, Olive Ember Ramp, Olive Field, Violet Spark, Olive Turn, Olive, Ash-Blue &amp; Rose, Olive, Blood, Cobalt, Olive, Green, Ochre, Olive, Lime, Foam, One Coal Alight, Opal &amp; Ink, Opal Drift, Opal Field, Sapphire Spark, Oranges, Orchid &amp; Goldshadow, Orchid Deep, Orchid Furnace, Orchid Procession, Orchid Triad, Orchid Triad Ember, OrRd, Oxblood &amp; Petrol Seam, Oxblood Procession, Oxblood Standard, Oxblood Thicket, Oxblood, Amber, Teal, Oxblood, Cyan, Cream, Oxblood, Ochre, Petrol, Oxblood, One Cold Spark, Oxide &amp; Copper Edge, Oxide and Ember, pacific-shore-25, paezing, pageantry-25, painted-day-25, Pale Aurora, Pale Ember Over Teal, Pale Fire Rose, Pale Harbor, Pale Moss Field, Pale Orchid, Deep Well, Pale Reed Hollow, Pale Reef, Three Lights, Pale Reliquary, Pale Triad, Pale Verdigris, Copper Heart, Patina Brass, Peacock Nocturne, Peacock Regalia, Peat &amp; Rose Smoke, pebbles-shore-light-25, peekaboo-25, Periwinkle Room, Petal Drift, Petal Dusk, Petrol &amp; Amber, Petrol &amp; Coal, Petrol &amp; Coral, Petrol &amp; Flame, Petrol Bloom, Petrol Boundary, Petrol Dawn, Petrol Depths, Petrol Depths, Ember Spark, Petrol Monolith, Petrol Noon, Petrol to Powder, Petrol, One Coral, Pewter Bloom, Phosphor Deep, phylum-25, pilgrim, Pine and Frost, pink, PiYG, plasma, Plum Anvil, Plum Cut with Gold, Plum Gilding, Plum in Ash, Plum Reliquary, Plum Walk, Plum, Cobalt, Acid, Plum, Gold &amp; Moss, plummet-25, polished-25, Porcelain Azure, Porcelain Field, portal-of-fire-25, PRGn, Prism on Ice, Prism Veil, PuBu, PuBuGn, Pumpkin Cellar, PuOr, PuRd, Purples, quiet-waiting-25, radian, ragnetic_field, rainbow, rainbow-country-25, ransom-25, RdBu, RdGy, RdPu, RdYlBu, RdYlGn, re-entry-25, red-octavo-25, Reds, Reed Walk, Reef at Midnight, Reef Triad, Reef Without Sun, reelati, Regalia &amp; Sulphur, Regatta Ice, Reliquary, Reliquary Vespers, rideon, riding-on-the-tide-25, rite-of-passage-25, riven-25, river-of-light-25, rolling, rondo, Rose Above, Rose Against Cobalt, Rose Against Steel, Rose and Verdigris, Rose Eclipse, Rose Field, Sapphire Cut, Rose Furnace, Rose Hour Spark, Rose in Ash, Rose Quartz Deep, Rose Quartz Meadow, Rose Quartz Ramp, Rose Quartz Vault, Rose Reactor, Rose Slate Khaki, Rose Smoke, Rose Triad, Rose Under Ice, rose-pillow-25, roundabout, Rust &amp; Rainlight, Rust Against Petrol, Rust in the Slate Vault, Rust Kiln, Rust Lagoon, Rust to Olive, Rust to Plum, sacred-grove-25, sad-eyes-25, Sage &amp; Signal, Sage Ascendant, Sage Ascending, Sage Ember, Sage Ladder, Sage Over Oxblood, sanctuary-25, Sapphire &amp; Coal, Sapphire &amp; Dusk Rose, Sapphire Against Rose, Sapphire Bloom, Sapphire in Blush, sapphire-dreams-25, satin-ends-25, scarlet-admiral-25, scattering-25, sci-fi-new-worlds-alien-fiction-selection-earth-space-planets-393423, scifi-my-current-lol-1652484, Sea Glass Dawn, Sea Glass Drift, Sea Glass Vault, Sea-Glass &amp; Ash, Seafoam Dusk, seaweed-25, seismic, shadalu, shaki, shartook, Sherbet Flare, Shoal, One Coral, sholmes, Signal &amp; Sulphur, Signal Triad, silk-scarves-25, singularity-25, Siren, Lights Out, Sixties Cellar, Sixties Poster, skyroads-25, skyroads-blue-25, skyward-25, Slate &amp; Wine, Slate and Dusty Rose, Slate Ascension, Slate Ladder, sleeper-25, Slow Combustion, Smoke &amp; Madder, smokey-green-25, smooth-sailing-25, solipstic, Sorbet Cellar, Sorbet Vault, Sorrel Triad, sparks, sparx-25, Spectral, Spice Procession, spirit-of-the-dream-25, Split Lime, spring, stained_glass, standard-25, Steel &amp; Coals, Steel &amp; Ember, Steel and Straw, strange-creature-25, Straw and Teal, Struck Flint, Sulphur &amp; Plum, Sulphur in the Vault, summer, summer-dusk-25, sun-god-25, sun-kissed-25, sunsets-wake-25, taladee, tapestry-25, Tarnished Amber, Teal &amp; Coral Tide, Teal Against Coral, Teal Against Rust, Teal Amber Orchid, Teal Ash, Teal Depths, Coral Spark, Teal Ember Cliff, Teal Family, Amber Spark, Teal Flare, Amber Fall, Teal, Magenta, Gold, technology-25, ten-leaf-clover-25, Terminal Flare, terrain, tethered, the-four-quarters-25, the-outsiders-25, the_light_fantastic, Three Candles, Three Coals, Three Coals in Ash, Three Fires, Three Hues, Kept Apart, Three Jewels, Three Jewels, Pale Room, Three Minerals on Coal, Three-Jewel Bloom, Three-Metal, Three-Point Fire-Ice, tictac, Tidepool, Tidewater, No Sky, Tidewater, Two Crests, to-the-bone-25, Tobacco Bloom, torment-of-the-skies-25, torque-25, touch, Tourmaline Rose, toxic-spire-25, trade-winds-25, transcendence-25, tri-state, Triad Nocturne, Triad Patina, triangulate-25, triglandal, Trinity of Ash, turbo, Turkish Grind, twilight, Twilight Bridge, Twilight Procession, Twilight Triad, twilight_shifted, Twin Mineral Peaks, Twin Sapphires, Twin Sconces, Two Golds, Ultraviolet Siren, Umber &amp; Ember, Umber Ground, Umber Procession, Umber Rise, under-a-brighter-sky-25, unfolding-creation-25, variations-on-a-floorplan-25, Varnish and Bone, Verdant Ascent, Verdant Mist, Verdant Triad, Verdigris &amp; Coal, Verdigris &amp; Copper, Verdigris &amp; Fuchsia, Verdigris &amp; One Spark, Verdigris Coal, Verdigris Flare, Verdigris Furnace, Verdigris Hollow, Verdigris Khaki, Verdigris to Lime, One Rose, Verdigris Walk, Vermilion Chapel, vibe-25, Vice Nightfall, Violet Ascension, Violet Cellar, Violet Kindled, Violet, Cyan, Ochre, viridis, visionary-spires-25, visions-25, vitality-25, wallhaven_wallhaven-0125mv, wallhaven_wallhaven-0w8gpp, wallhaven_wallhaven-1jo7vv, wallhaven_wallhaven-1joljg, wallhaven_wallhaven-2ex5zg, wallhaven_wallhaven-398e39, wallhaven_wallhaven-39lg2d, wallhaven_wallhaven-3z1jkd, wallhaven_wallhaven-422xr6, wallhaven_wallhaven-45pqz1, wallhaven_wallhaven-47xzoe, wallhaven_wallhaven-4omjp5, wallhaven_wallhaven-4xy8el, wallhaven_wallhaven-5dpzz5, wallhaven_wallhaven-6d3zz6, wallhaven_wallhaven-8xz1mk, wallhaven_wallhaven-95k3qx, wallhaven_wallhaven-d67kpg, wallhaven_wallhaven-d6yv9m, wallhaven_wallhaven-dg6v93, wallhaven_wallhaven-dped2l, wallhaven_wallhaven-e7v1ll, wallhaven_wallhaven-g8ev1l, wallhaven_wallhaven-g8p1ol, wallhaven_wallhaven-k97v5q, wallhaven_wallhaven-kwg7v6, wallhaven_wallhaven-m9v5l9, wallhaven_wallhaven-nm6938, wallhaven_wallhaven-nrl8ym, wallhaven_wallhaven-oxgk7p, wallhaven_wallhaven-oxxve5, wallhaven_wallhaven-vg1rzm, wallhaven_wallhaven-we6oqp, wallhaven_wallhaven-xl8gmd, wallhaven_wallhaven-ym8rqk, wallhaven_wallhaven-yxlvkk, wallhaven_wallhaven-zxv17j, wallpaper-supernova, waltzing-in-shadows-25, Warm Core in the Deep, warp-angels-25, watercolours-in-the-rain-25, watersprite-25, western-winds-25, wheelance, whispers-on-golden-sand-25, Widow's Gold, windy-peak-25, Wine &amp; Ember, Wine &amp; Slate Candle, Wine Step, winter, Wisteria Nightfall, within-25, xelan-25, xuahakin, Y2K Bubblegum, Y2K Chrome, Yew Without Moon, YlGn, YlGnBu, YlOrBr, YlOrRd, zhgiu1cypaac1</details></td><td>twilight_shifted</td></tr>
+<tr><td><a href="../../article/color-palettes.html#applying-a-palette">gamma</a>, power on the normalized field</td><td><code>--gamma</code></td><td>&gt; 0</td><td>1</td></tr>
+<tr><td><a href="../../article/color-palettes.html#applying-a-palette">cycles</a>, times the map repeats over the field</td><td><code>--cycles</code></td><td>&gt; 0</td><td>1</td></tr>
+<tr><td><a href="../../article/color-palettes.html#applying-a-palette">phase</a>, turns the map is rotated by</td><td><code>--phase</code></td><td>any finite</td><td>0</td></tr>
+<tr><td>reverse, run the map backwards</td><td><code>--reverse</code></td><td>true or false</td><td>off</td></tr>
+<tr><td>mirror, fold the map out and back; refused on a cyclic map (<code>palettes list --kind</code>)</td><td><code>--mirror</code></td><td>true or false</td><td>off</td></tr>
+<tr><td>transfer, what the map is indexed by</td><td><code>--transfer</code></td><td>value (default), edge:W with W &gt;= 0, or rank</td><td>value</td></tr>
+<tr><td>rolloff, how the brightest values are compressed</td><td><code>--rolloff</code></td><td>none (default), soft_knee:K with K in [0, 1), reinhard, or aces</td><td>none</td></tr>
+<tr><td>scale, leveled (default) spreads the map over the field's own range; absolute indexes it by the raw count, where --period and --knee apply and gamma, cycles and transfer do not</td><td><code>--scale</code></td><td>leveled or absolute</td><td>leveled</td></tr>
+<tr><td>lambda, Box-Cox</td><td><code>--lambda</code></td><td>in [0, 1]</td><td>1</td></tr>
+<tr><td>period, absolute scale only</td><td><code>--period</code></td><td>&gt; 0</td><td>1</td></tr>
+<tr><td>knee, absolute scale only</td><td><code>--knee</code></td><td>&gt; 0</td><td>none</td></tr>
+<tr><td>curve</td><td>spec only</td><td>linear, sqrt, log or scurve: an explicit coloring's <code>transform</code></td><td></td></tr>
+<tr><td>coloring</td><td>spec only</td><td>a full coloring object in place of a named mode</td><td></td></tr>
+<tr><td>colormap_dir</td><td>spec only</td><td>where the colormap files are (default data/palettes)</td><td></td></tr>
+<tr><td>allow_unresolvable_in_f64</td><td>spec only</td><td>allow a frame too deep for f64 to resolve (default false)</td><td></td></tr>
 </table>
-<h2 id="check-the-judges">Check the judges</h2>
-<p>This renders eight fixed pictures, scores them with all four judges, and compares the scores to the ones I got. If your numbers match, your install matches mine.</p>
+<p class="table-note">Spec only means settable only through a spec JSON: fractal-engine render &lt;spec.json&gt;, whose keys are <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md#the-render-spec">FORMATS.md's render spec</a>.</p>
+<h2 id="check-your-install">Check your install</h2>
+<p>This renders eight fixed pictures and compares them to mine, then scores them with all four judges and compares the scores. It also shows how long each render took on my machine and on yours. If the pictures and the numbers match, your install matches mine.</p>
 <pre><code>fractal-wallpapers judges check</code></pre>
-<table>
-<tr><th>stage</th><th>rendered at</th><th>the network reads</th><th>engine s / picture</th><th>judge ms / picture, CPU · CUDA</th><th>bytes / picture</th><th>in the sample run</th></tr>
-<tr><td>palette judge</td><td>640x360, ss2</td><td>224x224 squash</td><td>—</td><td>9 · 6</td><td>—</td><td><code>judges check</code> only</td></tr>
-</table>
+<details class="fold">
+<summary>All options</summary>
+<pre><code>usage: fractal-wallpapers judges check [-h] [--out-dir DIR] [--write-expected] [--bundle DIR]
+                                       [--device DEVICE]
+
+Reads data/judges/check.jsonl — recipes, reference pictures as text, expected scores and reference
+render seconds — renders each at its own regime, and holds it to two halves: the picture matches
+(every one of its 32x18 cells' mean colour within 4 of 255 of the reference) and the scores match
+(the render, gallery and palette judges on the picture and the location judge on its place, each
+within 0.0001). Exits non-zero if either half misses. Each render is timed and shown beside the
+reference time from Intel i5-10400F, Windows 10, release engine, one render at a time. Writes
+check.json and a page (default artifacts/judges/check/).
+
+options:
+  -h, --help        show this help message and exit
+  --out-dir DIR     where the pictures and page go
+  --write-expected  rewrite the tracked expected scores, picture prints and reference seconds from
+                    this reading. …
+  --bundle DIR      also write the page into DIR as a portable folder: index.html, page.json, and
+                    only the pictures it shows, re-encoded small; nothing outside DIR is referred
+                    to
+  --device DEVICE   cuda, cpu, or auto (default)
+
+… marks help trimmed to its contract. FRACTAL_WALLPAPERS_HELP=full prints the reasoning whole.</code></pre>
+</details>
 <div class="hosted">
 <iframe src="walkthrough/judges-check/index.html" title="Judge check" loading="lazy"></iframe>
 <p class="hosted-open"><a href="walkthrough/judges-check/index.html">open this page on its own</a></p>
@@ -63,16 +269,240 @@ fractal-wallpapers render --family mandelbrot --center-re -0.7436438870371587 \
 </div>
 <h2 id="walk-for-locations">Walk for locations</h2>
 <p>The walk explores each fractal family for a fixed amount of time and records the places it finds, and the location judge then scores each place. No two walks find the same places.</p>
+<p>In my run, ten minutes of walking found 4,022 places, and ten minutes of mining made 327 candidate pictures from the best 109 of them. Only 2 of those pictures were good enough for the gallery at its usual standard.</p>
 <pre><code>fractal-wallpapers harvest --minutes 10 --no-scoring
 fractal-wallpapers curate score --harvest artifacts/harvest
 fractal-wallpapers harvest export
 fractal-wallpapers harvest stats</code></pre>
-<table>
-<tr><th>stage</th><th>rendered at</th><th>the network reads</th><th>engine s / picture</th><th>judge ms / picture, CPU · CUDA</th><th>bytes / picture</th><th>in the sample run</th></tr>
-<tr><td>walk frame (gate render)</td><td>384x216, ss1</td><td>—</td><td>0.04–0.3</td><td>—</td><td>60 KB</td><td>4,069, 246 MB</td></tr>
-<tr><td>location judge</td><td>its own 384x216 ss1 view</td><td>384x224 stretch</td><td>0.04–0.3</td><td>24 · 5</td><td>60 KB</td><td>4,022, 241 MB</td></tr>
-</table>
-<p>The full ten-minute run found 4,069 places, mined 327 candidates from them, and seated 2 of 12 at the default bars.</p>
+<details class="fold">
+<summary>All options for <code>fractal-wallpapers harvest</code></summary>
+<pre><code>usage: fractal-wallpapers harvest [-h] [--seed SEED] [--batch BATCH]
+                                  [--minutes MINUTES | --finish-by HH:MM] [--batches BATCHES]
+                                  [--release-slots RELEASE_SLOTS] [--strange-share STRANGE_SHARE]
+                                  [--strange-modes STRANGE_MODES]
+                                  [--release-workers RELEASE_WORKERS] [--seeds SEEDS] [--no-twins]
+                                  [--root-channel {proven,viewport_sampler}]
+                                  [--sampler-rungs SAMPLER_RUNGS]
+                                  [--sampler-widest SAMPLER_WIDEST]
+                                  [--sampler-narrowest SAMPLER_NARROWEST]
+                                  [--root-expansions ROOT_EXPANSIONS]
+                                  [--dynamical-root-expansions DYNAMICAL_ROOT_EXPANSIONS]
+                                  [--candidates CANDIDATES] [--node-width NODE_WIDTH]
+                                  [--colormap COLORMAP] [--probe PROBE] [--refine-per-walk K]
+                                  [--refine-margin DELTA] [--neighborhood | --no-neighborhood]
+                                  [--partition {mandelbrot,multibrot3,multibrot4,multibrot5,multibrot6,julia:mandelbrot,julia:multibrot3,julia:multibrot4,julia:multibrot5,julia:multibrot6,phoenix,phoenix:classic}]
+                                  [--floor FLOOR] [--discount DISCOUNT] [--prices PRICES]
+                                  [--low-water LOW_WATER] [--cooldown COOLDOWN]
+                                  [--refill-share REFILL_SHARE] [--lineage-cap LINEAGE_CAP]
+                                  [--lineage-discount LINEAGE_DISCOUNT]
+                                  [--lineage-discount-floor LINEAGE_DISCOUNT_FLOOR]
+                                  [--exploration-floor EXPLORATION_FLOOR]
+                                  [--exploration-start EXPLORATION_START]
+                                  [--exploration-ema EXPLORATION_EMA] [--no-exploration]
+                                  [--no-saturation] [--ledgers LEDGERS] [--out-dir OUT_DIR]
+                                  [--foci] [--plane-grace-rungs PLANE_GRACE_RUNGS]
+                                  [--score-workers SCORE_WORKERS] [--device DEVICE] [--no-scoring]
+                                  {export,stats} ...
+
+Run batches until the active-time budget is spent, dividing each batch's slots between partitions
+by how far each one is below its intended share of the release. Checkpoints at every batch
+boundary and resumes from the checkpoint if one is there, so a killed run continues rather than
+restarting.
+
+positional arguments:
+  {export,stats}
+    export              join the run's kept places to the location judge's scores, as one file
+    stats               per fractal family: found, places, scores, and the best and worst four
+
+options:
+  -h, --help            show this help message and exit
+
+the run and its clock:
+  --seed SEED           run seed (default: 0)
+  --batch BATCH         node slots per batch
+  --minutes MINUTES     active-minute budget across every session of this run (default: 10; 0 for
+                        none)
+  --finish-by HH:MM     derive --minutes from a wall-clock finish time instead of naming it: the
+                        span to the next HH:MM, less the release leg (--release-slots), the
+                        closing re-score, the ledger load and a margin, converted from wall to
+                        ACTIVE minutes. …
+  --batches BATCHES     stop after this many batches, whatever the clock says
+
+the release leg the clock reserves for:
+  read only with --finish-by, which turns a release ceiling into minutes it holds back; none of
+  it is passed to `curate run`
+
+  --release-slots RELEASE_SLOTS
+                        the release ceiling the curation leg will be asked for (default: 10, the
+                        diagnostic release a run keeps). …
+  --strange-share STRANGE_SHARE
+                        the share of those slots the strange judge will fill (default: 0.6). …
+  --strange-modes STRANGE_MODES
+                        modes the strange judge will draw at each location (default: curation's
+                        own). …
+  --release-workers RELEASE_WORKERS
+                        worker processes the release leg will run at, which is what the reserved
+                        rate is scaled to (default: 4, the count every release on record was
+                        measured at). …
+
+where roots come from:
+  --seeds SEEDS         a JSONL seed file for the parameter planes (default: the tracked plane
+                        seed pool, data/discovery/plane_seed_pool.jsonl)
+  --no-twins            do not derive Julia parameters from admitted parameter-plane locations;
+                        the three higher-degree Julia partitions then have no channel at all and
+                        say so
+  --root-channel {proven,viewport_sampler}
+                        draw roots from this channel as well as the partition's own pool;
+                        repeatable. …
+  --sampler-rungs SAMPLER_RUNGS
+                        octaves in from the home width the viewport sampler draws over on the
+                        PINNED plane, each rung a 2^k x 2^k jittered grid at width home/2^k
+                        (default: 4, which is 340 frames). …
+  --sampler-widest SAMPLER_WIDEST
+                        the widest root the viewport sampler hands over on a PARAMETER plane;
+                        every rung of the straddle refinement whose cell width lies inside the
+                        band is served (default: 0.1)
+  --sampler-narrowest SAMPLER_NARROWEST
+                        the narrowest, which decides how deep the refinement goes. …
+
+how far each walk runs:
+  --root-expansions ROOT_EXPANSIONS
+                        expansions a root on a PARAMETER plane may pay for, its reframings
+                        included (default: 12)
+  --dynamical-root-expansions DYNAMICAL_ROOT_EXPANSIONS
+                        the same, for a root on a DYNAMICAL plane — julia and phoenix alike. …
+  --candidates CANDIDATES
+                        candidates drawn per node
+
+the frame the gates read:
+  a scored run refuses any other geometry and any other map: the head reads this frame as a tile
+
+  --node-width NODE_WIDTH
+                        node render width in pixels. …
+  --colormap COLORMAP   colormap the gate renders are drawn through. …
+
+the reframing operators:
+  --probe PROBE         probability the reframing probe fires on an admission (default: 0.25)
+  --refine-per-walk K   how many of this walk's best gate survivors have their FRAMING refined
+                        when the walk closes, best first by the seating statistic. …
+  --refine-margin DELTA
+                        how much better a framing has to read before it is adopted, in NATS of
+                        log-odds on P(&gt;=4). …
+  --neighborhood        enumerate neighbouring nuclei (on by default; the expensive operator)
+  --no-neighborhood     fire only the snap and the lateral step, and pay neither the neighbourhood
+                        enumeration's clock nor its frontier
+
+how the clock is divided:
+  --partition {mandelbrot,multibrot3,multibrot4,multibrot5,multibrot6,julia:mandelbrot,julia:multibrot3,julia:multibrot4,julia:multibrot5,julia:multibrot6,phoenix,phoenix:classic}
+                        keep the books for this partition alone (repeatable; default: every one).
+                        …
+  --floor FLOOR         the share of the clock every partition floors at (default: 0.05)
+  --discount DISCOUNT   what an unlabelled machine-scored find is worth against the deficit
+                        (default: 0.2); 0 reproduces the labels-only deficit exactly
+  --prices PRICES       a cost-to-find seed table other than the shipped one
+  --low-water LOW_WATER
+                        a partition below this many nodes is starved
+  --cooldown COOLDOWN   batches a partition waits between refills
+  --refill-share REFILL_SHARE
+                        share of the loop's clock refills may spend (default: 0.25)
+  --lineage-cap LINEAGE_CAP
+                        admissions any one lineage may book before the walk stops expanding it
+                        (default: 0, no cap). …
+  --lineage-discount LINEAGE_DISCOUNT
+                        how fast a lineage's contest credit decays with what it has already booked
+                        this run: credit x= max(floor, 1/(1+k*n)) (default: 0.5; 0 turns the
+                        discount off). …
+  --lineage-discount-floor LINEAGE_DISCOUNT_FLOOR
+                        the floor that discount never falls below (default: 0.2)
+  --exploration-floor EXPLORATION_FLOOR
+                        share of the post-floor slots reserved for lineages no run has ever booked
+                        an admission from, which the share never falls below (default: 0.25)
+  --exploration-start EXPLORATION_START
+                        what that share opens at before it has priced itself (default: 0.45)
+  --exploration-ema EXPLORATION_EMA
+                        per-served-batch smoothing weight for the share's self-pricing (default:
+                        0.15)
+  --no-exploration      allocate the whole post-floor batch by deficit; no protected share
+  --no-saturation       do not read earlier runs' ledgers; every place ranks as untouched
+
+what it reads and writes:
+  --ledgers LEDGERS     where earlier runs' ledgers live (default: artifacts)
+  --out-dir OUT_DIR     the run directory (default: artifacts/harvest)
+  --foci                record each expanded node's kept focus set beside its candidates: where
+                        the peaks were, which blurring scales found each one, how alone it stands
+                        and how far the nearest kept neighbour is. …
+
+the gates and the scoring:
+  --plane-grace-rungs PLANE_GRACE_RUNGS
+                        rungs below a parameter-plane seed root that the expansion junk floor does
+                        not act on (default: 5; 0 gates every rung). …
+  --score-workers SCORE_WORKERS
+                        worker processes rendering views the head reads that nobody has drawn
+                        (default: 1; 1 renders in this process). …
+  --device DEVICE       cuda, cpu, or auto (default)
+  --no-scoring          run the null scorer: structural gates only, every row left unclassed and
+                        invisible to the standing deficit
+
+… marks help trimmed to its contract. FRACTAL_WALLPAPERS_HELP=full prints the reasoning whole.</code></pre>
+</details>
+<details class="fold">
+<summary>All options for <code>fractal-wallpapers curate score</code></summary>
+<pre><code>usage: fractal-wallpapers curate score [-h] [--ledger LEDGER] [--harvest DIR] [--device DEVICE]
+                                       [--limit LIMIT] [--key-file PATH] [--unscored] [--opened]
+                                       [--graded]
+
+Reads each gate-surviving location through the head, at the regime its own ledger row names: a
+walk's gate render where the row's recorded digest still describes it, the deploy view already on
+disk for the standing stock. No deploy-geometry render is ever demanded for a row that was not
+scored at one. Resumable in both halves: a picture already on disk is not re-made. There is no
+--score-workers here, unlike `harvest`, `reframe` and `walk`, and that is a decision rather than
+an omission: what little this renders it renders in this process, and the fan-out was measured not
+to pay — 0.88x at two workers and 1.01x at four over the same views. See supply/README.md's
+*`--score-workers` is a flag with almost nothing left to do*.
+
+options:
+  -h, --help       show this help message and exit
+  --ledger LEDGER  a walk ledger this invocation is bound to (repeatable). …
+  --harvest DIR    a harvest run's --out-dir; its walk.jsonl is the binding (repeatable). …
+  --device DEVICE  cuda, cpu, or auto (default)
+  --limit LIMIT    score only this many locations
+  --key-file PATH  score only the locations this key manifest names, out of the bound ledgers
+                   (`curate reach --write` writes one). …
+  --unscored       score only the bound locations the sidecar has NO row for — the backlog. …
+  --opened         score the opened locations the sidecar has no row for, off the CANDIDATE LEDGER
+                   rather than a walk binding. …
+  --graded         score the human-graded places nothing has ever OPENED, off the three LABEL
+                   STORES. …
+
+… marks help trimmed to its contract. FRACTAL_WALLPAPERS_HELP=full prints the reasoning whole.</code></pre>
+</details>
+<details class="fold">
+<summary>All options for <code>fractal-wallpapers harvest export</code></summary>
+<pre><code>usage: fractal-wallpapers harvest export [-h] [--out-dir OUT_DIR]
+
+Writes ONE flat file, &lt;run&gt;/locations.jsonl: one row per kept place, joining walk.jsonl's
+candidate rows (refinements applied) to artifacts/curation/supply_scores.jsonl on the location
+key. A place `curate score` has not read yet is present with null scores. Its `view` is relative
+to the run directory. The stores are only read. FORMATS.md's *locations.jsonl* gives every field.
+
+options:
+  -h, --help         show this help message and exit
+  --out-dir OUT_DIR  the run directory (default: artifacts/harvest)</code></pre>
+</details>
+<details class="fold">
+<summary>All options for <code>fractal-wallpapers harvest stats</code></summary>
+<pre><code>usage: fractal-wallpapers harvest stats [-h] [--bundle DIR] [--out-dir OUT_DIR]
+
+Printed, and written as &lt;run&gt;/stats/stats.json and &lt;run&gt;/stats/index.html, a page with the gate
+render of each family's best four and worst four places by the location judge's P(&gt;=3).
+
+options:
+  -h, --help         show this help message and exit
+  --bundle DIR       also write the page into DIR as a portable folder: index.html, page.json, and
+                     only the pictures it shows, re-encoded small; nothing outside DIR is referred
+                     to
+  --out-dir OUT_DIR  the run directory (default: artifacts/harvest)</code></pre>
+</details>
 <div class="hosted">
 <iframe src="walkthrough/walk-stats/index.html" title="Harvest stats" loading="lazy"></iframe>
 <p class="hosted-open"><a href="walkthrough/walk-stats/index.html">open this page on its own</a></p>
@@ -85,15 +515,111 @@ fractal-wallpapers harvest stats</code></pre>
 <h2 id="mine-candidates">Mine candidates</h2>
 <p>Mining takes the best-scoring places, tries rendering modes and palettes on each, and keeps the pictures the wallpaper judge likes.</p>
 <pre><code>fractal-wallpapers curate embed</code></pre>
+<details class="fold">
+<summary>All options for <code>fractal-wallpapers curate embed</code></summary>
+<pre><code>usage: fractal-wallpapers curate embed [-h] [--device DEVICE] [--sample SAMPLE] [--limit LIMIT]
+                                       [--seed SEED] [--unit-seconds UNIT_SECONDS]
+
+The gallery pass picks locations by how far apart they look, so every location the judge admits
+over the junk floor needs one picture that says nothing about a coloring nobody has chosen yet:
+the NEUTRAL RENDER, this location's smooth field through one fixed cyclic map at one fixed small
+geometry. A frozen DINOv2 reads a unit vector off it and the vector is kept forever, keyed by the
+exact location key. Incremental and idempotent: what is already stored is subtracted before
+anything is drawn, so a later harvest's admissions are a second run of this. Exits non-zero when
+the store does not cover the admitted population. NEEDS THE NETWORK THE FIRST TIME ON A MACHINE:
+the encoder is the only third-party weight here and is not re-hosted, so it comes from Hugging
+Face — 84.2 MB into ~/.cache/huggingface, once, pinned to the hub revision `models/embedding.py`
+names. Every run after it is local, and `models.embedding.verify()` hashes what was cached against
+the pin.
+
+options:
+  -h, --help            show this help message and exit
+  --device DEVICE       cuda, cpu, or auto (default)
+  --sample SAMPLE       embed a stratified draw of this many outstanding locations rather than all
+                        of them, spread over the partitions in proportion to their supply. …
+  --limit LIMIT         stop after this many locations; a prefix, not a sample
+  --seed SEED           the seed --sample draws under (default: 0)
+  --unit-seconds UNIT_SECONDS
+                        kill one neutral render that runs past this and carry on (default: 90)
+
+… marks help trimmed to its contract. FRACTAL_WALLPAPERS_HELP=full prints the reasoning whole.</code></pre>
+</details>
 <pre><code>fractal-wallpapers curate hunt run --name h1 --budget 600 --unconditional 600
 fractal-wallpapers curate hunt merge --name h1
 fractal-wallpapers curate candidate-ledger browse</code></pre>
-<table>
-<tr><th>stage</th><th>rendered at</th><th>the network reads</th><th>engine s / picture</th><th>judge ms / picture, CPU · CUDA</th><th>bytes / picture</th><th>in the sample run</th></tr>
-<tr><td>embedding (DINOv2)</td><td>448x252, ss1</td><td>448x252 as is</td><td>0.05–0.2</td><td>100 · 8</td><td>90 KB</td><td>1,796, 155 MB</td></tr>
-<tr><td>mined candidate</td><td>640x360, ss2</td><td>—</td><td>0.2–1.2</td><td>—</td><td>140 KB, plus about 0.9 MB of cached field</td><td>437 rows after two merges, 81 MB of pictures, 317 MB of fields</td></tr>
-<tr><td>wallpaper judge</td><td>the candidate</td><td>384x224 stretch</td><td>—</td><td>13 · 7</td><td>—</td><td>every candidate</td></tr>
-</table>
+<details class="fold">
+<summary>All options for <code>fractal-wallpapers curate hunt run</code></summary>
+<pre><code>usage: fractal-wallpapers curate hunt run [-h] --name NAME [--budget SECONDS]
+                                          [--unconditional COUNT] [--conditioned COUNT]
+                                          [--cell CELL] [--work-order PARTITION=WEIGHT]
+                                          [--per-location COUNT] [--mode MODE [MODE ...]]
+                                          [--texture-draw LOW HIGH] [--no-texture-draw]
+                                          [--seed SEED] [--places FILE] [--rebuild-frames]
+                                          [--device DEVICE]
+
+options:
+  -h, --help            show this help message and exit
+  --name NAME           what to call this hunt. …
+  --budget SECONDS      how long the hunt may spend RENDERING (default 1200). …
+  --unconditional COUNT
+                        how many breadth candidates to plan. …
+  --conditioned COUNT   how many candidates to plan against --cell. …
+  --cell CELL           the codebook cell the conditioned leg aims at, e.g. …
+  --work-order PARTITION=WEIGHT
+                        how the conditioned leg spreads over the partitions, repeatable — a
+                        solve's shortage list says where the pool's carriers of that colour
+                        already stand, and this is that list. …
+  --per-location COUNT  how many candidates one location is given (default 3). …
+  --mode MODE [MODE ...]
+                        draw every candidate in the named mode(s), instead of sampling `--per-
+                        location` of them out of `mode_policy.mined()`. …
+  --texture-draw LOW HIGH
+                        give every screened-composite candidate ONE texture weight drawn uniformly
+                        over [LOW, HIGH], in place of the catalog's settled 0.85 — how loud the
+                        texture is over the smooth base, never what it is. …
+  --no-texture-draw     draw no texture weight: every screened composite renders at the catalog's
+                        settled 0.85 and carries no `texture_weight`, which is what every leg did
+                        before 2026-09-18
+  --seed SEED           the seed every draw here is taken under (default 20260826)
+  --places FILE         a places manifest — the same JSONL `curate depth run --floor-places`
+                        takes, one `{schema, key}` a line — restricting BOTH legs to the locations
+                        it names. …
+  --rebuild-frames      derive the frame index off the scan record again before planning
+  --device DEVICE       cuda, cpu, or auto (default)
+
+… marks help trimmed to its contract. FRACTAL_WALLPAPERS_HELP=full prints the reasoning whole.</code></pre>
+</details>
+<details class="fold">
+<summary>All options for <code>fractal-wallpapers curate hunt merge</code></summary>
+<pre><code>usage: fractal-wallpapers curate hunt merge [-h] --name NAME
+
+options:
+  -h, --help   show this help message and exit
+  --name NAME  what to call this hunt. …
+
+… marks help trimmed to its contract. FRACTAL_WALLPAPERS_HELP=full prints the reasoning whole.</code></pre>
+</details>
+<details class="fold">
+<summary>All options for <code>fractal-wallpapers curate candidate-ledger browse</code></summary>
+<pre><code>usage: fractal-wallpapers curate candidate-ledger browse [-h] [--best BEST] [--sample SAMPLE]
+                                                         [--seed SEED] [--out DIR] [--bundle DIR]
+
+Reads the ledger and its score sidecar and renders nothing: the pool's size by mode and by fractal
+family, then the best N candidates by the render judge's P(&gt;=4) and a seeded random N, each
+picture beside its scores (the gallery judge's p_fine where `gallery-grade score-pool` has read
+it). Writes summary.json and index.html to artifacts/curation/candidate_page/ unless --out says
+otherwise.
+
+options:
+  -h, --help       show this help message and exit
+  --best BEST      best candidates shown (24)
+  --sample SAMPLE  random candidates shown (24)
+  --seed SEED      the random draw's seed (0)
+  --out DIR        write the page and summary here
+  --bundle DIR     also write the page into DIR as a portable folder: index.html, page.json, and
+                   only the pictures it shows, re-encoded small; nothing outside DIR is referred
+                   to</code></pre>
+</details>
 <div class="hosted">
 <iframe src="walkthrough/candidates/index.html" title="Candidate pool" loading="lazy"></iframe>
 <p class="hosted-open"><a href="walkthrough/candidates/index.html">open this page on its own</a></p>
@@ -102,50 +628,574 @@ fractal-wallpapers curate candidate-ledger browse</code></pre>
 </ul>
 </div>
 <h2 id="grade-and-solve-a-gallery">Grade and solve a gallery</h2>
-<p>The gallery judge grades the candidates, and the solve picks a set that is good and varied. After ten minutes of mining only a handful of pictures clear the bars, so the gallery shown here was made with the forced fill, which seats the best of whatever the pool holds.</p>
+<p>The gallery judge grades the candidates, and the solve picks a set that is good and varied. After ten minutes of mining only a couple of pictures meet the gallery's usual standard, so for the gallery shown here I told it to ignore that standard and take the twelve best pictures it had.</p>
 <pre><code>fractal-wallpapers gallery-grade score-pool</code></pre>
+<details class="fold">
+<summary>All options for <code>fractal-wallpapers gallery-grade score-pool</code></summary>
+<pre><code>usage: fractal-wallpapers gallery-grade score-pool [-h] [--band {ap_ge3,auc_ge4}]
+                                                   [--corpus {as_built,corrected,twelve_sheets}]
+                                                   [--recipe {drop_high_asymmetric,inherited}]
+                                                   [--device DEVICE]
+
+Writes the column `curate solve --key cascade` resolves its order from. It opens each candidate's
+stored 640x360 JPEG once and renders nothing. The rows are a cascade's SECOND stage: ranking the
+whole file would rank rows this head never saw the like of, and the solve applies it above the bar
+and only there.
+
+options:
+  -h, --help            show this help message and exit
+  --band {ap_ge3,auc_ge4}
+                        which stopping rule this run is fitted under (default auc_ge4)
+  --corpus {as_built,corrected,twelve_sheets}
+                        which rows this is about (default twelve_sheets, the ADOPTED corpus — a
+                        refit on a grown store names its own, so that a forgotten flag cannot
+                        overwrite the join and split a shipped run refers to)
+  --recipe {drop_high_asymmetric,inherited}
+                        which knobs this run is fitted under (default drop_high_asymmetric, the
+                        ADOPTED recipe): drop_high_asymmetric — dropout 0.4 and stochastic depth
+                        0.2, every cutpoint's negative term at 2x, a fixed 30-epoch horizon with
+                        the AUC(&gt;=4) checkpoint, and a learned per-batch offset dropped at
+                        inference. …
+  --device DEVICE       cuda, cpu, or auto (default)
+
+… marks help trimmed to its contract. FRACTAL_WALLPAPERS_HELP=full prints the reasoning whole.</code></pre>
+</details>
 <pre><code>fractal-wallpapers curate solve run --name first --n 12 --force-fill
 fractal-wallpapers curate solve run --name first_at_bars --n 12</code></pre>
+<details class="fold">
+<summary>All options for <code>fractal-wallpapers curate solve run</code></summary>
+<pre><code>usage: fractal-wallpapers curate solve run [-h] [--name NAME] [--n N] [--locations COUNT]
+                                           [--rows-per-seat ROWS] [--draw-seed SEED]
+                                           [--allow-unranked] [--target CELL=FRACTION]
+                                           [--mode-floor SEATS] [--flat-floor]
+                                           [--group-cap {identity,proportional}] [--themed CELL]
+                                           [--themed-cap SEATS] [--themed-radius COSINE]
+                                           [--collection NAME] [--neutral-radius COSINE]
+                                           [--no-preselection] [--no-diversity] [--fine-bar SCORE]
+                                           [--force-fill] [--forced PATH] [--no-pins]
+                                           [--fold {pool,delete}] [--spiral-cap SHARE]
+                                           [--cell-floor {on,off}] [--mode-ceiling MODE=SHARE]
+                                           [--key {cascade,p_ge4}] [--explain-keys PATH]
+                                           [--no-swap] [--swap-seconds SECONDS]
+                                           [--augment {on,off}] [--augment-depth {2,3}]
+                                           [--augment-seconds SECONDS] [--explain-seats-of NAME]
+                                           [--no-render] [--release-regime WxHssN]
+                                           [--workers WORKERS] [--no-sheet] [--sheet-out PATH]
+
+The solve itself, under whatever this invocation asks for. `run` rewrites `--name` every time,
+which is a decision rather than a handle — a solve worth pointing at later is a `record`.
+
+options:
+  -h, --help            show this help message and exit
+
+what to call it:
+  `run` rewrites --name every time; `record` stamps --solve-name and never writes over it
+
+  --name NAME           what to call this pass's output directory (default `n&lt;N&gt;`). …
+
+how big, and how much of the pool it reaches:
+  --n N                 how many wallpapers to seat (default 20, the size a leg is read at). …
+  --locations COUNT     let the pass reach only this many strongest CLUSTERS — a kept place plus
+                        every place the neutral pre-selection folded into it — ranked by their
+                        best candidate on the fine head's p_fine where it has read the row and raw
+                        P(&gt;=4) where it has not. …
+  --rows-per-seat ROWS  how many view rows each stratum keeps per seat it could contribute
+                        (default 2). …
+  --draw-seed SEED      the seed the view's band-blind stride offsets are drawn under (default 0).
+                        …
+  --allow-unranked      choose even though the key cannot read every clearing candidate. …
+  --collection NAME     seat ONE COLLECTION — a hue family or a production mode — at the size
+                        `curation.targets.TARGETS` sets for it. …
+  --fine-bar SCORE      narrow the pool to the rows the gallery-grade head reads at p_fine(&gt;=4) &gt;=
+                        SCORE, BEFORE anything else runs — the per-mode bars, the neutral pre-
+                        selection and the view are all taken over what is left, so a barred pass
+                        is a whole pass and not a filtered reading of an unbarred one. …
+  --force-fill          seat as many as an EARLY pool allows: the fine bar and the per-mode bars
+                        stop refusing and the best rows available seat, while every distinctness
+                        rule still holds. …
+  --forced PATH         a MANIFEST of candidate keys, one per line, this pass lifts to the top of
+                        the fine column BEFORE the bar, the neutral pre-selection and the cascade
+                        — so a forced row clears `--fine-bar`, is its cluster's survivor and is
+                        offered ahead of every unforced row. …
+  --no-pins             seat NONE of the pinned list, for a comparison. …
+  --fold {pool,delete}  what the neutral pre-selection does with a place it folds into another. …
+
+the demands:
+  every one of these is counted with its shortfall recorded: unfilled beats padded, and no
+  demand is ever met by a fallback leg
+
+  --target CELL=FRACTION
+                        demand that at least this share of the REALIZED seats be dominant in this
+                        colour cell. …
+  --mode-floor SEATS    an ARTIFICIAL flat mode floor, one number for every accepted mode. …
+  --flat-floor          solve under the FLAT mode floor instead of the per-mode rule — floor(n /
+                        100) seats for every accepted mode, which is what every gallery before
+                        2026-08-31 was seated under. …
+  --group-cap {identity,proportional}
+                        which palette-group cap to run under. …
+  --spiral-cap SHARE    cap the share of seats filled from a location the spiral probe calls a
+                        spiral: at most ceil(SHARE * seats filled), the same spelling a colour
+                        target is stated in. …
+  --cell-floor {on,off}
+                        the COLOUR FLOOR: at least floor(kf * t * seats filled) seats dominant in
+                        each of the 48 chromatic cells — kf = 1 against the ceiling's k = 3, one
+                        fair share against three, so 20 of a thousand seats where the allowance is
+                        63. …
+  --mode-ceiling MODE=SHARE
+                        cap the share of seats one MODE may take: at most ceil(SHARE * seats
+                        filled), the spiral cap's own arithmetic and the same spelling a colour
+                        target is stated in. …
+
+a themed gallery:
+  one dominant colour cell at the relaxed bar; the other two are ignored without --themed
+
+  --themed CELL         choose a THEMED gallery: one dominant colour cell, over a pool of the rows
+                        that cell's dominance block claims, at the RELAXED bar — P(&gt;=3) &gt;= 0.5 for
+                        every accepted mode rather than the per-mode rule, because a single-cell
+                        pool is q3-grade material and at the per-mode bars there is no pool. …
+  --themed-cap SEATS    the palette-group cap a THEMED pass runs under, overriding the computed
+                        one. …
+  --themed-radius COSINE
+                        the radius the themed diversity rule refuses inside (default 0.07). …
+
+the distinctness rules:
+  --neutral-radius COSINE
+                        the neutral pre-selection radius applied at pool construction (default
+                        0.02). …
+  --no-preselection     choose from the whole clearing pool, with no neutral pre-selection
+  --no-diversity        choose without the diversity rule, which is the only rule that opens a
+                        picture. …
+
+the objective and the search:
+  --key {cascade,p_ge4}
+                        the sort key the pool is walked in AND the quantity the objective is
+                        stated in. …
+  --explain-keys PATH   a MANIFEST of candidate keys, one per line, whose fate this pass records
+                        ONE AT A TIME into `rejection.explained` — every key named comes back
+                        `seated`, `not in the pool`, or the first rule that refused it. …
+  --no-swap             take the greedy seed and stop. …
+  --swap-seconds SECONDS
+                        a wall budget for the SWAP LOOP alone. …
+  --augment {on,off}    the augmenting-chain stage: eject one seat, insert TWO in its room. …
+  --augment-depth {2,3}
+                        how long a chain may be: 2 is one ejection and two inserts, 3 is one more
+                        eject/insert pair. …
+  --augment-seconds SECONDS
+                        a wall budget for the AUGMENT STAGE alone. …
+  --explain-seats-of NAME
+                        an earlier solve record whose seats this pass explains ONE AT A TIME, into
+                        `rejection.explained`: every key it seated comes back either `seated` or
+                        with the rule that refused it here. …
+
+the release leg and the sheet:
+  --no-render           take every decision and make no release picture. …
+  --release-regime WxHssN
+                        the geometry the release leg renders at (default 1280x720ss2, which is
+                        what every leg that ships a wallpaper ships; 2560x1440ss4 is what the
+                        first three gallery passes shipped at)
+  --workers WORKERS     worker processes the release leg renders over (default 3, which is this
+                        machine's render pool; each spawns below-normal by construction)
+  --no-sheet            take every decision and build no contact sheet
+  --sheet-out PATH      write the contact sheet there instead of beside the record, which is what
+                        a before/after over several variants wants — one directory of sheets to
+                        look at
+
+… marks help trimmed to its contract. FRACTAL_WALLPAPERS_HELP=full prints the reasoning whole.</code></pre>
+</details>
 <pre><code>fractal-wallpapers curate solve record --n 12 --force-fill
 fractal-wallpapers curate solve browse --viewer</code></pre>
-<table>
-<tr><th>stage</th><th>rendered at</th><th>the network reads</th><th>engine s / picture</th><th>judge ms / picture, CPU · CUDA</th><th>bytes / picture</th><th>in the sample run</th></tr>
-<tr><td>gallery judge</td><td>the candidate</td><td>384x224 stretch, 3 seeds</td><td>—</td><td>25 · 8</td><td>—</td><td>the above-bar rows</td></tr>
-<tr><td>solve seat</td><td>1280x720, ss2</td><td>—</td><td>0.7–4.1</td><td>—</td><td>1.8 MB PNG</td><td>12 a solve, 34 MB for three solves and two records</td></tr>
-</table>
+<details class="fold">
+<summary>All options for <code>fractal-wallpapers curate solve record</code></summary>
+<pre><code>usage: fractal-wallpapers curate solve record [-h] [--solve-name SOLVE_NAME] [--n N] [--no-keep]
+                                              [--fine-bar SCORE] [--force-fill] [--forced PATH]
+                                              [--no-pins] [--fold {pool,delete}]
+                                              [--spiral-cap SHARE] [--cell-floor {on,off}]
+                                              [--mode-ceiling MODE=SHARE] [--key {cascade,p_ge4}]
+                                              [--explain-keys PATH] [--no-swap]
+                                              [--swap-seconds SECONDS] [--augment {on,off}]
+                                              [--augment-depth {2,3}] [--augment-seconds SECONDS]
+                                              [--themed CELL] [--themed-cap SEATS]
+                                              [--themed-radius COSINE] [--collection NAME]
+
+A RECORD is `run` with nothing changed, which is the whole claim it makes: it writes the seats
+under a UTC stamp that is never written over, so a person can point at a picture and be
+understood. It writes `gallery.jsonl` (one row per seat, carrying the ledger recipe key that IS
+the ID, a short alias, the mode, the partition, the dominant colour cell and hue family,
+`centered`, the rank and P(&gt;=4), the seat order and the stored picture), `manifest.json` beside
+it, and a self-contained page. It reads the flags below and no others — every one `run` carries
+and this does not is a flag a record could not pass through, so naming it here is refused rather
+than dropped on the floor.
+
+options:
+  -h, --help            show this help message and exit
+
+what to call it, and how big:
+  --solve-name SOLVE_NAME
+                        what to call the solve's own output directory under
+                        artifacts/curation/solve (default `tentative_n&lt;N&gt;_&lt;stamp&gt;`, the record's
+                        own stamp, so successive records at the same N coexist). …
+  --n N                 how many wallpapers to seat (default 1000, the size a record is kept at,
+                        where a `run` reads a leg at 20)
+  --no-keep             record without putting the stamp on the keep list (default: kept, so a
+                        merge's prune spares its seats' pictures until `curate solve release
+                        &lt;stamp&gt;`). …
+
+the pool it solves over:
+  --fine-bar SCORE      narrow the pool to the rows the gallery-grade head reads at p_fine(&gt;=4) &gt;=
+                        SCORE, BEFORE anything else runs — the per-mode bars, the neutral pre-
+                        selection and the view are all taken over what is left, so a barred pass
+                        is a whole pass and not a filtered reading of an unbarred one. …
+  --force-fill          seat as many as an EARLY pool allows: the fine bar and the per-mode bars
+                        stop refusing and the best rows available seat, while every distinctness
+                        rule still holds. …
+  --forced PATH         a MANIFEST of candidate keys, one per line, this pass lifts to the top of
+                        the fine column BEFORE the bar, the neutral pre-selection and the cascade
+                        — so a forced row clears `--fine-bar`, is its cluster's survivor and is
+                        offered ahead of every unforced row. …
+  --no-pins             seat NONE of the pinned list, for a comparison. …
+  --fold {pool,delete}  what the neutral pre-selection does with a place it folds into another. …
+
+the demands:
+  --spiral-cap SHARE    cap the share of seats filled from a location the spiral probe calls a
+                        spiral: at most ceil(SHARE * seats filled), the same spelling a colour
+                        target is stated in. …
+  --cell-floor {on,off}
+                        the COLOUR FLOOR: at least floor(kf * t * seats filled) seats dominant in
+                        each of the 48 chromatic cells — kf = 1 against the ceiling's k = 3, one
+                        fair share against three, so 20 of a thousand seats where the allowance is
+                        63. …
+  --mode-ceiling MODE=SHARE
+                        cap the share of seats one MODE may take: at most ceil(SHARE * seats
+                        filled), the spiral cap's own arithmetic and the same spelling a colour
+                        target is stated in. …
+
+the objective and the search:
+  --key {cascade,p_ge4}
+                        the sort key the pool is walked in AND the quantity the objective is
+                        stated in. …
+  --explain-keys PATH   a MANIFEST of candidate keys, one per line, whose fate this pass records
+                        ONE AT A TIME into `rejection.explained` — every key named comes back
+                        `seated`, `not in the pool`, or the first rule that refused it. …
+  --no-swap             take the greedy seed and stop. …
+  --swap-seconds SECONDS
+                        a wall budget for the SWAP LOOP alone. …
+  --augment {on,off}    the augmenting-chain stage: eject one seat, insert TWO in its room. …
+  --augment-depth {2,3}
+                        how long a chain may be: 2 is one ejection and two inserts, 3 is one more
+                        eject/insert pair. …
+  --augment-seconds SECONDS
+                        a wall budget for the AUGMENT STAGE alone. …
+
+which gallery:
+  a themed gallery, or a collection; the general gallery without either
+
+  --themed CELL         choose a THEMED gallery: one dominant colour cell, over a pool of the rows
+                        that cell's dominance block claims, at the RELAXED bar — P(&gt;=3) &gt;= 0.5 for
+                        every accepted mode rather than the per-mode rule, because a single-cell
+                        pool is q3-grade material and at the per-mode bars there is no pool. …
+  --themed-cap SEATS    the palette-group cap a THEMED pass runs under, overriding the computed
+                        one. …
+  --themed-radius COSINE
+                        the radius the themed diversity rule refuses inside (default 0.07). …
+  --collection NAME     seat ONE COLLECTION — a hue family or a production mode — at the size
+                        `curation.targets.TARGETS` sets for it. …
+
+… marks help trimmed to its contract. FRACTAL_WALLPAPERS_HELP=full prints the reasoning whole.</code></pre>
+</details>
+<details class="fold">
+<summary>All options for <code>fractal-wallpapers curate solve browse</code></summary>
+<pre><code>usage: fractal-wallpapers curate solve browse [-h] [--stamp STAMP] [--spacing] [--out PATH]
+                                              [--bundle DIR] [--viewer]
+                                              [STAMP ...]
+
+positional arguments:
+  STAMP          the stamp, which `--stamp` also names. …
+
+options:
+  -h, --help     show this help message and exit
+  --stamp STAMP  which record to write again (default the newest)
+  --spacing      print what the PRESENTATION ORDER bought this record, and write no page. …
+  --out PATH     write the page HERE instead of beside the record's rows, with every thumbnail
+                 resolved relative to where it lands. …
+  --bundle DIR   also write the page into DIR as a portable folder: index.html, page.json, and
+                 only the pictures it shows, re-encoded small; nothing outside DIR is referred to
+  --viewer       write the page to the VIEWER directory — `curation.tentative.viewer_dir()`, one
+                 place with no stamp in its name — instead of beside the record's rows. …
+
+… marks help trimmed to its contract. FRACTAL_WALLPAPERS_HELP=full prints the reasoning whole.</code></pre>
+</details>
 <div class="hosted">
-<iframe src="walkthrough/gallery/index.html" title="Gallery 20261005T063202Z" loading="lazy"></iframe>
+<iframe src="walkthrough/gallery/index.html" title="Gallery 20261005T144742Z" loading="lazy"></iframe>
 <p class="hosted-open"><a href="walkthrough/gallery/index.html">open this page on its own</a></p>
 <ul class="hosted-files">
-<li><a href="walkthrough/gallery/page.json">page.json</a> · <code>fractal-wallpapers walkthrough --stamp 20261005T063202Z</code> · <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md#gallery-pagejson">FORMATS.md</a></li>
+<li><a href="walkthrough/gallery/page.json">page.json</a> · <code>fractal-wallpapers walkthrough --stamp 20261005T144742Z</code> · <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md#gallery-pagejson">FORMATS.md</a></li>
 <li><a href="walkthrough/keep.jsonl">keep.jsonl</a> · <code>fractal-wallpapers curate solve record</code> · whole · <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md#keepjsonl">FORMATS.md</a></li>
 </ul>
 </div>
 <h2 id="continue-from-your-own-pool">Continue from your own pool</h2>
-<p>Every later run adds to the same pool. A merge prunes weaker pictures, and the galleries you recorded keep theirs.</p>
+<p>Every later run adds to the same collection of candidates. Merging new ones in also throws out the weakest, but never a picture in a gallery you have saved.</p>
 <pre><code>fractal-wallpapers curate mine run --name m1 --budget 300
 fractal-wallpapers curate mine merge --name m1
 fractal-wallpapers gallery-grade score-pool
 fractal-wallpapers curate solve run --name second --n 12</code></pre>
+<details class="fold">
+<summary>All options for <code>fractal-wallpapers curate mine run</code></summary>
+<pre><code>usage: fractal-wallpapers curate mine run [-h] --name NAME [--budget SECONDS] [--rate SECONDS]
+                                          [--k COUNT] [--per-location COUNT] [--seed SEED]
+                                          [--device DEVICE]
+
+options:
+  -h, --help            show this help message and exit
+  --name NAME           what to call this mine. …
+  --budget SECONDS      how long the mine may spend RENDERING (default 7200). …
+  --rate SECONDS        seconds a candidate, measured on THIS mine's target population, which is
+                        what sizes the arms. …
+  --k COUNT             how many fresh palettes the DEEPEN arm offers one location (default 12). …
+  --per-location COUNT  how many candidates a breadth arm gives one location (default 3), the same
+                        on both so they differ only in the draw
+  --seed SEED           the seed every draw here is taken under (default 20260826)
+  --device DEVICE       cuda, cpu, or auto (default)
+
+… marks help trimmed to its contract. FRACTAL_WALLPAPERS_HELP=full prints the reasoning whole.</code></pre>
+</details>
+<details class="fold">
+<summary>All options for <code>fractal-wallpapers curate mine merge</code></summary>
+<pre><code>usage: fractal-wallpapers curate mine merge [-h] --name NAME
+
+options:
+  -h, --help   show this help message and exit
+  --name NAME  what to call this mine. …
+
+… marks help trimmed to its contract. FRACTAL_WALLPAPERS_HELP=full prints the reasoning whole.</code></pre>
+</details>
+<details class="fold">
+<summary>All options for <code>fractal-wallpapers gallery-grade score-pool</code></summary>
+<pre><code>usage: fractal-wallpapers gallery-grade score-pool [-h] [--band {ap_ge3,auc_ge4}]
+                                                   [--corpus {as_built,corrected,twelve_sheets}]
+                                                   [--recipe {drop_high_asymmetric,inherited}]
+                                                   [--device DEVICE]
+
+Writes the column `curate solve --key cascade` resolves its order from. It opens each candidate's
+stored 640x360 JPEG once and renders nothing. The rows are a cascade's SECOND stage: ranking the
+whole file would rank rows this head never saw the like of, and the solve applies it above the bar
+and only there.
+
+options:
+  -h, --help            show this help message and exit
+  --band {ap_ge3,auc_ge4}
+                        which stopping rule this run is fitted under (default auc_ge4)
+  --corpus {as_built,corrected,twelve_sheets}
+                        which rows this is about (default twelve_sheets, the ADOPTED corpus — a
+                        refit on a grown store names its own, so that a forgotten flag cannot
+                        overwrite the join and split a shipped run refers to)
+  --recipe {drop_high_asymmetric,inherited}
+                        which knobs this run is fitted under (default drop_high_asymmetric, the
+                        ADOPTED recipe): drop_high_asymmetric — dropout 0.4 and stochastic depth
+                        0.2, every cutpoint's negative term at 2x, a fixed 30-epoch horizon with
+                        the AUC(&gt;=4) checkpoint, and a learned per-batch offset dropped at
+                        inference. …
+  --device DEVICE       cuda, cpu, or auto (default)
+
+… marks help trimmed to its contract. FRACTAL_WALLPAPERS_HELP=full prints the reasoning whole.</code></pre>
+</details>
+<details class="fold">
+<summary>All options for <code>fractal-wallpapers curate solve run</code></summary>
+<pre><code>usage: fractal-wallpapers curate solve run [-h] [--name NAME] [--n N] [--locations COUNT]
+                                           [--rows-per-seat ROWS] [--draw-seed SEED]
+                                           [--allow-unranked] [--target CELL=FRACTION]
+                                           [--mode-floor SEATS] [--flat-floor]
+                                           [--group-cap {identity,proportional}] [--themed CELL]
+                                           [--themed-cap SEATS] [--themed-radius COSINE]
+                                           [--collection NAME] [--neutral-radius COSINE]
+                                           [--no-preselection] [--no-diversity] [--fine-bar SCORE]
+                                           [--force-fill] [--forced PATH] [--no-pins]
+                                           [--fold {pool,delete}] [--spiral-cap SHARE]
+                                           [--cell-floor {on,off}] [--mode-ceiling MODE=SHARE]
+                                           [--key {cascade,p_ge4}] [--explain-keys PATH]
+                                           [--no-swap] [--swap-seconds SECONDS]
+                                           [--augment {on,off}] [--augment-depth {2,3}]
+                                           [--augment-seconds SECONDS] [--explain-seats-of NAME]
+                                           [--no-render] [--release-regime WxHssN]
+                                           [--workers WORKERS] [--no-sheet] [--sheet-out PATH]
+
+The solve itself, under whatever this invocation asks for. `run` rewrites `--name` every time,
+which is a decision rather than a handle — a solve worth pointing at later is a `record`.
+
+options:
+  -h, --help            show this help message and exit
+
+what to call it:
+  `run` rewrites --name every time; `record` stamps --solve-name and never writes over it
+
+  --name NAME           what to call this pass's output directory (default `n&lt;N&gt;`). …
+
+how big, and how much of the pool it reaches:
+  --n N                 how many wallpapers to seat (default 20, the size a leg is read at). …
+  --locations COUNT     let the pass reach only this many strongest CLUSTERS — a kept place plus
+                        every place the neutral pre-selection folded into it — ranked by their
+                        best candidate on the fine head's p_fine where it has read the row and raw
+                        P(&gt;=4) where it has not. …
+  --rows-per-seat ROWS  how many view rows each stratum keeps per seat it could contribute
+                        (default 2). …
+  --draw-seed SEED      the seed the view's band-blind stride offsets are drawn under (default 0).
+                        …
+  --allow-unranked      choose even though the key cannot read every clearing candidate. …
+  --collection NAME     seat ONE COLLECTION — a hue family or a production mode — at the size
+                        `curation.targets.TARGETS` sets for it. …
+  --fine-bar SCORE      narrow the pool to the rows the gallery-grade head reads at p_fine(&gt;=4) &gt;=
+                        SCORE, BEFORE anything else runs — the per-mode bars, the neutral pre-
+                        selection and the view are all taken over what is left, so a barred pass
+                        is a whole pass and not a filtered reading of an unbarred one. …
+  --force-fill          seat as many as an EARLY pool allows: the fine bar and the per-mode bars
+                        stop refusing and the best rows available seat, while every distinctness
+                        rule still holds. …
+  --forced PATH         a MANIFEST of candidate keys, one per line, this pass lifts to the top of
+                        the fine column BEFORE the bar, the neutral pre-selection and the cascade
+                        — so a forced row clears `--fine-bar`, is its cluster's survivor and is
+                        offered ahead of every unforced row. …
+  --no-pins             seat NONE of the pinned list, for a comparison. …
+  --fold {pool,delete}  what the neutral pre-selection does with a place it folds into another. …
+
+the demands:
+  every one of these is counted with its shortfall recorded: unfilled beats padded, and no
+  demand is ever met by a fallback leg
+
+  --target CELL=FRACTION
+                        demand that at least this share of the REALIZED seats be dominant in this
+                        colour cell. …
+  --mode-floor SEATS    an ARTIFICIAL flat mode floor, one number for every accepted mode. …
+  --flat-floor          solve under the FLAT mode floor instead of the per-mode rule — floor(n /
+                        100) seats for every accepted mode, which is what every gallery before
+                        2026-08-31 was seated under. …
+  --group-cap {identity,proportional}
+                        which palette-group cap to run under. …
+  --spiral-cap SHARE    cap the share of seats filled from a location the spiral probe calls a
+                        spiral: at most ceil(SHARE * seats filled), the same spelling a colour
+                        target is stated in. …
+  --cell-floor {on,off}
+                        the COLOUR FLOOR: at least floor(kf * t * seats filled) seats dominant in
+                        each of the 48 chromatic cells — kf = 1 against the ceiling's k = 3, one
+                        fair share against three, so 20 of a thousand seats where the allowance is
+                        63. …
+  --mode-ceiling MODE=SHARE
+                        cap the share of seats one MODE may take: at most ceil(SHARE * seats
+                        filled), the spiral cap's own arithmetic and the same spelling a colour
+                        target is stated in. …
+
+a themed gallery:
+  one dominant colour cell at the relaxed bar; the other two are ignored without --themed
+
+  --themed CELL         choose a THEMED gallery: one dominant colour cell, over a pool of the rows
+                        that cell's dominance block claims, at the RELAXED bar — P(&gt;=3) &gt;= 0.5 for
+                        every accepted mode rather than the per-mode rule, because a single-cell
+                        pool is q3-grade material and at the per-mode bars there is no pool. …
+  --themed-cap SEATS    the palette-group cap a THEMED pass runs under, overriding the computed
+                        one. …
+  --themed-radius COSINE
+                        the radius the themed diversity rule refuses inside (default 0.07). …
+
+the distinctness rules:
+  --neutral-radius COSINE
+                        the neutral pre-selection radius applied at pool construction (default
+                        0.02). …
+  --no-preselection     choose from the whole clearing pool, with no neutral pre-selection
+  --no-diversity        choose without the diversity rule, which is the only rule that opens a
+                        picture. …
+
+the objective and the search:
+  --key {cascade,p_ge4}
+                        the sort key the pool is walked in AND the quantity the objective is
+                        stated in. …
+  --explain-keys PATH   a MANIFEST of candidate keys, one per line, whose fate this pass records
+                        ONE AT A TIME into `rejection.explained` — every key named comes back
+                        `seated`, `not in the pool`, or the first rule that refused it. …
+  --no-swap             take the greedy seed and stop. …
+  --swap-seconds SECONDS
+                        a wall budget for the SWAP LOOP alone. …
+  --augment {on,off}    the augmenting-chain stage: eject one seat, insert TWO in its room. …
+  --augment-depth {2,3}
+                        how long a chain may be: 2 is one ejection and two inserts, 3 is one more
+                        eject/insert pair. …
+  --augment-seconds SECONDS
+                        a wall budget for the AUGMENT STAGE alone. …
+  --explain-seats-of NAME
+                        an earlier solve record whose seats this pass explains ONE AT A TIME, into
+                        `rejection.explained`: every key it seated comes back either `seated` or
+                        with the rule that refused it here. …
+
+the release leg and the sheet:
+  --no-render           take every decision and make no release picture. …
+  --release-regime WxHssN
+                        the geometry the release leg renders at (default 1280x720ss2, which is
+                        what every leg that ships a wallpaper ships; 2560x1440ss4 is what the
+                        first three gallery passes shipped at)
+  --workers WORKERS     worker processes the release leg renders over (default 3, which is this
+                        machine's render pool; each spawns below-normal by construction)
+  --no-sheet            take every decision and build no contact sheet
+  --sheet-out PATH      write the contact sheet there instead of beside the record, which is what
+                        a before/after over several variants wants — one directory of sheets to
+                        look at
+
+… marks help trimmed to its contract. FRACTAL_WALLPAPERS_HELP=full prints the reasoning whole.</code></pre>
+</details>
 <h2 id="follow-one-picture">Follow one picture</h2>
 <p>Here is one gallery picture as it appears in each file.</p>
 <pre><code>fractal-wallpapers curate solve trace &lt;stamp&gt;
 fractal-wallpapers walkthrough --stamp &lt;stamp&gt;</code></pre>
+<details class="fold">
+<summary>All options for <code>fractal-wallpapers curate solve trace</code></summary>
+<pre><code>usage: fractal-wallpapers curate solve trace [-h] [--out DIR] [--bundle DIR] [stamp]
+
+For each seat: its gallery.jsonl row, its candidate-ledger row, scores and flatness, its
+pool_scores row, its place's supply_scores and locations.jsonl rows, and the walk.jsonl rows from
+the place back to its lineage's root. Writes sliced copies of each file (only the rows on those
+chains, byte for byte, plus one walk row of every other kind) under files/, counts.json with each
+full file's row count, and a page (default artifacts/curation/trace/&lt;stamp&gt;/). Also follows three
+of each reject: the lowest-scored places, candidates under the pool gate, and candidates that
+cleared it and missed the fine bar. A chain that cannot be followed is listed with the file it
+stopped at.
+
+positional arguments:
+  stamp         the record (default the newest)
+
+options:
+  -h, --help    show this help message and exit
+  --out DIR     write the trace here
+  --bundle DIR  also write the page into DIR as a portable folder: index.html, page.json, and only
+                the pictures it shows, re-encoded small; nothing outside DIR is referred to</code></pre>
+</details>
+<details class="fold">
+<summary>All options for <code>fractal-wallpapers walkthrough</code></summary>
+<pre><code>usage: fractal-wallpapers walkthrough [-h] [--out DIR] [--stamp STAMP] [--run DIR]
+
+The last step of the README's path. Writes, into one folder: judges-check/, walk-stats/,
+candidates/, gallery/ and trace/, each a portable bundle (index.html, page.json and only the
+pictures it shows, re-encoded small); the harvest's summary.json, stats.json and the keep list's
+keep.jsonl; and an index.html linking them. Nothing is rendered or judged again: the first three
+are drawn from the page.json their own commands left, and a page whose command was not run is
+listed with that command. Default artifacts/walkthrough/.
+
+options:
+  -h, --help     show this help message and exit
+  --out DIR      the folder (default artifacts/walkthrough)
+  --stamp STAMP  the record to show and trace (default the newest one made here)
+  --run DIR      the harvest whose stats and summary go in (default artifacts/harvest)</code></pre>
+</details>
 <div class="hosted">
-<iframe src="walkthrough/trace/index.html" title="Trace of 20261005T063202Z" loading="lazy"></iframe>
+<iframe src="walkthrough/trace/index.html" title="Trace of 20261005T144742Z" loading="lazy"></iframe>
 <p class="hosted-open"><a href="walkthrough/trace/index.html">open this page on its own</a></p>
 <ul class="hosted-files">
-<li><a href="walkthrough/trace/page.json">page.json</a> · <code>fractal-wallpapers walkthrough --stamp 20261005T063202Z</code> · <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md#pagejson">FORMATS.md</a></li>
-<li><a href="walkthrough/trace/counts.json">counts.json</a> · <code>fractal-wallpapers walkthrough --stamp 20261005T063202Z</code> · <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md#countsjson">FORMATS.md</a></li>
-<li><a href="walkthrough/trace/files/walk.jsonl">walk.jsonl</a> · <code>fractal-wallpapers walkthrough --stamp 20261005T063202Z</code> · 98 rows here, 8,010 in the full run · <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md#walkjsonl">FORMATS.md</a></li>
-<li><a href="walkthrough/trace/files/supply_scores.jsonl">supply_scores.jsonl</a> · <code>fractal-wallpapers walkthrough --stamp 20261005T063202Z</code> · 20 rows here, 4,022 in the full run · <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md#supply_scoresjsonl">FORMATS.md</a></li>
-<li><a href="walkthrough/trace/files/locations.jsonl">locations.jsonl</a> · <code>fractal-wallpapers walkthrough --stamp 20261005T063202Z</code> · 20 rows here, 4,069 in the full run · <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md#locationsjsonl">FORMATS.md</a></li>
-<li><a href="walkthrough/trace/files/rows.jsonl">rows.jsonl</a> · <code>fractal-wallpapers walkthrough --stamp 20261005T063202Z</code> · 18 rows here, 437 in the full run · <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md#candidate-ledger-rows">FORMATS.md</a></li>
-<li><a href="walkthrough/trace/files/scores.jsonl">scores.jsonl</a> · <code>fractal-wallpapers walkthrough --stamp 20261005T063202Z</code> · 18 rows here, 437 in the full run · <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md#candidate-ledger-scores">FORMATS.md</a></li>
-<li><a href="walkthrough/trace/files/flatness.jsonl">flatness.jsonl</a> · <code>fractal-wallpapers walkthrough --stamp 20261005T063202Z</code> · 18 rows here, 437 in the full run · <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md#candidate-ledger-flatness">FORMATS.md</a></li>
-<li><a href="walkthrough/trace/files/pool_scores.jsonl">pool_scores.jsonl</a> · <code>fractal-wallpapers walkthrough --stamp 20261005T063202Z</code> · 10 rows here, 26 in the full run · <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md#pool_scoresjsonl">FORMATS.md</a></li>
-<li><a href="walkthrough/trace/files/gallery.jsonl">gallery.jsonl</a> · <code>fractal-wallpapers walkthrough --stamp 20261005T063202Z</code> · 12 rows here, 12 in the full run · <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md#galleryjsonl">FORMATS.md</a></li>
-<li><a href="walkthrough/trace/files/manifest.json">manifest.json</a> · <code>fractal-wallpapers walkthrough --stamp 20261005T063202Z</code> · <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md#manifestjson">FORMATS.md</a></li>
+<li><a href="walkthrough/trace/page.json">page.json</a> · <code>fractal-wallpapers walkthrough --stamp 20261005T144742Z</code> · <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md#pagejson">FORMATS.md</a></li>
+<li><a href="walkthrough/trace/counts.json">counts.json</a> · <code>fractal-wallpapers walkthrough --stamp 20261005T144742Z</code> · <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md#countsjson">FORMATS.md</a></li>
+<li><a href="walkthrough/trace/files/walk.jsonl">walk.jsonl</a> · <code>fractal-wallpapers walkthrough --stamp 20261005T144742Z</code> · 95 rows here, 8,010 in the full run · <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md#walkjsonl">FORMATS.md</a></li>
+<li><a href="walkthrough/trace/files/supply_scores.jsonl">supply_scores.jsonl</a> · <code>fractal-wallpapers walkthrough --stamp 20261005T144742Z</code> · 18 rows here, 4,022 in the full run · <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md#supply_scoresjsonl">FORMATS.md</a></li>
+<li><a href="walkthrough/trace/files/locations.jsonl">locations.jsonl</a> · <code>fractal-wallpapers walkthrough --stamp 20261005T144742Z</code> · 18 rows here, 4,022 in the full run · <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md#locationsjsonl">FORMATS.md</a></li>
+<li><a href="walkthrough/trace/files/rows.jsonl">rows.jsonl</a> · <code>fractal-wallpapers walkthrough --stamp 20261005T144742Z</code> · 18 rows here, 437 in the full run · <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md#candidate-ledger-rows">FORMATS.md</a></li>
+<li><a href="walkthrough/trace/files/scores.jsonl">scores.jsonl</a> · <code>fractal-wallpapers walkthrough --stamp 20261005T144742Z</code> · 18 rows here, 437 in the full run · <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md#candidate-ledger-scores">FORMATS.md</a></li>
+<li><a href="walkthrough/trace/files/flatness.jsonl">flatness.jsonl</a> · <code>fractal-wallpapers walkthrough --stamp 20261005T144742Z</code> · 18 rows here, 437 in the full run · <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md#candidate-ledger-flatness">FORMATS.md</a></li>
+<li><a href="walkthrough/trace/files/pool_scores.jsonl">pool_scores.jsonl</a> · <code>fractal-wallpapers walkthrough --stamp 20261005T144742Z</code> · 12 rows here, 26 in the full run · <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md#pool_scoresjsonl">FORMATS.md</a></li>
+<li><a href="walkthrough/trace/files/gallery.jsonl">gallery.jsonl</a> · <code>fractal-wallpapers walkthrough --stamp 20261005T144742Z</code> · 12 rows here, 12 in the full run · <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md#galleryjsonl">FORMATS.md</a></li>
+<li><a href="walkthrough/trace/files/manifest.json">manifest.json</a> · <code>fractal-wallpapers walkthrough --stamp 20261005T144742Z</code> · <a href="https://github.com/techmatt/fractal-wallpapers/blob/main/FORMATS.md#manifestjson">FORMATS.md</a></li>
 </ul>
 </div>
 </section>
