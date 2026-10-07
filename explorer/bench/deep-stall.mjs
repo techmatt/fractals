@@ -101,6 +101,35 @@ async function recolourLands(page, value, within = 15000) {
 let phaseCounter = 0;
 const freshPhase = () => (0.05 + ((phaseCounter++ * 0.137) % 0.9)).toFixed(3);
 
+async function revertedOnce(page) {
+  const w = (await page.evaluate(STATE)).url.match(/[?&]w=([^&]*)/)?.[1];
+  await page.evaluate(wheel(-100));
+  await page.until(
+    `(document.getElementById("deep-progress").textContent || "").startsWith("full resolution")`,
+    { within: 60000, every: 10 },
+  );
+  // A map that is not the one up, so the frame left is put back by a recolour.
+  await page.evaluate(`(() => {
+    const rows = [...document.querySelectorAll("#palette-list button[data-palette]")]
+      .filter((row) => row.getAttribute("aria-selected") !== "true");
+    rows[3].click();
+    return true;
+  })()`);
+  await sleep(400);
+  await page.evaluate(`(() => {
+    document.getElementById("deep-render").click();
+    const b = document.getElementById("shade-phase");
+    b.value = ${JSON.stringify(freshPhase())};
+    b.dispatchEvent(new Event("change"));
+    return true;
+  })()`);
+  await sleep(3000);
+  const now = await page.evaluate(STATE);
+  const back = now.url.match(/[?&]w=([^&]*)/)?.[1] === w;
+  const r = await recolourLands(page, freshPhase());
+  return { ...r, ok: r.ok && back && now.note === "" && now.button !== "Render", now };
+}
+
 const SCENARIOS = {
   // Render (which probes the cap), Cancel once the full stage is running, then tint.
   async probeCancel(page) {
@@ -244,26 +273,13 @@ const SCENARIOS = {
   // recolour of the picture being replaced used to drop it, leaving the tab on the frame it
   // had left, boxed, with *Render draws this frame*. Failed on the code before the fix.
   async revertTint(page) {
-    const w = (await page.evaluate(STATE)).url.match(/[?&]w=([^&]*)/)?.[1];
-    await page.evaluate(wheel(-100));
-    await page.until(
-      `(document.getElementById("deep-progress").textContent || "").startsWith("full resolution")`,
-      { within: 60000, every: 10 },
-    );
-    await page.evaluate(clickPalette(9));
-    await sleep(400);
-    await page.evaluate(`(() => {
-      document.getElementById("deep-render").click();
-      const b = document.getElementById("shade-phase");
-      b.value = ${JSON.stringify(freshPhase())};
-      b.dispatchEvent(new Event("change"));
-      return true;
-    })()`);
-    await sleep(3000);
-    const now = await page.evaluate(STATE);
-    const back = now.url.match(/[?&]w=([^&]*)/)?.[1] === w;
-    const r = await recolourLands(page, freshPhase());
-    return { ...r, ok: r.ok && back && now.note === "" && now.button !== "Render", now };
+    // Twice: the first put-back of a session is not raced the way the later ones are (one
+    // round of three passed on the old code, every later one stuck).
+    for (let round = 0; round < 2; round++) {
+      const r = await revertedOnce(page);
+      if (!r.ok) return r;
+    }
+    return { ok: true };
   },
   async zoomTint(page) {
     for (let i = 0; i < 6; i++) {
