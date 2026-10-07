@@ -2205,6 +2205,18 @@ pass after it, at this frame and at a one-second one. A pass that dies with *the
 render failed* in the console also fails the run, because a scenario can pass around one: the
 recolour lands, on the picture from before.
 
+**And a twelfth, `resized`, for the same symptom by another road** *(explorer_recolor_race_
+ckpt162)*. Matt's report: a Random dives frame drawn to the end under a green bar, and then
+no palette or Phase reached the picture while the strip and the address followed each one.
+A field is keyed on the grid it was drawn at, and the recolour asked only for the current
+grid's two stages; a window dragged, DevTools opened, a browser zoom or a move to a screen
+of another density changes the grid under a picture that stays up, scaled, so the recolour
+found nothing and said so only in the console. `keptStage` now takes the frame's kept field
+at whatever size it was drawn, the canvas's own first. A recolour of a field of another size
+is not `finished` — a download at the canvas's size cannot save it — and is held as a
+quarter picture is. `resized` narrows the window after a finished pass and asks the usual
+question; it failed before the fix and passes after it.
+
 ### The screen is one sample a pixel, and samples are the Download row's *(Matt, deep_tab_activity_and_layout_ckpt141)*
 
 The tab used to end every committed pass at `FINAL_SUPERSAMPLE` — four samples a pixel,
@@ -2445,7 +2457,9 @@ width, the cap and the grid — never on the palette or the seven, because nothi
 colour side can move a sample. **The arithmetic of that:** at a 1136×636 canvas the quarter
 pass is 0.4 MB and the full pass 5.8 MB, so a view is 6.2 MB held. The viewer keeps six
 because its fields are cheap to recompute; here a field is the most expensive thing on the
-page. A recolour walks back from the full pass to the cheapest stage that is here.
+page. A recolour walks back from the full pass to the cheapest stage that is here — at the
+canvas's own size first, and at whatever size the frame was drawn where the canvas has been
+resized since (see *A colour change lands on the picture up*).
 
 **A colour turned during a pass is the colour the pass lands in** *(deep_small_fixes_
 ckpt142)*. A pass captures its frame when it starts, and it used to shade that captured

@@ -1256,17 +1256,28 @@ export function mount(host) {
    * tab no longer owns the canvas, or where a pass's stage has replaced the picture it
    * started from — that stage was shaded in the current colour already.
    */
-  /** The best stage of `of` whose field is kept — the full pass, else the quarter — or
-   *  `undefined` where neither is. */
+  /** The best stage of `of` whose field is kept — the full pass at the canvas's own size,
+   *  else the largest kept at any size — or `undefined` where none is.
+   *
+   *  **Any size, because the canvas is not the size it was** *(explorer_recolor_race_
+   *  ckpt162)*. A field is keyed on the grid it was drawn at, and a resize — a window
+   *  dragged, a scrollbar coming or going — moves the grid under a picture that stays up,
+   *  scaled. Asking only for the current grid's two stages found nothing there, so every
+   *  colour control updated the strip and the address and never the picture, until a new
+   *  pass of the frame. */
   function keptStage(of) {
     const grid = host.grid();
-    const stages = [
-      { width: grid.width, height: grid.height, supersample: 1 },
-      { width: grid.width / PREVIEW_DIVISOR, height: grid.height / PREVIEW_DIVISOR, supersample: 1 },
-    ];
-    return stages.find(
-      (each) => fields.has(deepLink.fieldKey(of, each.width, each.height, each.supersample)),
-    );
+    const full = deepLink.fieldKey(of, grid.width, grid.height, 1);
+    const frame = full.slice(0, full.lastIndexOf("|") + 1);
+    let best;
+    for (const key of fields.keys()) {
+      if (!key.startsWith(frame)) continue;
+      const [width, height, supersample] = key.slice(frame.length).split("x").map(Number);
+      const stage = { width, height, supersample };
+      if (key === full) return stage;
+      if (best === undefined || width * height > best.width * best.height) best = stage;
+    }
+    return best;
   }
 
   async function recolour(of = drawn) {

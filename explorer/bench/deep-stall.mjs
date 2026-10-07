@@ -12,7 +12,7 @@
 // Cancel, undo and zoom around them — and after each asks one question: **does a fresh
 // phase change reach the canvas, with the tab idle, within seconds?** `cancelAfterProbe`,
 // `autoOffGesture` and `tintInPass` are the reproductions; all three failed on the code
-// before the fix.
+// before the fix. `resized` is a fourth, from explorer_recolor_race_ckpt162.
 //
 //   node explorer/bench/deep-stall.mjs [scenario ...]      # all of them by default
 //   PORT=8014 FRAME='?dv=3&...' node explorer/bench/deep-stall.mjs
@@ -221,6 +221,23 @@ const SCENARIOS = {
     await page.evaluate(setBox("shade-phase", freshPhase()));
     await idle(page);
     return recolourLands(page, freshPhase());
+  },
+  // The window changes size under a finished picture *(explorer_recolor_race_ckpt162)*:
+  // the field is keyed on the grid it was drawn at, and the recolour used to ask only for
+  // the new grid's, so every colour control after a resize moved the strip and the address
+  // and never the picture. Matt's report; failed on the code before the fix.
+  async resized(page) {
+    await idle(page);
+    const metrics = (width) =>
+      page.send("Emulation.setDeviceMetricsOverride", { width, height: 1000, deviceScaleFactor: 1, mobile: false });
+    await metrics(1480);
+    await sleep(600); // past the viewer's 200 ms relayout
+    const r = await recolourLands(page, freshPhase(), 8000);
+    await metrics(1600);
+    await sleep(600);
+    await page.evaluate(click("deep-render"));
+    await idle(page);
+    return r;
   },
   async zoomTint(page) {
     for (let i = 0; i < 6; i++) {
