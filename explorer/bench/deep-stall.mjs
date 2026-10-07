@@ -12,7 +12,7 @@
 // Cancel, undo and zoom around them — and after each asks one question: **does a fresh
 // phase change reach the canvas, with the tab idle, within seconds?** `cancelAfterProbe`,
 // `autoOffGesture` and `tintInPass` are the reproductions; all three failed on the code
-// before the fix. `resized` is a fourth, from explorer_recolor_race_ckpt162.
+// before the fix. `resized` and `revertTint` are two more, from explorer_recolor_race_ckpt162.
 //
 //   node explorer/bench/deep-stall.mjs [scenario ...]      # all of them by default
 //   PORT=8014 FRAME='?dv=3&...' node explorer/bench/deep-stall.mjs
@@ -238,6 +238,32 @@ const SCENARIOS = {
     await page.evaluate(click("deep-render"));
     await idle(page);
     return r;
+  },
+  // Cancel onto the frame a gesture left, in a colour turned since, with a Phase change in the
+  // same task *(explorer_recolor_race_ckpt162)*: the put-back is a recolour, and the Phase's
+  // recolour of the picture being replaced used to drop it, leaving the tab on the frame it
+  // had left, boxed, with *Render draws this frame*. Failed on the code before the fix.
+  async revertTint(page) {
+    const w = (await page.evaluate(STATE)).url.match(/[?&]w=([^&]*)/)?.[1];
+    await page.evaluate(wheel(-100));
+    await page.until(
+      `(document.getElementById("deep-progress").textContent || "").startsWith("full resolution")`,
+      { within: 60000, every: 10 },
+    );
+    await page.evaluate(clickPalette(9));
+    await sleep(400);
+    await page.evaluate(`(() => {
+      document.getElementById("deep-render").click();
+      const b = document.getElementById("shade-phase");
+      b.value = ${JSON.stringify(freshPhase())};
+      b.dispatchEvent(new Event("change"));
+      return true;
+    })()`);
+    await sleep(3000);
+    const now = await page.evaluate(STATE);
+    const back = now.url.match(/[?&]w=([^&]*)/)?.[1] === w;
+    const r = await recolourLands(page, freshPhase());
+    return { ...r, ok: r.ok && back && now.note === "" && now.button !== "Render", now };
   },
   async zoomTint(page) {
     for (let i = 0; i < 6; i++) {

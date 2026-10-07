@@ -2217,6 +2217,38 @@ is not `finished` — a download at the canvas's size cannot save it — and is 
 quarter picture is. `resized` narrows the window after a finished pass and asks the usual
 question; it failed before the fix and passes after it.
 
+**The same sweep found four more, each a colour that did not reach the picture, or reached
+it late** *(explorer_recolor_race_ckpt162)*:
+
+- **A frame being put back is what a tint colours until it is up** (`bringing`). Cancel onto a
+  held frame, a step back to one, and a link whose field is kept all bring a frame up by
+  recolouring its field. A Phase set in the same moment recoloured `drawn`, the picture being
+  replaced, and its newer generation dropped the frame being brought: the tab sat on the frame
+  it had left, dimmed under a pending box, with the address on the other and *Render draws
+  this frame* under it. Reproduced with Cancel and a Phase change in one task, at `tangle
+  1e-22`, and held by `deep-stall.mjs`'s `revertTint`.
+- **A Go landing arrives in the colour up now** (`arrive`), not the one up when its frame was
+  taken off the search seconds before; and where the reader turned a colour in between, New
+  coloring on arrival leaves it alone. A colour turned while Go is still searching is a colour
+  of the frame being left, and the landing takes New coloring as the box says.
+- **One recolour at a time, and the latest colour after it.** Each recolour stopped the one
+  before, and the shade worker finishes a stopped job before it takes the next, so a slider
+  under a hand — an `input` a frame against a shade of about 90 ms — had every shade stopped
+  before it landed. Measured at 1600×992 on `deep-final-colorings`' frame, a 2 s Phase drag
+  landed **0** pictures (the shallow view, the same drag: 50); now 10 to 12, about one each
+  180 ms, and the last within one shade of the release. Lambda and Period the same. It is the
+  shallow view's `live`, the same shape.
+- **New coloring**: one rule asked at a time, a press made meanwhile drawn once it has
+  answered, and an answer dropped where the reader turned any colour since, not only the
+  palette. Five presses of `n` 80 ms apart drew nothing until **1.1 to 2.1 s**, the last
+  press's rule queued behind four nobody wanted; now the first lands at about 0.5 s and the
+  last by 0.9 to 1.1 s. A Phase set while the rule ran used to be overwritten when it landed.
+
+And two smaller ones: a slider in Deep recoloured only on release where the shallow view
+underneath was a direct trap (its `input` asked the viewer's plan, not the tab's), and Random
+palette in Deep could draw the palette already up, because it excluded the viewer's. *As
+shown* no longer saves a picture of the canvas at a size it has since left.
+
 ### The screen is one sample a pixel, and samples are the Download row's *(Matt, deep_tab_activity_and_layout_ckpt141)*
 
 The tab used to end every committed pass at `FINAL_SUPERSAMPLE` — four samples a pixel,
@@ -3383,7 +3415,9 @@ bench/deep-stall.mjs  a colour change reaches the canvas through every pass, can
                    undo sequence that once lost one — one of two bench files that assert
 bench/recolour-race.mjs  the other: at rest, the canvas is a fresh load of the address
                    bar, and a colour the reader set is still set, whenever it was set
-                   and whatever the tab drew before it
+                   and whatever the tab drew before it; and on every door into the
+                   Deep tab: a Random dives or Gallery tile, Go, Julia at this c, and
+                   a frame carried in from the viewer (explorer_recolor_race_ckpt162)
 bench/link-fidelity.mjs  and a third: every tab driven through its common actions, and
                    after each the address, what Copy link copied and what Save kept,
                    each a fresh load that redraws the same canvas (link_fidelity_ckpt157)

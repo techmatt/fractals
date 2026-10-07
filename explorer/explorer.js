@@ -2420,7 +2420,9 @@ function buildShade() {
         const cycles = control.slider.scale === "cycles";
         slider.addEventListener("input", () => {
           if (cycles) periodDragging = true;
-          if (!planOf(view).direct) {
+          // Whichever view the row is turning: in Deep that is a smooth field, and the shallow
+          // view underneath may be a direct trap that never recolours under a hand.
+          if (!tintedShape().direct) {
             setShade(control.key, shade.sliderText(control, slider.value, travelOf(control)), {
               moving: true,
             });
@@ -5471,7 +5473,7 @@ function juliaBack() {
 function randomPalette() {
   const drawable = [...PALETTES].filter(([, map]) => map.random).map(([name]) => name);
   const names = (drawable.length > 0 ? drawable : [...PALETTES.keys()]).filter(
-    (name) => name !== view.palette,
+    (name) => name !== tinting().palette,
   );
   if (names.length > 0) pickPalette(names[Math.floor(Math.random() * names.length)]);
 }
@@ -5609,8 +5611,31 @@ function mirrorFor(name, was) {
  * rather than pushing one of its own, and a press of Go stays one step. Resolves `{ aliased }`
  * — the guard's sentence where it lengthened the period — or nothing where it drew nothing.
  */
-async function newColoring({ inPlace = false } = {}) {
+async function newColoring(options = {}) {
   if (locked()) return;
+  // **One draw at a time, and one more after it for every press made meanwhile**
+  // *(explorer_recolor_race_ckpt162)*. Each press asks a worker for the rule, and the worker
+  // answers in order: five presses of `n` 80 ms apart queued five rules and drew only the
+  // last, 1.1 to 2.1 s after the first press, where one press draws in about 0.5 s. The
+  // shallow view's `live` is the same shape.
+  if (colouringBusy) {
+    colouringAgain = options;
+    return;
+  }
+  colouringBusy = true;
+  let landed;
+  try {
+    landed = await newColoringOnce(options);
+  } finally {
+    colouringBusy = false;
+  }
+  if (colouringAgain === null) return landed;
+  const again = colouringAgain;
+  colouringAgain = null;
+  return newColoring(again);
+}
+
+async function newColoringOnce({ inPlace = false }) {
   const subject = tinting();
   const field = shownField();
   if (field === null || field === undefined) {
@@ -5624,8 +5649,14 @@ async function newColoring({ inPlace = false } = {}) {
   }
   if (drawn.palette === undefined) return;
   // The picture may have moved while the rule was asked, and a colour sized to another
-  // picture is not this one's.
-  if (shownField() !== field || tinting().palette !== subject.palette) return;
+  // picture is not this one's. **Nor is one drawn over a colour the reader has turned since**
+  // *(explorer_recolor_race_ckpt162)*: this asked about the palette alone, so a Phase or a
+  // Period set while the rule ran was overwritten when it landed.
+  const now = tinting();
+  if (shownField() !== field) return;
+  if (now.palette !== subject.palette || JSON.stringify(now.shade) !== JSON.stringify(subject.shade)) {
+    return;
+  }
   holding = null;
   const of = inPlace ? keyOf(currentQuery()) : null;
   palettes.show(drawn.palette);
@@ -5716,6 +5747,10 @@ async function coloringFor(field, frame) {
 /** `deep-render.js`, once New coloring has asked its rule: what `giveBack` stops the rule's
  *  worker through. */
 let colourRule = null;
+/** Whether New coloring's rule is being asked, and the options of a press made meanwhile,
+ *  which is drawn once it has answered. */
+let colouringBusy = false;
+let colouringAgain = null;
 
 /** The `all` collection's seats by plane, the first time the Dive block asks: a promise of
  *  `Map<family, [{ key, view, words }]>`, each seat's link read by the contract once. */

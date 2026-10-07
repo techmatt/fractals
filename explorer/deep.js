@@ -258,9 +258,9 @@ export function mount(host) {
   //    lands under an old one is dropped on the floor. `running` is the pass in flight and
   //    is what the Render button reads, so it is set *before* the first `await` and
   //    cleared on every exit — the one that was missed made the button read *Cancel* for
-  //    the rest of the session. **Only a pass bumps it**, or `stop()`: a recolour keeps a
-  //    generation of its own, `tone`, because bumping `pass` without clearing `running`
-  //    strands the pass's `finally` and leaves `running` set for good.
+  //    the rest of the session. **Only a pass bumps it**, or `stop()`: a recolour never
+  //    does, because bumping `pass` without clearing `running` strands the pass's
+  //    `finally` and leaves `running` set for good.
   // 4. **`owns` is whether the viewer's canvas is this tab's**, and `shown` whether the
   //    tab is the one on screen. Nothing may draw unless it owns the canvas; the tab keeps
   //    its `view` either way, which is what lets a reader leave and come back to the frame
@@ -274,7 +274,7 @@ export function mount(host) {
   // `deepLink.fieldKey` for a recolour, `finished` the last stage's own picture for a
   // download, `measure` what the last pass of *this* frame cost (and `null` the moment the
   // frame or its cap moves), `quarterMs` what the quarter-pass exception reads, `colouring`
-  // the pass's shade in flight (`recolouring` a recolour's), `settledAt` what the probe
+  // the pass's shade in flight, `settledAt` what the probe
   // last said about which frame, `autoRender` whether a frame change draws itself, and
   // `cameFrom` the Mandelbrot frame *Julia at this c* was pressed on. Whether the reader
   // pinned the cap is not a variable any more: it is `view.capFrom`, which travels with the
@@ -349,9 +349,15 @@ export function mount(host) {
   let shown = false;
   let owns = false;
   let colouring = {};
-  /** A recolour's own generation and holder, apart from the pass's: see `recolour`. */
-  let tone = 0;
-  let recolouring = {};
+  /** Whether a recolour's shade is in flight, and whether a colour was turned since it was
+   *  asked: see `recolour`. */
+  let recolourBusy = false;
+  let recolourAgain = false;
+  /** The frame a recolour is putting up in place of the picture on the canvas — a step back
+   *  or a Cancel onto a held frame in a colour turned since, or a link whose field is kept —
+   *  until that recolour lands, and `null` otherwise. A tint made meanwhile colours this and
+   *  not `drawn`: see `recolour`. */
+  let bringing = null;
   /** What the probe last settled, and of which frame: `{ frame, atCeiling, fault }`, for
    *  Details' *at the ceiling* clause. */
   let settledAt = null;
@@ -447,6 +453,13 @@ export function mount(host) {
   }
 
   // ----------------------------------------------------------------- what is on screen
+
+  /** Whether `image` is a picture at the canvas's own size, which is what a download *As
+   *  shown* may save instead of drawing it again. `null` is not. */
+  function atCanvas(image) {
+    const grid = host.grid();
+    return image != null && image.width === grid.width && image.height === grid.height;
+  }
 
   /** Keep the picture just drawn, so a gesture has something to slide. */
   function keep(image, of) {
@@ -556,9 +569,10 @@ export function mount(host) {
     drawn = view;
     drawnFull = entry.full;
     stale = { canvas: entry.canvas, view };
-    // Only a full picture is one a download at the canvas's size can save.
-    finished = entry.image;
-    finishedSamples = entry.full ? 1 : 0;
+    // Only a full picture is one a download at the canvas's size can save, and only at the
+    // canvas's size now.
+    finished = atCanvas(entry.image) ? entry.image : null;
+    finishedSamples = finished !== null ? 1 : 0;
     remember(entry.key, entry.field);
     paint();
     clearMinibrots();
@@ -654,6 +668,7 @@ export function mount(host) {
 
   function stop() {
     pass += 1;
+    bringing = null;
     if (running !== null) log("stopped", { stage: running.stage });
     running = null;
     renderer?.cancel();
@@ -806,6 +821,7 @@ export function mount(host) {
    */
   async function render(upto, { auto = false, probe = !auto, dive = false, onStage = null } = {}) {
     const generation = ++pass;
+    bringing = null;
     const grid = host.grid();
     readLog();
     // **Before the await, not after it.** The pool takes a moment to start on the first
@@ -1250,11 +1266,20 @@ export function mount(host) {
    * the stage that was just drawn — so a colour change always lands on it; a pass in flight
    * still lands its next stage in the colour current then (`shadeNow`).
    *
-   * Its own generation, `tone`, and never `pass`: bumping `pass` from here cancelled whatever
-   * pass was running without clearing `running`, which is the one move rule 3 above says
-   * leaves the tab stuck. A recolour is dropped where a newer one was asked for, where the
-   * tab no longer owns the canvas, or where a pass's stage has replaced the picture it
-   * started from — that stage was shaded in the current colour already.
+   * Never `pass`: bumping `pass` from here cancelled whatever pass was running without
+   * clearing `running`, which is the one move rule 3 above says leaves the tab stuck. A
+   * recolour is dropped where the tab no longer owns the canvas, where a pass's stage has
+   * replaced the picture it started from — that stage was shaded in the current colour
+   * already — or where another frame is being brought up in its place.
+   *
+   * **One shade at a time, and the latest colour after it** *(explorer_recolor_race_
+   * ckpt162)*. Each recolour used to stop the one before it, and the shade worker finishes a
+   * stopped job before it takes the next, so under a hand on a slider — an `input` every
+   * frame against a shade of about 90 ms — every shade was stopped before it landed and the
+   * picture held still for the whole drag, then caught up on release: measured, a 2 s Phase
+   * drag landed no picture at all, where the shallow view landed 50. Now a recolour asked
+   * while one is in flight is noted, and the one in flight lands and is followed by one
+   * more in the colour current then.
    */
   /** The best stage of `of` whose field is kept — the full pass at the canvas's own size,
    *  else the largest kept at any size — or `undefined` where none is.
@@ -1280,8 +1305,32 @@ export function mount(host) {
     return best;
   }
 
-  async function recolour(of = drawn) {
+  async function recolour(of = bringing ?? drawn) {
     if (of === null) return;
+    // **A frame being put up is what a tint colours until it is up** *(explorer_recolor_race_
+    // ckpt162)*. `putBack` and `open` bring a frame back by recolouring its kept field, and a
+    // tint in the same moment used to recolour `drawn` — the picture being replaced — whose
+    // newer generation then dropped the frame being brought. The tab was left on the old
+    // picture, dimmed under a pending box, with the address on the frame the reader went back
+    // to and nothing drawing it: a palette or a phase set as Cancel was pressed was enough.
+    bringing = of === drawn ? null : of;
+    if (recolourBusy) {
+      recolourAgain = true;
+      return;
+    }
+    recolourBusy = true;
+    try {
+      await recolourOnce(of);
+    } finally {
+      recolourBusy = false;
+    }
+    if (recolourAgain) {
+      recolourAgain = false;
+      recolour();
+    }
+  }
+
+  async function recolourOnce(of) {
     const grid = host.grid();
     const stage = keptStage(of);
     if (stage === undefined) {
@@ -1294,26 +1343,24 @@ export function mount(host) {
     }
     const key = deepLink.fieldKey(of, stage.width, stage.height, stage.supersample);
     const field = fields.get(key);
-    const generation = ++tone;
     const under = stale;
-    recolouring.stop?.();
-    recolouring = {};
     let shaded;
     try {
       const deep = await pool();
       shaded = await deep.shade(
         { ...field, values: field.values.slice() },
         inColour(of),
-        recolouring,
+        {},
         { derive: host.deriving() },
       );
     } catch (error) {
-      if (generation !== tone) return;
       host.say(String(error.message ?? error));
       console.error("the deep recolour failed", { view: deepLink.emit(view) }, error);
       return;
     }
-    if (shaded === null || generation !== tone || !owns || stale !== under) return;
+    if (shaded === null || !owns || stale !== under) return;
+    if (bringing !== null && bringing !== of) return;
+    bringing = null;
     let target = inColour(of);
     if (host.deriving()) {
       view = { ...view, level: shaded.level };
@@ -2762,6 +2809,11 @@ export function mount(host) {
    */
   async function arrive(frame, said, variant = null) {
     cameFrom = null;
+    // In the colour up now, not the one up when the landing was framed: a search takes
+    // seconds, and a palette or a Phase turned during it was lost when the landing arrived
+    // *(explorer_recolor_race_ckpt162)*. `landAside` reads it at its shade the same way.
+    const framed = frame;
+    frame = inColour(frame);
     view = frame;
     drawn = null;
     stale = null;
@@ -2775,6 +2827,9 @@ export function mount(host) {
     const onStage = diveColouring
       ? async (stage) => {
           if (stage.name !== "preview") return;
+          // A colour the reader turned since the landing was framed is theirs, and New
+          // coloring on arrival does not draw over it.
+          if (deepLink.emit(inColour(framed)) !== deepLink.emit(framed)) return;
           const coloured = await host.newColoring?.({ inPlace: true });
           if (coloured?.aliased) {
             said = `${said} ${coloured.aliased}`;
@@ -4124,7 +4179,7 @@ export function mount(host) {
     tint(changes) {
       view = { ...view, ...changes };
       host.settle();
-      if (drawn === null) {
+      if (drawn === null && bringing === null) {
         syncControls();
         return;
       }
@@ -4144,6 +4199,11 @@ export function mount(host) {
     /** The canvas changed size: repainted, and the controls asked again, because whether
      *  the frame still resolves in `f64` — Shallow mode's fade — is a question of the grid. */
     resized() {
+      // A picture of the canvas at its old size is not one *As shown* can save at the new.
+      if (!atCanvas(finished)) {
+        finished = null;
+        finishedSamples = 0;
+      }
       paint();
       syncControls();
     },

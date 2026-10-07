@@ -94,6 +94,13 @@ const ACTIONS = {
   fit: key("f"),
   reset: click("#palette-reset"),
   hold: click("#hold-toggle"),
+  // The rest of the row *(explorer_recolor_race_ckpt162)*: New coloring, whose draw is
+  // asked of a worker and lands later; the two flags; and Straighten iter and its knee.
+  newColoring: key("n"),
+  reverse: click("#shade-reverse"),
+  mirror: click("#shade-mirror"),
+  knee: click("#shade-knee"),
+  kneeValue: box("shade-knee-value", "3000"),
   // Out to Saved and straight back to whichever tab was up. Coming back to Deep carries the
   // viewer's frame in, which found two ways a picture depended on history rather than on
   // its link *(deep_orbit_history_ckpt150)*: the pool drew the carried frame off the deep
@@ -119,6 +126,9 @@ const KEPT = {
   phase: /[?&]phase=0\.613(&|$)/,
   lambda: /[?&]lambda=0\.35(&|$)/,
   period: /[?&]period=0\.9(&|$)/,
+  // Straighten iter is Absolute's alone and hidden under Leveled, where the box takes nothing
+  // a link can carry; a trial that opens on Leveled typed into a control nobody can see.
+  kneeValue: { test: (url) => !/[?&]scale=absolute(&|$)/.test(url) || /[?&]knee=3000(&|$)/.test(url) },
   // Leveled is the shallow contract's default and a shallow link leaves it out, so what is
   // asked of both contracts is that the link is not Absolute.
   leveled: { test: (url) => !/[?&]scale=absolute(&|$)/.test(url) },
@@ -136,6 +146,28 @@ const BURSTS = [
   ["pick", "hold", "lambdaDrag", "hold", "periodDrag"],
   ["pick", "away"],
   ["phase", "away", "pick2"],
+  ["newColoring", "phase"],
+  ["newColoring", "newColoring", "newColoring"],
+  ["knee", "kneeValue", "reverse", "mirror"],
+];
+
+/**
+ * **The arrivals' own run**: the ways a picture gets on screen other than a link loaded, each
+ * met by a shorter list, since a trial there is a tile or a dive before it is a race. What
+ * each sequence covers is in `SINGLES` and `BURSTS`; these are the ones that differ between
+ * a frame opened and a frame carried.
+ */
+const ARRIVALS = [
+  ["pick"],
+  ["phase"],
+  ["newColoring"],
+  ["fit"],
+  ["leveled"],
+  ["kneeValue"],
+  ["reverse"],
+  ["pick", "phase", "pick2"],
+  ["newColoring", "phase"],
+  ["randomPalette", "randomPalette", "randomPhase", "randomPalette"],
 ];
 
 // ------------------------------------------------------------------------ the moments
@@ -172,6 +204,11 @@ const MOMENTS = {
 
 // ------------------------------------------------------------------------ the scenarios
 
+/** What the arrival scenarios share: the three moments of the pass the arrival starts, and the
+ *  shorter list. */
+const ARRIVING = { moments: ["rendering", "quarter", "landed"], offsets: [0], sequences: ARRIVALS };
+
+
 /**
  * Each scenario is a link, an optional step before the moment, the moments to fire at and
  * the offsets after each. The deep ones are Matt's frame; the shallow one is a frame of the
@@ -192,8 +229,36 @@ const SCENARIOS = {
   },
   deepIdle: { link: ABSOLUTE, before: rest, moments: ["start"], offsets: [0], idle: true },
   shallow: { link: SHALLOW, moments: ["start", "drawing", "sharpening"], offsets: [0] },
+  // A tile of each list, and the tab's other doors, each from a tab at rest
+  // *(explorer_recolor_race_ckpt162)*. Random dives is shuffled once a page, so its trials
+  // open whichever dive comes first, which is a different frame each load.
+  deepRandom: { link: "panel=deep:random", before: rest, trigger: tile("random-dives-grid"), ...ARRIVING },
+  deepGallery: { link: "panel=deep:gallery", before: rest, trigger: tile("deep-gallery-grid"), ...ARRIVING },
+  // Go with New coloring on arrival ticked and Keep diving not, which lands on the canvas:
+  // the colour is drawn off the landing's quarter pass, which is the moment it races. `held`:
+  // a colour set while the press is still searching is set on the frame being left, and the
+  // landing takes New coloring as the box says, so only the canvas is held to its link.
+  deepGo: { link: ABSOLUTE, before: diving, trigger: click("#dive-go"), ...ARRIVING, held: true },
+  deepJulia: { link: ABSOLUTE, before: rest, trigger: click("#deep-julia"), ...ARRIVING },
+  // The viewer's frame carried into the tab, which is the second half of Shallow mode and back.
+  deepCarried: { link: SHALLOW, before: rest, trigger: click("#tab-deep"), ...ARRIVING },
   shallowIdle: { link: SHALLOW, before: rest, moments: ["start"], offsets: [0], idle: true },
 };
+
+/** A tile of one of the Deep tab's lists, the first that is there. */
+function tile(grid) {
+  return `(() => { const t = document.querySelector("#${grid} button"); if (!t) return false; t.click(); return true; })()`;
+}
+
+/** The tab at rest, ticked for New coloring on arrival and not for Keep diving. */
+async function diving(page) {
+  await rest(page);
+  await page.ev(`(() => {
+    const keep = document.getElementById("dive-keep"); if (keep.checked) keep.click();
+    const colour = document.getElementById("dive-color"); if (!colour.checked) colour.click();
+    return true;
+  })()`);
+}
 
 // ------------------------------------------------------------------------ rest and reading
 
@@ -374,7 +439,9 @@ let misses = 0;
 try {
   for (const [name, scenario] of Object.entries(SCENARIOS)) {
     if (asked.length > 0 && !asked.includes(name)) continue;
-    const sequences = scenario.idle
+    const sequences = scenario.sequences
+      ? scenario.sequences
+      : scenario.idle
       ? [...SINGLES, ...BURSTS]
       : quick
         ? BURSTS.slice(0, 3)
