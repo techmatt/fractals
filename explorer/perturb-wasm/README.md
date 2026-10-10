@@ -432,6 +432,67 @@ for. The sweep is here so that the tab prompt can move the number against its ow
 views rather than re-deriving it; −4 catches 64% of the interior and takes 26% off
 the frame, and on this evidence is safe, but on one frame's evidence only.
 
+#### The threshold was never a proof *(interior_switch_fix_ckpt162, 2026-10-10)*
+
+The ladders above were the wrong frames to find this on. `explorer/deep-gpu-model` built
+long-orbit frames beside parabolic points, and the switch painted their exterior black:
+**52 of 144** samples of the degree-2 main cusp (`c = 1/4 + (π/10⁷)²`, 4e-19 across) and
+**140 of 144** of the imploded Julia set at `c = 1/4 + 10⁻¹²`, every one of them proven
+at about 2.2e5 iterations by a sample the plain loop escapes from at 1e7 and 3.1e6.
+
+**Why.** There the orbit creeps up on a fixed point where `|f'| = 1`, from the side
+where `|f'|` is just under one, so `∏|f'(z_k)|²` decays like a power of `n` instead of
+geometrically. On the cusp it crosses `2^-64` at 219,631 iterations, bottoms out at
+`2^-79.4` half way through, climbs back as the orbit leaves, and the sample escapes at
+9,999,855. A small product says the map has contracted so far, and not that it always
+will. **It is not one frame's accident**: built the same way at every degree, the cusp
+and its imploded Julia set at both anchors (`scratch/interior-fix/parabolic.py`), the
+rule was wrong on every cusp and every origin-anchored implosion from degree two to six,
+84 of 84 samples on each cusp.
+
+**The fix makes it a proof.** The product is now a gate: a sample under it is handed to
+`Kernel::prove`, which carries on the same loop step for step and stops the sample only
+when **a disc about its orbit maps into itself**. A disc `B` with `f^k(B) ⊂ B` traps
+the orbit, so it is bounded. The image of a disc of radius `ρ` about `z` lies within
+`(|z| + ρ)^d − |z|^d` of `f(z)`, so the radius is carried forward exactly, with no
+linearization, and the test is `|z_{s+k} − z_s| + ρ_k ≤ ρ₀`. The disc sits at the
+smallest `|z|` reached since the gate (an attracting cycle contracts hardest nearest the
+critical point, and `z` is known to the finest absolute error there). Four radii, a
+factor of 256 apart, are tried at once, with a relative margin of `2^-40` a step and
+an absolute one of about thirty ulps on the test. Beside a parabolic point the proof cannot
+close, since a disc mapped into itself holds a fixed point that an escaping orbit does not
+have, so those samples run to their escape or their cap. A disc is carried for as many
+steps past its anchor as the gate took (at least 4,096), and then the sample runs plain
+until a new low re-arms it: on the corpus no proof needed more than 2.0× the gate's own
+`n`, and a parabolic gate is millions of steps.
+
+**What it moved, measured against the rule it replaces sample for sample**
+(`scratch/interior-fix/harness`, the old kernel linked beside the new):
+
+- **No escaping sample is painted interior on any frame tried**: the parabolic set above,
+  the model's nine long-orbit frames, eighteen Siegel and one-third boundary frames at
+  degrees two to four, the 2,333-frame corpus the GPU model was measured on (64×36), and
+  the 157 of those behind a tracked picture or the deep pack (256×144). Every escaping
+  count is bit-identical to the switch off. §10's floor sweep is now 0 wrongly painted at
+  every floor and degree, the degree-six −4 case included.
+- **No site frame had a wrong pixel**: across the corpus not one sample goes from interior
+  to escaped, and the same at 256×144. The rule's failure needs a gate millions of steps
+  long, and no frame the site draws has one.
+- **What it costs is proofs that land later.** Proven interior falls 0.4% (36,899 to
+  36,746 on the corpus, which now run to the cap and are black either way), and the
+  iterations rise 0.47%. **In wasm**, §7's frames at 240×135, the committed module against
+  this one alternated, best of three, lanes byte for byte the same on all five:
+  `tangle 1e-22` 1.04×, `body 1e-22` 1.04×, `anchor 2e-11` 1.03× and `anchor 3e-12` 1.14×,
+  all inside the box's drift, and **`anchor 1e-12`, 100% interior, 1.37×**, the one result
+  clearly beyond it. That frame's samples run 13% more steps before a disc closes, about a
+  period past the gate, and those steps carry the discs. Where the gate fires on an escaping
+  sample the frame is slower than with the switch off (the d2 cusp at 16×9 took 1.6× as
+  long, the imploded Julia set 2.0×), and the page's `switchFor` turns the switch off for
+  such a frame after its quarter pass, since nothing was saved.
+- **The module grew 20,869 bytes raw and 3,570 gzipped** (377,477 and 136,453, on 1.96.0,
+  which rebuilds the module before this one byte for byte): the proof's loop, once per
+  degree and set, and the refusal's second sentence.
+
 ### 4. Price
 
 **Native**, one idle box, best of three, all three measured the same way in the
@@ -1247,7 +1308,9 @@ periods the cap barely holds. The islands above two are low-period (12 and 13) m
 which is why the switch catches nearly all of them; the anchor's period is 2,838. **−64
 stays**, and ⚠ §3's closing remark that −4 "on this evidence is safe" does not survive
 degree six: one escaping sample of the island frame is painted interior there, and
-`measure.rs`'s sweep now asserts at the shipped floor and reports the others.
+`measure.rs`'s sweep now asserts at the shipped floor and reports the others. Since §3's proof
+(interior_switch_fix_ckpt162) that sample is let escape, and the sweep is 0 wrongly painted at
+every floor and degree; −4 now costs time and never a pixel.
 
 **`TILE_PERIODS`**, re-measured on the three largest nuclei in each degree's `tangle 1e-22`
 (80×45, share escaped):
@@ -1553,8 +1616,8 @@ gzipped, nearly all of it the perturbed pass and the root solve that now exists 
 cargo fmt   --check                                    # the formatting, held: the
                                                        #   crate is rustfmt-clean and
                                                        #   stays that way
-cargo test  --release                                  # 81 unit tests and six
-                                                       #   cheap pins, about a second
+cargo test  --release                                  # 81 unit tests and nine
+                                                       #   cheap pins, a few seconds
 cargo test  --release --test oracle -- --ignored --nocapture   # the ladders, ~30 s
 cargo test  --release --test probe  -- --ignored --nocapture   # the three-way probes
 cargo test  --release --test measure -- --ignored --nocapture  # the cap sweep, the
@@ -1601,7 +1664,7 @@ back byte for byte what the module before it produced, in 10.82 s against 10.83 
 | `crate` | `explorer/perturb-wasm` |
 | `dependencies` | `[]`, and it is written down because it is the design |
 | `rustc` | the compiler, with its commit and date |
-| `raw_bytes` / `gzip_bytes` | **356,608 raw, 132,883 gzipped** *(classify_speed_ckpt155; §12)* |
+| `raw_bytes` / `gzip_bytes` | **377,477 raw, 136,453 gzipped** *(interior_switch_fix_ckpt162; §3)* |
 
 Two fields of `engine.manifest.json` are **absent** rather than empty:
 `engine_version`, because this crate does not link the engine, and
@@ -1618,7 +1681,7 @@ crate: `explorer_shade_pool_ckpt136` banded the shade.)
 module and the tab's eight JavaScript modules are fetched on that tab's first open and
 never before (the two that read a deep link, `deep-link.js` and `deep-fx.js`, come
 earlier where a deep link is already in front of the page). Against `engine.wasm`'s
-251,917 gzipped, the 132,883 here is 53% of it —
+251,917 gzipped, the 136,453 here is 54% of it —
 paid only by a reader who asked for a renderer for everything below 1e-10, or who
 pressed Find minibrots or New coloring in the shallow view, the two doors into it there.
 

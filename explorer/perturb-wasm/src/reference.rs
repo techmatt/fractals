@@ -2,7 +2,8 @@
 //!
 //! Everything expensive about a deep frame happens in [`crate::kernel`], in
 //! `f64`, against the numbers this module produces. It runs **once per frame**,
-//! costs a few milliseconds, and is then a read-only buffer — which is why
+//! costs milliseconds at a cap of tens of thousands and tenths of a second at a
+//! million, and is then a read-only buffer — which is why
 //! [`crate::reference_orbit`] hands it to JavaScript rather than recomputing it:
 //! the page's workers cannot share memory (no `SharedArrayBuffer`, because
 //! GitHub Pages will not send COOP/COEP), and a `resolve` runs once per band per
@@ -30,8 +31,8 @@ pub const GUARD_BITS: f64 = 64.0;
 /// samples, plus [`GUARD_BITS`], plus the one limb that holds the integer part.
 ///
 /// At width 2e-11 across 480 samples that is 109 bits and **3 limbs**; at 1e-28
-/// it is 166 bits and **4**. The clamp at the top is [`MAX_LIMBS`], which is past
-/// where `f64` can hold the width at all.
+/// it is 166 bits and **4**. The clamp at the top is [`MAX_LIMBS`], which binds below
+/// about 9e-268 at 480 samples across.
 pub fn limbs_for(width: f64, sample_width: u32) -> usize {
     limbs_pow(width, sample_width, 1)
 }

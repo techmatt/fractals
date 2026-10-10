@@ -93,9 +93,12 @@ WGSL can express:
   `pass` advances it by at most a given number of steps, and the result is bit-identical
   whatever that number is. Three of its fields are measurement counters (rebases, steps,
   and steps taken scaled); the kernel needs 36 bytes.
-- **The interior switch** is `perturb`'s, with `|dz|²` as a mantissa in `[1, 2)` and an
-  `i32` exponent, and `|z|²` formed from a rescaled `z` wherever it would underflow. It is
-  a frame flag, because long-orbit frames must run with it off.
+- **The interior switch** is `perturb`'s as it was before interior_switch_fix_ckpt162,
+  with `|dz|²` as a mantissa in `[1, 2)` and an `i32` exponent, and `|z|²` formed from a
+  rescaled `z` wherever it would underflow. It is a frame flag, because long-orbit frames
+  must run with it off. ⚠ **That rule is unsound beside a parabolic point**, and `perturb`
+  now uses it only as a gate in front of a proof (its README's §3): here it is still the
+  verdict, so a WGSL kernel written against this model owes the same proof.
 - **Degrees two to six, and both Julia anchors**, all of what `perturb` draws.
 
 ## Iteration skipping
@@ -303,9 +306,10 @@ target/release/compare --corpus longorbit.jsonl --ids longorbit-cusp-main-d2 --r
 ```
 
 Run A was the corpus in seven round-robin shards of one thread each, 26.5 minutes in all.
-Long orbits run with the interior switch off on both kernels: the shipped switch falsely
-proves the degree-2 main cusp and the imploded Julia set interior, and with it on a
-comparison measures the switch rather than `f32`.
+Long orbits run with the interior switch off on both kernels: the switch as it shipped
+then falsely proved the degree-2 main cusp and the imploded Julia set interior, and with it
+on a comparison measures the switch rather than `f32`. `perturb`'s is sound since
+interior_switch_fix_ckpt162; this model's is not.
 
 ### The visible metric
 

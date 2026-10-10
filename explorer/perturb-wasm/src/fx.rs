@@ -27,9 +27,9 @@
 
 /// The widest number this module will form: 15 fraction limbs, 960 fraction bits.
 ///
-/// [`limbs_for`](crate::reference::limbs_for) reaches it at a view about 1e-280
-/// across, which is past where `f64` can hold the view *width* at all — so the
-/// ceiling is not a policy, it is the end of the coordinate system.
+/// [`limbs_for`](crate::reference::limbs_for) reaches it at about 2e-248 across and is
+/// clamped by it below about 9e-268, at 480 samples across — both still ordinary doubles,
+/// so this is a policy; a `z = 0` Julia frame needs `d×` the bits and meets it far sooner.
 pub const MAX_LIMBS: usize = 16;
 
 /// A fixed-point real. `n` is the limb count, and two numbers are only ever

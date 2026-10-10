@@ -50,7 +50,7 @@
 //!
 //! Bivariate linear approximation replaces a run of steps of the loop below with
 //! one `δ ← A·δ + B·dc`, read out of a table built off the reference orbit. The
-//! seam would be the top of [`Kernel::sample`]'s loop, marked there: a lookup on
+//! seam would be the top of `Kernel::run`'s loop, marked there: a lookup on
 //! `(m, |δ|²)` that either advances `m` and `n` by a run length or falls through
 //! to the single step below it.
 //!
@@ -60,8 +60,12 @@
 
 use crate::reference::{BAILOUT, Reference};
 
-/// How far `|dz|²` has to fall before a sample is taken as interior, as a
+/// How far `|dz|²` has to fall before a sample is *tried* for interior, as a
 /// power-of-two exponent. See [`Kernel::interior`] and [`Kernel::floor`].
+///
+/// **The gate, and since interior_switch_fix_ckpt162 never the verdict**: a sample
+/// under it is handed to the proof (`Kernel::prove`), which stops it only when a
+/// disc about its orbit maps into itself.
 ///
 /// `|dz|²` is carried as a mantissa in `[1, 2^64)` and a power-of-two exponent,
 /// and the test `|dz|² < 2^floor` is exact — gated by an integer compare that is
@@ -161,26 +165,32 @@ pub struct Kernel<'a> {
     /// along the orbit. Inside a hyperbolic component the orbit falls into an
     /// attracting cycle and that product decays geometrically at the cycle's
     /// multiplier; outside it grows. So a product that has fallen under
-    /// [`INTERIOR_EXPONENT`] is taken to be in the basin of an attractor and
-    /// never to escape. The derivative
+    /// [`INTERIOR_EXPONENT`] is *probably* in the basin of an attractor, and that
+    /// sample is then proved bounded or let run — **the product is the gate and
+    /// the proof is a disc that maps into itself** (`Kernel::prove`). Until
+    /// interior_switch_fix_ckpt162 the product was the verdict, and beside a
+    /// parabolic point, where it decays like a power of `n` on an orbit that
+    /// still escapes, it painted the exterior black. The derivative
     /// with respect to `z₀` — the usual one — is useless here, because
     /// Mandelbrot fixes `z₀ = 0` and the product is identically zero from its
     /// first factor. **On a Julia frame the two coincide**: `z₀` is the pixel
     /// and is exactly what varies, so `∏ 2·z_k` *is* the derivative with respect
     /// to it, and the same test means the more ordinary thing.
     ///
-    /// **Why it is a switch.** It is a heuristic with a threshold, and a
-    /// threshold that fires early paints an escaping sample black. So it ships
-    /// only against evidence: the crate's README carries the rung-by-rung
-    /// comparison of ON against OFF that decided [`crate::SHIPS_INTERIOR`].
+    /// **Why it is a switch.** It costs the loop where it does not fire, which in
+    /// wasm is a great deal (README §7), so the page chooses it per frame. It
+    /// stopped being a matter of evidence when it became a proof: a threshold
+    /// that fires early now costs time and never a pixel. The README carries the
+    /// rung-by-rung comparison of ON against OFF that decided
+    /// [`crate::SHIPS_INTERIOR`], and §3 the frames that broke the old rule.
     pub interior: bool,
     /// The exponent [`interior`](Self::interior) fires at, defaulting to
     /// [`INTERIOR_EXPONENT`].
     ///
     /// A field rather than a bare constant because it is the one number in this
     /// crate that was chosen by sweeping it, and a sweep needs somewhere to put
-    /// the value it is trying. Lower is later and safer; higher is sooner and
-    /// eventually wrong. Nothing on the boundary sets it.
+    /// the value it is trying. Lower is later; higher is sooner and hands the
+    /// proof more samples it cannot close. Nothing on the boundary sets it.
     pub floor: i32,
     /// The index of the stored orbit a Julia sample's delta starts against:
     /// one at `z = c`, zero at `z = 0`. Ignored by [`Kernel::sample`], which
@@ -396,9 +406,9 @@ impl<'a> Kernel<'a> {
                 } else {
                     while derivative < 1.0 {
                         if derivative == 0.0 {
-                            // `z` passed exactly through the origin: this is the
-                            // nucleus itself, and it is interior.
-                            return interior_outcome(n, rebases, true, degenerate, 0.0, exponent);
+                            // `|z|²` passed through zero, or underflowed: the
+                            // product is gone, and only the proof can say more.
+                            break;
                         }
                         derivative *= TWO64;
                         exponent -= 64;
@@ -408,8 +418,24 @@ impl<'a> Kernel<'a> {
                 // compare is the gate and is false on all but the last handful
                 // of iterations of an interior sample, so the `f64` compare
                 // behind it costs nothing on the frames that do not use it.
-                if exponent <= floor + 64 && derivative < pow2_at_most(floor - exponent) {
-                    return interior_outcome(n, rebases, true, degenerate, derivative, exponent);
+                // **A gate and not a verdict**: past it the sample is handed to
+                // `prove`, which stops it only on a proof.
+                if derivative == 0.0
+                    || (exponent <= floor + 64 && derivative < pow2_at_most(floor - exponent))
+                {
+                    return self.prove::<D, JULIA>(Handoff {
+                        delta: [delta_re, delta_im],
+                        z: [z_re, z_im],
+                        z_norm_sq,
+                        m,
+                        n,
+                        rebases,
+                        degenerate,
+                        derivative,
+                        exponent,
+                        dc: [dc_re, dc_im],
+                        offset_is_zero,
+                    });
                 }
             }
 
@@ -423,6 +449,171 @@ impl<'a> Kernel<'a> {
             }
             // Rebase: the delta has outgrown the iterate it perturbs, or the
             // reference has no step `m+1` to offer.
+            if z_norm_sq < delta_norm_sq || (!periodic && m >= last) {
+                delta_re = z_re;
+                delta_im = z_im;
+                zr = points[0][0];
+                zi = points[0][1];
+                m = 0;
+                rebases += 1;
+            }
+        }
+    }
+
+    /// The rest of a sample the gate has fired on: the same loop, carrying a proof.
+    ///
+    /// **Why the gate is not the verdict** *(interior_switch_fix_ckpt162)*. A small
+    /// `|dz|` says the map has been contracting along this orbit so far, which is
+    /// what an attracting cycle does and also what a neutral one does on the way
+    /// in. Beside a parabolic point — the main cusp, a copy's cusp, an imploded
+    /// Julia set — the orbit creeps up on a fixed point where `|f'| = 1` from the
+    /// side where it is just below one, so the product decays like a power of
+    /// `n` rather than geometrically: on the degree-2 cusp `log₂|dz|²` crosses
+    /// −64 at 2.2e5 iterations, bottoms out at −79 at 5e6, and the sample escapes
+    /// at 1e7. The old switch called every such sample interior.
+    ///
+    /// **The proof is a disc that maps into itself.** If the disc `B` of radius
+    /// `ρ₀` about an iterate `z_s` satisfies `f^k(B) ⊂ B` for some `k ≥ 1`, the
+    /// orbit of `z_s` never leaves `B ∪ f(B) ∪ … ∪ f^{k−1}(B)` and is bounded:
+    /// interior, or at worst the boundary, and never an escape. The image of a
+    /// disc of radius `ρ` about `z` under `z^d + c` lies in the disc of radius
+    /// `(|z| + ρ)^d − |z|^d` about `f(z)` — the binomial with every term made
+    /// positive — so the radius is carried forward one step at a time, with no
+    /// linearization, and `B(z_{s+k}, ρ_k) ⊂ B(z_s, ρ₀)` is the test. Near a
+    /// parabolic point it cannot pass: a disc mapped into itself holds a fixed
+    /// point of `f^k`, and an escaping orbit has none near it to offer. Such a
+    /// sample runs to its escape or its cap, at the price of this loop.
+    ///
+    /// **Where the disc is put.** At the smallest `|z|` the orbit has reached
+    /// since the gate, re-anchored at every new low after the test has been
+    /// made against the old one. Every attracting cycle of `z^d + c` passes
+    /// nearest the critical point at the phase where it contracts hardest, so
+    /// that is where a disc fits, and it is also where `z` is known to the
+    /// smallest absolute error. No period is needed: a new low re-anchors, and
+    /// otherwise the radii are carried across as many periods as it takes.
+    /// [`Ladder`] tries [`RADII`] of them at once, since what fits is a window
+    /// between the return distance and where the higher terms stop the
+    /// contraction, and neither end is known in advance.
+    ///
+    /// **Rounding.** The radii are carried with a relative margin a step and the
+    /// containment test is made with an absolute one of a few ulps of the two
+    /// iterates compared ([`Ladder::step`]). That makes the proof one about the
+    /// orbit this kernel computes, which is also the orbit the switch-off loop
+    /// escapes or does not on; it is not a bound on the delta's own rounding,
+    /// which nothing in this crate claims either.
+    ///
+    /// The loop body is [`Kernel::run`]'s, step for step, so an escaping sample
+    /// lands on exactly the count it lands on with the switch off. A second copy
+    /// rather than a flag on the first for [`Kernel::domain_with`]'s reason: the
+    /// first is measured into its shape, and this one is cold.
+    #[cold]
+    #[inline(never)]
+    fn prove<const D: usize, const JULIA: bool>(&self, handoff: Handoff) -> Outcome {
+        let points = &self.reference.points[..];
+        let periodic = self.reference.periodic;
+        let maxiter = self.maxiter;
+        let length = points.len();
+        let last = length - 1;
+        let bailout_sq = BAILOUT * BAILOUT;
+        let Handoff {
+            delta: [mut delta_re, mut delta_im],
+            z: [mut z_re, mut z_im],
+            mut z_norm_sq,
+            mut m,
+            mut n,
+            mut rebases,
+            mut degenerate,
+            mut derivative,
+            mut exponent,
+            dc: [dc_re, dc_im],
+            offset_is_zero,
+        } = handoff;
+        let mut zr = points[m][0];
+        let mut zi = points[m][1];
+
+        let mut ladder = Ladder::at(z_re, z_im, z_norm_sq);
+        let mut magnitude = z_norm_sq.sqrt();
+        // How long a disc is carried past its anchor: as long again as the gate
+        // took, which on every interior sample measured is far more than a proof
+        // needs (`|dz|²` fell `2^64` getting here, and a disc needs it to fall by
+        // a factor of a few). A sample still unproven by then is let run plain —
+        // a parabolic gate is millions of steps — until a new low re-arms it.
+        let budget = n.max(PROOF_MIN_BUDGET);
+        let mut anchored = n;
+        // The hand-off is mid-body: the first pass picks up at the cap test.
+        let mut resumed = true;
+
+        loop {
+            if !resumed {
+                let (ar, ai) = factor::<D>(zr, zi, delta_re, delta_im);
+                let mut next_re = ar * delta_re - ai * delta_im;
+                let mut next_im = ar * delta_im + ai * delta_re;
+                if !JULIA {
+                    next_re += dc_re;
+                    next_im += dc_im;
+                }
+                delta_re = next_re;
+                delta_im = next_im;
+
+                m += 1;
+                n += 1;
+                if periodic && m >= length {
+                    m = 0;
+                }
+
+                let point = points[m];
+                zr = point[0];
+                zi = point[1];
+                z_re = zr + delta_re;
+                z_im = zi + delta_im;
+                z_norm_sq = z_re * z_re + z_im * z_im;
+
+                if z_norm_sq > bailout_sq {
+                    return Outcome {
+                        smooth: smooth_count_at(n, z_norm_sq, D as u32),
+                        iterations: n,
+                        rebases,
+                        detected_interior: false,
+                        degenerate,
+                        dz_mantissa: derivative,
+                        dz_exponent: exponent,
+                    };
+                }
+
+                if derivative != 0.0 {
+                    derivative *= slope_sq::<D>(z_norm_sq);
+                    if derivative >= TWO64 {
+                        derivative *= TWO64_INV;
+                        exponent += 64;
+                    } else {
+                        while derivative < 1.0 && derivative != 0.0 {
+                            derivative *= TWO64;
+                            exponent -= 64;
+                        }
+                    }
+                }
+
+                let next_magnitude = z_norm_sq.sqrt();
+                if n - anchored <= budget && ladder.step::<D>(magnitude, z_re, z_im, next_magnitude)
+                {
+                    return interior_outcome(n, rebases, true, degenerate, derivative, exponent);
+                }
+                if z_norm_sq < ladder.anchor_norm_sq {
+                    ladder = Ladder::at(z_re, z_im, z_norm_sq);
+                    anchored = n;
+                }
+                magnitude = next_magnitude;
+            }
+            resumed = false;
+
+            if n >= maxiter {
+                return interior_outcome(n, rebases, false, degenerate, derivative, exponent);
+            }
+
+            let delta_norm_sq = delta_re * delta_re + delta_im * delta_im;
+            if delta_norm_sq == 0.0 && !offset_is_zero {
+                degenerate = true;
+            }
             if z_norm_sq < delta_norm_sq || (!periodic && m >= last) {
                 delta_re = z_re;
                 delta_im = z_im;
@@ -628,6 +819,124 @@ fn pow2_at_most(k: i32) -> f64 {
         f64::from_bits(((k + 1023) as u64) << 52)
     } else {
         0.0
+    }
+}
+
+/// Everything [`Kernel::run`]'s loop carries, at the point in its body where the
+/// gate fired, so [`Kernel::prove`] can carry on from exactly there.
+struct Handoff {
+    delta: [f64; 2],
+    z: [f64; 2],
+    z_norm_sq: f64,
+    m: usize,
+    n: u32,
+    rebases: u32,
+    degenerate: bool,
+    derivative: f64,
+    exponent: i32,
+    dc: [f64; 2],
+    offset_is_zero: bool,
+}
+
+/// How many radii [`Ladder`] carries about one anchor.
+///
+/// They run from a quarter of `|z|` at the anchor down by 256 each, to
+/// `2^-26·|z|`: the window a disc fits in — above the return distance, below
+/// where the higher terms undo the contraction — holds one of them on every
+/// frame measured. Ten radii sixteen apart, four and two proved the same samples
+/// at the same steps on the corpus sample and the anchor rungs, and each radius
+/// is a Horner pass a step of a sample past the gate (native, the anchor at
+/// 1e-13: 1.83× the old rule's time at ten, 1.49× at four, 1.44× at two), so
+/// four is two's price with room to spare.
+const RADII: usize = 4;
+
+/// The fewest steps a disc is carried past its anchor, however early the gate
+/// fired. See [`Kernel::prove`].
+const PROOF_MIN_BUDGET: u32 = 4096;
+
+/// The relative margin a radius is carried with per step, and the anchor's
+/// magnitude is rounded up by, against the `f64` rounding of the bound itself.
+const RADIUS_SLACK: f64 = 1.0 / 1_099_511_627_776.0; // 2^-40
+
+/// The absolute margin of the containment test, in units of the two iterates'
+/// magnitudes: about thirty ulps of each, for the rounding in `z = Z[m] + δ`.
+const POINT_SLACK: f64 = 1.0 / 281_474_976_710_656.0; // 2^-48
+
+/// The discs [`Kernel::prove`] tries about one anchor `z_s`, carried forward a
+/// step at a time.
+struct Ladder {
+    anchor: [f64; 2],
+    anchor_norm_sq: f64,
+    anchor_magnitude: f64,
+    /// `ρ₀` of each disc.
+    start: [f64; RADII],
+    /// `ρ_k`: a disc about the current iterate that holds the image of disc `i`.
+    radius: [f64; RADII],
+}
+
+impl Ladder {
+    fn at(z_re: f64, z_im: f64, z_norm_sq: f64) -> Ladder {
+        let magnitude = z_norm_sq.sqrt();
+        // A disc of radius zero proves nothing and never grows into one that
+        // does; an anchor exactly on the critical point takes the smallest
+        // normal radius instead.
+        let mut r = (magnitude * 0.25).max(f64::MIN_POSITIVE);
+        let mut start = [0.0; RADII];
+        for slot in start.iter_mut() {
+            *slot = r;
+            r = (r * 0.00390625).max(f64::MIN_POSITIVE);
+        }
+        Ladder {
+            anchor: [z_re, z_im],
+            anchor_norm_sq: z_norm_sq,
+            anchor_magnitude: magnitude,
+            start,
+            radius: start,
+        }
+    }
+
+    /// Carries every disc one step, from an iterate of magnitude `from` to the
+    /// iterate `z` of magnitude `to`, and says whether any of them has come back
+    /// inside the disc it started as.
+    ///
+    /// `(a + ρ)^D − a^D = Σ_{j=1..D} C(D,j)·a^{D−j}·ρ^j`, in Horner form in `ρ`:
+    /// every term positive, so no cancellation, and the margin covers the
+    /// rounding of a sum of positive terms.
+    #[inline(always)]
+    fn step<const D: usize>(&mut self, from: f64, z_re: f64, z_im: f64, to: f64) -> bool {
+        let a = from * (1.0 + RADIUS_SLACK);
+        let b = const { binomial(D) };
+        // `q[j] = C(D,j)·a^{D−j}`, for `j` from one to `D`.
+        let mut q = [0.0f64; 7];
+        let mut power = 1.0;
+        let mut j = D;
+        while j >= 1 {
+            q[j] = b[j] * power;
+            power *= a;
+            j -= 1;
+        }
+        let (dr, di) = (z_re - self.anchor[0], z_im - self.anchor[1]);
+        let distance_sq = dr * dr + di * di;
+        let slack = POINT_SLACK * (to + self.anchor_magnitude);
+        let mut proven = false;
+        for i in 0..RADII {
+            let r = self.radius[i];
+            let mut h = q[D];
+            let mut j = D - 1;
+            while j >= 1 {
+                h = h * r + q[j];
+                j -= 1;
+            }
+            let next = h * r * (1.0 + RADIUS_SLACK);
+            self.radius[i] = next;
+            // `|z − z_s| + slack + ρ_k ≤ ρ₀`, squared where both sides are
+            // non-negative.
+            let room = self.start[i] - next - slack;
+            if room > 0.0 && distance_sq <= room * room {
+                proven = true;
+            }
+        }
+        proven
     }
 }
 

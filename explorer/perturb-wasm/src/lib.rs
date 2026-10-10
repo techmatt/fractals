@@ -17,8 +17,8 @@
 //! `engine.wasm`'s `smooth` band produces, in the same layout, so the existing
 //! `shade_level` colours it without knowing which kernel drew it.
 //!
-//! **The reference orbit crosses the boundary as a buffer.** It costs a few
-//! milliseconds and the frame costs seconds, so the arithmetic is not the
+//! **The reference orbit crosses the boundary as a buffer.** It costs milliseconds
+//! to tenths of a second, against a frame of seconds to minutes, so the arithmetic is not the
 //! problem; the problem is that the page's workers cannot share memory — no
 //! `SharedArrayBuffer`, because GitHub Pages will not send COOP/COEP — and a
 //! band's `resolve` runs once per band per worker. An orbit computed inside one
@@ -63,7 +63,9 @@ pub const SCHEMA: u32 = 1;
 ///
 /// **On**, and the README carries the evidence and the caveat. Across both
 /// ladders, and at every threshold from `2^-300` to `2^-4`, it never painted
-/// interior a sample the plain run escaped from. What it *saves* depends
+/// interior a sample the plain run escaped from — but beside a parabolic point it
+/// did, at every degree, until interior_switch_fix_ckpt162 made the threshold a
+/// gate in front of a proof (README §3). What it *saves* depends
 /// entirely on the view: 75% to 98% on a frame inside a minibrot, and −9% on the
 /// audit's anchor, where only about seventeen periods fit inside the cap and
 /// `|dz|` has no room to fall.
@@ -109,7 +111,7 @@ pub mod cap {
     /// raised base being re-clipped; this one bounds how far the page may go
     /// unasked — the width policy below, the probe's doublings
     /// ([`policy::next_cap`]) and a preview tile ([`nuclei::tile_cap`]). The width
-    /// formula alone reaches it only at about 1e-227 — it gives 48,551 at 2e-11
+    /// formula alone reaches it only at about 4e-250 — it gives 48,551 at 2e-11
     /// and 117,518 at 1e-28 — but the doublings do reach it, and it binds on the
     /// degree-6 near-parabolic body frames, which are still a fifth the cap's fault
     /// here. The limit is kept and the page says where it binds, rather than being
@@ -127,7 +129,7 @@ pub mod cap {
     /// ([`nuclei::open_cap`]) and a descent's pinned caps (`builder/descent.py`).
     /// None of those is a loop the page runs on its own, so none of them can run
     /// away; what bounds them is the reference orbit, sixteen bytes a point and
-    /// one copy per worker (`README.md` §10 has the measurement).
+    /// one copy per worker (`README.md` §8 has the measurement).
     pub const EXPLICIT_CEILING: f64 = 2_000_000.0;
 
     /// The iteration cap for a view of the given plane width.
@@ -384,8 +386,9 @@ impl Spec {
     }
 
     /// Whether [`Spec::limbs`] holds every bit the frame needs, rather than stopping
-    /// at [`fx::MAX_LIMBS`]. Only the origin anchor can reach the clamp at a width a
-    /// double still holds.
+    /// at [`fx::MAX_LIMBS`]. The origin anchor reaches the clamp far sooner than any
+    /// other view: at `480·2^(−896/d)` across, 6.6e-133 at `d = 2`, against about
+    /// 9e-268 for every other view at 480 samples.
     pub fn limbs_fit(&self) -> bool {
         reference::limbs_pow_fits(self.width, self.sample_width(), self.limb_power())
     }
@@ -677,13 +680,21 @@ pub extern "C" fn plan(spec_ptr: *const u8, spec_len: usize) -> *mut u8 {
     report(read.and_then(|spec| if spec.limbs_fit() {
         Ok(spec)
     } else {
-        Err(format!(
-            "this frame is drawn from z = 0, where one pixel of it is told apart from the next \
-             only at its width to the power {}, and that needs more than the {} limbs this \
-             module computes a reference at. Zoom out, or move toward z = c.",
-            spec.limb_power(),
-            fx::MAX_LIMBS,
-        ))
+        Err(if spec.limb_power() > 1 {
+            format!(
+                "this frame is drawn from z = 0, where one pixel of it is told apart from the \
+                 next only at its width to the power {}, and that needs more than the {} limbs \
+                 this module computes a reference at. Zoom out, or move toward z = c.",
+                spec.limb_power(),
+                fx::MAX_LIMBS,
+            )
+        } else {
+            format!(
+                "telling one pixel of this frame from the next needs more than the {} limbs \
+                 this module computes a reference at. Zoom out.",
+                fx::MAX_LIMBS,
+            )
+        })
     }).and_then(|spec| match spec.delta_ulps() {
         ulps if ulps >= DELTA_ULPS => Ok(spec),
         ulps => Err(format!(
