@@ -27,7 +27,7 @@ being told which kernel drew it.
 It also has **no dependencies at all** — not `serde`, not the engine, not even as
 a dev-dependency, because cargo resolves a path dev-dependency for every command
 and `perturb.wasm` would then stop building on a machine with no sibling
-checkout. `src/json.rs` reads the fourteen-member spec and `smooth-cases.json`
+checkout. `src/json.rs` reads the fifteen-member spec and `smooth-cases.json`
 pins the one formula that had to come from next door.
 
 ```text
@@ -62,11 +62,16 @@ tests/measure.rs   what the frames cost and where the rules settle — every
 ## The design, in one page
 
 - **The reference orbit is fixed point; everything per-sample is `f64`.** The
-  orbit runs once per frame and costs about 15 ms; the frame costs seconds.
-- **The limb count comes from the view and nothing else** — `ceil(log2(samples
-  across / width)) + 64` guard bits, the archive's rule, with no term for the
-  orbit length, the supersample or the period. Three limbs at 2e-11, four at
-  1e-28.
+  orbit runs once per frame: 11.2 ms in wasm at the anchor's 48,552 points and
+  three limbs (§4), growing with the cap and the limb count to seconds at a cap of
+  a million. The frame costs seconds to minutes.
+- **The limb count comes from the view, and at one anchor from the degree as
+  well** — `ceil(log2(samples across / width)) + 64` guard bits, the archive's
+  rule, with no term for the orbit length, the supersample, or the period. Three
+  limbs at 2e-11, four at 1e-28. The exception is a Julia frame anchored at
+  `z = 0`, whose first step raises the pixel offset to the degree: there the
+  view's bits are multiplied by `d` before the guard bits are added
+  (`reference::limbs_pow`, §2b and §10).
 - **The bailout check comes before the precision.** Fixed point overflows its
   integer limb silently, so a reference that escapes has to be stopped rather
   than wrapped. (The audit priced the alternatives: astro-float degrades to
@@ -589,6 +594,14 @@ Bivariate linear approximation — one entry standing for a run of `2^k` steps a
 priced twice, and taken back out. What follows is what it cost to find out, kept
 because the seam comment in `kernel.rs` will give somebody the same idea and this
 is the only thing that should talk them out of it.
+
+**The ruling stands for this crate, and one other path reopens the question for itself
+alone.** `explorer/deep-gpu-model` models in `f32` the WebGPU kernel the Deep tab would
+use as a fast preview, where the picture already moves by its own rounding, so it carries
+a skip table behind a switch that is off by default and holds it to agreeing with this
+crate's `f64` kernel no worse than the model does without it. Its `README.md` has that
+argument and the measurements. Nothing here changes: `perturb.wasm` draws the plain loop,
+and everything below still stands for it.
 
 **Measured 2026-09-20**, tiles of 64×36, the plain loop and the skipping loop the
 same spec and the same orbit, alternated. `ε` is the share of a linear step the
@@ -1602,8 +1615,10 @@ module's own bytes have moved since, for a reason that has nothing to do with th
 crate: `explorer_shade_pool_ckpt136` banded the shade.)
 
 **What a visitor downloads for it: nothing, unless they open the Deep tab.** The
-module and the tab's five modules are fetched on that tab's first open and never
-before. Against `engine.wasm`'s 251,917 gzipped, the 132,883 here is 53% of it —
+module and the tab's eight JavaScript modules are fetched on that tab's first open and
+never before (the two that read a deep link, `deep-link.js` and `deep-fx.js`, come
+earlier where a deep link is already in front of the page). Against `engine.wasm`'s
+251,917 gzipped, the 132,883 here is 53% of it —
 paid only by a reader who asked for a renderer for everything below 1e-10, or who
 pressed Find minibrots or New coloring in the shallow view, the two doors into it there.
 

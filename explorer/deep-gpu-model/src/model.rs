@@ -255,9 +255,10 @@ pub fn init(frame: &Frame, col: u32, row: u32) -> PixelState {
     }
 }
 
-/// What the skip did to one pixel: measurement only, in a 12-byte buffer of its own so
-/// that [`PixelState`] is the same struct with the switch on or off. The kernel needs
-/// none of it.
+/// What the skip did to one pixel, in a buffer of its own so that [`PixelState`] is the
+/// same struct with the switch on or off. The first four fields are measurement only.
+/// `hint` is state, and only [`bla::Search::Hint`] has it: a level below 32, which a
+/// shader would keep in five spare bits of `status` rather than a word of its own.
 #[repr(C)]
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct BlaStats {
@@ -268,6 +269,10 @@ pub struct BlaStats {
     /// Table entries read by lookups, hits and misses alike (32 bytes each, and 16 more
     /// from the interior buffer when the switch runs).
     pub reads: u32,
+    /// Lookups that read at least one entry; `probes − bla_steps` found nothing.
+    pub probes: u32,
+    /// The last skip's level, relative to the table's lowest; 0 after a miss.
+    pub hint: u32,
 }
 
 /// Advances one pixel by at most `budget` delta steps, and returns how many it took.
@@ -734,6 +739,8 @@ fn run<const D: usize, const JULIA: bool, const HILO: bool, const BLA: bool>(
     let mut bla_steps = stats.bla_steps;
     let mut skipped = stats.skipped;
     let mut reads = stats.reads;
+    let mut probes = stats.probes;
+    let mut hint = stats.hint;
 
     while taken < budget {
         // ---- the skip: at an index the table is aligned on, the longest run it allows.
@@ -747,7 +754,9 @@ fn run<const D: usize, const JULIA: bool, const HILO: bool, const BLA: bool>(
             } else {
                 None
             };
-            hit = bla::lookup(t, m, d, s, maxiter - n, guard, &mut reads);
+            let before = reads;
+            hit = bla::lookup_hinted(t, m, d, s, maxiter - n, guard, &mut hint, &mut reads);
+            probes += (reads != before) as u32;
         }
         if let (true, Some(h), Some(t)) = (BLA, hit, table) {
             let (sum, at) = bla::apply::<JULIA>(&t.entries[h.index as usize], d, s, dc_m, sc);
@@ -959,6 +968,8 @@ fn run<const D: usize, const JULIA: bool, const HILO: bool, const BLA: bool>(
         stats.bla_steps = bla_steps;
         stats.skipped = skipped;
         stats.reads = reads;
+        stats.probes = probes;
+        stats.hint = hint;
     }
     taken
 }

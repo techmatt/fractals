@@ -6,6 +6,16 @@
 //! narrowed for the model by [`GpuOrbit::from_reference`]) and the same sample grid. The
 //! `f64` kernel takes its offsets from `Spec::dc`; the model forms its own from the frame
 //! constants ([`Frame::dc_mantissa`]), which is part of what is being measured.
+//!
+//! **Two floors**, both `f64` against `f64`, so that a disagreement is not blamed on `f32`
+//! when `perturb` itself moves that much:
+//!
+//! - **rounded** ([`narrowed_reference`]): the same kernel on the reference rounded to
+//!   `f32`. What storing the reference in `f32` costs on its own.
+//! - **moved** ([`moved_spec`]): the same kernel on a *different* reference, the view
+//!   centre moved by a pixel or two (a Julia frame, whose reference is fixed by `c`, takes
+//!   its other anchor instead). A real second opinion: on a chaotic orbit `f64` itself is
+//!   not noise-free, and this is how much two honest `f64` renders disagree.
 
 use std::fs;
 use std::io::Write as _;
@@ -13,11 +23,12 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::Instant;
 
+use perturb::fx::Fx;
 use perturb::kernel::Kernel;
 use perturb::reference::Reference;
 use perturb::{Anchor, Spec};
 
-use crate::bla::{BlaOptions, ENTRY_BYTES, GpuTable, HEADER_BYTES, INTERIOR_BYTES};
+use crate::bla::{BlaOptions, ENTRY_BYTES, GpuTable, HEADER_BYTES, INTERIOR_BYTES, Search};
 use crate::frame::{Frame, spec_of};
 use crate::json;
 use crate::model::{self, BlaStats, CAPPED, ESCAPED, INTERIOR};
@@ -35,6 +46,9 @@ pub struct FrameSpec {
     pub julia: Option<(String, String)>,
     pub anchor: Anchor,
     pub period: Option<u32>,
+    /// The row's Deep link (`dv=3&…`), carried into a dump's metadata so a colouring
+    /// script can colour the frame the way that link is coloured on the site.
+    pub link: Option<String>,
 }
 
 impl FrameSpec {
@@ -75,6 +89,7 @@ impl FrameSpec {
             julia,
             anchor,
             period,
+            link: text("link"),
         })
     }
 
@@ -115,13 +130,28 @@ pub struct Options {
     /// Steps per pass for the model; `u32::MAX` is one pass.
     pub budget: u32,
     pub dump: Option<PathBuf>,
+    /// Puts the cap in a dump's file names (`<id>_n<cap>.…`), for a cap ladder that
+    /// dumps one frame several times.
+    pub cap_in_name: bool,
     /// Also runs the `f64` kernel on the `f32`-narrowed reference
     /// ([`narrowed_reference`]) and reports its agreement as `floor`.
     pub floor: bool,
+    /// Also runs the `f64` kernel on a second reference ([`moved_spec`]) and reports its
+    /// agreement as `floor_moved`.
+    pub floor_moved: bool,
+    /// How far the second reference sits from the view centre, in samples (across, up).
+    pub move_px: [f64; 2],
     /// Run the model without the skip table, with it, or both (each encoding twice,
     /// the second keyed `<encoding>+bla`).
     pub bla: BlaMode,
     pub bla_options: BlaOptions,
+    /// Lookup orders to run the skip in as well, after `bla_options.search`, each keyed
+    /// `<encoding>+bla:<order>`. They draw the same field (`field_hash` says so) and
+    /// differ in the entries read.
+    pub extra_searches: Vec<Search>,
+    /// Also runs every order with the gate flipped from `bla_options.gate`, keyed
+    /// `…+gate` (or `…+nogate`). The same field again, and fewer reads.
+    pub flip_gate: bool,
 }
 
 /// Which of the model's two paths a comparison runs.
@@ -155,9 +185,14 @@ impl Default for Options {
                 .unwrap_or(4),
             budget: u32::MAX,
             dump: None,
+            cap_in_name: false,
             floor: false,
+            floor_moved: false,
+            move_px: [1.5, 1.0],
             bla: BlaMode::Off,
             bla_options: BlaOptions::default(),
+            extra_searches: Vec::new(),
+            flip_gate: false,
         }
     }
 }
@@ -186,6 +221,8 @@ pub struct ModelField {
     pub bla_steps: Vec<u32>,
     pub skipped: Vec<u32>,
     pub reads: Vec<u32>,
+    /// Lookups that read at least one entry.
+    pub probes: Vec<u32>,
     /// Samples whose final delta mantissa is not finite.
     pub nonfinite: usize,
     pub wall_s: f64,
@@ -264,6 +301,51 @@ pub fn narrowed_reference(orbit: &Reference) -> Reference {
     }
 }
 
+/// The frame drawn by `perturb` from a different reference, for the `moved` floor: a
+/// second opinion in `f64` whose only change is which orbit the deltas are taken from.
+///
+/// On the parameter plane the reference is the view centre moved by `px` samples (across,
+/// up), formed in `perturb`'s fixed point so no digit of the centre is lost, and any named
+/// nucleus period is dropped: the moved point is not a nucleus. On a Julia plane the
+/// orbit is fixed by `c`, so the second opinion is the other anchor (`z = 0` against
+/// `z = c`), which changes the offsets every sample starts from and which point of the
+/// orbit they are measured against. Returns the spec and a phrase saying which was done.
+pub fn moved_spec(spec: &Spec, px: [f64; 2]) -> Result<(Spec, String), String> {
+    let mut moved = spec.clone();
+    if spec.julia.is_some() {
+        moved.anchor = match spec.anchor {
+            Anchor::Parameter => Anchor::Origin,
+            Anchor::Origin => Anchor::Parameter,
+        };
+        if !moved.limbs_fit() {
+            return Err("the other anchor needs more limbs than perturb forms".into());
+        }
+        let name = match moved.anchor {
+            Anchor::Origin => "origin",
+            Anchor::Parameter => "parameter",
+        };
+        return Ok((moved, format!("anchor {name}")));
+    }
+    let limbs = spec.limbs();
+    let spacing = spec.width / spec.sample_width() as f64;
+    // Every fraction bit of the limbs, in decimal: 64 bits is under 20 digits a limb.
+    let places = (limbs - 1) * 20;
+    let shift = |text: &str, by: f64| -> Result<String, String> {
+        let at = Fx::parse(text, limbs).ok_or_else(|| format!("`{text}` is not a decimal"))?;
+        let by = Fx::from_f64(by, limbs).ok_or("the shift is not finite")?;
+        Ok(at.add(&by).to_decimal(places))
+    };
+    moved.reference = Some((
+        shift(&spec.center_re, px[0] * spacing)?,
+        shift(&spec.center_im, px[1] * spacing)?,
+    ));
+    moved.period = None;
+    Ok((
+        moved,
+        format!("reference moved by ({}, {}) samples", px[0], px[1]),
+    ))
+}
+
 /// Runs the model over the frame, in passes of `budget` steps per pixel.
 pub fn run_model(frame: &Frame, orbit: &GpuOrbit, threads: usize, budget: u32) -> ModelField {
     run_model_bla(frame, orbit, None, threads, budget)
@@ -298,6 +380,7 @@ pub fn run_model_bla(
         bla_steps: rows.iter().map(|r| r.1.bla_steps).collect(),
         skipped: rows.iter().map(|r| r.1.skipped).collect(),
         reads: rows.iter().map(|r| r.1.reads).collect(),
+        probes: rows.iter().map(|r| r.1.probes).collect(),
         nonfinite: rows
             .iter()
             .filter(|r| !(r.0.d[0].is_finite() && r.0.d[1].is_finite()))
@@ -323,6 +406,41 @@ pub struct Agreement {
     pub max: f64,
     /// Shares of the both-escaped samples whose `|Δ smooth|` exceeds 0.01, 0.1, 1, 10.
     pub over: [f64; 4],
+    /// Shares of the both-escaped samples whose `|Δ smooth|` exceeds each of [`LADDER`].
+    pub ladder: Vec<f64>,
+    /// The same, split by the decade of the iteration count (see [`IterBin`]).
+    pub by_iter: Vec<IterBin>,
+}
+
+/// One decade of iteration count: samples whose smooth count is in
+/// `[10^decade, 10^(decade+1))` (decade 0 takes everything below 10). A both-escaped
+/// sample is placed by `perturb`'s count; a class change by the count of whichever side
+/// escaped.
+#[derive(Debug, Clone, Default)]
+pub struct IterBin {
+    pub decade: u32,
+    pub both_escaped: usize,
+    /// Of `both_escaped`, how many exceed 0.1 and 1.
+    pub over_tenth: usize,
+    pub over_one: usize,
+    /// The largest `|Δ smooth|` in the decade.
+    pub max: f64,
+    pub class_changes: usize,
+}
+
+/// The thresholds of [`Agreement::ladder`], fine enough that a colouring's own visible
+/// threshold can be read off a corpus run afterwards without running it again.
+pub const LADDER: [f64; 11] = [
+    0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1.0, 3.0, 10.0, 100.0, 1000.0,
+];
+
+/// The decade bin a smooth count falls in, `0..=9`.
+fn decade_of(n: f64) -> u32 {
+    if n < 10.0 {
+        0
+    } else {
+        (n.log10().floor() as u32).min(9)
+    }
 }
 
 impl Agreement {
@@ -346,14 +464,39 @@ pub fn agree(f64_smooth: &[f64], model_smooth: &[f64]) -> Agreement {
         ..Agreement::default()
     };
     let mut diffs = Vec::new();
+    let mut bins: Vec<IterBin> = (0..10)
+        .map(|decade| IterBin {
+            decade,
+            ..IterBin::default()
+        })
+        .collect();
     for (&x, &y) in f64_smooth.iter().zip(model_smooth) {
         match (x.is_nan(), y.is_nan()) {
-            (false, false) => diffs.push((x - y).abs()),
+            (false, false) => {
+                let d = (x - y).abs();
+                diffs.push(d);
+                let bin = &mut bins[decade_of(x) as usize];
+                bin.both_escaped += 1;
+                bin.over_tenth += (d > 0.1) as usize;
+                bin.over_one += (d > 1.0) as usize;
+                bin.max = bin.max.max(d);
+            }
             (true, true) => a.both_interior += 1,
-            (false, true) => a.f64_only_escaped += 1,
-            (true, false) => a.model_only_escaped += 1,
+            (false, true) => {
+                a.f64_only_escaped += 1;
+                bins[decade_of(x) as usize].class_changes += 1;
+            }
+            (true, false) => {
+                a.model_only_escaped += 1;
+                bins[decade_of(y) as usize].class_changes += 1;
+            }
         }
     }
+    a.by_iter = bins
+        .into_iter()
+        .filter(|b| b.both_escaped + b.class_changes > 0)
+        .collect();
+    a.ladder = vec![0.0; LADDER.len()];
     a.both_escaped = diffs.len();
     if !diffs.is_empty() {
         diffs.sort_by(|p, q| p.total_cmp(q));
@@ -365,8 +508,71 @@ pub fn agree(f64_smooth: &[f64], model_smooth: &[f64]) -> Agreement {
         for (k, t) in THRESHOLDS.iter().enumerate() {
             a.over[k] = diffs.iter().filter(|&&d| d > *t).count() as f64 / diffs.len() as f64;
         }
+        // `diffs` is sorted: the share above `t` is what lies past its upper partition.
+        for (k, t) in LADDER.iter().enumerate() {
+            let within = diffs.partition_point(|&d| d <= *t);
+            a.ladder[k] = (diffs.len() - within) as f64 / diffs.len() as f64;
+        }
     }
     a
+}
+
+/// The agreement members every JSON object in a line carries, after its opening brace
+/// and without a trailing comma.
+fn agreement_json(a: &Agreement) -> String {
+    let ladder: Vec<String> = a.ladder.iter().map(|s| format!("{s:.5}")).collect();
+    let bins: Vec<String> = a
+        .by_iter
+        .iter()
+        .map(|b| {
+            format!(
+                "{{\"decade\":{},\"both_escaped\":{},\"over_0.1\":{},\"over_1\":{},\"max\":{},\"class_changes\":{}}}",
+                b.decade,
+                b.both_escaped,
+                b.over_tenth,
+                b.over_one,
+                num(b.max),
+                b.class_changes
+            )
+        })
+        .collect();
+    format!(
+        "\"both_escaped\":{},\"both_interior\":{},\"f64_only_escaped\":{},\"model_only_escaped\":{},\"p50\":{},\"p90\":{},\"p99\":{},\"max\":{},\"over_0.01\":{:.5},\"over_0.1\":{:.5},\"over_1\":{:.5},\"over_10\":{:.5},\"ladder\":[{}],\"by_iter\":[{}]",
+        a.both_escaped,
+        a.both_interior,
+        a.f64_only_escaped,
+        a.model_only_escaped,
+        num(a.p50),
+        num(a.p90),
+        num(a.p99),
+        num(a.max),
+        a.over[0],
+        a.over[1],
+        a.over[2],
+        a.over[3],
+        ladder.join(","),
+        bins.join(",")
+    )
+}
+
+/// FNV-1a over every sample's smooth count, status and delta steps: two runs that print
+/// the same hash drew the same field the same way (a lookup order that changes only the
+/// reads keeps it).
+fn field_hash(mf: &ModelField) -> u64 {
+    let mut h = 0xcbf2_9ce4_8422_2325u64;
+    let mut eat = |bytes: &[u8]| {
+        for &b in bytes {
+            h ^= b as u64;
+            h = h.wrapping_mul(0x0000_0100_0000_01b3);
+        }
+    };
+    for i in 0..mf.smooth.len() {
+        eat(&mf.smooth[i].to_bits().to_le_bytes());
+        eat(&mf.status[i].to_le_bytes());
+        eat(&mf.steps[i].to_le_bytes());
+        eat(&mf.skipped[i].to_le_bytes());
+    }
+    h
 }
 
 fn mean_u32(v: &[u32]) -> f64 {
@@ -455,33 +661,65 @@ pub fn compare_frame(fs_: &FrameSpec, opts: &Options) -> Result<String, String> 
         mean_u32(&f64_field.rebases),
         f64_field.wall_s
     ));
+    // What a dump is called: the id, and the cap where a ladder dumps one frame often.
+    let base = if opts.cap_in_name {
+        safe_name(&format!("{}_n{}", fs_.id, spec.maxiter()))
+    } else {
+        safe_name(&fs_.id)
+    };
+    let mut dumped: Vec<String> = Vec::new();
+    let dump_f64 = |tag: &str, values: &[f64], dumped: &mut Vec<String>| -> Result<(), String> {
+        if let Some(dir) = &opts.dump {
+            write_f64(&dir.join(format!("{base}.{tag}.bin")), values).map_err(|e| e.to_string())?;
+            dumped.push(tag.to_string());
+        }
+        Ok(())
+    };
+    if let Some(dir) = &opts.dump {
+        fs::create_dir_all(dir).map_err(|e| e.to_string())?;
+        // `perturb`'s iteration counts, `u32` a sample: what a reader bins by.
+        let mut bytes = Vec::with_capacity(f64_field.iterations.len() * 4);
+        for v in &f64_field.iterations {
+            bytes.extend_from_slice(&v.to_le_bytes());
+        }
+        fs::write(dir.join(format!("{base}.iter.bin")), bytes).map_err(|e| e.to_string())?;
+    }
+    dump_f64("f64", &f64_field.smooth, &mut dumped)?;
+
     if opts.floor {
         let narrowed = narrowed_reference(&orbit);
         let floor_field = run_f64(&spec, &narrowed, opts.threads);
         let a = agree(&f64_field.smooth, &floor_field.smooth);
         out.push_str(&format!(
-            ",\"floor\":{{\"both_escaped\":{},\"f64_only_escaped\":{},\"model_only_escaped\":{},\"p50\":{},\"p90\":{},\"p99\":{},\"max\":{},\"over_0.01\":{:.5},\"over_0.1\":{:.5},\"over_1\":{:.5},\"over_10\":{:.5}}}",
-            a.both_escaped,
-            a.f64_only_escaped,
-            a.model_only_escaped,
-            num(a.p50),
-            num(a.p90),
-            num(a.p99),
-            num(a.max),
-            a.over[0],
-            a.over[1],
-            a.over[2],
-            a.over[3]
+            ",\"floor\":{{{},\"wall_s\":{:.3}}}",
+            agreement_json(&a),
+            floor_field.wall_s
         ));
+        dump_f64("f64rounded", &floor_field.smooth, &mut dumped)?;
     }
-
-    if let Some(dir) = &opts.dump {
-        fs::create_dir_all(dir).map_err(|e| e.to_string())?;
-        write_f64(
-            &dir.join(format!("{}.f64.bin", safe_name(&fs_.id))),
-            &f64_field.smooth,
-        )
-        .map_err(|e| e.to_string())?;
+    if opts.floor_moved {
+        match moved_spec(&spec, opts.move_px) {
+            Ok((moved, how)) => {
+                let t = Instant::now();
+                let moved_orbit = moved.reference_orbit()?;
+                let moved_ref_s = t.elapsed().as_secs_f64();
+                let moved_field = run_f64(&moved, &moved_orbit, opts.threads);
+                let a = agree(&f64_field.smooth, &moved_field.smooth);
+                out.push_str(&format!(
+                    ",\"floor_moved\":{{\"how\":\"{}\",\"ref_points\":{},\"ref_s\":{:.3},{},\"wall_s\":{:.3}}}",
+                    how,
+                    moved_orbit.len(),
+                    moved_ref_s,
+                    agreement_json(&a),
+                    moved_field.wall_s
+                ));
+                dump_f64("f64moved", &moved_field.smooth, &mut dumped)?;
+            }
+            Err(why) => out.push_str(&format!(
+                ",\"floor_moved\":{{\"unavailable\":\"{}\"}}",
+                why.replace('"', "'")
+            )),
+        }
     }
 
     // The table is a function of the `f64` orbit and the frame, not of the encoding.
@@ -490,8 +728,10 @@ pub fn compare_frame(fs_: &FrameSpec, opts: &Options) -> Result<String, String> 
         let t = GpuTable::build(&orbit, &frame, &opts.bla_options);
         let points = orbit.len().max(1) as f64;
         out.push_str(&format!(
-            ",\"bla\":{{\"eps\":{:e},\"min_level\":{},\"max_level\":{},\"levels\":{},\"entries\":{},\"valid\":{},\"entry_bytes\":{},\"interior_bytes\":{},\"header_bytes\":{},\"bytes_per_ref_iter\":{:.3},\"bytes_per_ref_iter_interior\":{:.3},\"dc_bound\":{:e},\"build_s\":{:.4}}}",
+            ",\"bla\":{{\"eps\":{:e},\"search\":\"{}\",\"gate\":{},\"min_level\":{},\"max_level\":{},\"levels\":{},\"entries\":{},\"valid\":{},\"entry_bytes\":{},\"interior_bytes\":{},\"header_bytes\":{},\"bytes_per_ref_iter\":{:.3},\"bytes_per_ref_iter_interior\":{:.3},\"dc_bound\":{:e},\"build_s\":{:.4}}}",
             t.epsilon,
+            t.search.name(),
+            t.gate,
             opts.bla_options.min_level,
             t.top_level().map_or(-1, |k| k as i64),
             t.header.levels,
@@ -512,8 +752,36 @@ pub fn compare_frame(fs_: &FrameSpec, opts: &Options) -> Result<String, String> 
 
     out.push_str(",\"models\":{");
     let mut first = true;
+    let mut table = table;
+    // Each BLA run once in the table's own order, then once per extra order, then (with
+    // `flip_gate`) each of those again with the gate flipped.
+    let mut runs: Vec<Option<(Search, bool)>> = Vec::new();
+    for &with_bla in opts.bla.runs() {
+        if with_bla {
+            let orders: Vec<Search> = std::iter::once(opts.bla_options.search)
+                .chain(opts.extra_searches.iter().copied())
+                .collect();
+            let gates: &[bool] = if opts.flip_gate {
+                &[false, true]
+            } else {
+                &[false]
+            };
+            for &flip in gates {
+                for &s in &orders {
+                    runs.push(Some((s, opts.bla_options.gate != flip)));
+                }
+            }
+        } else {
+            runs.push(None);
+        }
+    }
     for &enc in opts.encodings.iter() {
-        for &with_bla in opts.bla.runs() {
+        for &run in runs.iter() {
+            let with_bla = run.is_some();
+            if let (Some(t), Some((s, g))) = (table.as_mut(), run) {
+                t.search = s;
+                t.gate = g;
+            }
             let gpu = GpuOrbit::from_reference(&orbit, enc);
             let frame = Frame::from_spec(&spec, gpu.len())?;
             let mf = run_model_bla(
@@ -529,35 +797,51 @@ pub fn compare_frame(fs_: &FrameSpec, opts: &Options) -> Result<String, String> 
                 out.push(',');
             }
             first = false;
-            let key = if with_bla {
-                format!("{}+bla", enc.name())
-            } else {
-                enc.name().to_string()
+            let key = match run {
+                None => enc.name().to_string(),
+                Some((s, g)) => {
+                    let mut k = format!("{}+bla", enc.name());
+                    if s != opts.bla_options.search {
+                        k.push(':');
+                        k.push_str(s.name());
+                    }
+                    if g != opts.bla_options.gate {
+                        k.push_str(if g { "+gate" } else { "+nogate" });
+                    }
+                    k
+                }
             };
             let steps = mean_u32(&mf.steps);
             let bla_steps = mean_u32(&mf.bla_steps);
+            // A GPU workgroup waits on its slowest pixel, so the tail is reported too.
+            let mut sorted_steps = mf.steps.clone();
+            sorted_steps.sort_unstable();
+            if sorted_steps.is_empty() {
+                sorted_steps.push(0);
+            }
+            let mut sorted_reads = mf.reads.clone();
+            sorted_reads.sort_unstable();
+            if sorted_reads.is_empty() {
+                sorted_reads.push(0);
+            }
             out.push_str(&format!(
-            "\"{key}\":{{\"bla_steps\":{:.1},\"ptb_steps\":{:.1},\"skipped\":{:.1},\"reads\":{:.1},\"escaped\":{},\"capped\":{},\"proven\":{},\"both_escaped\":{},\"both_interior\":{},\"f64_only_escaped\":{},\"model_only_escaped\":{},\"p50\":{},\"p90\":{},\"p99\":{},\"max\":{},\"over_0.01\":{:.5},\"over_0.1\":{:.5},\"over_1\":{:.5},\"over_10\":{:.5},\"mean_steps\":{:.1},\"scaled_share\":{:.4},\"mean_rebases\":{:.3},\"max_rebases\":{},\"nonfinite\":{},\"offset_px\":{},\"sc\":{},\"ref_bytes\":{},\"wall_s\":{:.3}}}",
+            "\"{key}\":{{\"bla_steps\":{:.1},\"ptb_steps\":{:.1},\"skipped\":{:.1},\"reads\":{:.1},\"probes\":{:.1},\"p99_reads\":{},\"max_reads\":{},\"field_hash\":\"{:016x}\",\"escaped\":{},\"capped\":{},\"proven\":{},{},\"mean_steps\":{:.1},\"p50_steps\":{},\"p99_steps\":{},\"max_steps\":{},\"scaled_share\":{:.4},\"mean_rebases\":{:.3},\"max_rebases\":{},\"nonfinite\":{},\"offset_px\":{},\"sc\":{},\"ref_bytes\":{},\"wall_s\":{:.3}}}",
             bla_steps,
             steps - bla_steps,
             mean_u32(&mf.skipped),
             mean_u32(&mf.reads),
+            mean_u32(&mf.probes),
+            sorted_reads[(sorted_reads.len() - 1) * 99 / 100],
+            sorted_reads.last().copied().unwrap_or(0),
+            field_hash(&mf),
             count(ESCAPED),
             count(CAPPED),
             count(INTERIOR),
-            a.both_escaped,
-            a.both_interior,
-            a.f64_only_escaped,
-            a.model_only_escaped,
-            num(a.p50),
-            num(a.p90),
-            num(a.p99),
-            num(a.max),
-            a.over[0],
-            a.over[1],
-            a.over[2],
-            a.over[3],
+            agreement_json(&a),
             mean_u32(&mf.steps),
+            sorted_steps[sorted_steps.len() / 2],
+            sorted_steps[(sorted_steps.len() - 1) * 99 / 100],
+            sorted_steps.last().copied().unwrap_or(0),
             mean_u32(&mf.scaled) / mean_u32(&mf.steps).max(1.0),
             mean_u32(&mf.rebases),
             mf.rebases.iter().max().copied().unwrap_or(0),
@@ -569,16 +853,36 @@ pub fn compare_frame(fs_: &FrameSpec, opts: &Options) -> Result<String, String> 
         ));
             if let Some(dir) = &opts.dump {
                 let narrowed: Vec<f32> = mf.smooth.iter().map(|&x| x as f32).collect();
-                let base = safe_name(&fs_.id);
                 let tag = safe_name(&key);
-                write_f64(&dir.join(format!("{base}.{tag}.bin")), &mf.smooth)
-                    .map_err(|e| e.to_string())?;
+                dump_f64(&tag, &mf.smooth, &mut dumped)?;
                 write_f32(&dir.join(format!("{base}.{tag}.f32.bin")), &narrowed)
                     .map_err(|e| e.to_string())?;
             }
         }
     }
     out.push_str("}}");
+
+    // What a reader of the dump needs and the binaries do not say.
+    if let Some(dir) = &opts.dump {
+        let fields: Vec<String> = dumped.iter().map(|t| format!("\"{t}\"")).collect();
+        let link = match &fs_.link {
+            Some(l) => format!("\"{}\"", l.replace('\\', "\\\\").replace('"', "\\\"")),
+            None => "null".into(),
+        };
+        let meta = format!(
+            "{{\"id\":\"{}\",\"base\":\"{base}\",\"link\":{link},\"width\":{:e},\"degree\":{},\"julia\":{},\"resolution\":[{},{}],\"cap\":{},\"interior\":{},\"fields\":[{}],\"iter\":\"{base}.iter.bin\"}}\n",
+            fs_.id.replace('"', "'"),
+            spec.width,
+            spec.degree,
+            spec.julia.is_some(),
+            spec.sample_width(),
+            spec.sample_height(),
+            spec.maxiter(),
+            opts.interior,
+            fields.join(",")
+        );
+        fs::write(dir.join(format!("{base}.meta.json")), meta).map_err(|e| e.to_string())?;
+    }
     Ok(out)
 }
 
@@ -594,5 +898,59 @@ pub fn emit(line: &str, path: Option<&Path>) -> std::io::Result<()> {
             println!("{line}");
             Ok(())
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The moved reference sits where it was asked to, to the last bit the frame needs,
+    /// with every digit of a deep centre carried through the fixed point.
+    #[test]
+    fn moved_reference_is_where_it_was_asked() {
+        let row = r#"{"id":"m","re":"-0.74501772828532335842941892835857434","im":"0.14993443275456819177805709088257971","w":2e-30,"n":5000}"#;
+        let spec = FrameSpec::from_row(row).unwrap().spec([64, 36], None, true);
+        let (moved, how) = moved_spec(&spec, [1.5, -2.0]).unwrap();
+        assert!(how.starts_with("reference moved"), "{how}");
+        let spacing = spec.width / 64.0;
+        let (dre, dim) = moved.centre_offset().unwrap();
+        assert!((dre / spacing + 1.5).abs() < 1e-9, "{}", dre / spacing);
+        assert!((dim / spacing - 2.0).abs() < 1e-9, "{}", dim / spacing);
+        assert_eq!(moved.period, None);
+    }
+
+    #[test]
+    fn a_julia_frame_moves_to_its_other_anchor() {
+        let row = r#"{"id":"j","re":"0.1","im":"0.6","w":1e-6,"n":5000,"julia_re":"-0.12","julia_im":"0.75"}"#;
+        let spec = FrameSpec::from_row(row).unwrap().spec([32, 18], None, true);
+        let (moved, how) = moved_spec(&spec, [1.5, 1.0]).unwrap();
+        assert_eq!(moved.anchor, Anchor::Origin);
+        assert_eq!(how, "anchor origin");
+    }
+
+    /// The ladder and the decade bins say what the coarse shares say, and place a sample
+    /// by `perturb`'s count.
+    #[test]
+    fn ladder_and_decades_agree_with_the_shares() {
+        let f64s = [5.0, 50.0, 500.0, 5000.0, f64::NAN, 70.0];
+        let model = [5.0005, 50.2, 502.0, 5000.0, 9.0, f64::NAN];
+        let a = agree(&f64s, &model);
+        assert_eq!(a.both_escaped, 4);
+        assert_eq!(
+            a.ladder[LADDER.iter().position(|&t| t == 0.1).unwrap()],
+            a.over[1]
+        );
+        assert_eq!(
+            a.ladder[LADDER.iter().position(|&t| t == 1.0).unwrap()],
+            a.over[2]
+        );
+        let decade = |d: u32| a.by_iter.iter().find(|b| b.decade == d).unwrap().clone();
+        assert_eq!(decade(1).both_escaped, 1);
+        assert_eq!(decade(1).over_tenth, 1);
+        // The class changes: 70 (f64 escaped, decade 1) and 9 (model escaped, decade 0).
+        assert_eq!(decade(1).class_changes, 1);
+        assert_eq!(decade(0).class_changes, 1);
+        assert_eq!(decade(2).over_one, 1);
     }
 }

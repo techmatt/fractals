@@ -10,7 +10,7 @@
 //! that `tests/agreement.rs` holds the model to. The margins are stated at each test with the
 //! measured numbers (64x36 unless said otherwise).
 
-use deep_gpu_model::bla::{self, BlaOptions, GpuTable};
+use deep_gpu_model::bla::{self, BlaOptions, GpuTable, Search};
 use deep_gpu_model::compare::{
     Agreement, FrameSpec, ModelField, agree, narrowed_reference, run_f64, run_model_bla,
 };
@@ -202,6 +202,91 @@ fn passes_with_the_skip_are_bit_identical_whatever_the_budget() {
     }
 }
 
+/// Both lookup orders, with the gate and without, find the same run: the state, the skips
+/// and the iterations they covered are bit for bit bottom-up's without the gate, on frames
+/// that skip with the interior guard on and off, on a periodic reference and on a Julia
+/// plane, and passes of three steps leave the counters (the hint included) as one pass
+/// does. Only the entries read differ, and the gate never adds one to a bottom-up lookup.
+/// Bottom-up reads 5,616, 25,011, 182,416 and 314,150 on these four frames, the hint
+/// 2,448, 22,577, 181,620 and 305,420; with the gate, 5,616, 11,262, 104,088 and 16,566
+/// bottom-up, and 2,448, 8,569, 100,954 and 7,826 with the hint.
+#[test]
+fn every_lookup_order_finds_the_same_runs() {
+    for (row, interior) in [
+        (
+            r#"{"id": "tangle-1e-28", "re": "-0.74501772829019861929877929889763684", "im": "0.14993443275689704583350282968726721", "w": 1e-28, "n": 40000, "degree": 2}"#,
+            true,
+        ),
+        (
+            r#"{"id": "nucleus-3116-periodic", "re": "0.64774731161734500930901700212431871126941013022100244438793490777767414164458935", "im": "0.51776563981107259688773400463987632330403073150911819396055504521478466034303479", "w": 1.474220271796546e-40, "n": 20000, "degree": 5, "period": 3116}"#,
+            true,
+        ),
+        (
+            r#"{"id": "deep-gallery#33", "re": "0", "im": "0", "w": 7.787286674045785e-08, "n": 34239, "degree": 2, "julia_re": "-0.74937053247003823168823992075369", "julia_im": "0.041472667068168900034718746387049", "anchor": "origin"}"#,
+            true,
+        ),
+        (
+            r#"{"id": "cusp-1e5", "re": "0.2500000009869604401089358", "im": "0", "w": 4e-13, "n": 200000, "degree": 2}"#,
+            false,
+        ),
+    ] {
+        let fs = FrameSpec::from_row(row).unwrap();
+        let spec = fs.spec([16, 9], None, interior);
+        let orbit = spec.reference_orbit().unwrap();
+        let gpu = GpuOrbit::from_reference(&orbit, Encoding::F32Pair);
+        let frame = Frame::from_spec(&spec, gpu.len()).unwrap();
+        let base = GpuTable::build(&orbit, &frame, &BlaOptions::default());
+        let mut skips = 0u64;
+        let mut reads = [0u64; 4];
+        for r in 0..9 {
+            for c in 0..16 {
+                let (want, want_stats) = model::run_pixel_bla(&frame, &gpu, &base, c, r, u32::MAX);
+                skips += want_stats.bla_steps as u64;
+                let variants = [
+                    (Search::BottomUp, false),
+                    (Search::Hint, false),
+                    (Search::BottomUp, true),
+                    (Search::Hint, true),
+                ];
+                let mut ungated_reads = 0;
+                for (i, (search, gate)) in variants.into_iter().enumerate() {
+                    let mut table = base.clone();
+                    table.search = search;
+                    table.gate = gate;
+                    let (got, got_stats) =
+                        model::run_pixel_bla(&frame, &gpu, &table, c, r, u32::MAX);
+                    let id = format!("{} {search:?} gate {gate} {c},{r}", fs.id);
+                    assert_eq!(got.bits(), want.bits(), "{id}");
+                    assert_eq!(got_stats.bla_steps, want_stats.bla_steps, "{id}");
+                    assert_eq!(got_stats.skipped, want_stats.skipped, "{id}");
+                    if gate {
+                        assert!(got_stats.probes <= want_stats.probes, "{id}");
+                    } else {
+                        assert_eq!(got_stats.probes, want_stats.probes, "{id}");
+                    }
+                    if search == Search::BottomUp {
+                        if gate {
+                            assert!(got_stats.reads <= ungated_reads, "{id}");
+                        } else {
+                            ungated_reads = got_stats.reads;
+                        }
+                    }
+                    reads[i] += got_stats.reads as u64;
+                    let (passed, passed_stats) =
+                        model::run_pixel_bla(&frame, &gpu, &table, c, r, 3);
+                    assert_eq!(passed.bits(), got.bits(), "{id} passes");
+                    assert_eq!(passed_stats, got_stats, "{id} passes");
+                }
+            }
+        }
+        assert!(skips > 0, "{}: nothing skipped", fs.id);
+        eprintln!(
+            "{}: entries read bottom-up {}, hint {}; gated {} and {}",
+            fs.id, reads[0], reads[1], reads[2], reads[3]
+        );
+    }
+}
+
 // ---- the table's own claims, in f64.
 
 /// `δ' = (Z + δ)^D − Z^D + dc`, exactly as `perturb` expands it.
@@ -280,6 +365,7 @@ fn every_run_is_the_run_it_claims_at_every_degree() {
                 epsilon: eps,
                 min_level: 0,
                 max_level: 12,
+                ..BlaOptions::default()
             };
             let dcmax = if julia { 0.0 } else { bla::dc_bound(&frame) };
             let table = bla::build_with(points, orbit.periodic, degree, julia, dcmax, &opts);

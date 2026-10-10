@@ -79,6 +79,8 @@
 //! on every other step. There it reads levels bottom-up from `min_level` and stops at the
 //! first that fails, because the radius, the interior floor and the length are each
 //! monotone in the level. Each level read is one entry read, and the counters report it.
+//! [`Search::Hint`] starts from the level the pixel's last skip used instead, which finds
+//! the same run and reads fewer entries where skips are dense.
 //!
 //! # Storage, as a GPU would hold it
 //!
@@ -132,6 +134,12 @@ pub struct BlaOptions {
     pub epsilon: f64,
     pub min_level: u32,
     pub max_level: u32,
+    /// The order the lookup reads levels in. It changes the reads, never the run found.
+    pub search: Search,
+    /// The gate: before reading a level, compare `|δ|²` with the level's largest radius
+    /// squared, held in the header, and read nothing where even that one fails. It
+    /// changes the reads, never the run found. Off by default; see [`GpuTable::gate`].
+    pub gate: bool,
 }
 
 impl Default for BlaOptions {
@@ -140,6 +148,57 @@ impl Default for BlaOptions {
             epsilon: EPSILON_DEFAULT,
             min_level: MIN_LEVEL_DEFAULT,
             max_level: MAX_LEVEL_DEFAULT,
+            search: Search::BottomUp,
+            gate: false,
+        }
+    }
+}
+
+/// The order a lookup reads a pixel's candidate levels in.
+///
+/// Which levels are candidates is decided without a read, from the header and integers
+/// alone: the alignment of `m − 1`, the run's length against the cap, and the level's
+/// count. Among them, whether a level's entry admits the pixel is **monotone in the
+/// level**: a level-`k+1` entry is a level-`k` entry at the same start merged with the
+/// next, so its radius is at most the shorter one's (`r = min(r_x, …)`, rounded down
+/// alike), its smallest interior prefix is at most the shorter one's, and a dead entry's
+/// parent is dead. So either order finds the same longest run, and the field is the same
+/// bit for bit (`tests/bla.rs` holds it); only the entries read differ.
+///
+/// Measured (phase 3, `F32Pair`, 64x36): most lookups on the Deep tab's frames find
+/// nothing (81% on a 300-frame corpus slice), a miss costs bottom-up one read, and its
+/// hits are short, so nothing beats it there; `Hint` reads 2% more. Where skips are dense
+/// the hint reads fewer: 0.67 of bottom-up on the copy-cusp channels, 0.83 at the
+/// Feigenbaum point, 0.95 in the parabolic channels, 0.93 on the site's own million-cap
+/// frames, and 0.81 across the long-orbit set as a whole. Three more orders were measured
+/// and are not kept. Top-down read 1.83 times bottom-up's on the corpus and 0.82 on the
+/// long-orbit set; the lowest level first and then top-down, 1.10 and 0.97; a binary
+/// search over the levels, 1.02 and 0.91.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Search {
+    /// The removed table's order: up from the lowest level, stopping at the first that
+    /// fails. A hit at level `k` costs `k − min_level + 2` reads, a miss one.
+    #[default]
+    BottomUp,
+    /// Starts at the level the pixel's last skip used (per-pixel state below 32, which a
+    /// shader keeps in five spare bits of `status`; a miss resets it to the lowest), and
+    /// walks up while the entry admits or down until one does.
+    Hint,
+}
+
+impl Search {
+    pub fn parse(s: &str) -> Option<Search> {
+        Some(match s {
+            "bottom-up" | "bottomup" => Search::BottomUp,
+            "hint" => Search::Hint,
+            _ => return None,
+        })
+    }
+
+    pub fn name(self) -> &'static str {
+        match self {
+            Search::BottomUp => "bottom-up",
+            Search::Hint => "hint",
         }
     }
 }
@@ -176,7 +235,9 @@ pub struct BlaInterior {
 }
 
 /// The stored levels, as a uniform buffer holds them: four `u32`, then one `vec4<u32>`
-/// per level (`x` the level's offset in the entry array, `y` its count), 528 bytes.
+/// per level (`x` the level's offset in the entry array, `y` its count, `z` and `w` the
+/// largest stored radius squared on the level as `bitcast<u32>` of its `f32` mantissa and
+/// its `i32` exponent, which the gate reads), 528 bytes.
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct TableHeader {
@@ -208,6 +269,22 @@ pub struct GpuTable {
     /// Valid (non-dead) entries.
     pub valid: usize,
     pub build_s: f64,
+    /// The order lookups read levels in: a shader variant, not data.
+    pub search: Search,
+    /// Whether lookups take the gate: a shader variant, not data (the header carries each
+    /// level's largest radius either way).
+    ///
+    /// Measured (phase 3, `F32Pair`, 64x36, interior on where shipped): most failed
+    /// lookups fail at the lowest level on the radius, and the lowest level's largest
+    /// radius alone turns away 77% of those on a 300-frame corpus slice, 99.9% on the main
+    /// cusp's channel, 67% on the site's million-cap frames, 22% at the Feigenbaum point
+    /// and none on a copy cusp, whose misses are where `|Z|` is small. A per-chunk maximum
+    /// (16 or 256 entries) turned away hardly more than the one per level, so the header
+    /// holds one per level and costs no buffer and no read. Entries read against
+    /// bottom-up without it: 0.45 on the corpus slice, 0.02 to 0.18 in the parabolic
+    /// channels, unchanged on the copy cusps; with [`Search::Hint`] as well, 0.46 on the
+    /// corpus, 0.64 across the long-orbit set, 0.005 to 0.05 in the channels.
+    pub gate: bool,
 }
 
 impl GpuTable {
@@ -227,6 +304,8 @@ impl GpuTable {
             dc_bound: 0.0,
             valid: 0,
             build_s: 0.0,
+            search: Search::BottomUp,
+            gate: false,
         }
     }
 
@@ -528,6 +607,7 @@ pub fn build_with(
     let mut table = GpuTable::empty(periodic);
     table.epsilon = opts.epsilon;
     table.dc_bound = dcmax;
+    table.search = opts.search;
     let eps = opts.epsilon;
     if !(eps > 0.0 && eps < 0.25) || dcmax.is_nan() || dcmax < 0.0 || !(2..=6).contains(&degree) {
         return table;
@@ -593,14 +673,22 @@ pub fn build_with(
     table.header.levels = stored as u32;
     table.header.mask = (1u32 << min_level) - 1;
     for (i, level) in out.iter().enumerate() {
-        table.header.level[i] = [table.entries.len() as u32, level.len() as u32, 0, 0];
+        let offset = table.entries.len() as u32;
+        // The level's largest stored radius squared, for the gate: `(0, 0)` when every
+        // entry is dead.
+        let (mut top_m, mut top_e) = (0.0f32, 0i32);
         for b in level {
             let (e, x, live) = store(b);
+            if live && (top_m == 0.0 || (e.r2_e, e.r2_m) > (top_e, top_m)) {
+                (top_m, top_e) = (e.r2_m, e.r2_e);
+            }
             table.entries.push(e);
             table.interior.push(x);
             table.valid += live as usize;
         }
+        table.header.level[i] = [offset, level.len() as u32, top_m.to_bits(), top_e as u32];
     }
+    table.gate = opts.gate;
     table
 }
 
@@ -617,7 +705,14 @@ pub struct Hit {
 /// in `[1, 2)` and an exponent, and the two are compared exponent first.
 #[inline(always)]
 pub fn inside(entry: &BlaEntry, d: [f32; 2], s: i32) -> bool {
-    if entry.r2_m == 0.0 {
+    below(entry.r2_m, entry.r2_e, d, s)
+}
+
+/// `|δ|² < r2_m · 2^r2_e` for `δ = d · 2^s`, the comparison [`inside`] makes; `r2_m == 0`
+/// admits nothing.
+#[inline(always)]
+pub fn below(r2_m: f32, r2_e: i32, d: [f32; 2], s: i32) -> bool {
+    if r2_m == 0.0 {
         return false;
     }
     let dn = d[0] * d[0] + d[1] * d[1];
@@ -628,7 +723,7 @@ pub fn inside(entry: &BlaEntry, d: [f32; 2], s: i32) -> bool {
     }
     let md = ldexp_exact(dn, -ed);
     let e = ed + 2 * s;
-    e < entry.r2_e || (e == entry.r2_e && md < entry.r2_m)
+    e < r2_e || (e == r2_e && md < r2_m)
 }
 
 /// The longest run the table allows a pixel at orbit index `m` with delta `d · 2^s`,
@@ -645,6 +740,25 @@ pub fn lookup(
     interior: Option<(f32, i32, i32)>,
     reads: &mut u32,
 ) -> Option<Hit> {
+    let mut hint = 0u32;
+    lookup_hinted(table, m, d, s, left, interior, &mut hint, reads)
+}
+
+/// [`lookup`] in the table's [`Search`] order. `hint` is the pixel's last skip level
+/// (relative to `min_level`), which only [`Search::Hint`] reads and writes; bottom-up
+/// leaves it alone. Whatever the order, the run found is the same.
+#[inline(always)]
+#[allow(clippy::too_many_arguments)]
+pub fn lookup_hinted(
+    table: &GpuTable,
+    m: u32,
+    d: [f32; 2],
+    s: i32,
+    left: u32,
+    interior: Option<(f32, i32, i32)>,
+    hint: &mut u32,
+    reads: &mut u32,
+) -> Option<Hit> {
     let h = &table.header;
     if m == 0 || h.levels == 0 {
         return None;
@@ -653,43 +767,92 @@ pub fn lookup(
     if ix & h.mask != 0 {
         return None;
     }
+    // The candidates, `0..cands` relative to `min_level`, from integers and the header
+    // alone: each condition is monotone in the level.
     let aligned = count_trailing_zeros(ix);
-    let mut found = None;
-    let mut i = 0u32;
-    while i < h.levels {
+    // With the gate, a level whose largest radius does not admit the pixel is not a
+    // candidate either: no entry on it can, and the largest radius only falls with the
+    // level, so the test is monotone too.
+    let mut cands = 0u32;
+    while cands < h.levels {
+        let k = h.min_level + cands;
+        let [_, count, top_m, top_e] = h.level[cands as usize];
+        if k > aligned || (1u32 << k) >= left || (ix >> k) >= count {
+            break;
+        }
+        if table.gate && !below(f32::from_bits(top_m), top_e as i32, d, s) {
+            break;
+        }
+        cands += 1;
+    }
+    if cands == 0 {
+        return None;
+    }
+    // Reads level `i`'s entry and says whether it admits the pixel.
+    let mut admits = |i: u32| -> bool {
         let k = h.min_level + i;
-        if k > aligned {
-            break;
-        }
-        let length = 1u32 << k;
-        if length >= left {
-            break;
-        }
-        let slot = ix >> k;
-        let [offset, count, _, _] = h.level[i as usize];
-        if slot >= count {
-            break;
-        }
-        let index = offset + slot;
+        let index = h.level[i as usize][0] + (ix >> k);
         *reads += 1;
         if !inside(&table.entries[index as usize], d, s) {
-            break;
+            return false;
         }
         if let Some((dzm, dze, floor)) = interior {
             let x = &table.interior[index as usize];
             if x.dmin_m == 0.0 {
-                break;
+                return false;
             }
             let p = dzm * x.dmin_m;
             let pe = dze + x.dmin_e + exponent_of(p);
             if pe < floor {
-                break;
+                return false;
             }
         }
-        found = Some(Hit { index, length });
-        i += 1;
+        true
+    };
+    // The highest admitting candidate, or `NONE`.
+    const NONE: u32 = u32::MAX;
+    let best = match table.search {
+        Search::BottomUp => {
+            let mut best = NONE;
+            let mut i = 0;
+            while i < cands && admits(i) {
+                best = i;
+                i += 1;
+            }
+            best
+        }
+        Search::Hint => {
+            let start = (*hint).min(cands - 1);
+            let mut best = NONE;
+            if admits(start) {
+                best = start;
+                let mut i = start + 1;
+                while i < cands && admits(i) {
+                    best = i;
+                    i += 1;
+                }
+            } else {
+                let mut i = start;
+                while i > 0 {
+                    i -= 1;
+                    if admits(i) {
+                        best = i;
+                        break;
+                    }
+                }
+            }
+            *hint = if best == NONE { 0 } else { best };
+            best
+        }
+    };
+    if best == NONE {
+        return None;
     }
-    found
+    let k = h.min_level + best;
+    Some(Hit {
+        index: h.level[best as usize][0] + (ix >> k),
+        length: 1u32 << k,
+    })
 }
 
 /// `δ' = A·δ + B·dc` for `δ = d · 2^s` and `dc = dc_m · 2^sc`, as a mantissa and an

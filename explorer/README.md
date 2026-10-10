@@ -1818,9 +1818,13 @@ field: one `f64` a sample with `NaN` for the interior, in the layout `compute_ba
 produces, so `shade_level` colours it without being told which kernel drew it.
 
 **The ordinary explorer is not slower, heavier or different for it.** `perturb.wasm` and the
-tab's four modules are fetched on the tab's first open and never before, the Walk tab's
-pattern. `engine.wasm` is byte-identical — the Shading branch the prompt allowed was not
-needed, and `engine.manifest.json` is unmoved. The shallow permalink did not move: `VERSION`
+tab's eight modules (`deep.js`, `deep-render.js`, `deep-worker.js`, `deep-fx.js`,
+`deep-link.js`, `deep-gallery.js`, `dive-results.js`, and `random-dives.js`) are fetched on
+the tab's first open, the Walk tab's pattern, or through one of three doors in the shallow
+view: Find minibrots mounts the tab's machinery, New coloring fetches `deep-render.js` and
+one worker, and a deep link in the address or in Saved, or opening the Saved tab, fetches
+`deep-link.js` and `deep-fx.js` alone. `engine.wasm` is byte-identical — the Shading
+branch the prompt allowed was not needed, and `engine.manifest.json` is unmoved. The shallow permalink did not move: `VERSION`
 is 3, `READS` is `[1, 2, 3]`, the unknown-key sweep is unchanged and the cap is still not a
 key. Two functions of `permalink.js` are newly **exported** — `encode` and `encodeCurve` —
 and nothing about what a link means changed with them.
