@@ -1,0 +1,20 @@
+[package]
+name = "deep-gpu-model"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+# A native model of the Deep tab's WebGPU kernel, and later that shader's oracle.
+# `explorer/perturb-wasm` comes in as an rlib for two things only: the reference orbit,
+# and the f64 kernel the model is measured against. Nothing in that crate is built
+# differently for it, and its own `Cargo.lock` is not read.
+[dependencies]
+perturb = { path = "../perturb-wasm" }
+
+# `deep-gallery-native`'s profile, less `panic = "abort"`: under `cargo test --release`
+# that setting makes cargo build the library twice, once per panic strategy, and the
+# `compare` binary then fails to find it. Unwinding costs this crate nothing measurable.
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1

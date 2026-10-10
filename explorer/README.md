@@ -227,6 +227,8 @@ perturb.wasm          generated: the perturbation kernel, compiled
 perturb.manifest.json generated: what perturb.wasm was built from
 engine-wasm/          the crate that produces engine.wasm
 perturb-wasm/         the crate that produces perturb.wasm — see The Deep tab
+deep-gpu-model/       a native model of a GPU kernel for the Deep tab, measured against
+                      perturb; no module, nothing on the page — its README
 bench/                the timing harnesses — see Measured
 bench/showcase.mjs    the showcase video's tour, captured and assembled — see Demo mode
 bench/hunt/           the bug hunt's own: lib.mjs, eight units, four probes
@@ -3424,6 +3426,8 @@ bench/link-fidelity.mjs  and a third: every tab driven through its common action
 perturb.wasm       generated: the perturbation kernel, compiled
 perturb.manifest.json  generated: what perturb.wasm was built from
 perturb-wasm/      the crate that produces it
+deep-gpu-model/    perturb's kernel restated in f32 for a GPU, measured against it; it
+                   builds no module and nothing here loads it — its README
 ```
 
 `python -m builder explorer --perturb` rebuilds the module and its manifest and nothing

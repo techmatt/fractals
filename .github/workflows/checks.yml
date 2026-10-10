@@ -18,7 +18,7 @@
 # The node suites run on node's own runner with nothing installed: there is no package.json
 # here and there is not going to be one. Several instantiate the committed wasm modules.
 #
-# `crates` proves the three Rust crates compile, on the toolchain the manifests record
+# `crates` proves the four Rust crates compile, on the toolchain the manifests record
 # rather than on stable (explorer/README.md has why 1.98.1 is not neutral). It is the one
 # job that is not a bare clone: `engine-wasm` depends on the wallpapers engine by path, so
 # that repository is checked out beside this one at the commit `engine.manifest.json`
@@ -110,12 +110,13 @@ jobs:
           toolchain: ${{ steps.pin.outputs.rustc }}
           targets: wasm32-unknown-unknown
           components: rustfmt
-      - name: rustfmt, all three crates
+      - name: rustfmt, all four crates
         working-directory: fractal-website
         run: |
           (cd explorer/perturb-wasm && cargo fmt --check)
           (cd explorer/engine-wasm && cargo fmt --check)
           (cd builder/deep-gallery-native && cargo fmt --check)
+          (cd explorer/deep-gpu-model && cargo fmt --check)
       - name: build engine-wasm
         working-directory: fractal-website/explorer/engine-wasm
         run: cargo build --release --target wasm32-unknown-unknown
@@ -125,6 +126,11 @@ jobs:
       - name: build the native Deep gallery maker
         working-directory: fractal-website/builder/deep-gallery-native
         run: cargo build --release
+      # The one crate whose tests run here: they hold the GPU kernel's model to the f64
+      # kernel and take seconds.
+      - name: build and test the GPU kernel's native model
+        working-directory: fractal-website/explorer/deep-gpu-model
+        run: cargo test --release
       # Read-only against the tree: the built modules stay under target/.
       - name: built wasm beside committed wasm
         working-directory: fractal-website

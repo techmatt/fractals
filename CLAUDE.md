@@ -549,7 +549,8 @@ Three Windows cautions that have each cost a session already:
 ```
 python -m ruff check . && python -m ruff format --check . && python -m builder check
 node --test explorer/permalink.test.mjs explorer/bands.test.mjs explorer/level.test.mjs explorer/derive.test.mjs explorer/stops.test.mjs explorer/saved.test.mjs explorer/undo.test.mjs explorer/zip.test.mjs explorer/stamp.test.mjs explorer/deep-fx.test.mjs explorer/deep-link.test.mjs explorer/deep.test.mjs explorer/screensaver.test.mjs explorer/hold.test.mjs explorer/fit.test.mjs explorer/dives.test.mjs explorer/aliasing.test.mjs explorer/period-range.test.mjs explorer/pointers.test.mjs atlas/atlas.test.mjs
-(cd explorer/perturb-wasm && cargo fmt --check) && (cd explorer/engine-wasm && cargo fmt --check) && (cd builder/deep-gallery-native && cargo fmt --check)
+(cd explorer/perturb-wasm && cargo fmt --check) && (cd explorer/engine-wasm && cargo fmt --check) && (cd builder/deep-gallery-native && cargo fmt --check) && (cd explorer/deep-gpu-model && cargo fmt --check)
+(cd explorer/deep-gpu-model && cargo test --release)
 ```
 
 **The third line is there so that a reformat can never arrive as a side effect**; each
@@ -567,6 +568,10 @@ The second line is the twenty JavaScript suites, on Node's own runner with nothi
 installed; `explorer/README.md`'s *The test suites* says what each holds, and
 `atlas/README.md` the atlas's.
 
+The fourth line is the GPU kernel model's tests (`explorer/deep-gpu-model/README.md`),
+which CI runs too: seconds after a build of about twenty, and they can only move when that
+crate or `perturb-wasm` has.
+
 After touching placed prose, `python -m builder prose <page>` as well — see **Where prose
 comes from** above for what it holds together and why one edit has several sites.
 
@@ -575,8 +580,9 @@ module docstring names every one and what it holds; `builder/README.md`'s *What 
 checks* has most of them at more length. It also prints one note — never a failure — about
 the committed wasm module, described in `explorer/README.md`. The same commands run in CI
 (`.github/workflows/checks.yml`), which is a check and not a deploy dependency, on Linux,
-macOS and Windows, with a `crates` job that builds the three Rust crates on the manifests'
-toolchain and reports each built wasm's hash beside the committed one without asserting it.
+macOS and Windows, with a `crates` job that builds the four Rust crates on the manifests'
+toolchain, runs the GPU kernel model's tests, and reports each built wasm's hash beside the
+committed one without asserting it.
 
 **Every check runs on a bare clone, and what cannot run says so by name.** CI clones this
 repository alone, so a check that needs the wallpapers checkout is a check CI never makes.
