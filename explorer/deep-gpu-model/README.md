@@ -26,12 +26,18 @@ src/wgsl.rs         the WGSL builtins and bit idioms the loop uses, one function
 src/orbit.rs        the reference orbit as a GPU buffer: F32Pair or HiLo
 src/frame.rs        per-frame constants, and dc formed per pixel from its column and row
 src/model.rs        the per-pixel state struct and the bounded-step loop
+src/ds.rs           double-single arithmetic: a value as hi + lo f32, about 48 bits
+src/model_ds.rs     model.rs's loop with the delta, the reference and dc in double-single
+src/survivors.rs    f32 first, double-single from the start for pixels running past a threshold
 src/bla.rs          the skip table: built in f64, stored as the GPU holds it, looked up in f32
+src/proof.rs        perturb's interior proof in f32, i32 and u32, behind both kernels' gate
 src/compare.rs      the harness: both kernels on one frame, and how they agree
 src/json.rs         just enough JSON to read a corpus row
 src/bin/compare.rs  the harness as a command, one JSON line per frame
 tests/agreement.rs  the model against perturb on frames the site draws
 tests/bla.rs        the skip: switch-off identity, passes, its runs, its guards, its price
+tests/ds.rs         double-single: passes, agreement against f32, survivors, the skip in DS
+tests/interior.rs   the gate and the proof: no escaping sample painted interior, both kernels
 ```
 
 ## The arithmetic rules
@@ -88,17 +94,30 @@ WGSL can express:
   because `|δ|²` underflows `f32` there.
 - **The count is a `u32` and the smooth fraction a separate `f32`**, computed at the
   escape from a rescaled `|z|` when `|z|²` overflows (degree four and up).
-- **Bounded steps per pass.** All per-pixel state is one 48-byte `#[repr(C)]` struct
-  (`PixelState`, laid out as WGSL would lay it out: a `vec2<f32>` and ten 4-byte scalars).
-  `pass` advances it by at most a given number of steps, and the result is bit-identical
-  whatever that number is. Three of its fields are measurement counters (rebases, steps,
-  and steps taken scaled); the kernel needs 36 bytes.
-- **The interior switch** is `perturb`'s as it was before interior_switch_fix_ckpt162,
-  with `|dz|²` as a mantissa in `[1, 2)` and an `i32` exponent, and `|z|²` formed from a
-  rescaled `z` wherever it would underflow. It is a frame flag, because long-orbit frames
-  must run with it off. ⚠ **That rule is unsound beside a parabolic point**, and `perturb`
-  now uses it only as a gate in front of a proof (its README's §3): here it is still the
-  verdict, so a WGSL kernel written against this model owes the same proof.
+- **Bounded steps per pass.** All per-pixel state is one 120-byte `#[repr(C)]` struct
+  (`PixelState`, laid out as WGSL would lay it out: a `vec2<f32>`, ten 4-byte scalars, and
+  the interior proof's 72-byte state). `pass` advances it by at most a given number of
+  steps, and the result is bit-identical whatever that number is, a proof in flight
+  included. Three of its fields are measurement counters (rebases, steps, and steps taken
+  scaled); the kernel needs 108 bytes with the interior switch on (112 as a WGSL struct)
+  and 36 with it off, where a shader would not bind the proof's part.
+- **The interior switch is `perturb`'s since interior_switch_fix_ckpt162: a gate, then a
+  proof.** `|dz|² < 2^-64` (a mantissa in `[1, 2)` and an `i32` exponent, with `|z|²`
+  formed from a rescaled `z` wherever it would underflow) only arms `src/proof.rs`; the
+  sample runs on, and is interior only when a disc about its orbit maps into itself. The
+  proof carries each step's rounding in the disc's radius, which `perturb`'s does not: at
+  `f32` the shipped margins prove the main cusp itself interior, on an orbit stalled at a
+  fixed point of the rounded map. Without the skip nothing the switch does reaches the
+  delta or the count, so an escaping gated sample lands on exactly the state it lands on
+  with the switch off (`tests/interior.rs`: the main cusp at degrees two to six and the
+  imploded Julia set, in both kernels, where the old verdict was false). With the skip it
+  lands on the same class but not the same bits: a carrying proof suppresses the lookup,
+  so a gated sample single-steps where the switch-off run skips (on the degree-2 cusp,
+  fractions up to `3e-4` apart, and 62,000 to 68,000 delta steps against 9 to 7,980). The
+  proof is sound and incomplete, so a
+  gated sample it never settles has a per-frame policy (`--interior-policy`): run to the
+  cap and paint it capped, as `perturb` does (the default); run to the cap and hand it back
+  `GATED`; or hand it back as soon as the proof gives up. The switch is still a frame flag.
 - **Degrees two to six, and both Julia anchors**, all of what `perturb` draws.
 
 ## Iteration skipping
@@ -117,7 +136,7 @@ picture by its own rounding, so the bar is the model with the switch on agreeing
   same hashes.
 - **The table is the removed one's design**: its merge rule, its guards (no run reaches
   `len − 1`; a leaf whose landing point could clear the bailout is dead; `n + l < maxiter`
-  at lookup; the interior switch cannot fire inside a run, through each entry's smallest
+  at lookup; the interior gate cannot fire inside a run, through each entry's smallest
   prefix product), its level layout (level-`k` entry `j` is the run of `2^k` from
   `j·2^k + 1`, levels below `min_level` merged and not stored) and its aligned,
   bottom-up lookup. It is built on the CPU in `f64` from `perturb`'s `f64` orbit,
@@ -165,7 +184,10 @@ picture by its own rounding, so the bar is the model with the switch on agreeing
   (`tests/bla.rs`, on seven frames that skip). `BlaStats` is a 20-byte buffer of its
   own: four measurement counters (skips, iterations skipped, entries read, and lookups
   that read any) and `hint`, the last skip's level, which is lookup state that
-  `--search hint` starts from. So `PixelState` is the same 48 bytes with the switch on.
+  `--search hint` starts from. So `PixelState` is the same struct with the skip on.
+- **A gated sample does not skip while its proof carries discs**, since no disc is carried
+  across a skip; once the discs are spent it skips again, and a landing on a new low `|z|`
+  re-arms the proof.
 - **The table is built on the CPU before the GPU runs**, serially, at about 49 ns a
   reference point, and no step count in this file includes it. On the corpus it took
   201 s in all (0.086 s a frame, 0.57 s at most) against 1,421 s of `F32Pair` model time
@@ -221,6 +243,29 @@ half-diagonal (the removed table's law, which these numbers keep). Frames at `3e
 and one at `7.3e-9` saves 2%. `ε` above `2^-24` and other levels were not swept across the
 corpus; every number below is at the defaults.
 
+## Double-single, and survivors
+
+`model_ds` is `model`'s loop with the delta carried as `hi + lo` pairs of `f32` (about 48
+bits), the reference read from the `HiLo` buffer as pairs (it refuses `F32Pair`), and `dc`
+formed as a pair from a second 32-byte uniform (`FrameLo`: the low halves of the offset and
+the spacing, and the interior proof's double-single margins). Regimes, rebasing, the escape
+and the interior gate are `model`'s, with every decision and output read off the high
+parts; `src/model_ds.rs` says where, and why the quick path's gate is tighter. The interior
+proof reads the whole pair, on those margins, which let it prove cycles the `f32` proof
+cannot. Its state is 128 bytes (116 for the kernel, 44 with the interior switch off). A quick step costs
+266 `f32` operations at degree two against 22, and 1,676 against 86 at degree six. With the
+skip, the table carries the low halves of `A` and `B` in a 16-byte buffer of its own and
+the tolerance is `2^-48` by default (`--ds-eps`); `src/bla.rs`'s `apply_ds` has the
+measurements behind both. `survivors` runs the `f32` kernel until a pixel stops or reaches a
+threshold, and redoes only the pixels still running there, in double-single from the start.
+
+First numbers (64x36, median `|Δ smooth|` and share more than 0.1 off `perturb`; `f32` /
+`f64` on the rounded reference / double-single): `random-dives#5` 3.8e-3 22.4% / 5.8e-4
+14.0% / 4.9e-8 0.31%; `random-dives#501` 6.1e-4 20.6% / 5.0e-4 19.5% / 2.8e-8 1.3%;
+`random-dives#808` 2,870 94% / 164 90% / 3.1e-4 34%; `go:julia3-end` 947 99.96% / 113 99.4%
+/ 2.6e-3 29%. Double-single sits far below the rounded-reference floor that `f32` cannot
+beat. `tests/ds.rs` holds `#5`, `#501` and `go:julia3-end` (at 16x9) among others.
+
 ## Running a comparison
 
 ```
@@ -228,10 +273,11 @@ cd explorer/deep-gpu-model
 cargo build --release
 target/release/compare --corpus frames.jsonl [--ids a,b] [--skip N] [--take N]
     [--res 160x90] [--cap N | --caps N,N,..] [--cap-max N]
-    [--encoding f32pair|hilo|both] [--interior on|off] [--threads N] [--budget N]
+    [--encoding f32pair|hilo|both|ds|survivors|all[,..]] [--survive-at N[,N..]]
+    [--interior on|off] [--interior-policy cap|flag|handoff] [--threads N] [--budget N]
     [--floor off|on|rounded|moved|both] [--move DX,DY] [--dump DIR] [--out FILE]
     [--bla off|on|both] [--eps E] [--min-level K] [--max-level K]
-    [--search bottom-up|hint[,hint]] [--gate off|on|both]
+    [--search bottom-up|hint[,hint]] [--gate off|on|both] [--ds-eps E]
 target/release/compare --re X --im Y --w W [--n CAP] [--deg D] [--jre A --jim B]
     [--anchor origin] [--period P] [--id NAME] ...
 target/release/compare --help
@@ -240,12 +286,23 @@ target/release/compare --help
 `--help` is the full contract. A corpus row is `{id, re, im, w, n, degree, julia_re,
 julia_im, anchor, period, link}`, with the coordinates as decimal strings. Each frame prints
 one JSON line: the `f64` kernel's escape count, mean iterations, rebases, and wall time, and
-per encoding the model's class counts, how many samples change class, the distribution of
-`|Δ smooth|` over the samples both kernels escape at (p50, p90, p99, max, the shares above
-0.01, 0.1, 1, and 10, and a finer `ladder` of shares from 0.001 to 1000), the same split by
-the decade of `perturb`'s count (`by_iter`), delta steps per pixel (mean, p50, p99, max),
-the share of steps taken scaled, rebases, and wall time. `--caps` runs each frame once per
-cap, one line each.
+per scheme the model's class counts (escaped, capped, proven, `gated`, and `unproven`, the
+samples the gate fired on and no proof closed), how many samples change class, the
+distribution of `|Δ smooth|` over the samples both kernels escape at (p50, p90, p99, max,
+the shares above 0.01, 0.1, 1, and 10, and a finer `ladder` of shares from 0.001 to 1000),
+the same split by the decade of `perturb`'s count (`by_iter`), delta steps per pixel
+(`mean_steps`, p50, p99, max), the share of steps taken scaled, rebases, and wall time.
+`--caps` runs each frame once per cap, one line each.
+
+The schemes (`--encoding`, a name or a list) all run on one `f64` pass: `f32pair` and
+`hilo` (the `f32` kernel on either orbit; `both` is the two), `ds` (the double-single
+kernel), `survivors` (once per `--survive-at` threshold, default 1000, keyed
+`survivors@N`; each adds `threshold`, `redone`, `survivor_share`, and mean `f32_steps` and
+`ds_steps` per pixel), and `all`. With `--bla on` or `both` the double-single kernel runs
+its own table at `--ds-eps` too (`ds+bla`, whose build the line's `ds_bla` reports).
+`--interior-policy flag` or `handoff` hands gated samples back; the harness settles them
+as the CPU would, with `perturb`'s value, before measuring agreement, and counts them as
+`gated`.
 
 Two floors measure how far `perturb` moves against itself, so that a disagreement is not
 blamed on `f32` when `f64` moves that much too. `--floor rounded` (or `on`) is the `f64`
@@ -258,8 +315,9 @@ chaotic long orbits `f64` is not noise-free. `both` runs the two.
 `--dump DIR` writes per-sample fields as little-endian binaries, `NaN` interior:
 `<base>.f64.bin` for `perturb`, `.f64rounded.bin` and `.f64moved.bin` for the floors,
 `<base>.<encoding>[_bla].bin` (`f64` `n + frac`) and `.f32.bin` for the model,
+`.ds[_bla].bin` and `.survivors@N[_bla].bin` the same way for the other schemes,
 `<base>.iter.bin` with `perturb`'s counts as `u32`, and `<base>.meta.json` naming the
-frame, its link, its grid, its cap, and the fields written. `<base>` is the id, with the
+frame, its link, its grid, its cap, the interior policy, and the fields written. `<base>` is the id, with the
 cap appended under `--caps`.
 
 `--bla on` runs the model with the skip table, `both` without and then with it (keyed
@@ -309,7 +367,8 @@ Run A was the corpus in seven round-robin shards of one thread each, 26.5 minute
 Long orbits run with the interior switch off on both kernels: the switch as it shipped
 then falsely proved the degree-2 main cusp and the imploded Julia set interior, and with it
 on a comparison measures the switch rather than `f32`. `perturb`'s is sound since
-interior_switch_fix_ckpt162; this model's is not.
+interior_switch_fix_ckpt162, and this model's since gpu_ds_probe_stage2_ckpt162; every
+measurement below was taken before that, with the old verdict.
 
 ### The visible metric
 
@@ -494,10 +553,14 @@ figures are layout arithmetic, and the timing figures below are estimates from a
 rates and per-step costs counted from instructions. WebGPU defaults: 128 MiB a storage
 binding, 256 MiB a buffer, 8 storage buffers a stage.
 
-- **Per pixel**: 48 bytes of `PixelState`, of which the kernel needs 36 (40 as a WGSL
-  struct); packings to 32 (interior on) and 24 (interior off) are possible and untested. The
-  /4 preview (129,600 pixels) is 6.2 MB, 1080p 99.5 MB, 1440p fits one binding only at 36
-  bytes, and 4K is drawn as tiles. Pixel count is never a hard limit.
+- **Per pixel**: 48 bytes of `PixelState` as measured, of which the kernel needs 36 (40 as
+  a WGSL struct); packings to 32 (interior on) and 24 (interior off) are possible and
+  untested. The /4 preview (129,600 pixels) is 6.2 MB, 1080p 99.5 MB, 1440p fits one
+  binding only at 36 bytes, and 4K is drawn as tiles. Pixel count is never a hard limit.
+  ⚠ The interior proof has since added 72 bytes a pixel with the switch on (120 in all,
+  112 for a WGSL kernel; 128 and 120 in double-single): 1080p is then 249 MB, past one
+  binding, so a shader would keep the proof in a buffer of its own, bound only with the
+  switch on, or tile.
 - **Per reference iteration**: orbit 8 bytes as F32Pair, 16 as HiLo; with the table 12 and
   20; with the interior buffer too, 14 and 22.
 - **Largest reference**: 16.8M points as F32Pair and 8.4M as HiLo with one binding a buffer;

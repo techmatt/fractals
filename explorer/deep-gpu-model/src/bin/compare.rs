@@ -7,6 +7,7 @@ use std::path::PathBuf;
 use deep_gpu_model::Encoding;
 use deep_gpu_model::bla::Search;
 use deep_gpu_model::compare::{BlaMode, FrameSpec, LADDER, Options, compare_frame, emit};
+use deep_gpu_model::frame::GatedPolicy;
 use perturb::Anchor;
 
 const USAGE: &str = "\
@@ -26,8 +27,28 @@ what runs:
   --caps N,N,..            a cap ladder: each frame once per cap, one line each, and a
                            dump's names carry the cap (<id>_n<cap>.*)
   --cap-max N              lower each frame's own cap to at most N
-  --encoding E             f32pair, hilo or both (default both)
-  --interior on|off        perturb's interior switch, on both kernels (default on)
+  --encoding E[,E..]       the model schemes to run (default both):
+                             f32pair    the f32 kernel on the F32Pair orbit
+                             hilo       the f32 kernel on the HiLo orbit
+                             both       f32pair and hilo
+                             ds         the double-single kernel on the HiLo orbit
+                             survivors  F32Pair until a sample stops or reaches a
+                                        threshold, then HiLo double-single from the start
+                                        for what is still running, once per --survive-at
+                             all        f32pair, hilo, ds and survivors
+                           all on one f64 pass, each keyed by its name (survivors@N)
+  --survive-at N[,N..]     the survivors' thresholds, each its own scheme keyed
+                           survivors@N (default 1000)
+  --interior on|off        perturb's interior switch, on both kernels (default on). The
+                           models' is a gate and a proof (src/proof.rs), as perturb's is
+  --interior-policy P      what a model does with a sample the gate fired on and the
+                           proof never closed (default cap):
+                             cap      run on; at the cap it is capped (interior), as
+                                      perturb paints it
+                             flag     run on; at the cap it is handed back gated
+                             handoff  handed back gated as soon as the proof gives up
+                           a gated sample is settled as the CPU would settle it: it takes
+                           perturb's value before agreement is measured
   --bla off|on|both        the model's skip table; both runs each encoding twice, the
                            second keyed <encoding>+bla (the f64 kernel never has one)
   --eps E                  skip tolerance (default 2^-24)
@@ -41,7 +62,14 @@ what runs:
                            radius (in the table header) refuses the pixel. both runs
                            every order twice, the second keyed ...+gate; the same
                            runs, fewer reads (default off)
-  --budget N              model steps per pass (default unbounded)
+  --ds off|on              adds ds to the schemes (the skip on top keys it ds+bla, under
+                           --bla on or both, with --ds-eps its tolerance)
+  --ds-eps E               the double-single kernel's skip tolerance (default 2^-48)
+  --survivors T[,T..]      adds survivors at these thresholds (as --survive-at);
+                           survivors@T (and survivors@T+bla) add threshold, redone
+                           (samples re-run), survivor_share (redone over samples), and
+                           mean f32_steps and ds_steps per pixel (with max_ds_steps)
+  --budget N               model steps per pass (default unbounded)
   --threads N              worker threads (default: all)
 
 floors (f64 against f64):
@@ -57,15 +85,19 @@ output:
   --dump DIR               per-sample fields, little-endian, NaN interior:
                            <base>.f64.bin, .f64rounded.bin, .f64moved.bin,
                            .<encoding>[_bla].bin (f64 n+frac) and .f32.bin,
+                           .ds[_bla].bin and .survivors@N[_bla].bin (f64 n+frac),
                            <base>.iter.bin (perturb's counts, u32), and
-                           <base>.meta.json (id, link, resolution, cap, fields)
+                           <base>.meta.json (id, link, resolution, cap, interior policy,
+                           and fields, the names of every .bin above it wrote)
 
 Each agreement object (floor, floor_moved, each model) has p50/p90/p99/max of
 |delta smooth| over samples both escape at, shares over 0.01/0.1/1/10, `ladder` (shares
 over each of LADDER, below), `by_iter` (per decade of perturb's count: both_escaped,
 over_0.1, over_1, max, class_changes), and the class-change counts. Each model also
-reports delta steps per pixel (mean, p50, p99, max), skips, entries read (mean, p99,
-max), lookups that read (probes), a field_hash of its samples, and wall time.
+reports its classes (escaped, capped, proven interior, gated: handed back and settled
+by perturb, unproven: the gate fired and no proof closed), delta steps per pixel
+(mean_steps, p50, p99, max), skips, entries read (mean, p99, max), lookups that read
+(probes), a field_hash of its samples, and wall time (wall_s).
 ";
 
 fn main() {
@@ -134,11 +166,55 @@ fn run() -> Result<(), String> {
     if let Some(b) = parse_u32("budget")? {
         opts.budget = b.max(1);
     }
+    // The survivors' thresholds, wherever the scheme is asked for.
+    let thresholds = |list: &str, k: &str| -> Result<Vec<u32>, String> {
+        list.split(',')
+            .map(|t| {
+                let t = t.trim();
+                if t == "0" { Ok(0) } else { count(k, t) }
+            })
+            .collect()
+    };
+    let survive_at = match get("survive-at") {
+        Some(list) => thresholds(&list, "survive-at")?,
+        None => vec![1000],
+    };
+    let mut survivors = false;
     if let Some(e) = get("encoding") {
-        opts.encodings = match e.as_str() {
-            "both" => vec![Encoding::F32Pair, Encoding::HiLo],
-            other => vec![Encoding::parse(other).ok_or("--encoding is f32pair, hilo or both")?],
-        };
+        opts.encodings = Vec::new();
+        for name in e.split(',').map(str::trim) {
+            let mut add = |enc: Encoding| {
+                if !opts.encodings.contains(&enc) {
+                    opts.encodings.push(enc);
+                }
+            };
+            match name {
+                "both" => {
+                    add(Encoding::F32Pair);
+                    add(Encoding::HiLo);
+                }
+                "all" => {
+                    add(Encoding::F32Pair);
+                    add(Encoding::HiLo);
+                    opts.ds = true;
+                    survivors = true;
+                }
+                "ds" => opts.ds = true,
+                "survivors" => survivors = true,
+                other => add(Encoding::parse(other).ok_or(
+                    "--encoding is f32pair, hilo, both, ds, survivors or all, or a list of them",
+                )?),
+            }
+        }
+    }
+    // Without the scheme, --survive-at is read and unused, so one command line can serve
+    // several --encoding values.
+    if survivors {
+        opts.survivors = survive_at;
+    }
+    if let Some(p) = get("interior-policy") {
+        opts.interior_policy =
+            GatedPolicy::parse(&p).ok_or("--interior-policy is cap, flag or handoff")?;
     }
     if let Some(v) = get("interior") {
         opts.interior = match v.as_str() {
@@ -196,6 +272,25 @@ fn run() -> Result<(), String> {
         Some("both") => (false, true),
         _ => return Err("--gate is off, on or both".into()),
     };
+    match get("ds").as_deref() {
+        None | Some("off") => {}
+        Some("on") => opts.ds = true,
+        _ => return Err("--ds is on or off".into()),
+    }
+    if let Some(e) = get("ds-eps") {
+        let eps: f64 = e.parse().map_err(|_| "--ds-eps is a number")?;
+        if !(eps > 0.0 && eps < 0.25) {
+            return Err("--ds-eps is in (0, 0.25)".into());
+        }
+        opts.ds_eps = eps;
+    }
+    if let Some(list) = get("survivors") {
+        for t in thresholds(&list, "survivors")? {
+            if !opts.survivors.contains(&t) {
+                opts.survivors.push(t);
+            }
+        }
+    }
     let out = get("out").map(PathBuf::from);
 
     let frames: Vec<FrameSpec> = if let Some(path) = get("corpus") {

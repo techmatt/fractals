@@ -27,12 +27,15 @@
 
 use perturb::{Anchor, Spec};
 
-use crate::orbit::narrow;
+use crate::ds::{self, Cds};
+use crate::orbit::{Encoding, narrow};
+use crate::proof::{Margins, Precision};
 use crate::wgsl;
 
 /// Everything the per-pixel loop reads that is the same for every pixel of a frame.
 /// Plain `f32`, `i32` and `u32` fields in `#[repr(C)]` order, so it is a uniform buffer
-/// as it stands: `offset_m` is a `vec2<f32>` at offset 8, and the struct is 48 bytes.
+/// as it stands: `offset_m` is a `vec2<f32>` at offset 8, and the struct is 64 bytes, the
+/// last 16 of them the interior proof's margins.
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct Frame {
@@ -53,10 +56,57 @@ pub struct Frame {
     pub julia: u32,
     /// The reference index a Julia sample starts at (1 at the `z = c` anchor).
     pub entry: u32,
-    /// 1 when the interior switch runs.
+    /// 0 with the interior switch off; otherwise the switch runs, and the value is the
+    /// [`GatedPolicy`]'s code, what becomes of a sample the gate fired on and the proof
+    /// never closed ([`crate::model`]'s module doc).
     pub interior: u32,
-    /// The interior switch's threshold: `|dz|² < 2^floor` proves interior.
+    /// The interior switch's gate: a sample with `|dz|² < 2^floor` is handed to the proof.
     pub floor: i32,
+    /// The proof's margins for an `f32` kernel at this degree ([`proof::Margins::new`]).
+    pub margins: Margins,
+}
+
+/// What becomes of a gated sample the proof never closes on, set per frame in
+/// [`Frame::interior`]. The proof is sound at either precision but not complete: a cycle
+/// whose return gathers more rounding than its disc holds is never proved, and a sample
+/// beside a parabolic point (which is not interior) is gated for as long as it creeps.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum GatedPolicy {
+    /// Run on to the escape or the cap; at the cap the status is `CAPPED`, painted as
+    /// interior, which is what `perturb` does with a sample it cannot prove.
+    Cap = 1,
+    /// Run on to the escape or the cap; at the cap the status is `GATED`, so that the
+    /// caller can hand the sample to the CPU's `f64` kernel.
+    Flag = 2,
+    /// Stop with `GATED` as soon as the proof gives up (its discs spent or dead), and leave
+    /// the rest to the CPU. A parabolic sample is handed over too, escaping or not.
+    Handoff = 3,
+}
+
+impl GatedPolicy {
+    /// The value [`Frame::interior`] carries.
+    pub fn code(self) -> u32 {
+        self as u32
+    }
+
+    /// The name the comparison harness prints and parses.
+    pub fn name(self) -> &'static str {
+        match self {
+            GatedPolicy::Cap => "cap",
+            GatedPolicy::Flag => "flag",
+            GatedPolicy::Handoff => "handoff",
+        }
+    }
+
+    /// Parses `cap`, `flag` or `handoff`.
+    pub fn parse(text: &str) -> Option<GatedPolicy> {
+        match text {
+            "cap" => Some(GatedPolicy::Cap),
+            "flag" => Some(GatedPolicy::Flag),
+            "handoff" => Some(GatedPolicy::Handoff),
+            _ => None,
+        }
+    }
 }
 
 impl Frame {
@@ -86,9 +136,23 @@ impl Frame {
             degree: spec.degree,
             julia: spec.julia.is_some() as u32,
             entry,
-            interior: spec.interior as u32,
+            interior: if spec.interior {
+                GatedPolicy::Cap.code()
+            } else {
+                0
+            },
             floor: perturb::kernel::INTERIOR_EXPONENT,
+            margins: Margins::new(spec.degree, Precision::F32, Encoding::F32Pair),
         })
+    }
+
+    /// The same frame with a gated sample treated by `policy`; a frame with the interior
+    /// switch off is returned as it is.
+    pub fn with_policy(mut self, policy: GatedPolicy) -> Frame {
+        if self.interior != 0 {
+            self.interior = policy.code();
+        }
+        self
     }
 
     /// `dc` for sample `(col, row)`, as an `f32` mantissa pair against `2^sc`. This is
@@ -102,12 +166,69 @@ impl Frame {
         [self.offset_m[0] + re, self.offset_m[1] + im]
     }
 
+    /// `dc` for sample `(col, row)` in double-single, against `2^sc`: the same sum as
+    /// [`Frame::dc_mantissa`] with `offset` and `spacing` read as `hi + lo` pairs.
+    /// `col + 0.5 - W/2` is exact in `f32`, so the product is [`ds::mul_f32`] and the sum
+    /// one accurate [`ds::add`]: about `2^-47` of `max(|offset|, |pixel offset|)`, where
+    /// the `f32` sum carries `2^-24`. Without it the delta could be carried to 48 bits and
+    /// would still start from a `dc` rounded to 24. Per pixel and `f32` only; 84 `f32`
+    /// operations a pass (42 a component), against [`Frame::dc_mantissa`]'s 4.
+    #[inline(always)]
+    pub fn dc_ds(&self, lo: &FrameLo, col: u32, row: u32) -> Cds {
+        let across = col as f32 + 0.5 - self.width_px as f32 * 0.5;
+        let down = self.height_px as f32 * 0.5 - (row as f32 + 0.5);
+        let spacing = ds::from_hi_lo(self.spacing_m, lo.spacing_lo);
+        let re = ds::mul_f32(spacing, across);
+        let im = ds::mul_f32(spacing, down);
+        [
+            ds::add(ds::from_hi_lo(self.offset_m[0], lo.offset_lo[0]), re),
+            ds::add(ds::from_hi_lo(self.offset_m[1], lo.offset_lo[1]), im),
+        ]
+    }
+
     /// The view center's distance from the reference, in samples (Chebyshev). Above
     /// `2^24` an `f32` delta cannot tell neighbouring samples apart; above about `2^20`
     /// it keeps four bits or fewer of the pixel position.
     pub fn offset_in_pixels(&self) -> f64 {
         let far = wgsl::max_abs(self.offset_m[0], self.offset_m[1]) as f64;
         far / self.spacing_m as f64
+    }
+}
+
+/// What a double-single kernel adds to [`Frame`]: the low halves of the offset and the
+/// spacing, each the `f32` nearest what the high half (the [`Frame`] field) left of the
+/// `f64` value, against the same `2^sc`, and the interior proof's margins for a
+/// double-single kernel on a `HiLo` reference, which replace [`Frame::margins`]. A uniform
+/// of its own, 32 bytes (`offset_lo` a `vec2<f32>` at 0, `spacing_lo` at 8, a pad word,
+/// the margins at 16), rather than more fields on [`Frame`]: the `f32` kernel's uniform
+/// carries nothing it does not read, and a shader binds this one only in its DS variant.
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+pub struct FrameLo {
+    pub offset_lo: [f32; 2],
+    pub spacing_lo: f32,
+    pub pad: u32,
+    pub margins: Margins,
+}
+
+impl FrameLo {
+    /// The low halves for `frame`, which [`Frame::from_spec`] made from `spec`. CPU-side
+    /// setup, `f64`: `x·2^-sc − hi` is exact in `f64`, since `hi` is within half an `f32`
+    /// ulp of `x·2^-sc` (the argument [`crate::orbit`] makes for the reference's `lo`).
+    pub fn from_spec(spec: &Spec, frame: &Frame) -> Result<FrameLo, String> {
+        let offset = spec.centre_offset()?;
+        let spacing = spec.width / spec.sample_width() as f64;
+        let unit = 2f64.powi(-frame.sc);
+        let lo = |x: f64, hi: f32| narrow(x * unit - hi as f64);
+        Ok(FrameLo {
+            offset_lo: [
+                lo(offset.0, frame.offset_m[0]),
+                lo(offset.1, frame.offset_m[1]),
+            ],
+            spacing_lo: lo(spacing, frame.spacing_m),
+            pad: 0,
+            margins: Margins::new(frame.degree, Precision::DoubleSingle, Encoding::HiLo),
+        })
     }
 }
 
@@ -160,10 +281,12 @@ mod tests {
     use super::*;
     use core::mem::{offset_of, size_of};
 
-    /// The uniform buffer's WGSL layout: `offset_m` (a `vec2<f32>`, 8-byte aligned) at 8.
+    /// The uniform buffer's WGSL layout: `offset_m` (a `vec2<f32>`, 8-byte aligned) at 8,
+    /// the margins (four `i32`) at 48.
     #[test]
-    fn frame_is_48_bytes_in_wgsl_layout() {
-        assert_eq!(size_of::<Frame>(), 48);
+    fn frame_is_64_bytes_in_wgsl_layout() {
+        assert_eq!(size_of::<Margins>(), 16);
+        assert_eq!(size_of::<Frame>(), 64);
         assert_eq!(offset_of!(Frame, width_px), 0);
         assert_eq!(offset_of!(Frame, height_px), 4);
         assert_eq!(offset_of!(Frame, offset_m), 8);
@@ -175,6 +298,7 @@ mod tests {
         assert_eq!(offset_of!(Frame, entry), 36);
         assert_eq!(offset_of!(Frame, interior), 40);
         assert_eq!(offset_of!(Frame, floor), 44);
+        assert_eq!(offset_of!(Frame, margins), 48);
     }
 
     #[test]
@@ -200,6 +324,47 @@ mod tests {
             let (mre, mim) = (m[0] as f64 * unit, m[1] as f64 * unit);
             assert!((mre - re).abs() <= 1e-6 * spec.width, "{col} {row}");
             assert!((mim - im).abs() <= 1e-6 * spec.width, "{col} {row}");
+        }
+    }
+
+    #[test]
+    fn frame_lo_is_32_bytes_in_wgsl_layout() {
+        assert_eq!(size_of::<FrameLo>(), 32);
+        assert_eq!(offset_of!(FrameLo, offset_lo), 0);
+        assert_eq!(offset_of!(FrameLo, spacing_lo), 8);
+        assert_eq!(offset_of!(FrameLo, margins), 16);
+    }
+
+    /// The double-single `dc` agrees with `perturb`'s `f64` one to about `2^-47` of the
+    /// frame, where the `f32` one agrees to `2^-24`; off-centre, so the offset term counts.
+    #[test]
+    fn dc_ds_matches_perturb_to_double_single_rounding() {
+        let spec = spec_of(
+            "-0.745",
+            "0.15",
+            1e-30,
+            [160, 90],
+            Some(1000),
+            2,
+            None,
+            Anchor::Parameter,
+            None,
+            true,
+        );
+        let mut off = spec.clone();
+        off.reference = Some(("-0.74500000000000000000000000000137".into(), "0.15".into()));
+        for spec in [spec, off] {
+            let frame = Frame::from_spec(&spec, 2).unwrap();
+            let lo = FrameLo::from_spec(&spec, &frame).unwrap();
+            let offset = spec.centre_offset().unwrap();
+            let unit = 2f64.powi(frame.sc);
+            for &(col, row) in &[(0u32, 0u32), (159, 89), (80, 45), (13, 70)] {
+                let (re, im) = spec.dc(offset, col, row);
+                let m = frame.dc_ds(&lo, col, row);
+                let (mre, mim) = (ds::to_f64(m[0]) * unit, ds::to_f64(m[1]) * unit);
+                assert!((mre - re).abs() <= 2e-14 * spec.width, "{col} {row}");
+                assert!((mim - im).abs() <= 2e-14 * spec.width, "{col} {row}");
+            }
         }
     }
 }

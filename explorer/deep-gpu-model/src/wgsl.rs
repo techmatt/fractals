@@ -117,6 +117,15 @@ pub fn log(x: f32) -> f32 {
     x.ln()
 }
 
+/// WGSL's `sqrt(x)`. Rust's is correctly rounded; WGSL's accuracy is inherited from
+/// `1.0 / inverseSqrt(x)`, 2 ULP and then a 2.5 ULP division, so about 4.5 ULP, under
+/// `2^-20.8` relative. The interior proof ([`crate::proof`]) is the only reader, and it
+/// rounds every magnitude it takes up by `2^-19`, which covers that.
+#[inline(always)]
+pub fn sqrt(x: f32) -> f32 {
+    x.sqrt()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

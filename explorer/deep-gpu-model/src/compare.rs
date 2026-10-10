@@ -29,10 +29,12 @@ use perturb::reference::Reference;
 use perturb::{Anchor, Spec};
 
 use crate::bla::{BlaOptions, ENTRY_BYTES, GpuTable, HEADER_BYTES, INTERIOR_BYTES, Search};
-use crate::frame::{Frame, spec_of};
+use crate::frame::{Frame, FrameLo, GatedPolicy, spec_of};
 use crate::json;
-use crate::model::{self, BlaStats, CAPPED, ESCAPED, INTERIOR};
+use crate::model::{self, BlaStats, CAPPED, ESCAPED, GATED, INTERIOR};
+use crate::model_ds;
 use crate::orbit::{Encoding, GpuOrbit};
+use crate::survivors;
 
 /// One frame to compare, as a corpus row names it.
 #[derive(Debug, Clone)]
@@ -152,6 +154,19 @@ pub struct Options {
     /// Also runs every order with the gate flipped from `bla_options.gate`, keyed
     /// `…+gate` (or `…+nogate`). The same field again, and fewer reads.
     pub flip_gate: bool,
+    /// Also runs the double-single kernel on the `HiLo` orbit, keyed `ds` (and `ds+bla`
+    /// with the skip).
+    pub ds: bool,
+    /// The skip tolerance of the double-single kernel's own table.
+    pub ds_eps: f64,
+    /// Also runs the survivors' way once per threshold, keyed `survivors@<threshold>`
+    /// (and `…+bla`): `F32Pair` first, `HiLo` double-single for what is still running.
+    pub survivors: Vec<u32>,
+    /// What becomes of a gated sample the interior proof does not close on, in every model
+    /// (the `f64` kernel's own is always `cap`). A sample a model hands back `GATED` is
+    /// settled the way the policy means it to be, by the CPU: it takes `perturb`'s value
+    /// before the agreement is measured, and the line counts it as `gated`.
+    pub interior_policy: GatedPolicy,
 }
 
 /// Which of the model's two paths a comparison runs.
@@ -193,6 +208,10 @@ impl Default for Options {
             bla_options: BlaOptions::default(),
             extra_searches: Vec::new(),
             flip_gate: false,
+            ds: false,
+            ds_eps: crate::bla::EPSILON_DS_DEFAULT,
+            survivors: Vec::new(),
+            interior_policy: GatedPolicy::Cap,
         }
     }
 }
@@ -223,9 +242,28 @@ pub struct ModelField {
     pub reads: Vec<u32>,
     /// Lookups that read at least one entry.
     pub probes: Vec<u32>,
+    /// The gate fired and the proof never closed, however the sample ended: escaped (a
+    /// parabolic creep), capped ("gated, unproven" under `GatedPolicy::Cap`, painted as
+    /// interior), or handed back `GATED`.
+    pub unproven: Vec<bool>,
     /// Samples whose final delta mantissa is not finite.
     pub nonfinite: usize,
     pub wall_s: f64,
+}
+
+impl ModelField {
+    /// Settles every `GATED` sample the way the policy that returned it means: on the
+    /// CPU's `f64` kernel, whose field is `f64_smooth`. Returns how many there were.
+    pub fn settle_gated(&mut self, f64_smooth: &[f64]) -> usize {
+        let mut gated = 0;
+        for (i, &s) in self.status.iter().enumerate() {
+            if s == GATED {
+                self.smooth[i] = f64_smooth[i];
+                gated += 1;
+            }
+        }
+        gated
+    }
 }
 
 /// Rows `0..height` over `threads` workers, two rows at a time, reassembled in order.
@@ -381,12 +419,132 @@ pub fn run_model_bla(
         skipped: rows.iter().map(|r| r.1.skipped).collect(),
         reads: rows.iter().map(|r| r.1.reads).collect(),
         probes: rows.iter().map(|r| r.1.probes).collect(),
+        unproven: rows
+            .iter()
+            .map(|r| r.0.proof.gated() && r.0.status != INTERIOR)
+            .collect(),
         nonfinite: rows
             .iter()
             .filter(|r| !(r.0.d[0].is_finite() && r.0.d[1].is_finite()))
             .count(),
         wall_s: start.elapsed().as_secs_f64(),
     }
+}
+
+/// The double-single kernel over the frame ([`crate::model_ds`]), on a `HiLo` orbit, with
+/// the skip table switched on when one is given.
+pub fn run_model_ds(
+    frame: &Frame,
+    lo: &FrameLo,
+    orbit: &GpuOrbit,
+    table: Option<&GpuTable>,
+    threads: usize,
+    budget: u32,
+) -> ModelField {
+    let start = Instant::now();
+    let rows = par_rows(frame.height_px, threads, |row| {
+        (0..frame.width_px)
+            .map(|col| match table {
+                None => (
+                    model_ds::run_pixel_ds(frame, lo, orbit, col, row, budget),
+                    BlaStats::default(),
+                ),
+                Some(t) => model_ds::run_pixel_ds_bla(frame, lo, orbit, t, col, row, budget),
+            })
+            .collect()
+    });
+    ModelField {
+        smooth: rows.iter().map(|r| model_ds::smooth_f64_ds(&r.0)).collect(),
+        status: rows.iter().map(|r| r.0.status).collect(),
+        steps: rows.iter().map(|r| r.0.steps).collect(),
+        scaled: rows.iter().map(|r| r.0.scaled).collect(),
+        rebases: rows.iter().map(|r| r.0.rebases).collect(),
+        bla_steps: rows.iter().map(|r| r.1.bla_steps).collect(),
+        skipped: rows.iter().map(|r| r.1.skipped).collect(),
+        reads: rows.iter().map(|r| r.1.reads).collect(),
+        probes: rows.iter().map(|r| r.1.probes).collect(),
+        unproven: rows
+            .iter()
+            .map(|r| r.0.proof.gated() && r.0.status != INTERIOR)
+            .collect(),
+        nonfinite: rows.iter().filter(|r| !r.0.finite()).count(),
+        wall_s: start.elapsed().as_secs_f64(),
+    }
+}
+
+/// What the survivors' way cost over a frame, in delta steps.
+#[derive(Debug, Clone, Default)]
+pub struct SurvivorCost {
+    /// Per sample: the `f32` kernel's steps (kept or wasted) and the re-run's.
+    pub f32_steps: Vec<u32>,
+    pub ds_steps: Vec<u32>,
+    /// Samples re-run in double-single.
+    pub redone: usize,
+}
+
+/// The survivors' way over the frame ([`crate::survivors`]): the `f32` kernel on
+/// `orbit_f32`, and the double-single kernel on `orbit_hilo` for every sample still
+/// running at `threshold`. The field's `steps` are the two kernels' together.
+#[allow(clippy::too_many_arguments)]
+pub fn run_model_survivors(
+    frame: &Frame,
+    lo: &FrameLo,
+    orbit_f32: &GpuOrbit,
+    orbit_hilo: &GpuOrbit,
+    tables: (Option<&GpuTable>, Option<&GpuTable>),
+    threads: usize,
+    budget: u32,
+    threshold: u32,
+) -> (ModelField, SurvivorCost) {
+    let start = Instant::now();
+    let rows = par_rows(frame.height_px, threads, |row| {
+        (0..frame.width_px)
+            .map(|col| {
+                survivors::run_pixel_survivors_bla(
+                    frame, lo, orbit_f32, orbit_hilo, tables.0, tables.1, col, row, budget,
+                    threshold,
+                )
+            })
+            .collect()
+    });
+    let field = ModelField {
+        smooth: rows.iter().map(|r| r.smooth_f64()).collect(),
+        status: rows.iter().map(|r| r.status).collect(),
+        steps: rows.iter().map(|r| r.f32_steps + r.ds_steps).collect(),
+        scaled: rows
+            .iter()
+            .map(|r| r.f32_state.scaled + r.ds_state.map_or(0, |d| d.scaled))
+            .collect(),
+        rebases: rows
+            .iter()
+            .map(|r| r.ds_state.map_or(r.f32_state.rebases, |d| d.rebases))
+            .collect(),
+        bla_steps: rows.iter().map(|r| r.bla.bla_steps).collect(),
+        skipped: rows.iter().map(|r| r.bla.skipped).collect(),
+        reads: rows.iter().map(|r| r.bla.reads).collect(),
+        probes: rows.iter().map(|r| r.bla.probes).collect(),
+        unproven: rows
+            .iter()
+            .map(|r| {
+                let proof = r.ds_state.map_or(r.f32_state.proof, |d| d.proof);
+                proof.gated() && r.status != INTERIOR
+            })
+            .collect(),
+        nonfinite: rows
+            .iter()
+            .filter(|r| match r.ds_state {
+                Some(d) => !d.finite(),
+                None => !(r.f32_state.d[0].is_finite() && r.f32_state.d[1].is_finite()),
+            })
+            .count(),
+        wall_s: start.elapsed().as_secs_f64(),
+    };
+    let cost = SurvivorCost {
+        f32_steps: rows.iter().map(|r| r.f32_steps).collect(),
+        ds_steps: rows.iter().map(|r| r.ds_steps).collect(),
+        redone: rows.iter().filter(|r| r.redone).count(),
+    };
+    (field, cost)
 }
 
 /// How the two fields agree.
@@ -590,7 +748,7 @@ fn num(x: f64) -> String {
 fn safe_name(id: &str) -> String {
     id.chars()
         .map(|c| {
-            if c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '.' {
+            if c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '.' || c == '@' {
                 c
             } else {
                 '_'
@@ -613,6 +771,61 @@ fn write_f32(path: &Path, values: &[f32]) -> std::io::Result<()> {
         bytes.extend_from_slice(&v.to_le_bytes());
     }
     fs::write(path, bytes)
+}
+
+/// One model's member of a line's `models` object, `"key":{...}`, with `extra` (members
+/// with a leading comma, or nothing) before its closing brace.
+fn model_json(
+    key: &str,
+    mf: &ModelField,
+    a: &Agreement,
+    frame: &Frame,
+    ref_bytes: usize,
+    extra: &str,
+) -> String {
+    let count = |c: u32| mf.status.iter().filter(|&&s| s == c).count();
+    let steps = mean_u32(&mf.steps);
+    let bla_steps = mean_u32(&mf.bla_steps);
+    // A GPU workgroup waits on its slowest pixel, so the tail is reported too.
+    let mut sorted_steps = mf.steps.clone();
+    sorted_steps.sort_unstable();
+    if sorted_steps.is_empty() {
+        sorted_steps.push(0);
+    }
+    let mut sorted_reads = mf.reads.clone();
+    sorted_reads.sort_unstable();
+    if sorted_reads.is_empty() {
+        sorted_reads.push(0);
+    }
+    format!(
+        "\"{key}\":{{\"bla_steps\":{:.1},\"ptb_steps\":{:.1},\"skipped\":{:.1},\"reads\":{:.1},\"probes\":{:.1},\"p99_reads\":{},\"max_reads\":{},\"field_hash\":\"{:016x}\",\"escaped\":{},\"capped\":{},\"proven\":{},\"gated\":{},\"unproven\":{},{},\"mean_steps\":{:.1},\"p50_steps\":{},\"p99_steps\":{},\"max_steps\":{},\"scaled_share\":{:.4},\"mean_rebases\":{:.3},\"max_rebases\":{},\"nonfinite\":{},\"offset_px\":{},\"sc\":{},\"ref_bytes\":{},\"wall_s\":{:.3}{extra}}}",
+        bla_steps,
+        steps - bla_steps,
+        mean_u32(&mf.skipped),
+        mean_u32(&mf.reads),
+        mean_u32(&mf.probes),
+        sorted_reads[(sorted_reads.len() - 1) * 99 / 100],
+        sorted_reads.last().copied().unwrap_or(0),
+        field_hash(mf),
+        count(ESCAPED),
+        count(CAPPED),
+        count(INTERIOR),
+        count(GATED),
+        mf.unproven.iter().filter(|&&u| u).count(),
+        agreement_json(a),
+        mean_u32(&mf.steps),
+        sorted_steps[sorted_steps.len() / 2],
+        sorted_steps[(sorted_steps.len() - 1) * 99 / 100],
+        sorted_steps.last().copied().unwrap_or(0),
+        mean_u32(&mf.scaled) / mean_u32(&mf.steps).max(1.0),
+        mean_u32(&mf.rebases),
+        mf.rebases.iter().max().copied().unwrap_or(0),
+        mf.nonfinite,
+        num(frame.offset_in_pixels()),
+        frame.sc,
+        ref_bytes,
+        mf.wall_s
+    )
 }
 
 /// Compares one frame, and returns its JSON line.
@@ -639,7 +852,7 @@ pub fn compare_frame(fs_: &FrameSpec, opts: &Options) -> Result<String, String> 
 
     let mut out = String::new();
     out.push_str(&format!(
-        "{{\"id\":\"{}\",\"width\":{:e},\"degree\":{},\"julia\":{},\"resolution\":[{},{}],\"cap\":{},\"interior\":{},\"samples\":{},\"ref_points\":{},\"ref_periodic\":{},\"ref_s\":{:.3}",
+        "{{\"id\":\"{}\",\"width\":{:e},\"degree\":{},\"julia\":{},\"resolution\":[{},{}],\"cap\":{},\"interior\":{},\"interior_policy\":\"{}\",\"samples\":{},\"ref_points\":{},\"ref_periodic\":{},\"ref_s\":{:.3}",
         fs_.id.replace('"', "'"),
         spec.width,
         spec.degree,
@@ -648,6 +861,7 @@ pub fn compare_frame(fs_: &FrameSpec, opts: &Options) -> Result<String, String> 
         opts.resolution[1],
         spec.maxiter(),
         opts.interior,
+        opts.interior_policy.name(),
         f64_field.smooth.len(),
         orbit.len(),
         orbit.periodic,
@@ -722,8 +936,11 @@ pub fn compare_frame(fs_: &FrameSpec, opts: &Options) -> Result<String, String> 
         }
     }
 
-    // The table is a function of the `f64` orbit and the frame, not of the encoding.
-    let table = if opts.bla != BlaMode::Off {
+    // The table is a function of the `f64` orbit and the frame, not of the encoding; the
+    // `f32` kernels read it, and the survivors' `f32` phase.
+    let table = if opts.bla != BlaMode::Off
+        && (!opts.encodings.is_empty() || !opts.survivors.is_empty())
+    {
         let frame = Frame::from_spec(&spec, orbit.len())?;
         let t = GpuTable::build(&orbit, &frame, &opts.bla_options);
         let points = orbit.len().max(1) as f64;
@@ -783,16 +1000,16 @@ pub fn compare_frame(fs_: &FrameSpec, opts: &Options) -> Result<String, String> 
                 t.gate = g;
             }
             let gpu = GpuOrbit::from_reference(&orbit, enc);
-            let frame = Frame::from_spec(&spec, gpu.len())?;
-            let mf = run_model_bla(
+            let frame = Frame::from_spec(&spec, gpu.len())?.with_policy(opts.interior_policy);
+            let mut mf = run_model_bla(
                 &frame,
                 &gpu,
                 if with_bla { table.as_ref() } else { None },
                 opts.threads,
                 opts.budget,
             );
+            mf.settle_gated(&f64_field.smooth);
             let a = agree(&f64_field.smooth, &mf.smooth);
-            let count = |c: u32| mf.status.iter().filter(|&&s| s == c).count();
             if !first {
                 out.push(',');
             }
@@ -811,46 +1028,7 @@ pub fn compare_frame(fs_: &FrameSpec, opts: &Options) -> Result<String, String> 
                     k
                 }
             };
-            let steps = mean_u32(&mf.steps);
-            let bla_steps = mean_u32(&mf.bla_steps);
-            // A GPU workgroup waits on its slowest pixel, so the tail is reported too.
-            let mut sorted_steps = mf.steps.clone();
-            sorted_steps.sort_unstable();
-            if sorted_steps.is_empty() {
-                sorted_steps.push(0);
-            }
-            let mut sorted_reads = mf.reads.clone();
-            sorted_reads.sort_unstable();
-            if sorted_reads.is_empty() {
-                sorted_reads.push(0);
-            }
-            out.push_str(&format!(
-            "\"{key}\":{{\"bla_steps\":{:.1},\"ptb_steps\":{:.1},\"skipped\":{:.1},\"reads\":{:.1},\"probes\":{:.1},\"p99_reads\":{},\"max_reads\":{},\"field_hash\":\"{:016x}\",\"escaped\":{},\"capped\":{},\"proven\":{},{},\"mean_steps\":{:.1},\"p50_steps\":{},\"p99_steps\":{},\"max_steps\":{},\"scaled_share\":{:.4},\"mean_rebases\":{:.3},\"max_rebases\":{},\"nonfinite\":{},\"offset_px\":{},\"sc\":{},\"ref_bytes\":{},\"wall_s\":{:.3}}}",
-            bla_steps,
-            steps - bla_steps,
-            mean_u32(&mf.skipped),
-            mean_u32(&mf.reads),
-            mean_u32(&mf.probes),
-            sorted_reads[(sorted_reads.len() - 1) * 99 / 100],
-            sorted_reads.last().copied().unwrap_or(0),
-            field_hash(&mf),
-            count(ESCAPED),
-            count(CAPPED),
-            count(INTERIOR),
-            agreement_json(&a),
-            mean_u32(&mf.steps),
-            sorted_steps[sorted_steps.len() / 2],
-            sorted_steps[(sorted_steps.len() - 1) * 99 / 100],
-            sorted_steps.last().copied().unwrap_or(0),
-            mean_u32(&mf.scaled) / mean_u32(&mf.steps).max(1.0),
-            mean_u32(&mf.rebases),
-            mf.rebases.iter().max().copied().unwrap_or(0),
-            mf.nonfinite,
-            num(frame.offset_in_pixels()),
-            frame.sc,
-            gpu.gpu_bytes(),
-            mf.wall_s
-        ));
+            out.push_str(&model_json(&key, &mf, &a, &frame, gpu.gpu_bytes(), ""));
             if let Some(dir) = &opts.dump {
                 let narrowed: Vec<f32> = mf.smooth.iter().map(|&x| x as f32).collect();
                 let tag = safe_name(&key);
@@ -860,7 +1038,101 @@ pub fn compare_frame(fs_: &FrameSpec, opts: &Options) -> Result<String, String> 
             }
         }
     }
-    out.push_str("}}");
+
+    // The double-single kernel and the survivors' way: both read the `HiLo` orbit, and
+    // with the skip on, a table of their own at `ds_eps` (the survivors' `f32` phase
+    // takes the `f32` one). The double-single table's own figures go after `models`.
+    let mut ds_bla_json = String::new();
+    if opts.ds || !opts.survivors.is_empty() {
+        let hilo = GpuOrbit::from_reference(&orbit, Encoding::HiLo);
+        let pair = GpuOrbit::from_reference(&orbit, Encoding::F32Pair);
+        let frame = Frame::from_spec(&spec, hilo.len())?.with_policy(opts.interior_policy);
+        let lo = FrameLo::from_spec(&spec, &frame)?;
+        let ds_table = if opts.bla != BlaMode::Off {
+            let ds_opts = BlaOptions {
+                epsilon: opts.ds_eps,
+                ..opts.bla_options
+            };
+            let t = GpuTable::build(&orbit, &frame, &ds_opts);
+            ds_bla_json = format!(
+                ",\"ds_bla\":{{\"eps\":{:e},\"entries\":{},\"valid\":{},\"bytes_per_ref_iter\":{:.3},\"build_s\":{:.4}}}",
+                t.epsilon,
+                t.entries.len(),
+                t.valid,
+                t.entries.len() as f64 * (ENTRY_BYTES + crate::bla::LO_BYTES) as f64
+                    / orbit.len().max(1) as f64,
+                t.build_s
+            );
+            Some(t)
+        } else {
+            None
+        };
+        if let Some(t) = table.as_mut() {
+            t.search = opts.bla_options.search;
+            t.gate = opts.bla_options.gate;
+        }
+        // Each scheme's key, field, and (for survivors) its threshold and cost.
+        type Keyed = (String, ModelField, Option<(u32, SurvivorCost)>);
+        let mut keyed: Vec<Keyed> = Vec::new();
+        for &with_bla in opts.bla.runs() {
+            let suffix = if with_bla { "+bla" } else { "" };
+            if opts.ds {
+                let t = if with_bla { ds_table.as_ref() } else { None };
+                let mf = run_model_ds(&frame, &lo, &hilo, t, opts.threads, opts.budget);
+                keyed.push((format!("ds{suffix}"), mf, None));
+            }
+            for &threshold in &opts.survivors {
+                let tables = if with_bla {
+                    (table.as_ref(), ds_table.as_ref())
+                } else {
+                    (None, None)
+                };
+                let (mf, cost) = run_model_survivors(
+                    &frame,
+                    &lo,
+                    &pair,
+                    &hilo,
+                    tables,
+                    opts.threads,
+                    opts.budget,
+                    threshold,
+                );
+                keyed.push((
+                    format!("survivors@{threshold}{suffix}"),
+                    mf,
+                    Some((threshold, cost)),
+                ));
+            }
+        }
+        for (key, mut mf, cost) in keyed {
+            mf.settle_gated(&f64_field.smooth);
+            let a = agree(&f64_field.smooth, &mf.smooth);
+            let extra = match &cost {
+                None => format!(",\"ds_eps\":{:e}", opts.ds_eps),
+                Some((threshold, c)) => format!(
+                    ",\"ds_eps\":{:e},\"threshold\":{},\"redone\":{},\"survivor_share\":{:.5},\"f32_steps\":{:.1},\"ds_steps\":{:.1},\"max_ds_steps\":{}",
+                    opts.ds_eps,
+                    threshold,
+                    c.redone,
+                    c.redone as f64 / c.f32_steps.len().max(1) as f64,
+                    mean_u32(&c.f32_steps),
+                    mean_u32(&c.ds_steps),
+                    c.ds_steps.iter().max().copied().unwrap_or(0)
+                ),
+            };
+            if !first {
+                out.push(',');
+            }
+            first = false;
+            out.push_str(&model_json(&key, &mf, &a, &frame, hilo.gpu_bytes(), &extra));
+            if opts.dump.is_some() {
+                dump_f64(&safe_name(&key), &mf.smooth, &mut dumped)?;
+            }
+        }
+    }
+    out.push('}');
+    out.push_str(&ds_bla_json);
+    out.push('}');
 
     // What a reader of the dump needs and the binaries do not say.
     if let Some(dir) = &opts.dump {
@@ -870,7 +1142,7 @@ pub fn compare_frame(fs_: &FrameSpec, opts: &Options) -> Result<String, String> 
             None => "null".into(),
         };
         let meta = format!(
-            "{{\"id\":\"{}\",\"base\":\"{base}\",\"link\":{link},\"width\":{:e},\"degree\":{},\"julia\":{},\"resolution\":[{},{}],\"cap\":{},\"interior\":{},\"fields\":[{}],\"iter\":\"{base}.iter.bin\"}}\n",
+            "{{\"id\":\"{}\",\"base\":\"{base}\",\"link\":{link},\"width\":{:e},\"degree\":{},\"julia\":{},\"resolution\":[{},{}],\"cap\":{},\"interior\":{},\"interior_policy\":\"{}\",\"fields\":[{}],\"iter\":\"{base}.iter.bin\"}}\n",
             fs_.id.replace('"', "'"),
             spec.width,
             spec.degree,
@@ -879,6 +1151,7 @@ pub fn compare_frame(fs_: &FrameSpec, opts: &Options) -> Result<String, String> 
             spec.sample_height(),
             spec.maxiter(),
             opts.interior,
+            opts.interior_policy.name(),
             fields.join(",")
         );
         fs::write(dir.join(format!("{base}.meta.json")), meta).map_err(|e| e.to_string())?;

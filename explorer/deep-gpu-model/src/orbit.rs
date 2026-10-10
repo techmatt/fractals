@@ -21,6 +21,11 @@
 //! `1.18e-38`, or a `lo` under the `hi` of a point smaller than about `2^-101`) is stored
 //! as a signed zero, which is what a GPU that flushes subnormals would read anyway; the
 //! CPU, the scaled rebase path and a GPU therefore all read one buffer the same way.
+//! That flush is an **absolute** error, up to `2^-126` a component, which no relative
+//! bound on the stored point covers: below about `2^-101` (`HiLo`'s `lo`) or `2^-126`
+//! (`hi`) the stored point can be off by more than its own size. [`GpuOrbit::flush`] says
+//! whether it happened anywhere in the orbit, and the interior proof adds the term where
+//! it did ([`crate::proof`]).
 //!
 //! Layout per point: `F32Pair` is `[re, im]`; `HiLo` is `[re_hi, im_hi, re_lo, im_lo]`,
 //! one `vec4<f32>` with the two `hi` first, so that a shader reading only `.xy` reads
@@ -85,26 +90,42 @@ pub struct GpuOrbit {
     pub points: Vec<[f32; 4]>,
     /// `Z[len] = Z[0]`: the index wraps instead of the delta rebasing at the end.
     pub periodic: bool,
+    /// [`FLUSH`] when narrowing flushed a nonzero component (a `hi`, or under `HiLo` a
+    /// `lo`) to zero anywhere in the orbit, so that a stored point may be off by up to
+    /// `2^-FLUSH` beyond its relative rounding; [`crate::proof::OFF`] when nothing was. A
+    /// uniform beside `periodic`, read by the interior proof ([`crate::proof::Iterate`]).
+    pub flush: i32,
 }
+
+/// The absolute error a flush can leave in one stored point, as `2^-FLUSH`: under
+/// `2^-126` a component, so under `2^-125.5` for the pair, by either encoding.
+pub const FLUSH: i32 = 125;
 
 impl GpuOrbit {
     /// Narrows `perturb`'s orbit. This is CPU-side setup and the one place the orbit's
     /// `f64` is read.
     pub fn from_reference(reference: &Reference, encoding: Encoding) -> GpuOrbit {
+        let mut flushed = false;
+        // `x` narrowed, noting a nonzero `x` stored as zero.
+        let mut keep = |x: f64| {
+            let y = narrow(x);
+            flushed |= x != 0.0 && y == 0.0;
+            y
+        };
         let points = reference
             .points
             .iter()
             .map(|&[re, im]| {
-                let re_hi = narrow(re);
-                let im_hi = narrow(im);
+                let re_hi = keep(re);
+                let im_hi = keep(im);
                 match encoding {
                     Encoding::F32Pair => [re_hi, im_hi, 0.0, 0.0],
                     Encoding::HiLo => {
                         // `re - re_hi` is exact in f64: `re_hi` is within half an f32
                         // ulp of `re`, so the difference lies on `re`'s own ulp grid
                         // with at most 29 significant bits. It then rounds once to f32.
-                        let re_lo = narrow(re - re_hi as f64);
-                        let im_lo = narrow(im - im_hi as f64);
+                        let re_lo = keep(re - re_hi as f64);
+                        let im_lo = keep(im - im_hi as f64);
                         [re_hi, im_hi, re_lo, im_lo]
                     }
                 }
@@ -114,6 +135,7 @@ impl GpuOrbit {
             encoding,
             points,
             periodic: reference.periodic,
+            flush: if flushed { FLUSH } else { crate::proof::OFF },
         }
     }
 

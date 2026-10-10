@@ -86,7 +86,7 @@
 //!   renormalized after each multiply rather than once per `2^64` the way `perturb` does
 //!   it, because one step's factor `D²|z|^(2(D-1))` reaches `2^160` at degree 6 and
 //!   `f32` stops at `2^128`. Where `|z|` is below `2^-60`, `|z|²` is formed from `z`
-//!   rescaled by its own exponent too, so that it never underflows; the switch fires on
+//!   rescaled by its own exponent too, so that it never underflows; the gate fires on
 //!   an underflow only when `z` is exactly zero, `perturb`'s `derivative == 0` case. The
 //!   threshold test `|dz|² < 2^floor` becomes the integer compare `exponent < floor`,
 //!   exact for a mantissa in `[1, 2)`.
@@ -95,6 +95,41 @@
 //!   above `2^23` iterations and quantize to 2 above `2^24`.
 //! - **No `degenerate` flag.** `perturb` keeps it for diagnostics and never draws with
 //!   it.
+//!
+//! # The interior switch: a gate, then a proof
+//!
+//! `perturb`'s rule since interior_switch_fix_ckpt162, with [`crate::proof`]'s disc in
+//! place of its `f64` one. `|dz|² < 2^floor` (or `z` exactly zero) is the **gate**: the
+//! sample is armed there ([`Proof::arm`]) and runs on, and after every later step's
+//! escape test [`Proof::advance`] carries its discs a step and stops it as [`INTERIOR`]
+//! only when one has come back inside itself. Without the skip, nothing the gate or the
+//! proof does reaches the delta, the count, the rebase or the escape, so **an escaping
+//! gated sample lands on exactly the count, the fraction and the delta it lands on with
+//! the switch off** (`tests/interior.rs` holds that bit for bit on the cusps and the
+//! imploded Julia set, where the threshold alone was false). **With the skip it does
+//! not**: a carrying proof suppresses the lookup (below), so a gated sample steps one
+//! iteration at a time where the switch-off run skips, and lands on the same class with
+//! a count and fraction that differ by the skip's own error. Measured on the degree-2
+//! cusp's five samples, cap 2e6: escapes at the same `n`, fractions up to `3e-4` apart,
+//! and 62,000 to 68,000 delta steps against 9 to 7,980 with the switch off, since
+//! re-arming at every new low keeps a creeping sample carrying. Once
+//! gated, `|dz|²` is no longer formed: it is
+//! the gate's value from then on, and the state's `dz_*` fields say where it fired.
+//!
+//! - **The proof's state is in [`PixelState`]**, 72 bytes of it, so that a pass may end
+//!   anywhere inside a proof and the next one resumes it exactly. A rebase while gated
+//!   grows the discs by the reference's rounding ([`Proof::rebased`]).
+//! - **With the skip**, a gated sample looks nothing up while it carries discs (a disc
+//!   is not carried across a skip, so a skip would break every proof in flight); once its
+//!   discs are spent it skips again, and a skip that lands on a new low `|z|` re-arms it
+//!   ([`Proof::rearm_if_lower`]). Before the gate the lookup keeps its guard.
+//! - **What becomes of a gated sample the proof never closes on** is the frame's
+//!   [`GatedPolicy`], carried in [`Frame::interior`]: run to the cap and end [`CAPPED`]
+//!   (`perturb`'s own behaviour, the default), run to the cap and end [`GATED`] so that
+//!   the caller can hand it to the CPU, or stop [`GATED`] as soon as the discs are spent.
+//!   The proof is sound at `f32` (its module doc carries each step's rounding into the
+//!   radius, without which it proved the main cusp itself) and incomplete, so the
+//!   fallback is for samples it cannot settle, never for ones it settles wrongly.
 //!
 //! # The reference, and hi/lo
 //!
@@ -125,8 +160,9 @@
 //! itself: passes of any budget leave exactly the state one unbounded pass does.
 
 use crate::bla::{self, GpuTable};
-use crate::frame::Frame;
+use crate::frame::{Frame, GatedPolicy};
 use crate::orbit::{Encoding, GpuOrbit};
+use crate::proof::{self, Iterate, Proof};
 use crate::wgsl::{exponent_of, exponent_of_max, ldexp_exact, log, max_abs};
 
 /// The pixel is still iterating.
@@ -135,11 +171,18 @@ pub const RUNNING: u32 = 0;
 pub const ESCAPED: u32 = 1;
 /// The cap was reached: interior as far as the picture is concerned.
 pub const CAPPED: u32 = 2;
-/// The interior switch proved it.
+/// The interior proof closed: a disc about the orbit maps into itself.
 pub const INTERIOR: u32 = 3;
+/// The gate fired and the proof did not close, under [`GatedPolicy::Flag`] (at the cap)
+/// or [`GatedPolicy::Handoff`] (when the discs were spent): the caller's to settle.
+pub const GATED: u32 = 4;
+
+/// [`Frame::interior`] as the loop reads it: `GatedPolicy::Flag`'s and `Handoff`'s codes.
+pub(crate) const FLAG: u32 = GatedPolicy::Flag as u32;
+pub(crate) const HANDOFF: u32 = GatedPolicy::Handoff as u32;
 
 /// `BAILOUT²`, exact in `f32`.
-const BAILOUT_SQ: f32 = 4_294_967_296.0;
+pub(crate) const BAILOUT_SQ: f32 = 4_294_967_296.0;
 /// `ln(65536)`.
 const LN_BAILOUT: f32 = 11.090_355;
 const LN_2: f32 = core::f32::consts::LN_2;
@@ -147,41 +190,43 @@ const LN_2: f32 = core::f32::consts::LN_2;
 /// The unscaled regime holds a delta whose larger component is at least `2^-62`.
 const SCALE_BELOW: i32 = -62;
 /// `2^SCALE_BELOW`, as WGSL would spell it: `bitcast<f32>(65u << 23u)`.
-const SCALE_FLOOR: f32 = f32::from_bits(((127 + SCALE_BELOW) as u32) << 23);
+pub(crate) const SCALE_FLOOR: f32 = f32::from_bits(((127 + SCALE_BELOW) as u32) << 23);
 /// A scaled delta whose larger component reaches `2^-60` is unscaled.
-const UNSCALE_AT: i32 = -60;
+pub(crate) const UNSCALE_AT: i32 = -60;
 /// A scaled mantissa is recentered when its exponent leaves `[-32, 32]`.
-const DRIFT: i32 = 32;
+pub(crate) const DRIFT: i32 = 32;
 /// In the scaled regime, `|Z|` at or above `2^(REBASE_GATE + 1 + s)` cannot rebase.
-const REBASE_GATE: i32 = 60;
+pub(crate) const REBASE_GATE: i32 = 60;
 /// An unscaled `z` below `2^-62` rebases as `z · 2^REBASE_LIFT`, with `s = -REBASE_LIFT`.
-const REBASE_LIFT: i32 = 64;
+pub(crate) const REBASE_LIFT: i32 = 64;
 
 /// The quick path wants `max(|Z|, |δ|)^(D-1)` at least `2^QUICK_FLOOR`.
 const QUICK_FLOOR: i32 = -90;
 /// ... a `δ` at least `2^DELTA_FLOOR`, or one `2^DELTA_BESIDE` below `|Z|` ...
-const DELTA_FLOOR: i32 = -100;
+pub(crate) const DELTA_FLOOR: i32 = -100;
 const DELTA_BESIDE: i32 = 30;
 /// ... and `F · d` at least `2^-100` in the delta's units.
 const PRODUCT_SIZE: f32 = f32::from_bits((127 - 100) << 23);
 /// `dc · 2^-s` is formed only while `sc - s` is at most this, far from overflowing.
-const DC_HEADROOM: i32 = 100;
+pub(crate) const DC_HEADROOM: i32 = 100;
 /// An exponent no value has: the larger of two exponents is the other one.
-const NO_EXPONENT: i32 = -100_000;
+pub(crate) const NO_EXPONENT: i32 = -100_000;
 
 /// A `z` whose larger component reaches `2^62` has escaped; below it `|z|²` is finite.
-const ESCAPE_BIG: f32 = f32::from_bits((127 + 62) << 23);
+pub(crate) const ESCAPE_BIG: f32 = f32::from_bits((127 + 62) << 23);
 /// Below `2^-60` in its larger component, `|z|²` is formed from `z` rescaled.
 const SMALL_Z: f32 = f32::from_bits((127 - 60) << 23);
 
 /// Everything one pixel carries from one pass to the next.
 ///
 /// Plain `f32`, `i32` and `u32`, laid out as WGSL lays out the same struct: `d` is a
-/// `vec2<f32>` (8-byte aligned, at offset 0) and every other field a 4-byte scalar, 48
-/// bytes, a multiple of the struct's 8-byte alignment with no padding. The last three
+/// `vec2<f32>` (8-byte aligned, at offset 0), then ten 4-byte scalars to 48, then the
+/// interior proof's 72-byte [`Proof`] (8-byte aligned in WGSL for its centre's `vec2`), 120
+/// bytes, a multiple of the struct's 8-byte alignment with no padding. Three of the
 /// fields (`rebases`, `steps` and `scaled`) are measurement counters, kept inside so that
-/// a pass needs no second buffer; the kernel itself needs the first nine, 36 bytes, which
-/// WGSL would round to 40.
+/// a pass needs no second buffer; the kernel itself needs the other nine and the proof,
+/// 108 bytes, which WGSL would round to 112 (36, rounded to 40, with the interior switch
+/// off, where the proof is never read and a shader would not bind it).
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct PixelState {
@@ -193,11 +238,12 @@ pub struct PixelState {
     pub m: u32,
     /// Iterations so far.
     pub n: u32,
-    /// [`RUNNING`], [`ESCAPED`], [`CAPPED`] or [`INTERIOR`].
+    /// [`RUNNING`], [`ESCAPED`], [`CAPPED`], [`INTERIOR`] or [`GATED`].
     pub status: u32,
     /// The smooth fraction, set at the escape: the smooth count is `n + frac`.
     pub frac: f32,
-    /// `|dz|²` as `dz_mantissa · 2^dz_exponent`, the mantissa in `[1, 2)`.
+    /// `|dz|²` as `dz_mantissa · 2^dz_exponent`, the mantissa in `[1, 2)`; held at the
+    /// gate's value once the gate has fired.
     pub dz_mantissa: f32,
     pub dz_exponent: i32,
     /// Rebases so far (measurement).
@@ -206,13 +252,17 @@ pub struct PixelState {
     pub steps: u32,
     /// Delta steps taken in the scaled regime (measurement).
     pub scaled: u32,
+    /// The interior proof: [`Proof::IDLE`] until the gate fires.
+    pub proof: Proof,
 }
 
 /// What the GPU stores per pixel between passes.
-pub const STATE_BYTES: usize = 48;
+pub const STATE_BYTES: usize = 120;
 
 impl PixelState {
-    /// Every field's bits, for bit-identity tests.
+    /// The bits of every field but the proof, for bit-identity tests: the twelve words the
+    /// state held before the proof was wired in, so that hashes taken then still compare
+    /// (the proof's own are [`Proof::bits`]).
     pub fn bits(&self) -> [u32; 12] {
         [
             self.d[0].to_bits(),
@@ -252,6 +302,7 @@ pub fn init(frame: &Frame, col: u32, row: u32) -> PixelState {
         rebases: 0,
         steps: 0,
         scaled: 0,
+        proof: Proof::IDLE,
     }
 }
 
@@ -498,7 +549,7 @@ fn add_reference<const HILO: bool>(p: &[f32; 4], t: [f32; 2]) -> [f32; 2] {
 }
 
 /// `C(d, k)` for `k = 0..=d`, as the `f32` the step multiplies by. Exact.
-const fn binomial(d: usize) -> [f32; 7] {
+pub(crate) const fn binomial(d: usize) -> [f32; 7] {
     let mut out = [0.0f32; 7];
     let mut k = 0;
     while k <= d {
@@ -562,7 +613,7 @@ fn factor<const D: usize, const HILO: bool>(p: &[f32; 4], t: [f32; 2]) -> [f32; 
 /// `max(|v.x|, |v.y|) >= t`, as two compares rather than a float maximum: WGSL
 /// `any(abs(v) >= vec2(t))`.
 #[inline(always)]
-fn reaches(v: [f32; 2], t: f32) -> bool {
+pub(crate) fn reaches(v: [f32; 2], t: f32) -> bool {
     v[0].abs() >= t || v[1].abs() >= t
 }
 
@@ -576,7 +627,7 @@ fn cmul(a: [f32; 2], b: [f32; 2]) -> [f32; 2] {
 /// When `big`, `|z|²` was never formed (it could have overflowed at degree 4 and up),
 /// and `z` is rescaled by its own exponent first.
 #[inline(always)]
-fn smooth_fraction<const D: usize>(z: [f32; 2], z_norm_sq: f32, big: bool) -> f32 {
+pub(crate) fn smooth_fraction<const D: usize>(z: [f32; 2], z_norm_sq: f32, big: bool) -> f32 {
     let ln_sq = if big {
         let e = exponent_of(max_abs(z[0], z[1]));
         let a = ldexp_exact(z[0], -e);
@@ -598,7 +649,7 @@ fn smooth_fraction<const D: usize>(z: [f32; 2], z_norm_sq: f32, big: bool) -> f3
 /// formed from `zv` rescaled, so that nothing underflows. Returns `false` only when `z`
 /// is zero, which `perturb` reads as the orbit passing through the origin.
 #[inline(always)]
-fn derivative_step<const D: usize>(
+pub(crate) fn derivative_step<const D: usize>(
     mantissa: &mut f32,
     exponent: &mut i32,
     zv: [f32; 2],
@@ -741,15 +792,22 @@ fn run<const D: usize, const JULIA: bool, const HILO: bool, const BLA: bool>(
     let mut reads = stats.reads;
     let mut probes = stats.probes;
     let mut hint = stats.hint;
+    let policy = frame.interior;
+    let margins = &frame.margins;
+    let mut proof = st.proof;
 
     while taken < budget {
         // ---- the skip: at an index the table is aligned on, the longest run it allows.
         // The landed delta falls through into the same escape, interior, cap and rebase
-        // tests a single step's does.
+        // tests a single step's does. Not while the proof carries discs, which a skip
+        // would break; before the gate, guarded so that the gate cannot fire inside a run.
         let s0 = s;
         let mut hit: Option<bla::Hit> = None;
-        if BLA && let Some(t) = table {
-            let guard = if track_interior {
+        if BLA
+            && proof.phase != proof::CARRYING
+            && let Some(t) = table
+        {
+            let guard = if track_interior && proof.phase == proof::IDLE {
                 Some((dzm, dze, floor))
             } else {
                 None
@@ -861,35 +919,48 @@ fn run<const D: usize, const JULIA: bool, const HILO: bool, const BLA: bool>(
             break;
         }
 
-        // ---- interior switch.
+        // ---- interior switch: the gate, then the proof.
         if track_interior {
-            if let (true, Some(h), Some(t)) = (BLA, hit, table) {
-                // The run's product of `D²|Z_j|^(2(D−1))` over its inner points, which the
-                // lookup has shown keeps every prefix above the floor (and nonzero); then
-                // the landing point's factor from the `z` actually landed on, since the
-                // radius bounds nothing there.
-                let x = &t.interior[h.index as usize];
-                let product = dzm * x.deriv_m;
-                let e = exponent_of(product);
-                dzm = ldexp_exact(product, -e);
-                dze += x.deriv_e + e;
-                if !derivative_step::<D>(&mut dzm, &mut dze, zv, ze, z_norm_sq) {
-                    status = INTERIOR;
-                    break;
+            let it = Iterate::single(zv, ze).read_from(orbit.flush);
+            if proof.phase == proof::IDLE {
+                let nonzero = if let (true, Some(h), Some(t)) = (BLA, hit, table) {
+                    // The run's product of `D²|Z_j|^(2(D−1))` over its inner points, which
+                    // the lookup has shown keeps every prefix above the floor (and nonzero);
+                    // then the landing point's factor from the `z` actually landed on, since
+                    // the radius bounds nothing there.
+                    let x = &t.interior[h.index as usize];
+                    let product = dzm * x.deriv_m;
+                    let e = exponent_of(product);
+                    dzm = ldexp_exact(product, -e);
+                    dze += x.deriv_e + e;
+                    derivative_step::<D>(&mut dzm, &mut dze, zv, ze, z_norm_sq)
+                } else {
+                    derivative_step::<D>(&mut dzm, &mut dze, zv, ze, z_norm_sq)
+                };
+                if !nonzero || dze < floor {
+                    proof = Proof::arm(it, d, s, n, margins);
                 }
-            } else if !derivative_step::<D>(&mut dzm, &mut dze, zv, ze, z_norm_sq) {
+            } else if BLA && hit.is_some() {
+                // A skip carries no disc across it; a landing on a new low re-arms.
+                proof.break_disc();
+                proof.rearm_if_lower(it, d, s, n, margins);
+            } else if proof.advance::<D>(it, d, s, n, margins) {
                 status = INTERIOR;
                 break;
             }
-            if dze < floor {
-                status = INTERIOR;
+            if policy == HANDOFF && proof.phase == proof::WAITING {
+                status = GATED;
                 break;
             }
         }
 
         // ---- cap.
         if n >= maxiter {
-            status = CAPPED;
+            status = if policy == FLAG && proof.gated() {
+                GATED
+            } else {
+                CAPPED
+            };
             break;
         }
 
@@ -950,9 +1021,12 @@ fn run<const D: usize, const JULIA: bool, const HILO: bool, const BLA: bool>(
             }
             m = 0;
             rebases += 1;
+            // `δ := ẑ` moves the represented iterate by the reference's rounding.
+            proof.rebased(margins, orbit.flush);
         }
     }
 
+    st.proof = proof;
     st.d = d;
     st.s = s;
     st.m = m;
@@ -980,11 +1054,18 @@ mod tests {
     use core::mem::{offset_of, size_of};
 
     /// The struct is what WGSL would lay out: `vec2<f32>` at 0, then ten 4-byte
-    /// scalars, 48 bytes, a multiple of the `vec2`'s 8-byte alignment.
+    /// scalars, then the proof at 48 (8-aligned, for its centre's `vec2`), 120 bytes, a
+    /// multiple of the `vec2`'s 8-byte alignment.
     #[test]
-    fn state_is_48_bytes_in_wgsl_layout() {
+    fn state_is_120_bytes_in_wgsl_layout() {
         assert_eq!(size_of::<PixelState>(), STATE_BYTES);
-        assert_eq!(STATE_BYTES, 48);
+        assert_eq!(STATE_BYTES, 48 + proof::PROOF_BYTES);
+        assert_eq!(STATE_BYTES, 120);
+        assert_eq!(offset_of!(PixelState, proof), 48);
+        assert_eq!(
+            (offset_of!(PixelState, proof) + offset_of!(Proof, center)) % 8,
+            0
+        );
         assert_eq!(STATE_BYTES % 8, 0);
         assert_eq!(offset_of!(PixelState, d), 0);
         assert_eq!(offset_of!(PixelState, s), 8);

@@ -32,15 +32,26 @@
 //! types are documented in [`model`]. Iteration skipping, a switch that is off unless a
 //! table is passed ([`model::pass_bla`]), is in [`bla`]: its table is CPU-side setup in
 //! `f64`, and its lookup and its step are on the per-pixel path and keep these rules.
+//! The interior proof that `perturb` puts behind its gate is ported in [`proof`], on the
+//! per-pixel path and keeping these rules, and both kernels call it behind the same gate;
+//! what becomes of a sample it never settles is the frame's [`frame::GatedPolicy`].
+//!
+//! [`model_ds`] is the same loop with the delta carried in double-single ([`ds`]) against
+//! a `HiLo` reference, under the same rules, and [`survivors`] runs it only for the pixels
+//! the `f32` kernel has not finished by a threshold.
 
 pub mod bla;
 pub mod compare;
+pub mod ds;
 pub mod frame;
 pub mod json;
 pub mod model;
+pub mod model_ds;
 pub mod orbit;
+pub mod proof;
+pub mod survivors;
 pub mod wgsl;
 
-pub use frame::Frame;
+pub use frame::{Frame, FrameLo, GatedPolicy};
 pub use model::{PixelState, STATE_BYTES};
 pub use orbit::{Encoding, GpuOrbit};

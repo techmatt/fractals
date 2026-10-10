@@ -1124,9 +1124,9 @@ export class DeepRenderer {
    * kernel refused to produce one or the generation moved on.
    *
    * **Computed in a worker, never on this thread** *(deep_tab_activity_and_layout_
-   * ckpt141)*. At a cap of a million an orbit is seconds, and on the page's own thread
-   * those were seconds in which nothing — the progress line, the spinner, Cancel — could
-   * run. The first worker computes it and keeps it, and the bytes it hands back are what
+   * ckpt141)*. At a cap of a million an orbit takes tenths of a second, and on the page's
+   * own thread that was time in which nothing — the progress line, the spinner, Cancel —
+   * could run. The first worker computes it and keeps it, and the bytes it hands back are what
    * every other worker is fed from, lazily, by [`#feedAll`].
    */
   async #reference(view, width, height, supersample, period = null, { generation, onProgress } = {}) {

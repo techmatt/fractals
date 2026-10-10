@@ -114,12 +114,16 @@
 
 use perturb::reference::{BAILOUT, Reference};
 
+use crate::ds;
 use crate::frame::Frame;
 use crate::orbit::narrow;
 use crate::wgsl::{count_trailing_zeros, exponent_of, exponent_of_max, ldexp_exact};
 
 /// `2^-24`: `f32`'s own unit roundoff, the default tolerance.
 pub const EPSILON_DEFAULT: f64 = 5.960_464_477_539_063e-8;
+/// The double-single kernel's default tolerance, `2^-48`: the pair's own rounding unit,
+/// as `2^-24` is `f32`'s. [`apply_ds`] says why it is tighter, and what looser cost.
+pub const EPSILON_DS_DEFAULT: f64 = 3.552_713_678_800_501e-15;
 /// The shortest stored run is `2^MIN_LEVEL_DEFAULT` steps, the removed table's choice.
 pub const MIN_LEVEL_DEFAULT: u32 = 4;
 /// The longest run a table offers by default.
@@ -234,6 +238,16 @@ pub struct BlaInterior {
     pub dmin_e: i32,
 }
 
+/// The double-single half of an entry, in a buffer of its own: `A = (a + a_lo) · 2^a_e`
+/// and `B = (b + b_lo) · 2^b_e`, each low half the `f32` nearest what the `f32` mantissa
+/// in [`BlaEntry`] left of the `f64` one. 16 bytes, two `vec2<f32>`.
+#[repr(C)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+pub struct BlaLo {
+    pub a_lo: [f32; 2],
+    pub b_lo: [f32; 2],
+}
+
 /// The stored levels, as a uniform buffer holds them: four `u32`, then one `vec4<u32>`
 /// per level (`x` the level's offset in the entry array, `y` its count, `z` and `w` the
 /// largest stored radius squared on the level as `bitcast<u32>` of its `f32` mantissa and
@@ -256,6 +270,8 @@ pub struct TableHeader {
 pub const ENTRY_BYTES: usize = 32;
 pub const INTERIOR_BYTES: usize = 16;
 pub const HEADER_BYTES: usize = 528;
+/// Bytes per entry of the double-single kernel's low halves.
+pub const LO_BYTES: usize = 16;
 
 /// A table as the GPU would hold it, and what it cost to build.
 #[derive(Debug, Clone)]
@@ -263,6 +279,9 @@ pub struct GpuTable {
     pub header: TableHeader,
     pub entries: Vec<BlaEntry>,
     pub interior: Vec<BlaInterior>,
+    /// The low halves of each entry's `A` and `B`, which only the double-single kernel
+    /// binds ([`apply_ds`]). Built whatever the kernel; an `f32` kernel never reads it.
+    pub lo: Vec<BlaLo>,
     pub epsilon: f64,
     /// The frame-wide bound on `|dc|` the radii were merged against.
     pub dc_bound: f64,
@@ -300,6 +319,7 @@ impl GpuTable {
             },
             entries: Vec::new(),
             interior: Vec::new(),
+            lo: Vec::new(),
             epsilon: 0.0,
             dc_bound: 0.0,
             valid: 0,
@@ -316,6 +336,11 @@ impl GpuTable {
 
     pub fn interior_bytes(&self) -> usize {
         self.interior.len() * INTERIOR_BYTES
+    }
+
+    /// Bytes of the low-half buffer a double-single kernel binds.
+    pub fn lo_bytes(&self) -> usize {
+        self.lo.len() * LO_BYTES
     }
 
     /// The highest stored level, when any is.
@@ -593,6 +618,25 @@ fn store(b: &Build) -> (BlaEntry, BlaInterior, bool) {
     )
 }
 
+/// The low halves of `b`'s `A` and `B` against the exponents `stored` was given: the
+/// `f64` mantissa less its `f32` high half, which is exact in `f64` (the argument
+/// [`crate::orbit`] makes), then narrowed.
+fn store_lo(b: &Build, stored: &BlaEntry) -> BlaLo {
+    let lo = |v: [f64; 2], hi: [f32; 2], e: i32| {
+        if hi == [0.0, 0.0] {
+            return [0.0, 0.0];
+        }
+        [
+            narrow(scale64(v[0], -e) - hi[0] as f64),
+            narrow(scale64(v[1], -e) - hi[1] as f64),
+        ]
+    };
+    BlaLo {
+        a_lo: lo(b.a, stored.a, stored.a_e),
+        b_lo: lo(b.b, stored.b, stored.b_e),
+    }
+}
+
 /// The table over `points`, at `degree`, merged against `dcmax`. An orbit too short to
 /// hold a stored run, a tolerance outside `(0, ¼)` or a `min_level` above `max_level`
 /// gives an empty table.
@@ -669,6 +713,7 @@ pub fn build_with(
     let total: usize = out.iter().map(Vec::len).sum();
     table.entries.reserve(total);
     table.interior.reserve(total);
+    table.lo.reserve(total);
     table.header.min_level = min_level;
     table.header.levels = stored as u32;
     table.header.mask = (1u32 << min_level) - 1;
@@ -679,6 +724,7 @@ pub fn build_with(
         let (mut top_m, mut top_e) = (0.0f32, 0i32);
         for b in level {
             let (e, x, live) = store(b);
+            table.lo.push(store_lo(b, &e));
             if live && (top_m == 0.0 || (e.r2_e, e.r2_m) > (top_e, top_m)) {
                 (top_m, top_e) = (e.r2_m, e.r2_e);
             }
@@ -902,10 +948,120 @@ pub fn apply<const JULIA: bool>(
     )
 }
 
+/// [`apply`] for the double-single kernel: `δ' = A·δ + B·dc` with `A`, `B`, `δ` and `dc`
+/// all `hi + lo` pairs, `A` and `B` read from the entry and its [`BlaLo`]. The same
+/// shape as [`apply`]: two mantissa products, each exponent read off its high parts, and
+/// the sum at the larger exponent, which the caller settles into the state's form. `f32`
+/// and `i32` only; 312 `f32` operations (two [`ds::c_mul`] and one [`ds::c_add`]) against
+/// [`apply`]'s 14, paid once per skip.
+///
+/// **Why the entry needs its low halves.** An `A` rounded to 24 bits makes every skip an
+/// error of `2^-24` relative in `A·δ`, the size of the `f32` kernel's own rounding and
+/// `2^24` times the double-single kernel's; at `ε` below `2^-24` it would also be larger
+/// than the truncation the radius was built to allow. So the mantissas are carried to
+/// about 48 bits (the `f64` build holds them to 53, less a rounding per merge level), and
+/// the low halves sit in a buffer of their own, 16 bytes an entry, which only this
+/// kernel binds: [`BlaEntry`] is unchanged and the `f32` kernel's table costs what it did.
+/// Measured on `random-dives#501` (64x36, `ε = 2^-48`, 37 skips a pixel): with the low
+/// halves zeroed the share more than 0.1 off `perturb` goes from 1.09% to 7.2%
+/// (`tests/ds.rs`).
+///
+/// **And why `ε` is tighter.** `ε` is the truncation each skip is allowed, relative to
+/// `A·δ`; `2^-24` was chosen for the `f32` kernel as its own rounding unit, and the same
+/// argument puts the double-single kernel's at `2^-48`
+/// ([`EPSILON_DS_DEFAULT`]), a run-time parameter like the other. Measured on seven
+/// frames that skip (64x36, `HiLo`; the share more than 0.1 off without the skip, then
+/// with it): at `2^-24` every frame loses most of what double-single bought
+/// (`random-dives#501` 1.3% to 7.6%, `#93` 4.9% to 33%, `#571` 36% to 89%,
+/// `go:julia3-end` 29% to 97%); at `2^-32` they lose a sixth to a half of it; at `2^-40`
+/// `#501` keeps its 1.3% at 3.6 times fewer delta steps while `#571` and `#808` still
+/// lose 7 to 9 points; at `2^-48` no frame moves by more than 0.04 points and `#501`
+/// improves to 1.1% at 2.7 times fewer steps, while the others skip little (at most
+/// 2.4% fewer steps). These are long, chaotic orbits, where the skip's truncation is a
+/// perturbation the dynamics amplify like any other.
+#[inline(always)]
+pub fn apply_ds<const JULIA: bool>(
+    entry: &BlaEntry,
+    lo: &BlaLo,
+    d: ds::Cds,
+    s: i32,
+    dc: ds::Cds,
+    sc: i32,
+) -> (ds::Cds, i32) {
+    const NONE: i32 = -100_000;
+    let a = [
+        ds::from_hi_lo(entry.a[0], lo.a_lo[0]),
+        ds::from_hi_lo(entry.a[1], lo.a_lo[1]),
+    ];
+    let t1 = ds::c_mul(a, d);
+    let e1 = entry.a_e + s;
+    let x1 = match exponent_of_max(t1[0].hi, t1[1].hi) {
+        -127 => NONE,
+        x => e1 + x,
+    };
+    let zero = ds::from_f32(0.0);
+    let (t2, e2, x2) = if JULIA {
+        ([zero, zero], 0, NONE)
+    } else {
+        let b = [
+            ds::from_hi_lo(entry.b[0], lo.b_lo[0]),
+            ds::from_hi_lo(entry.b[1], lo.b_lo[1]),
+        ];
+        let t2 = ds::c_mul(b, dc);
+        let e2 = entry.b_e + sc;
+        let x2 = match exponent_of_max(t2[0].hi, t2[1].hi) {
+            -127 => NONE,
+            x => e2 + x,
+        };
+        (t2, e2, x2)
+    };
+    let at = if x1 > x2 { x1 } else { x2 };
+    let scaled = |t: ds::Cds, e: i32| [ds::ldexp(t[0], e), ds::ldexp(t[1], e)];
+    (ds::c_add(scaled(t1, e1 - at), scaled(t2, e2 - at)), at)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use core::mem::{offset_of, size_of};
+
+    /// The low halves carry `A` and `B` to double-single precision: on a built table,
+    /// `hi + lo` is within `2^-46` of the `f64` value relative to its larger component.
+    #[test]
+    fn low_halves_carry_the_mantissas() {
+        assert_eq!(size_of::<BlaLo>(), LO_BYTES);
+        assert_eq!(offset_of!(BlaLo, b_lo), 8);
+        let points: Vec<[f64; 2]> = {
+            // A short orbit of c = -0.1 + 0.65i.
+            let (mut z, c) = ([0.0f64, 0.0], [-0.1f64, 0.65]);
+            (0..300)
+                .map(|_| {
+                    let out = z;
+                    z = [z[0] * z[0] - z[1] * z[1] + c[0], 2.0 * z[0] * z[1] + c[1]];
+                    out
+                })
+                .collect()
+        };
+        let opts = BlaOptions {
+            epsilon: 1e-12,
+            min_level: 0,
+            ..BlaOptions::default()
+        };
+        let table = build_with(&points, false, 2, false, 1e-15, &opts);
+        assert_eq!(table.lo.len(), table.entries.len());
+        // Level 0 entry j is the leaf at j + 1: A = 2·Z[j + 1].
+        let mut worst = 0f64;
+        for j in 0..20 {
+            let (e, l) = (&table.entries[j], &table.lo[j]);
+            for k in 0..2 {
+                let got = (e.a[k] as f64 + l.a_lo[k] as f64) * scale64(1.0, e.a_e);
+                let want = 2.0 * points[j + 1][k];
+                let size = 2.0 * points[j + 1][0].abs().max(points[j + 1][1].abs());
+                worst = worst.max((got - want).abs() / size);
+            }
+        }
+        assert!(worst < 2f64.powi(-46), "{worst:e}");
+    }
 
     #[test]
     fn entry_layouts_are_wgsl_layouts() {

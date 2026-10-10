@@ -350,6 +350,7 @@ fn passes_are_bit_identical_whatever_the_budget() {
                             whole.bits(),
                             "{row} {enc:?} {col},{row_i} budget {budget}"
                         );
+                        assert_eq!(st.proof.bits(), whole.proof.bits());
                         assert!(passes >= (whole.steps as u64).div_ceil(budget as u64));
                     }
                 }

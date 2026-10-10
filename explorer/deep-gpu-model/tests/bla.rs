@@ -27,6 +27,16 @@ const THREADS: usize = 8;
 /// with the FNV-1a hash of every pixel's final [`model::PixelState::bits`] under each
 /// encoding, taken from the model as committed in phase 1 (`48b29b60`) before the skip
 /// existed.
+///
+/// Two rows were re-pinned when the interior proof was wired in (gpu_ds_probe_stage2):
+/// `random-dives#5` and `dive-sheet:u0496`, the only rows with a pixel the gate fires on
+/// (2 and 3 pixels). Every one of those pixels is proved, so the class of every pixel is
+/// what it was; what moved is where they stop, now at the step a disc closes rather than
+/// the step the gate fired (`#5`'s two gated at 28,093 and 28,780 and proved at 29,455 and
+/// 30,140, one period of 685 past their last anchor; `u0496`'s three proved at 341, 403
+/// and 1,116, 31 or 62 steps past theirs), and with them their delta, count, step
+/// counters and the `|dz|²` the gate left. Every other row, the interior-off one among
+/// them, hashes as it did.
 const IDENTITY: [(&str, [u32; 2], bool, u64, u64); 7] = [
     (
         r#"{"id": "random-dives#501", "re": "0.64774731161734500930901700212431872380828355273804", "im": "0.51776563981107259688773400463987628082965300802274", "w": 8.662732633712781e-42, "n": 20000, "degree": 5}"#,
@@ -39,8 +49,8 @@ const IDENTITY: [(&str, [u32; 2], bool, u64, u64); 7] = [
         r#"{"id": "random-dives#5", "re": "-0.75765813056425443555", "im": "0.07282660995819819077", "w": 7.255822008177002e-09, "n": 38347, "degree": 2}"#,
         [24, 14],
         true,
-        0xe43e1851bb8c5745,
-        0xf682fb9a80e7b893,
+        0x64ca1e72ffc5e460,
+        0x24a1077be8380121,
     ),
     (
         r#"{"id": "deep-gallery#33", "re": "0", "im": "0", "w": 7.787286674045785e-08, "n": 34239, "degree": 2, "julia_re": "-0.74937053247003823168823992075369", "julia_im": "0.041472667068168900034718746387049", "anchor": "origin"}"#,
@@ -78,8 +88,8 @@ const IDENTITY: [(&str, [u32; 2], bool, u64, u64); 7] = [
         r#"{"id": "dive-sheet:u0496", "re": "0.84705383614488507118", "im": "0.45497047478211847321", "w": 7.284373984668588e-07, "n": 30368, "degree": 6}"#,
         [16, 9],
         true,
-        0x2116d7dc5a360b00,
-        0x06475956eaf8afff,
+        0x3a296bd242ff23cc,
+        0xd46e212c7b3c51af,
     ),
 ];
 
@@ -189,6 +199,7 @@ fn passes_with_the_skip_are_bit_identical_whatever_the_budget() {
                             "{} {enc:?} {c},{r} {budget}",
                             fs.id
                         );
+                        assert_eq!(st.proof.bits(), whole.proof.bits());
                         assert_eq!(stats, whole_stats, "{} {enc:?} {c},{r} {budget}", fs.id);
                     }
                 }
