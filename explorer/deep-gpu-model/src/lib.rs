@@ -29,8 +29,11 @@
 //!   bit idiom, so the shader port is line for line.
 //!
 //! The scaling scheme, the state struct, and what changed from `perturb` to fit these
-//! types are documented in [`model`].
+//! types are documented in [`model`]. Iteration skipping, a switch that is off unless a
+//! table is passed ([`model::pass_bla`]), is in [`bla`]: its table is CPU-side setup in
+//! `f64`, and its lookup and its step are on the per-pixel path and keep these rules.
 
+pub mod bla;
 pub mod compare;
 pub mod frame;
 pub mod json;

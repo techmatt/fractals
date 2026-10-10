@@ -96,6 +96,12 @@ pub fn ldexp_exact(x: f32, e: i32) -> f32 {
     }
 }
 
+/// WGSL's `countTrailingZeros(x)`: 32 for zero.
+#[inline(always)]
+pub fn count_trailing_zeros(x: u32) -> u32 {
+    x.trailing_zeros()
+}
+
 /// `max(abs(a), abs(b))`, the size test the delta's renormalization reads.
 #[inline(always)]
 pub fn max_abs(a: f32, b: f32) -> f32 {

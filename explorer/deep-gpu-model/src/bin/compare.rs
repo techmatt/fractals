@@ -6,8 +6,12 @@
 //!         [--period P] [--id NAME]
 //! common: [--res WxH] [--cap N] [--cap-max N] [--encoding f32pair|hilo|both]
 //!         [--interior on|off] [--threads N] [--budget N] [--dump DIR] [--out FILE]
-//!         [--floor on|off]
+//!         [--floor on|off] [--bla off|on|both] [--eps E] [--min-level K] [--max-level K]
 //! ```
+//!
+//! `--bla on` runs the model with the skip table (`--eps`, default `2^-24`, and the
+//! stored levels, default 4 to 24); `both` runs each encoding without and with it, the
+//! second keyed `<encoding>+bla`. The `f64` kernel is always the one without a table.
 //!
 //! `--floor on` also runs the `f64` kernel on the reference rounded to `f32`, and
 //! reports how far that lands from the `f64` field: the part of the model's
@@ -16,7 +20,7 @@
 use std::path::PathBuf;
 
 use deep_gpu_model::Encoding;
-use deep_gpu_model::compare::{FrameSpec, Options, compare_frame, emit};
+use deep_gpu_model::compare::{BlaMode, FrameSpec, Options, compare_frame, emit};
 use perturb::Anchor;
 
 fn main() {
@@ -82,6 +86,25 @@ fn run() -> Result<(), String> {
         Some("on") => true,
         _ => return Err("--floor is on or off".into()),
     };
+    opts.bla = match get("bla").as_deref() {
+        None | Some("off") => BlaMode::Off,
+        Some("on") => BlaMode::On,
+        Some("both") => BlaMode::Both,
+        _ => return Err("--bla is on, off or both".into()),
+    };
+    if let Some(e) = get("eps") {
+        let eps: f64 = e.parse().map_err(|_| "--eps is a number")?;
+        if !(eps > 0.0 && eps < 0.25) {
+            return Err("--eps is in (0, 0.25)".into());
+        }
+        opts.bla_options.epsilon = eps;
+    }
+    if let Some(k) = parse_u32("min-level")? {
+        opts.bla_options.min_level = k;
+    }
+    if let Some(k) = parse_u32("max-level")? {
+        opts.bla_options.max_level = k;
+    }
     let out = get("out").map(PathBuf::from);
 
     let frames: Vec<FrameSpec> = if let Some(path) = get("corpus") {

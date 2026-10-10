@@ -17,9 +17,10 @@ use perturb::kernel::Kernel;
 use perturb::reference::Reference;
 use perturb::{Anchor, Spec};
 
+use crate::bla::{BlaOptions, ENTRY_BYTES, GpuTable, HEADER_BYTES, INTERIOR_BYTES};
 use crate::frame::{Frame, spec_of};
 use crate::json;
-use crate::model::{self, CAPPED, ESCAPED, INTERIOR};
+use crate::model::{self, BlaStats, CAPPED, ESCAPED, INTERIOR};
 use crate::orbit::{Encoding, GpuOrbit};
 
 /// One frame to compare, as a corpus row names it.
@@ -117,6 +118,28 @@ pub struct Options {
     /// Also runs the `f64` kernel on the `f32`-narrowed reference
     /// ([`narrowed_reference`]) and reports its agreement as `floor`.
     pub floor: bool,
+    /// Run the model without the skip table, with it, or both (each encoding twice,
+    /// the second keyed `<encoding>+bla`).
+    pub bla: BlaMode,
+    pub bla_options: BlaOptions,
+}
+
+/// Which of the model's two paths a comparison runs.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BlaMode {
+    Off,
+    On,
+    Both,
+}
+
+impl BlaMode {
+    fn runs(self) -> &'static [bool] {
+        match self {
+            BlaMode::Off => &[false],
+            BlaMode::On => &[true],
+            BlaMode::Both => &[false, true],
+        }
+    }
 }
 
 impl Default for Options {
@@ -133,6 +156,8 @@ impl Default for Options {
             budget: u32::MAX,
             dump: None,
             floor: false,
+            bla: BlaMode::Off,
+            bla_options: BlaOptions::default(),
         }
     }
 }
@@ -156,6 +181,11 @@ pub struct ModelField {
     /// Delta steps taken in the scaled regime.
     pub scaled: Vec<u32>,
     pub rebases: Vec<u32>,
+    /// Of `steps`, those that were skips; the iterations they covered; the table
+    /// entries the lookups read. All zero with the switch off.
+    pub bla_steps: Vec<u32>,
+    pub skipped: Vec<u32>,
+    pub reads: Vec<u32>,
     /// Samples whose final delta mantissa is not finite.
     pub nonfinite: usize,
     pub wall_s: f64,
@@ -236,21 +266,41 @@ pub fn narrowed_reference(orbit: &Reference) -> Reference {
 
 /// Runs the model over the frame, in passes of `budget` steps per pixel.
 pub fn run_model(frame: &Frame, orbit: &GpuOrbit, threads: usize, budget: u32) -> ModelField {
+    run_model_bla(frame, orbit, None, threads, budget)
+}
+
+/// [`run_model`], with the skip table switched on when one is given.
+pub fn run_model_bla(
+    frame: &Frame,
+    orbit: &GpuOrbit,
+    table: Option<&GpuTable>,
+    threads: usize,
+    budget: u32,
+) -> ModelField {
     let start = Instant::now();
     let rows = par_rows(frame.height_px, threads, |row| {
         (0..frame.width_px)
-            .map(|col| model::run_pixel(frame, orbit, col, row, budget))
+            .map(|col| match table {
+                None => (
+                    model::run_pixel(frame, orbit, col, row, budget),
+                    BlaStats::default(),
+                ),
+                Some(t) => model::run_pixel_bla(frame, orbit, t, col, row, budget),
+            })
             .collect()
     });
     ModelField {
-        smooth: rows.iter().map(model::smooth_f64).collect(),
-        status: rows.iter().map(|s| s.status).collect(),
-        steps: rows.iter().map(|s| s.steps).collect(),
-        scaled: rows.iter().map(|s| s.scaled).collect(),
-        rebases: rows.iter().map(|s| s.rebases).collect(),
+        smooth: rows.iter().map(|r| model::smooth_f64(&r.0)).collect(),
+        status: rows.iter().map(|r| r.0.status).collect(),
+        steps: rows.iter().map(|r| r.0.steps).collect(),
+        scaled: rows.iter().map(|r| r.0.scaled).collect(),
+        rebases: rows.iter().map(|r| r.0.rebases).collect(),
+        bla_steps: rows.iter().map(|r| r.1.bla_steps).collect(),
+        skipped: rows.iter().map(|r| r.1.skipped).collect(),
+        reads: rows.iter().map(|r| r.1.reads).collect(),
         nonfinite: rows
             .iter()
-            .filter(|s| !(s.d[0].is_finite() && s.d[1].is_finite()))
+            .filter(|r| !(r.0.d[0].is_finite() && r.0.d[1].is_finite()))
             .count(),
         wall_s: start.elapsed().as_secs_f64(),
     }
@@ -434,19 +484,64 @@ pub fn compare_frame(fs_: &FrameSpec, opts: &Options) -> Result<String, String> 
         .map_err(|e| e.to_string())?;
     }
 
-    out.push_str(",\"models\":{");
-    for (k, &enc) in opts.encodings.iter().enumerate() {
-        let gpu = GpuOrbit::from_reference(&orbit, enc);
-        let frame = Frame::from_spec(&spec, gpu.len())?;
-        let mf = run_model(&frame, &gpu, opts.threads, opts.budget);
-        let a = agree(&f64_field.smooth, &mf.smooth);
-        let count = |c: u32| mf.status.iter().filter(|&&s| s == c).count();
-        if k > 0 {
-            out.push(',');
-        }
+    // The table is a function of the `f64` orbit and the frame, not of the encoding.
+    let table = if opts.bla != BlaMode::Off {
+        let frame = Frame::from_spec(&spec, orbit.len())?;
+        let t = GpuTable::build(&orbit, &frame, &opts.bla_options);
+        let points = orbit.len().max(1) as f64;
         out.push_str(&format!(
-            "\"{}\":{{\"escaped\":{},\"capped\":{},\"proven\":{},\"both_escaped\":{},\"both_interior\":{},\"f64_only_escaped\":{},\"model_only_escaped\":{},\"p50\":{},\"p90\":{},\"p99\":{},\"max\":{},\"over_0.01\":{:.5},\"over_0.1\":{:.5},\"over_1\":{:.5},\"over_10\":{:.5},\"mean_steps\":{:.1},\"scaled_share\":{:.4},\"mean_rebases\":{:.3},\"max_rebases\":{},\"nonfinite\":{},\"offset_px\":{},\"sc\":{},\"ref_bytes\":{},\"wall_s\":{:.3}}}",
-            enc.name(),
+            ",\"bla\":{{\"eps\":{:e},\"min_level\":{},\"max_level\":{},\"levels\":{},\"entries\":{},\"valid\":{},\"entry_bytes\":{},\"interior_bytes\":{},\"header_bytes\":{},\"bytes_per_ref_iter\":{:.3},\"bytes_per_ref_iter_interior\":{:.3},\"dc_bound\":{:e},\"build_s\":{:.4}}}",
+            t.epsilon,
+            opts.bla_options.min_level,
+            t.top_level().map_or(-1, |k| k as i64),
+            t.header.levels,
+            t.entries.len(),
+            t.valid,
+            t.entry_bytes(),
+            t.interior_bytes(),
+            HEADER_BYTES,
+            (t.entries.len() * ENTRY_BYTES) as f64 / points,
+            (t.entries.len() * (ENTRY_BYTES + INTERIOR_BYTES)) as f64 / points,
+            t.dc_bound,
+            t.build_s
+        ));
+        Some(t)
+    } else {
+        None
+    };
+
+    out.push_str(",\"models\":{");
+    let mut first = true;
+    for &enc in opts.encodings.iter() {
+        for &with_bla in opts.bla.runs() {
+            let gpu = GpuOrbit::from_reference(&orbit, enc);
+            let frame = Frame::from_spec(&spec, gpu.len())?;
+            let mf = run_model_bla(
+                &frame,
+                &gpu,
+                if with_bla { table.as_ref() } else { None },
+                opts.threads,
+                opts.budget,
+            );
+            let a = agree(&f64_field.smooth, &mf.smooth);
+            let count = |c: u32| mf.status.iter().filter(|&&s| s == c).count();
+            if !first {
+                out.push(',');
+            }
+            first = false;
+            let key = if with_bla {
+                format!("{}+bla", enc.name())
+            } else {
+                enc.name().to_string()
+            };
+            let steps = mean_u32(&mf.steps);
+            let bla_steps = mean_u32(&mf.bla_steps);
+            out.push_str(&format!(
+            "\"{key}\":{{\"bla_steps\":{:.1},\"ptb_steps\":{:.1},\"skipped\":{:.1},\"reads\":{:.1},\"escaped\":{},\"capped\":{},\"proven\":{},\"both_escaped\":{},\"both_interior\":{},\"f64_only_escaped\":{},\"model_only_escaped\":{},\"p50\":{},\"p90\":{},\"p99\":{},\"max\":{},\"over_0.01\":{:.5},\"over_0.1\":{:.5},\"over_1\":{:.5},\"over_10\":{:.5},\"mean_steps\":{:.1},\"scaled_share\":{:.4},\"mean_rebases\":{:.3},\"max_rebases\":{},\"nonfinite\":{},\"offset_px\":{},\"sc\":{},\"ref_bytes\":{},\"wall_s\":{:.3}}}",
+            bla_steps,
+            steps - bla_steps,
+            mean_u32(&mf.skipped),
+            mean_u32(&mf.reads),
             count(ESCAPED),
             count(CAPPED),
             count(INTERIOR),
@@ -472,16 +567,15 @@ pub fn compare_frame(fs_: &FrameSpec, opts: &Options) -> Result<String, String> 
             gpu.gpu_bytes(),
             mf.wall_s
         ));
-        if let Some(dir) = &opts.dump {
-            let narrowed: Vec<f32> = mf.smooth.iter().map(|&x| x as f32).collect();
-            let base = safe_name(&fs_.id);
-            write_f64(&dir.join(format!("{base}.{}.bin", enc.name())), &mf.smooth)
-                .map_err(|e| e.to_string())?;
-            write_f32(
-                &dir.join(format!("{base}.{}.f32.bin", enc.name())),
-                &narrowed,
-            )
-            .map_err(|e| e.to_string())?;
+            if let Some(dir) = &opts.dump {
+                let narrowed: Vec<f32> = mf.smooth.iter().map(|&x| x as f32).collect();
+                let base = safe_name(&fs_.id);
+                let tag = safe_name(&key);
+                write_f64(&dir.join(format!("{base}.{tag}.bin")), &mf.smooth)
+                    .map_err(|e| e.to_string())?;
+                write_f32(&dir.join(format!("{base}.{tag}.f32.bin")), &narrowed)
+                    .map_err(|e| e.to_string())?;
+            }
         }
     }
     out.push_str("}}");

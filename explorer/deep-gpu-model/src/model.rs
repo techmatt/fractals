@@ -124,6 +124,7 @@
 //! model already carries there. Bit identity is a claim this model makes only about
 //! itself: passes of any budget leave exactly the state one unbounded pass does.
 
+use crate::bla::{self, GpuTable};
 use crate::frame::Frame;
 use crate::orbit::{Encoding, GpuOrbit};
 use crate::wgsl::{exponent_of, exponent_of_max, ldexp_exact, log, max_abs};
@@ -254,6 +255,21 @@ pub fn init(frame: &Frame, col: u32, row: u32) -> PixelState {
     }
 }
 
+/// What the skip did to one pixel: measurement only, in a 12-byte buffer of its own so
+/// that [`PixelState`] is the same struct with the switch on or off. The kernel needs
+/// none of it.
+#[repr(C)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct BlaStats {
+    /// Delta steps that were skips (each also counted once in [`PixelState::steps`]).
+    pub bla_steps: u32,
+    /// Iterations those skips covered.
+    pub skipped: u32,
+    /// Table entries read by lookups, hits and misses alike (32 bytes each, and 16 more
+    /// from the interior buffer when the switch runs).
+    pub reads: u32,
+}
+
 /// Advances one pixel by at most `budget` delta steps, and returns how many it took.
 /// A pixel that has stopped takes none. The result after any sequence of passes is
 /// bit-identical to one pass with an unbounded budget.
@@ -265,20 +281,56 @@ pub fn pass(
     row: u32,
     budget: u32,
 ) -> u32 {
+    let mut unused = BlaStats::default();
+    dispatch(state, &mut unused, frame, orbit, None, col, row, budget)
+}
+
+/// [`pass`] with the skip table switched on. A skip is one delta step whatever its
+/// length, and is never split across passes: the budget counts delta steps, so passes
+/// of any budget leave the state one unbounded pass does.
+#[allow(clippy::too_many_arguments)]
+pub fn pass_bla(
+    state: &mut PixelState,
+    stats: &mut BlaStats,
+    frame: &Frame,
+    orbit: &GpuOrbit,
+    table: &GpuTable,
+    col: u32,
+    row: u32,
+    budget: u32,
+) -> u32 {
+    dispatch(state, stats, frame, orbit, Some(table), col, row, budget)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn dispatch(
+    state: &mut PixelState,
+    stats: &mut BlaStats,
+    frame: &Frame,
+    orbit: &GpuOrbit,
+    table: Option<&GpuTable>,
+    col: u32,
+    row: u32,
+    budget: u32,
+) -> u32 {
     if state.status != RUNNING || budget == 0 {
         return 0;
     }
     let hilo = orbit.encoding == Encoding::HiLo;
     macro_rules! go {
         ($($d:literal),*) => {
-            match (frame.degree, frame.julia != 0, hilo) {
+            match (frame.degree, frame.julia != 0, hilo, table.is_some()) {
                 $(
-                    ($d, false, false) => run::<$d, false, false>(state, frame, orbit, col, row, budget),
-                    ($d, false, true) => run::<$d, false, true>(state, frame, orbit, col, row, budget),
-                    ($d, true, false) => run::<$d, true, false>(state, frame, orbit, col, row, budget),
-                    ($d, true, true) => run::<$d, true, true>(state, frame, orbit, col, row, budget),
+                    ($d, false, false, false) => run::<$d, false, false, false>(state, stats, frame, orbit, table, col, row, budget),
+                    ($d, false, true, false) => run::<$d, false, true, false>(state, stats, frame, orbit, table, col, row, budget),
+                    ($d, true, false, false) => run::<$d, true, false, false>(state, stats, frame, orbit, table, col, row, budget),
+                    ($d, true, true, false) => run::<$d, true, true, false>(state, stats, frame, orbit, table, col, row, budget),
+                    ($d, false, false, true) => run::<$d, false, false, true>(state, stats, frame, orbit, table, col, row, budget),
+                    ($d, false, true, true) => run::<$d, false, true, true>(state, stats, frame, orbit, table, col, row, budget),
+                    ($d, true, false, true) => run::<$d, true, false, true>(state, stats, frame, orbit, table, col, row, budget),
+                    ($d, true, true, true) => run::<$d, true, true, true>(state, stats, frame, orbit, table, col, row, budget),
                 )*
-                (other, _, _) => panic!("degree {other} is not one the kernel draws"),
+                (other, _, _, _) => panic!("degree {other} is not one the kernel draws"),
             }
         };
     }
@@ -292,6 +344,32 @@ pub fn run_pixel(frame: &Frame, orbit: &GpuOrbit, col: u32, row: u32, budget: u3
         pass(&mut state, frame, orbit, col, row, budget.max(1));
     }
     state
+}
+
+/// [`run_pixel`] with the skip table switched on.
+pub fn run_pixel_bla(
+    frame: &Frame,
+    orbit: &GpuOrbit,
+    table: &GpuTable,
+    col: u32,
+    row: u32,
+    budget: u32,
+) -> (PixelState, BlaStats) {
+    let mut state = init(frame, col, row);
+    let mut stats = BlaStats::default();
+    while state.status == RUNNING {
+        pass_bla(
+            &mut state,
+            &mut stats,
+            frame,
+            orbit,
+            table,
+            col,
+            row,
+            budget.max(1),
+        );
+    }
+    (state, stats)
 }
 
 /// The smooth count `perturb` would report for this state: `n + frac` on an escape and
@@ -603,12 +681,18 @@ fn careful_step<const D: usize, const JULIA: bool, const HILO: bool>(
     settle(sum, at)
 }
 
-/// The loop. One iteration is one delta step; `budget` bounds them.
+/// The loop. One iteration is one delta step, a single step or a skip; `budget` bounds
+/// them. With `BLA` false the skip's code is compiled out and the loop is the one that
+/// ran before the switch existed (`tests/bla.rs` holds its fields to that one's, bit for
+/// bit).
 #[inline(never)]
-fn run<const D: usize, const JULIA: bool, const HILO: bool>(
+#[allow(clippy::too_many_arguments)]
+fn run<const D: usize, const JULIA: bool, const HILO: bool, const BLA: bool>(
     st: &mut PixelState,
+    stats: &mut BlaStats,
     frame: &Frame,
     orbit: &GpuOrbit,
+    table: Option<&GpuTable>,
     col: u32,
     row: u32,
     budget: u32,
@@ -647,54 +731,92 @@ fn run<const D: usize, const JULIA: bool, const HILO: bool>(
     let mut status = RUNNING;
     let mut frac = st.frac;
     let mut taken = 0u32;
+    let mut bla_steps = stats.bla_steps;
+    let mut skipped = stats.skipped;
+    let mut reads = stats.reads;
 
     while taken < budget {
-        // ---- step: δ' = F(Z[m], δ) · δ (+ dc), in the delta's units.
-        let p = &points[m as usize];
+        // ---- the skip: at an index the table is aligned on, the longest run it allows.
+        // The landed delta falls through into the same escape, interior, cap and rebase
+        // tests a single step's does.
         let s0 = s;
-        // The quick path's gate. Unscaled, it is two compares against constants: `δ` is
-        // at least `2^-62`, so only the size of `max(|Z|, |δ|)` and of the product are in
-        // question. Scaled, it reads the exponents.
-        let gate = if s == 0 {
-            reaches([p[0], p[1]], const { quick_size::<D>() })
-                || reaches(d, const { quick_size::<D>() })
-        } else {
-            let em = exponent_of_max(d[0], d[1]);
-            let ez = exponent_of_max(p[0], p[1]);
-            let ed = s + em;
-            let v = if ez > ed { ez } else { ed };
-            dm1 * v >= QUICK_FLOOR && (ed >= DELTA_FLOOR || ez >= ed + DELTA_BESIDE)
-        } && (JULIA || scale.dc_fits);
-        // The quick step is formed whatever the gate says (it is finite either way) and
-        // kept only when the gate holds and the product is at least `2^-100`: a cancelled
-        // `F` whose product with `d` has left the normal range is formed again the
-        // careful way. Written so that the kept value does not wait on the decision.
-        let product = cmul(factor::<D, HILO>(p, delta_at_step(d, s, &scale)), d);
-        let next = if JULIA {
-            product
-        } else {
-            [product[0] + scale.dc[0], product[1] + scale.dc[1]]
-        };
-        if gate && reaches(product, PRODUCT_SIZE) {
-            d = next;
-        } else {
-            let (nd, ns) = careful_step::<D, JULIA, HILO>(p, d, s, dc_m, dc_e, sc);
+        let mut hit: Option<bla::Hit> = None;
+        if BLA && let Some(t) = table {
+            let guard = if track_interior {
+                Some((dzm, dze, floor))
+            } else {
+                None
+            };
+            hit = bla::lookup(t, m, d, s, maxiter - n, guard, &mut reads);
+        }
+        if let (true, Some(h), Some(t)) = (BLA, hit, table) {
+            let (sum, at) = bla::apply::<JULIA>(&t.entries[h.index as usize], d, s, dc_m, sc);
+            let (nd, ns) = settle(sum, at);
             d = nd;
             if ns != s {
                 s = ns;
                 scale = scale_of(dc_m, sc, s);
             }
-        }
-        taken += 1;
-        steps += 1;
-        if s0 != 0 {
-            scaled += 1;
-        }
+            taken += 1;
+            steps += 1;
+            if s0 != 0 {
+                scaled += 1;
+            }
+            bla_steps += 1;
+            skipped += h.length;
+            m += h.length;
+            n += h.length;
+            // A run may land on `len`, which is index 0, and never passes it.
+            if periodic && m >= length {
+                m = 0;
+            }
+        } else {
+            // ---- step: δ' = F(Z[m], δ) · δ (+ dc), in the delta's units.
+            let p = &points[m as usize];
+            // The quick path's gate. Unscaled, it is two compares against constants: `δ` is
+            // at least `2^-62`, so only the size of `max(|Z|, |δ|)` and of the product are in
+            // question. Scaled, it reads the exponents.
+            let gate = if s == 0 {
+                reaches([p[0], p[1]], const { quick_size::<D>() })
+                    || reaches(d, const { quick_size::<D>() })
+            } else {
+                let em = exponent_of_max(d[0], d[1]);
+                let ez = exponent_of_max(p[0], p[1]);
+                let ed = s + em;
+                let v = if ez > ed { ez } else { ed };
+                dm1 * v >= QUICK_FLOOR && (ed >= DELTA_FLOOR || ez >= ed + DELTA_BESIDE)
+            } && (JULIA || scale.dc_fits);
+            // The quick step is formed whatever the gate says (it is finite either way) and
+            // kept only when the gate holds and the product is at least `2^-100`: a cancelled
+            // `F` whose product with `d` has left the normal range is formed again the
+            // careful way. Written so that the kept value does not wait on the decision.
+            let product = cmul(factor::<D, HILO>(p, delta_at_step(d, s, &scale)), d);
+            let next = if JULIA {
+                product
+            } else {
+                [product[0] + scale.dc[0], product[1] + scale.dc[1]]
+            };
+            if gate && reaches(product, PRODUCT_SIZE) {
+                d = next;
+            } else {
+                let (nd, ns) = careful_step::<D, JULIA, HILO>(p, d, s, dc_m, dc_e, sc);
+                d = nd;
+                if ns != s {
+                    s = ns;
+                    scale = scale_of(dc_m, sc, s);
+                }
+            }
+            taken += 1;
+            steps += 1;
+            if s0 != 0 {
+                scaled += 1;
+            }
 
-        m += 1;
-        n += 1;
-        if periodic && m >= length {
-            m = 0;
+            m += 1;
+            n += 1;
+            if periodic && m >= length {
+                m = 0;
+            }
         }
 
         // ---- reconstruct and escape. `z = zv · 2^ze`: where `|Z|` is small beside `δ`
@@ -732,7 +854,21 @@ fn run<const D: usize, const JULIA: bool, const HILO: bool>(
 
         // ---- interior switch.
         if track_interior {
-            if !derivative_step::<D>(&mut dzm, &mut dze, zv, ze, z_norm_sq) {
+            if let (true, Some(h), Some(t)) = (BLA, hit, table) {
+                // The run's product of `D²|Z_j|^(2(D−1))` over its inner points, which the
+                // lookup has shown keeps every prefix above the floor (and nonzero); then
+                // the landing point's factor from the `z` actually landed on, since the
+                // radius bounds nothing there.
+                let x = &t.interior[h.index as usize];
+                let product = dzm * x.deriv_m;
+                let e = exponent_of(product);
+                dzm = ldexp_exact(product, -e);
+                dze += x.deriv_e + e;
+                if !derivative_step::<D>(&mut dzm, &mut dze, zv, ze, z_norm_sq) {
+                    status = INTERIOR;
+                    break;
+                }
+            } else if !derivative_step::<D>(&mut dzm, &mut dze, zv, ze, z_norm_sq) {
                 status = INTERIOR;
                 break;
             }
@@ -819,6 +955,11 @@ fn run<const D: usize, const JULIA: bool, const HILO: bool>(
     st.rebases = rebases;
     st.steps = steps;
     st.scaled = scaled;
+    if BLA {
+        stats.bla_steps = bla_steps;
+        stats.skipped = skipped;
+        stats.reads = reads;
+    }
     taken
 }
 
