@@ -206,7 +206,7 @@ deep-fx.test.mjs      13 tests: the Deep tab's arithmetic is exact where a doubl
 deep-link.test.mjs    45 tests: the deep contract, the shallow one held to not moving,
                       and the gallery register held to the deep one
 deep.test.mjs         30 tests: where the two modules meet, against both committed ones
-deep-gpu.test.mjs     22 tests: the GPU path's frame, orbit, passes and tail, and the kernel key
+deep-gpu.test.mjs     23 tests: the GPU path's frame, orbit, passes, tail and cheap rules, and the key
 hold.test.mjs         7 tests: a held move keeps the colour at the reference value
 fit.test.mjs          15 tests: a fit runs the palette its passes across Leveled's stretch
 dives.test.mjs        21 tests: the Dive block's chains, draws and results, and Random dives
@@ -3431,6 +3431,224 @@ double:
 explorer/?dv=2&cx=-0.74501772828532335842941892835857434&cy=0.14993443275456819177805709088257971&x=-0.74501772828532335842941892835857434&y=0.14993443275456819177805709088257971&w=2e-9&n=8000&p=twilight_shifted&panel=deep
 ```
 
+### The GPU draws the full pass where it has earned it *(gpu_deep_ship_ckpt162)*
+
+**What it is.** A Deep frame's full stage, the pass at the canvas's size and any Download
+stage, may be drawn by a WebGPU kernel instead of the CPU pool: `deep-gpu-wgsl.js`, which is
+`deep-gpu-model`'s double-single loop and its interior proof ported line for line, run by
+`deep-gpu.js`. Double-single is two `f32`s standing in for one wider number, since WGSL has
+no `f64`; `deep-gpu-model/README.md` has why it and not plain `f32` ("Double-single as
+measured"). The GPU hands back exactly what the CPU kernel would, one `f64` lane a sample
+with `NaN` for the interior, so the coloring, the kept field, and a recolor never know which
+kernel drew it. The quarter pass is always the CPU's, and so is the reference orbit, which
+the GPU reads as a `HiLo` buffer of the orbit the pool already computed. Details says which
+drew the picture up: "Drawn on the CPU.", or "Drawn on the GPU in double-single precision",
+with how many pixels the CPU finished. Nothing else on the page says so, and the reason a
+frame went to the CPU is the tab's log (`explorer.deep-log`) and nowhere else.
+
+**When it is used.** Every page load earns the GPU afresh. When the Deep tab first starts its
+pool, `DeepGpu.start` asks for a high-performance adapter and runs a self-test on it: the
+exported double-single vectors bit for bit, then two small frames `deep-gpu-model` exported
+(`deep-gpu-selftest/`) word for word, `frac` apart, at two budget schedules each so that a
+resumed pass is tested too. Then a full stage goes to the GPU unless one of these sends it to
+the CPU, checked in this order:
+
+- **`?kernel=cpu`**, the debugging override. `?kernel=gpu` is the other one: it lifts the
+  small-frame gate and the cheap rule below, and waits up to two minutes for the self-test.
+  Neither is part of either link contract; `takeKernel` removes the key from the address
+  before a link reader sees it, so no link written from the view carries it.
+- **Small**: under 65,536 samples (`GPU_MIN_SAMPLES`), where the GPU's fixed costs are the
+  whole frame.
+- **Cheap** *(Phase 4)*: the quarter pass counts what it ran, and the full stage runs
+  sixteen times its samples, so the quarter's iterations scaled by sixteen are the estimate.
+  It runs a little short: over 109 frames the full stage ran 14.8 to 22.0 times the
+  quarter's iterations, so a frame can cost up to 37% more than estimated. Under 25
+  million estimated iterations a worker (`CHEAP_ITERATIONS_PER_WORKER`, 300 million on twelve
+  workers, a quarter of 18.75 million), the frame stays on the CPU. Measured before the rule,
+  every frame whose quarter ran 15 million or fewer, a CPU field of about 0.1 to 0.7 s, drew
+  0.70 to 1.09 times as fast on the GPU (44 frames), and all but one from 24 million up drew
+  1.17 times as fast or better. No frame of the sample fell between, so the threshold sits in
+  the middle of a gap that was never measured. A card idling at 300 MHz between frames runs
+  its first pass seven to fourteen times slow, and the passes, read-backs, and launch then
+  take the whole of the time. It counts iterations and not time, so a frame goes the same way
+  on every load. The rule reads the quarter pass wherever one is in hand: an on-screen
+  landing, an off-screen one (Dive results, the detached Keep diving descent, and Save those
+  minibrots), and a Download, which reads the screen's quarter pass of the frame where it is
+  still held and scales it to the file's samples. A Download with none held goes to the GPU.
+- **Not ready**: no WebGPU, no adapter, a fallback adapter (a software rasterizer is not a GPU
+  path), a failed self-test, or one still running. A frame waits on a test still running for
+  eight quarter passes, half what the CPU would take over the stage, and never less than 3 s
+  or more than 30 s (`readyWait`). A failed self-test is final for the page load; no adapter or
+  a refused device is asked again by later frames, up to three times.
+- **Does not fit**: a degree past six, a dispatch past one dimension's workgroups, or a
+  sample state (128 bytes a sample with the proof, 56 without), an orbit, or an output buffer
+  past the adapter's limits. The Download row's estimate
+  asks the same question (`likely`) and scales from the GPU's own stage only where the GPU
+  would take the download.
+
+The kernels a frame needs are compiled when its link lands, both settings of the interior
+switch side by side, beside the reference orbit and the quarter pass rather than after them
+(`prepare`). A first use of a degree and plane compiles that pair in 0.4 to about 5 s: 4.8 s
+for degree six and 4.3 s for degree five, measured in fresh browsers. Seven first-use frames
+on fresh profiles came to 34.1 s in all this way, against 38.0 s compiling after the quarter
+pass. Moving the compile earlier does not hide it where the orbit and the quarter pass are
+shorter than the compile: `deep-gallery#0` (degree four) landed in 4.8 s against the CPU's
+5.2 s in a fresh browser, 1.09x, where the timed run below, its kernels already compiled,
+measured 1.77x. The pair is compiled
+once a page load, so the cost falls on the first frame of each degree and plane. After the
+self-test, degree two's two kernels are compiled in the background, and the browser's own
+cache makes a later page load's compile of a kernel it has seen 20 to 90 ms. `prepare`
+runs for a frame the quarter pass will call cheap too, which costs that frame the compile
+beside the pool for nothing (below); the next frame of that shape the GPU draws finds it
+compiled.
+
+**Passes are sized by time, and that never moves a pixel.** Each pass aims at about 100 ms
+(`PASS_TARGET_MS`), twenty times clear of Windows' two-second device timeout, growing at most
+fourfold a pass. A sample's whole progress lives in its state on the device, and the model
+guarantees that any sequence of budgets leaves the state one unbounded run would. Under a
+tenth of the frame still running, passes run a compacted list of the samples left. A partial
+picture is read back and shown at most every half second.
+
+**What it hands to the CPU, and why.** The CPU finishes three kinds of sample, each restarted
+from its first iteration on its own `f64` loop and its own proof (`compute_samples`), so a
+lane is either the GPU kernel's or exactly the CPU kernel's:
+
+- **Gated samples**: a sample the interior proof gives up on ends `GATED`, the `handoff`
+  policy, rather than running to the cap in a precision the proof cannot vouch for.
+- **The tail** *(rule revised in Phase 4)*: at the step checkpoints `1024 · 2^k` below the
+  cap, the GPU stops and hands over every sample still running once there are few enough,
+  `running ≤ K × workers/12 × (1 − spent/cap)`, with `K` 2,000 for the plain kernel and 8,000
+  with the proof (`TAIL_SAMPLES`, `handsTail`). A thin tail leaves the GPU latency-bound: a
+  step costs about as much with 300 samples running as with 5,000, 1.4 to 2.7 µs for the
+  plain kernels on this machine and 8 to 14 µs with the proof, while twelve workers run 340
+  to 1,360 million iterations a second. The two break even near 1,500 samples plain and 5,000
+  with the proof, alike from degree two to six; the constants sit a little above, since most
+  of a tail escapes well short of the cap, and minimized the modeled wait over 24 measured
+  tail-heavy frames (142.1 s, against 160.8 s for the rule it replaced and 140.8 s for the
+  best possible). The last factor is there because the CPU starts a handed sample over: at a
+  checkpoint near the cap it would redo nearly everything the GPU had done. The rule it
+  replaced handed over at a fixed half percent of the frame, which handed `random-dives#950`
+  at step 1,048,576 of a 1,293,768 cap (7.3 s of tail), and handed `#6`'s 2,440 samples
+  (half a percent of 619,776 samples is 3,099) although on its plain kernel the GPU finishes
+  them faster, 6.0 s against 8.5 s; the new rule keeps them. The decision is made from steps and counts and never
+  the clock, so the samples handed over are the same on every run.
+- **A lost device**: every unfinished sample, as of the last read-back, or the whole frame
+  where nothing was read back. The next frame asks for a fresh device and a fresh self-test;
+  the second loss in a page load turns the GPU off until a reload.
+
+**Measured** *(Phase 4, 2026-10-11)*, on the RTX 2060 SUPER and twelve cores, a maximized
+1920x1055 headless Chrome on a 1920x1080 display at 100%, so the Deep canvas is 1076x576
+(619,776 samples). `bench/deep-gpu-time.mjs` keeps one browser with `kernel=cpu` and one
+under the reader's own rule, both warm, and lands every frame in each through the page's own
+door for a link, the one a Saved or gallery tile uses. The time is the tab's own log, from the
+link landing to the full pass finished: the reference orbit, the quarter pass, the full
+field, and both colorings, which is what a reader waits for. The sample is seeded (162) and
+is 159 frames (`bench/deep-gpu-frames.mjs`): the 24 named frames of `deep-gpu-agree.mjs`, every
+deep `go/` link, every Julia frame of the gallery, 34 more gallery frames across families, 13
+random dives a degree, and 30 frames built at Misiurewicz points, degrees two to six on both
+planes at 1e-60, 1e-80, and 1e-100. By degree, Mandelbrot and Julia: 34 and 8 at two, 30 and 6
+at three, 23 and 4 at four, 23 and 4 at five, 22 and 5 at six. Under the reader's rule 115 drew
+on the GPU and 44 stayed on the CPU as cheap. The GPU browser is warm, so only 9 of the 115
+paid a kernel compile; the speedups below are for kernels already compiled, and a reader's
+first frame of a degree and plane pays the compile above on top.
+
+Agreement is the picture a reader sees against the CPU's, by stage 2's visible-pixel rule
+(`bench/visible.mjs`; under the bench files below): **157 match (1% visible or less), 2 are
+acceptable (5% or less), and none differ.** That counts the 44 cheap frames, which both
+browsers drew on the CPU. Over the 115 the GPU drew, 113 match and 2 are acceptable, and the
+median is 0.04% visible, the upper quartile 0.11%. The two past 1% are degree-six chaotic
+dives, `random-dives#564` (1.42%, which hands nothing to the CPU, so the difference is the
+GPU's arithmetic) and `random-dives#970` (1.20%). Next are `siegel-M 1e-6` 0.88%,
+`go:julia3-end` 0.84%, `random-dives#502` 0.69%, and the anchor 0.64%. The three degree-3 D
+frames at 1e-60 to 1e-100 are solid interior and prove nothing about pictures at 0.00%.
+
+So under the shipped rule no frame with structure past 1e-80 drew on the GPU: the 30
+Misiurewicz frames, 97 to 99% structure, and `M-1e-100` all stayed on the CPU as cheap, and
+the one GPU frame at 1e-100, `D-1e-100`, is solid interior. The evidence for structured
+pictures at 1e-100 on the GPU is Phase 4's first measurement, of the code before these rules,
+which forced every frame to the GPU: every Misiurewicz frame matched at 0.00%. The WGSL kernel
+did not change between the two runs.
+
+Whole-frame wait, CPU against the reader's rule, by how long the CPU takes:
+
+| CPU wait | frames | drawn on the GPU | median speedup | typical wait, CPU to GPU |
+|---|--:|--:|--:|---|
+| under 1 s | 43 | 0 | 1.00x | 0.41 s to 0.45 s |
+| 1 to 3 s | 16 | 15 | 1.56x | 1.9 s to 1.4 s |
+| 3 to 10 s | 50 | 50 | 2.16x | 6.7 s to 3.0 s |
+| 10 to 30 s | 39 | 39 | 2.20x | 15.4 s to 6.7 s |
+| over 30 s | 11 | 11 | 3.92x | 59.6 s to 23.1 s |
+| all 159 | 159 | 115 | **1.76x** | 1,775 s to 730 s in all, **2.43x** |
+
+**A typical Deep frame lands 1.76 times as fast, and one the CPU takes 3 s or more lands 2.21
+times as fast** (100 frames, 1,723 s to 688 s in all, 2.50x). The frames the GPU drew came out
+1.12x to 4.54x, median 2.11x, and none was slower than the CPU. The largest gains are the
+deepest busy frames: `C-1e-80` Julia 143 s to 32 s (4.54x), `B-1e-80` 169 s to 38 s (4.44x),
+`A-1e-60` 37 s to 8.9 s (4.12x), `siegel-M 1e-6` 95 s to 23 s (4.13x), `go:favicon-end` 3.71x,
+`go:julia3-end` 3.42x, and the anchor 3.06x. By degree, median over all frames and then over
+the frames the CPU takes 3 s or more:
+
+| | degree 2 | 3 | 4 | 5 | 6 |
+|---|---|---|---|---|---|
+| Mandelbrot | 2.49x, 2.72x | 1.90x, 2.23x | 1.68x, 1.78x | 1.55x, 2.04x | 1.53x, 1.77x |
+| Julia | 2.43x, 2.98x | 1.47x, 2.03x | 0.89x, 2.35x | 0.97x, 1.57x | 1.02x, 2.46x |
+
+The Julia medians below 1.5x are the cheap Misiurewicz frames, which the CPU draws; each
+degree above two has one to three busy Julia frames in the sample, so those columns are thin.
+
+**Where it is not faster.**
+
+- **Cheap frames are the CPU's**, by the rule above, and come out at 1.00x by construction.
+  Measured against the separate CPU browser they read 0.58x to 1.09x (median 0.99x, 20.3 s
+  to 21.9 s across all 44). One of the 44 paid a kernel compile: `prepare` starts at landing,
+  before the quarter pass has said the frame is cheap, and competed with the pool, so
+  `random-dives#174` went from 1.0 s to 1.7 s while a degree-six pair compiled beside it.
+  That is once a degree and plane a page load and was kept, since moving the compile after
+  the quarter pass costs the first-use GPU frames more (38.0 s against 34.1 s over seven). The rest is the two browsers' noise
+  on frames of 0.3 to 1 s, with no compile logged; several Misiurewicz Julia frames read 0.1
+  to 0.2 s slower in the GPU browser, and why is not established.
+- **The tail is the GPU's largest drag.** 81 of the 115 GPU frames hand samples to the CPU,
+  median 1,307 and at most 7,297, and the CPU's time on them is 18.5% of the GPU frames'
+  whole wait (131 of 708 s). The worst are random dives with caps of one to two million:
+  `#324` spent 9.9 s of an 18.1 s field on its tail, `#970` 9.5 of 20.7, `#39` 9.0 of 12.2,
+  and `#758` 8.6 of 12.9. Those still landed 1.17x to 1.49x as fast.
+- **A first visit on a fresh browser profile**: the self-test is ready only after 4.8 to 4.9 s,
+  its kernels compiling uncached, so the first frame waits the 3 s floor and draws on the CPU,
+  5.2 s against 1.9 s. Every later load in the same profile is ready in 0.8 to 1.2 s.
+
+**Cold loads**: 26 frames opened by a fresh navigation each, as a link opened in a new tab is.
+16 drew on the GPU at 1.11x to 4.29x (median 2.30x), and 10 stayed on the CPU as cheap at
+0.90x to 1.01x; in all 406 s to 139 s, 2.92x. A cold load costs the CPU about 0.39 s more than
+a warm one and the GPU about 0.47 s.
+
+**Lost devices: the cause is not established, and the page survives them.** Windows' System
+log on this machine, kept from 2026-10-08, holds sixteen display driver resets (event 4101):
+none before this project's WebGPU work, two on 2026-10-10 while `deep-gpu-model` was run on
+the GPU, and fourteen on 2026-10-11, six of them while Phase 4 measured. They are correlated
+with this work. One of the six came while only a CPU browser was running and no WebGPU device
+was open, which shows a reset can come without one, and says nothing about the others. Two
+came just after a single GPU pass took 9.0 s and 9.7 s against its 100 ms target. One came
+under this run, on `random-dives#527`: its GPU passes ran 9.7 s where the whole field takes
+1.7 s on a good day, the device was lost, and the CPU finished all 536,500 unfinished samples,
+20.4 s against the CPU's own 8.9 s. The adapter was then gone for that browser (`DXGI_ERROR_DEVICE_REMOVED` on
+every request), so three failed acquisitions later the GPU was off, and every frame after it
+drew on the CPU at the CPU's own speed until the browser was restarted. The frames from
+`#527` on were measured again in a fresh browser, where `#527` drew in 3.0 s (3.22x); the
+numbers above are that run.
+
+**Caveats.** Headless Chrome on one machine at a pixel ratio of one; a GPU of another vendor,
+or the same one in a laptop, will land elsewhere, and the cheap and tail constants were fitted
+here. Apart from stage 2's views there are no costly frames between 1e-54 and 1e-60; the
+expensive depth evidence is `A-1e-60`, `B-1e-80`, and `C-1e-80`, and the sample has no costly
+frame at 1e-100 at all. Phase 4's first measurement,
+of the code before these rules, forced every frame to the GPU (`--forced`): 1.57x median and
+2.20x in total over all 159 frames, against 1.76x and 2.43x now, with 34 frames slower than the
+CPU where none drawn on the GPU now is.
+
+```
+PORT=8000 node explorer/bench/deep-gpu-time.mjs   # about an hour; nothing else heavy beside it
+```
+
 ### What is not here
 
 **Nucleus references in the main Render** — the tab still draws every frame against its
@@ -3488,7 +3706,8 @@ deep-link.test.mjs 45 tests: the contract, the shallow one held to not moving, a
 deep.test.mjs      30 tests: where the two modules meet, against both committed ones —
                    and the cap policy's seam, which fails the same way the rest of
                    this file does, by drawing a plausible picture
-deep-gpu.test.mjs  22 tests: the GPU path's frame, orbit, passes, tail, health and key
+deep-gpu.test.mjs  23 tests: the GPU path's frame, orbit, passes, tail, cheap frames, health
+                   and key
 bench/julia.mjs    what a Julia frame costs against the Mandelbrot frame at the same c
 bench/deep-stall.mjs  a colour change reaches the canvas through every pass, cancel and
                    undo sequence that once lost one — one of two bench files that assert
@@ -3503,6 +3722,9 @@ bench/link-fidelity.mjs  and a third: every tab driven through its common action
 bench/deep-gpu-agree.mjs  the GPU kernel's picture against the CPU kernel's, frame by
                    frame on a real adapter, by stage 2's visible-pixel rule
 bench/visible.mjs  that rule, on two canvases
+bench/deep-gpu-time.mjs  what a reader waits for, GPU against CPU, a whole frame at a time,
+                   warm and cold, on the seeded sample of bench/deep-gpu-frames.mjs, which
+                   also holds deep-gpu-agree.mjs's named frames
 bench/deep-gpu-check.mjs  the shipped GPU kernel held to deep-gpu-model word for word on a
                    real adapter, by driving bench/gpu-probe/kernel-check.html and its .js
                    headless: the self-test, then any bundles under artifacts/deep-gpu-check/
@@ -4683,10 +4905,11 @@ it with `kernel=gpu` and does the same, and compares the two by stage 2's visibl
 (`bench/visible.mjs`; `deep-gpu-model/README.md`, "The visible metric"): a pixel is visible
 when its largest channel moves by more than 8/255 and by more than its own contrast with its
 four neighbours in the CPU picture, and a frame **matches** at 1% visible and is
-**acceptable** at 5%. The frames are committed literals: stage 2's views past 1e-50,
+**acceptable** at 5%. The frames are committed literals in `bench/deep-gpu-frames.mjs`,
+which the timing bench shares: stage 2's views past 1e-50,
 including D, the degree-3 minibrot whose interior the kernel's proof settles; the published
 deep links, `go:julia3-end` among them; a Mandelbrot and a Julia frame at every degree from 2
-to 6; `random-dives#337`, the long tail the tail rule was measured on; and `siegel-M 1e-6`,
+to 6; `random-dives#337`, a long tail of samples at the cap; and `siegel-M 1e-6`,
 the golden-mean Siegel boundary, where long chaotic orbits swap capped and escaped samples
 between double-single and `f64` in both directions and which sits nearest the 1% line
 (0.88% when the Phase 3 review found it). A GPU load whose Details line says the CPU drew
@@ -6787,7 +7010,9 @@ nothing installed. `CLAUDE.md` and `.github/workflows/checks.yml` carry the comm
   `FrameLo` and HiLo orbit `deep-gpu.js` builds are byte for byte the ones
   `deep-gpu-model` exported for the tracked self-test frames, read off `perturb.wasm`'s own
   plan; a sample's `out` word becomes the CPU kernel's lane; passes stay in their bounds
-  and land on the step checkpoints where the tail rule is asked; a lost device is retried
+  and land on the step checkpoints where the tail rule is asked, and the rule hands over by
+  kernel, pool and the share of the cap still to run; a frame the quarter pass calls cheap,
+  by its iterations a worker, stays on the CPU; a lost device is retried
   until the second loss, and an acquisition that failed for the moment until the third; a
   frame waits on a self-test still running for half the CPU's expected cost of it, within
   bounds; every self-test vector is what a JavaScript reference of the same

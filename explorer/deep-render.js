@@ -1402,6 +1402,7 @@ export class DeepRenderer {
     const gpu = this.gpu;
     const orbit = this.orbit;
     const samples = shape.sample_width * shape.sample_height;
+    const workers = this.slots.length;
     const refused = await gpu.refuses({
       samples,
       degree: shape.degree,
@@ -1410,6 +1411,10 @@ export class DeepRenderer {
       // How long the CPU took over this frame's quarter pass, which is how long the frame
       // may wait on a self-test still running.
       quarterMs: preview?.elapsed ?? null,
+      // What the quarter pass ran, scaled to this stage's samples: the CPU's own estimate
+      // of the stage, which keeps a cheap one on the CPU.
+      iterations: preview?.ran == null || !(preview.values?.length > 0) ? null : (preview.ran * samples) / preview.values.length,
+      workers,
     });
     if (generation !== this.generation) return null;
     if (refused !== null || orbit === null) {
@@ -1430,6 +1435,7 @@ export class DeepRenderer {
       orbit,
       values,
       preview,
+      workers,
       live,
       onPass: () => {
         this.heard = performance.now();
@@ -1453,7 +1459,13 @@ export class DeepRenderer {
       onProgress: (fraction) => said(settled + (1 - settled) * fraction),
     });
     if (tail === null || !live()) return null;
-    this.onGpu?.("gpu", { handed: handed.length, lost: drawn.status === "lost", ms: performance.now() - started });
+    this.onGpu?.("gpu", {
+      handed: handed.length,
+      lost: drawn.status === "lost",
+      ms: performance.now() - started,
+      tailMs: tail.elapsed,
+      tailRan: tail.ran,
+    });
     return {
       values,
       width,

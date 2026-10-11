@@ -596,6 +596,11 @@ A little, the right way, and in proportion to the steps it removes (run A).
 
 ### What the GPU would hold
 
+⚠ **This is the stage-1 estimate, from before a GPU ran, about an `f32` preview the page never
+shipped.** The Deep tab draws its full pass in double-single (the next two sections), and
+what that costs a reader, frame by frame against the CPU, is measured in `explorer/README.md`,
+"The GPU draws the full pass where it has earned it".
+
 From the crate's layouts and measured counters (`q4.md`). **No GPU was run**: the memory
 figures are layout arithmetic, and the timing figures below are estimates from assumed GPU
 rates and per-step costs counted from instructions. WebGPU defaults: 128 MiB a storage
@@ -815,6 +820,11 @@ runs 3.6x to 4.8x the CPU; on a frame whose time is a long tail of single pixels
 at a third to a half of it. A full 1080p pass stays under a quarter of the 2 s TDR at a
 budget of 645 double-single steps (`A-1e-60`'s worst 0.37 ns per pixel-step) and 1,946
 `f32` ones.
+
+These are kernel rates. What a reader waits for, a whole frame with its reference orbit,
+its quarter pass on the CPU, and whatever samples the GPU hands back, is
+`explorer/README.md`'s to measure, under "The GPU draws the full pass where it has earned
+it".
 
 ## Per-frame agreement, from the tests
 

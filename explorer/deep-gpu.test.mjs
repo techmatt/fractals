@@ -329,13 +329,30 @@ test("checkpoints are 1024 · 2^k and no pass steps over one", () => {
 });
 
 test("the tail is handed over at a checkpoint below the cap and nowhere else", () => {
-  const count = 1_000_000;
-  assert.equal(gpu.handsTail({ spent: 2048, running: 5000, count, maxiter: 1e6 }), true);
-  assert.equal(gpu.handsTail({ spent: 2048, running: 5001, count, maxiter: 1e6 }), false);
-  assert.equal(gpu.handsTail({ spent: 2047, running: 10, count, maxiter: 1e6 }), false);
-  assert.equal(gpu.handsTail({ spent: 2048, running: 0, count, maxiter: 1e6 }), false);
-  assert.equal(gpu.handsTail({ spent: 2048, running: 10, count, maxiter: 2000 }), false);
-  assert.equal(gpu.handsTail({ spent: 2048, running: 10, count, maxiter: 1e6, share: 0 }), false);
+  // At 1024 steps of a 1,024,000 cap, 0.999 of the cap is still to run.
+  const at = { spent: 1024, maxiter: 1_024_000 };
+  assert.equal(gpu.handsTail({ ...at, running: 7992, interior: true }), true);
+  assert.equal(gpu.handsTail({ ...at, running: 7993, interior: true }), false);
+  assert.equal(gpu.handsTail({ ...at, running: 1998, interior: false }), true);
+  assert.equal(gpu.handsTail({ ...at, running: 1999, interior: false }), false);
+  // Half the workers, half the tail.
+  assert.equal(gpu.handsTail({ ...at, running: 3996, interior: true, workers: 6 }), true);
+  assert.equal(gpu.handsTail({ ...at, running: 3997, interior: true, workers: 6 }), false);
+  // Near the cap the CPU would redo nearly everything: the GPU keeps the last stretch.
+  assert.equal(gpu.handsTail({ spent: 1 << 20, running: 2000, maxiter: 1_300_000, interior: true }), false);
+  assert.equal(gpu.handsTail({ spent: 1 << 20, running: 2000, maxiter: 4_000_000, interior: true }), true);
+  assert.equal(gpu.handsTail({ spent: 2047, running: 10, maxiter: 1e6, interior: true }), false);
+  assert.equal(gpu.handsTail({ spent: 2048, running: 0, maxiter: 1e6, interior: true }), false);
+  assert.equal(gpu.handsTail({ spent: 2048, running: 10, maxiter: 2000, interior: true }), false);
+  assert.equal(gpu.handsTail({ spent: 2048, running: 10, maxiter: 1e6, interior: true, scale: 0 }), false);
+});
+
+test("a full stage the quarter pass says is cheap stays on the CPU", () => {
+  const most = gpu.CHEAP_ITERATIONS_PER_WORKER * 12;
+  assert.equal(gpu.cheap({ iterations: most - 1, workers: 12 }), true);
+  assert.equal(gpu.cheap({ iterations: most, workers: 12 }), false);
+  assert.equal(gpu.cheap({ iterations: most / 2, workers: 6 }), false);
+  assert.equal(gpu.cheap({ iterations: null, workers: 12 }), false);
 });
 
 test("compaction starts under its share and re-cuts every eighth pass", () => {

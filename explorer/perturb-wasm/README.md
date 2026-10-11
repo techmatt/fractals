@@ -657,12 +657,14 @@ because the seam comment in `kernel.rs` will give somebody the same idea and thi
 is the only thing that should talk them out of it.
 
 **The ruling stands for this crate, and one other path reopens the question for itself
-alone.** `explorer/deep-gpu-model` models in `f32` the WebGPU kernel the Deep tab would
-use as a fast preview, where the picture already moves by its own rounding, so it carries
-a skip table behind a switch that is off by default and holds it to agreeing with this
-crate's `f64` kernel no worse than the model does without it. Its `README.md` has that
-argument and the measurements. Nothing here changes: `perturb.wasm` draws the plain loop,
-and everything below still stands for it.
+alone.** `explorer/deep-gpu-model` models the WebGPU kernel the Deep tab draws its full
+passes with, in `f32` and in double-single, where the picture already moves by its own
+rounding, so it carries a skip table behind a switch that is off by default and holds it to
+agreeing with this crate's `f64` kernel no worse than the model does without it. Its
+`README.md` has that argument and the measurements; the shipped kernel is double-single
+with no skip table (`explorer/README.md`, "The GPU draws the full pass where it has earned
+it"). Nothing here changes: `perturb.wasm` draws the plain loop, and everything below still
+stands for it.
 
 **Measured 2026-09-20**, tiles of 64×36, the plain loop and the skipping loop the
 same spec and the same orbit, alternated. `ε` is the share of a linear step the

@@ -16,8 +16,9 @@
 // (`deep-gpu-model`), run under the `handoff` policy: a sample the proof gives up on ends
 // `GATED` and is finished by the CPU kernel, which restarts it from the first iteration
 // with its own `f64` loop and its own proof (`compute_samples`). So is every sample still
-// running when the frame's tail is thin enough at a step checkpoint (`TAIL_SHARE`), and so
-// is every unfinished sample after a lost device.
+// running when the frame's tail is thin enough at a step checkpoint (`handsTail`), and so
+// is every unfinished sample after a lost device. A frame whose quarter pass says it is cheap
+// stays on the CPU altogether (`cheap`).
 //
 // **Passes are sized by time, and that never moves a pixel.** All of a sample's progress
 // lives in its state on the device, and the model guarantees any sequence of budgets leaves
@@ -65,11 +66,32 @@ export const GROWTH = 4;
 /** The step checkpoints `CHECKPOINT · 2^k` at which the tail rule is asked. */
 export const CHECKPOINT = 1024;
 /**
- * The share of the frame still running at a checkpoint at or under which the GPU stops and
- * the CPU finishes what is left. Stage 2 measured the GPU at a third to a half of the CPU's
- * speed on a 0.4% tail; see the README for what this box measured.
+ * How many samples still running the CPU takes over from the GPU, by kernel, at a pool of
+ * `TAIL_WORKERS` *(gpu_deep_ship_ckpt162, Phase 4)*. A thin tail leaves the GPU
+ * latency-bound: a step costs about the same with 300 samples running as with 5,000 (1.4 to
+ * 2.7 microseconds a step for the plain kernels on this box, 8 to 14 with the interior
+ * proof), so it finishes `n` samples at `n / L` steps a second, while twelve workers run 340
+ * to 1,360 million. The two break even near `L · R`: about 1,500 samples for the plain
+ * kernels and 5,000 with the proof, alike across degrees two to six. These are the
+ * constants that minimized the modelled wait over 24 measured tail-heavy frames, a little
+ * above break-even because most of a tail escapes well short of the cap.
  */
-export const TAIL_SHARE = 0.005;
+export const TAIL_SAMPLES = { plain: 2000, proof: 8000 };
+/** The pool `TAIL_SAMPLES` was measured with: the CPU's side scales with its workers. */
+export const TAIL_WORKERS = 12;
+/**
+ * The CPU's estimated full-stage iterations a worker under which a frame stays on the CPU
+ * *(gpu_deep_ship_ckpt162, Phase 4)*. Read off the quarter pass, which is always the CPU's
+ * and counts what it ran. The full stage runs sixteen times its samples, and measured 14.8
+ * to 22.0 times its iterations over 109 frames, so the estimate can fall up to about a
+ * quarter short. Where the quarter ran 15 M iterations or fewer at twelve workers (a CPU
+ * field of 0.1 to 0.7 s) the GPU measured 0.70 to 1.09 times the CPU's speed on 44 frames,
+ * its fixed costs (waking from idle, the first passes, the read-back) the whole of its
+ * time; from 24 M it measured 1.17 times or better on all but one. No frame fell between,
+ * and the threshold, 18.75 M a quarter, sits in the middle of that unmeasured gap.
+ * Iterations and not time, so a frame goes the same way on every load.
+ */
+export const CHEAP_ITERATIONS_PER_WORKER = 25e6;
 /** Below this share of samples running, passes run the compacted list, re-cut every
  *  `COMPACT_EVERY` passes. */
 export const COMPACT_BELOW = 0.1;
@@ -373,12 +395,30 @@ export function landOn(spent, budget) {
 }
 
 /**
- * The tail rule: at a checkpoint below the cap, with no more than `TAIL_SHARE` of the
- * frame still running, the GPU stops and the CPU finishes the rest. Steps, never time, so
- * the samples handed over are the same on every run.
+ * The tail rule: at a checkpoint below the cap, with few enough samples still running, the
+ * GPU stops and the CPU finishes the rest. Few enough is `TAIL_SAMPLES` for the kernel,
+ * scaled to the pool's workers, and scaled again by the share of the cap still to run: the
+ * CPU restarts every sample it is handed from the first iteration, so at a checkpoint near
+ * the cap it would redo nearly all of what the GPU has already done, and the GPU finishing
+ * the last stretch is cheaper. An absolute count and not a share of the frame, because the
+ * GPU's cost of a thin tail does not grow with the frame. `scale` is a bench page's knob (0
+ * never hands anything over). Steps and counts, never time, so the samples handed over are
+ * the same on every run.
  */
-export function handsTail({ spent, running, count, maxiter, share = TAIL_SHARE }) {
-  return running > 0 && isCheckpoint(spent) && spent < maxiter && running <= share * count;
+export function handsTail({ spent, running, maxiter, interior, workers = TAIL_WORKERS, scale = 1 }) {
+  if (!(running > 0 && isCheckpoint(spent) && spent < maxiter)) return false;
+  const most = TAIL_SAMPLES[interior ? "proof" : "plain"] * (workers / TAIL_WORKERS) * scale;
+  return running <= most * (1 - spent / maxiter);
+}
+
+/**
+ * Whether a full stage is cheap enough that the CPU draws it as soon as the GPU would:
+ * `iterations`, the CPU's estimate of the stage (its quarter pass's iterations, scaled by
+ * the samples), under `CHEAP_ITERATIONS_PER_WORKER` for each of its `workers`. `null` where
+ * there is no estimate, which is never cheap.
+ */
+export function cheap({ iterations, workers = TAIL_WORKERS }) {
+  return iterations != null && iterations >= 0 && iterations < CHEAP_ITERATIONS_PER_WORKER * workers;
 }
 
 /**
@@ -651,8 +691,8 @@ export class DeepGpu {
     this.fault = null;
     /** What the last frame did, for the bench pages: passes, steps, handed samples. */
     this.last = null;
-    /** `TAIL_SHARE`, as an instance's so that a bench page can measure another. */
-    this.tailShare = TAIL_SHARE;
+    /** `handsTail`'s `scale`, as an instance's so that a bench page can measure another. */
+    this.tailScale = 1;
   }
 
   /** Acquire the device and test it, once, in the background; resolves whether it passed.
@@ -692,6 +732,30 @@ export class DeepGpu {
     return this.testing;
   }
 
+  /**
+   * A frame of this shape is on its way: compile its kernels now, in the background, so
+   * that a first use pays its compile beside the reference orbit and the quarter pass
+   * rather than after them *(gpu_deep_ship_ckpt162, Phase 4)*. Both of the interior
+   * switch's settings, side by side, since the quarter pass has not chosen yet: on seven
+   * first-use frames that beat the proof's first and the plain kernel's first. A pair costs
+   * 0.4 to about 5 s on first use (4.8 s at degree six on a fresh browser). It also runs for
+   * a frame the quarter pass will call cheap, and there competes with the CPU pool for
+   * nothing; that is once a kernel a page load (one of 44 cheap frames measured, 0.7 s),
+   * and the next frame of that shape the GPU draws finds it compiled. Nothing waits on it:
+   * a compile it started is the one the frame then awaits, and a kernel that will not
+   * compile is said when a frame asks.
+   */
+  prepare({ degree, julia }) {
+    if (this.kernel === "cpu" || !this.health.usable || this.device === null) return;
+    if (!(degree >= 2 && degree <= 6)) return;
+    const device = this.device;
+    (async () => {
+      const W = await wgsl();
+      if (this.device !== device) return;
+      await Promise.all([true, false].map((interior) => this.#pipelines(W, device, degree, julia, interior)));
+    })().catch(() => {});
+  }
+
   /** Compile the `warm` kernels in the background, one after another. */
   async #warm() {
     const device = this.device;
@@ -723,10 +787,12 @@ export class DeepGpu {
 
   /** Why a frame of this shape stays on the CPU, or `null` where the GPU may draw it.
    *  `quarterMs`, what the frame's quarter pass took on the CPU, sets how long it may wait
-   *  on a self-test still running (`readyWait`). */
-  async refuses({ samples, degree, interior, orbitPoints, quarterMs = null }) {
+   *  on a self-test still running (`readyWait`); `iterations`, the CPU's estimate of the
+   *  stage from that pass, keeps a cheap one on the CPU (`cheap`) without waiting at all. */
+  async refuses({ samples, degree, interior, orbitPoints, quarterMs = null, iterations = null, workers = TAIL_WORKERS }) {
     if (this.kernel === "cpu") return "asked for the CPU";
     if (this.kernel !== "gpu" && samples < GPU_MIN_SAMPLES) return "small";
+    if (this.kernel !== "gpu" && cheap({ iterations, workers })) return "cheap";
     if (!(await this.ready(this.kernel === "gpu" ? FORCED_WAIT_MS : readyWait(quarterMs)))) return `not ready (${this.health.status}${this.health.why ? `: ${this.health.why}` : ""})`;
     return fits({ samples, degree, interior, orbitPoints, limits: this.limits });
   }
@@ -1001,7 +1067,8 @@ export class DeepGpu {
    * orbit record: `packed` and `stamp`), `values` (the field's `Float64Array`, filled in
    * place), `live()` (false once the pool's generation has moved), and optional
    * `onProgress(fraction, elapsedMs)`, `onPass()`, `onPartial()` (the picture so far is in
-   * `values`) and `preview` (the quarter field, a stand-in for samples not yet finished).
+   * `values`), `preview` (the quarter field, a stand-in for samples not yet finished) and
+   * `workers` (the CPU pool the tail goes to, `TAIL_WORKERS` where not said).
    *
    * Resolves `{status: "done", handed}` with the samples the CPU is to finish;
    * `{status: "cancelled"}`; `{status: "lost", handed}` after a lost device, `handed` every
@@ -1033,7 +1100,20 @@ export class DeepGpu {
     let final = null;
     // `trace` is a pass a row: its budget, its mode's initial, the samples running after it,
     // and its wall time in milliseconds.
-    const record = { count, passes: 0, spent: 0, compacts: 0, partials: 0, handed: 0, tail: false, trace: [] };
+    const record = {
+      count,
+      degree: plan.degree,
+      julia: Boolean(plan.julia),
+      interior,
+      maxiter: plan.maxiter,
+      passes: 0,
+      spent: 0,
+      compacts: 0,
+      partials: 0,
+      handed: 0,
+      tail: false,
+      trace: [],
+    };
     this.last = record;
     try {
       const p = await this.#pipelines(W, device, plan.degree, plan.julia, interior);
@@ -1104,7 +1184,8 @@ export class DeepGpu {
         if (!job.live()) return { status: "cancelled" };
         job.onProgress?.((count - running) / count, performance.now() - started);
         if (running === 0) break;
-        if (handsTail({ spent: record.spent, running, count, maxiter: plan.maxiter, share: this.tailShare })) {
+        const workers = job.workers ?? TAIL_WORKERS;
+        if (handsTail({ spent: record.spent, running, maxiter: plan.maxiter, interior, workers, scale: this.tailScale })) {
           record.tail = true;
           break;
         }

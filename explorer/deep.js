@@ -964,6 +964,9 @@ export function mount(host) {
       if (generation !== pass) return;
       readLog();
       unsettle();
+      // A full stage may go to the GPU: its kernels compile beside the orbit and the
+      // quarter pass rather than after them.
+      if (upto !== "preview") gpu?.prepare({ degree: view.degree ?? 2, julia: view.julia !== null });
 
       let target = view;
       if (probe && upto !== "preview" && !pinned()) {
@@ -1014,7 +1017,7 @@ export function mount(host) {
           });
           if (field === null || generation !== pass) return;
           if (stage.name === "preview") quarterMs = performance.now() - started;
-          log("field landed", { stage: stage.name, kernel: field.kernel, handed: field.handed, ms: Math.round(field.elapsed) });
+          log("field landed", { stage: stage.name, kernel: field.kernel, handed: field.handed, ran: field.ran, ms: Math.round(field.elapsed) });
           remember(key, field);
         }
         if (stage.name === "preview") {
@@ -1225,8 +1228,10 @@ export function mount(host) {
       const field = await deep.field(target, width, height, {
         supersample,
         interior: switchFor(quarter),
-        // The GPU where the device can hold this size; the renderer keeps the rest.
+        // The GPU where the device can hold this size; the renderer keeps the rest. The
+        // screen's quarter pass, where held, is what the cheap rule reads, scaled to the file.
         gpu: true,
+        preview: quarter ?? null,
         onProgress: (done, elapsed) => {
           if (generation !== pass) return;
           report(file, done, elapsed);
@@ -3091,6 +3096,9 @@ export function mount(host) {
     if (aside.lead !== undefined) running.lead = aside.lead();
     const drawnFields = {};
     let interior = true;
+    // The full stage may go to the GPU, as an on-screen landing's does: its kernels compile
+    // beside the quarter pass, and the quarter pass is what the cheap rule reads.
+    gpu?.prepare({ degree: landed.frame.degree ?? 2, julia: landed.frame.julia !== null });
     for (const stage of stages) {
       const span = spanOf(stage);
       running.sharpening = stage.name === "full";
@@ -3100,6 +3108,7 @@ export function mount(host) {
         supersample: 1,
         interior: stage.name === "preview" ? true : interior,
         gpu: stage.name === "full",
+        preview: stage.name === "full" ? (drawnFields.preview ?? null) : null,
         onProgress: (done, elapsed) => {
           if (generation === pass) report(stage, done, elapsed);
         },
