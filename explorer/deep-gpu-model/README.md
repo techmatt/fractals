@@ -252,6 +252,32 @@ half-diagonal (the removed table's law, which these numbers keep). Frames at `3e
 and one at `7.3e-9` saves 2%. `ε` above `2^-24` and other levels were not swept across the
 corpus; every number below is at the defaults.
 
+**No test read off the reference alone can choose `f32` with the skip over double-single,
+so long orbits stay on double-single** *(gpu_deep_ship_ckpt162, 2026-10-11)*. Two
+candidates were tried, and both failed the ruling the switch had to meet: no more class
+changes than double-single, and a share more than 0.1 off `perturb` within half a point of
+double-single's. The first rule kept the minimum `|Z|` of the reference and the share of it
+a linear walk covers. Under that criterion it picked 12 frames, and 10 of them failed. The
+second rule switched where the reference reaches the cap, a first-order error walk from a
+corner pixel covers it, and that walk's error stays under 0.2 of a pixel spacing. It made
+no wrong pick on the 34 main-body cusps it was fitted on. It never fired on the 2,299 corpus
+frames, because each was rejected before the threshold was read. It then broke on three
+other families:
+
+- deep views of ordinary exterior points with the cap one below the reference's escape: it
+  picked 870 of 1,720, and 20 of 50 sampled were wrong, at a walk error as low as 0.05
+  (`random-dives#714` at a hundredth of its width, 0.009);
+- the period-three to five copy cusps at 16 × 9 to 32 × 18, where every pick was wrong
+  (up to 20% of samples more than 0.1 off against none);
+- the degree-five main cusp at 96 × 54, wrong at 0.13 where degree two had passed at 64 × 36.
+
+The walk measures error in pixel spacings, which predicts class changes and scales with
+resolution. The smooth count's error comes from the orbit's relative error, which does not.
+At a screen's width the walk passes no measured cusp, so the switch would rarely fire anyway.
+A later candidate should be an a-posteriori check, such as a few probe pixels run both ways.
+It should be tried first on the exterior-zoom family, which finds hundreds of picks in
+seconds.
+
 ## Double-single, and survivors
 
 `model_ds` is `model`'s loop with the delta carried as `hi + lo` pairs of `f32` (about 48
