@@ -34,6 +34,8 @@ src/proof.rs        perturb's interior proof in f32, i32 and u32, behind both ke
 src/compare.rs      the harness: both kernels on one frame, and how they agree
 src/json.rs         just enough JSON to read a corpus row
 src/bin/compare.rs  the harness as a command, one JSON line per frame
+src/bin/export.rs   the GPU bench page's inputs: its self-test vectors, and per-frame
+                    bundles (uniforms, orbit, the model's expected per-pixel results)
 tests/agreement.rs  the model against perturb on frames the site draws
 tests/bla.rs        the skip: switch-off identity, passes, its runs, its guards, its price
 tests/ds.rs         double-single: passes, agreement against f32, survivors, the skip in DS
@@ -340,6 +342,21 @@ level that refuses the pixel. A list of orders, or `--gate both`, runs each vari
 
 `cargo test --release` runs the tests in seconds; they are what CI runs.
 
+### Exporting for the GPU bench page
+
+`export` writes what `explorer/bench/gpu-probe/` reads. `--vectors FILE` writes
+`ds::self_test_vectors()` as the page's `vectors.json`. `--frames FILE[,FILE..] --ids a,b
+--res WxH --cap-max N --out DIR` writes, per frame, `<id>.manifest.json` and `<id>.bin`
+(little-endian arrays at 16-byte-aligned offsets the manifest names): the `Frame` and
+`FrameLo` uniforms as their `#[repr(C)]` bytes, the orbit as `F32Pair` and as `HiLo`, and
+per pixel the `f32` kernel's and the double-single kernel's `n`, `frac`, `status` and
+`steps`, and each kernel's whole state but the proof as `f32_state` and `ds_state` (no skip
+table, unbounded budget), beside `perturb`'s `f64` smooth count and
+iterations; and an `index.json` over every manifest in the directory. The frame is built by
+`compare::spec_for`, so it is the frame `compare` runs. Every bundle is read back from
+disk and a spread of pixels re-run from its bytes alone, bit for bit, before the run goes
+on. Bundles go under the repository's ignored `artifacts/`, never a tracked path.
+
 ### The runs behind the frontier
 
 Long runs saturate the CPU; on this machine they ran at BelowNormal priority. The corpus
@@ -615,6 +632,76 @@ The measure has limits worth stating: the 1% and 5% lines were set by eye on two
 frames, the shares are 64x36 ones that a real preview's resolution raises, the stricter
 24/255 rule would call over a third of the corpus different, and the Julia frames have no
 `f64` floor to be held to.
+
+## Double-single as measured
+
+The same corpus and the same visible metric as above (a frame matches at 1% visible or less
+and is acceptable at 5%), default coloring unless named. The runs are run A's command with
+`--encoding f32pair,ds --floor both`, at BelowNormal on 12 threads; survivors rules are
+derived from the two dumped fields per sample (a sample whose `f32` count reached the
+threshold takes the double-single value), which the harness's own `survivors@N` matches
+on all but a few hundred of 5.4M samples (an interior sample's count is `perturb`'s there).
+
+| scheme | 64x36, 2,333 frames: match / acceptable | 640x360, 60 random frames: match | delta steps | f32 ops |
+|---|---|---|---|---|
+| `f32` (`F32Pair`) | 55.3% / 99.7% | 36.7% (51.7% at 64x36) | 1x | 1x |
+| `f64` on the `f32`-rounded reference | 62.2% / 99.8% | 45.0% | | |
+| double-single | 99.7% / 100% | 98.3% (98.3%) | 1.00x | 16.5x (16.8x) |
+| survivors, fixed 3,000 | 96.5% | 96.7% | 1.22x | 15.8x |
+| survivors, fixed 10,000 | 86.2% | 80.0% | 1.27x | 10.1x |
+| survivors, 2x the frame's lowest `f32` count | 95.3% | 93.3% | 1.17x | 8.3x (9.6x) |
+
+`f64` on a moved reference, the floor, matches 99.83% of Mandelbrot frames. Under the
+rule coloring double-single matches 99.4% and under the links' maps 98.8%, against `f32`'s
+50.5% and 23.2%. **Every frame double-single misses** (8 at 64x36, 1 of the random 60 at
+640x360) is a degree-six or 1e5-count spiral at 1.2% to 2.1%, 0.3 to 0.5 points above the
+moved floor on the Mandelbrot ones; so the residue is `f64`'s own, not the kernel's.
+`go:julia3-end` goes from 55.8% to 0.40% at 640x360.
+
+- **Stage 1's "HiLo buys nothing" was the delta.** HiLo with an `f32` delta is `F32Pair`
+  to the measurement; with a double-single delta it is the gain in this table.
+- **Survivors save less than the op count says, and a frame-relative threshold can miss a
+  whole frame.** `go:julia3-end`'s counts sit within 2x of its lowest everywhere, so the
+  relative rule redoes 0.2% of it and leaves the mottle (55.6%); fixed thresholds at or
+  under 10,000 clear it. At 640x360 every survivors rule loses more than double-single does
+  (relative 2x: 93% default, 57% rule, 52% links).
+- **Past 1e-50** (`deep/frames.jsonl`, 240x135): double-single is 0.00% to 0.15% on every
+  frame, against `f32`'s 1.0% to 4.2% wherever anything escapes. The skip cuts its steps
+1.1x to 9x there (6.6x to 9.3x on the degree-two B frames) and moves nothing visible.
+- **Long orbits** (64x36, caps 1e6 and 1e7, interior off): double-single alone makes the
+  main cusps and the imploded Julia exact at 1e7 (0% over 0.1, `f32` 5.8% to 60%), but it
+  pays every step. Its skip at `2^-48` barely skips there (the main cusp 1e7 to 9.94e6;
+  `f32` with the skip needs 1.4e4 and is exact), and on the copy cusps and the Feigenbaum
+  point it sits at 16% to 80% over 0.1, beside a moved `f64` floor of 4% to 75%. The
+  corpus slice's skip in double-single skips nothing.
+- **The interior proof never closes on the D frames** (a degree-3 minibrot interior at
+  1e-60 to 1e-100): every sample runs to the cap, `perturb` proves them in 622 steps. It
+  does close at 4.1e-22 (`dive-sheet:u0772`, 536 of 649). Not diagnosed; the cap fallback
+  paints them right and costs the steps.
+
+### On a GPU (`explorer/bench/gpu-probe/`)
+
+The page held a WGSL port of both kernels (no proof, no skip) to bundles `src/bin/export.rs`
+wrote. On the RTX 2060 SUPER (Turing, D3D12, Chrome 154), status, `n` and steps agreed on
+every pixel of six frames; `frac` differs by a few ulps of WGSL's `log`, and two pixels of
+`A-1e-60` carry a `d_lo` two ulps off because the GPU flushes a subnormal the model keeps.
+Every double-single guard passed the self-test, the plain code included; the fused and
+reassociated controls failed it. Rates against `perturb.wasm` on 12 workers
+(`explorer/bench/gpu-probe-cpu.mjs`), in steps a second:
+
+| frame | GPU `f32` | GPU double-single | CPU `f64` |
+|---|---|---|---|
+| `A-1e-60` (d5) | 2.0e10 | 2.3e9 | 5.1e8 |
+| `random-dives#501` (d5, 8.7e-42) | 1.3e10 | 1.7e9 | 4.8e8 |
+| `go:julia3-end` | 2.5e10 | 3.6e9 | 7.4e8 |
+| main cusp, cap 1e6 (160x90) | 2.6e10 | 6.5e9 | 1.4e9 |
+| `random-dives#337` (0.4% of pixels at 1.9e6) | 7.3e8 | 1.0e8 (1.4e8 compacted) | 2.9e8 |
+
+Double-single costs 4x to 9x `f32`'s GPU time on these, not the 12x to 19x its op count says, and
+runs 3.6x to 4.8x the CPU; on a frame whose time is a long tail of single pixels it runs
+at a third to a half of it. A full 1080p pass stays under a quarter of the 2 s TDR at a
+budget of 645 double-single steps (`A-1e-60`'s worst 0.37 ns per pixel-step) and 1,946
+`f32` ones.
 
 ## Per-frame agreement, from the tests
 
