@@ -1688,7 +1688,8 @@ canvas.palette-final {
    Navigation and Download are the long ones, so the left column is as wide as its content
    and the right takes the rest: at an even split the Download row put its estimate on a
    line of its own at 1600 wide. The Deep tab's left column cannot change width with state,
-   because Render, Render again and Cancel share one button width (below). **And it is
+   because Render, Render again and Cancel share one button width (below), and the Render
+   cell is contained, so its GPU box's label cannot widen it either. **And it is
    never narrower than 21rem**, which is the Deep tab's own measured 20.8: the shallow
    cells are narrower, and without the floor Navigation stood 185 px further left in one
    view than in the other. With it the right column starts at one place in both. Where the viewer
@@ -1721,6 +1722,11 @@ canvas.palette-final {
    mode picked. Contained, the cell contributes nothing to the column's width and takes
    whatever the column is; the parameters are items of the row, so they wrap inside it. */
 .shallow-cell-mode { contain: inline-size; }
+/* The Deep Render cell likewise *(gpu_optin_downloads_ckpt162)*: the GPU box's label says
+   why where the GPU is unavailable, and uncontained it widened the column by up to 208 px
+   and moved Navigation off the shallow view's x. Contained, the row wraps inside the 21rem
+   floor, the box on its second line, and no label moves the grid. */
+.deep-cell-render { contain: inline-size; }
 .shallow-cell-mode #params { display: contents; }
 
 /* Render, Auto-render and the bar, on one row. What the pass is doing is the bar's hover

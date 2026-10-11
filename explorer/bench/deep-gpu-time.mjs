@@ -3,13 +3,17 @@
 //
 // Two headless Chromes at the working size (a maximized window on a 1920x1080 display at
 // 100%, which the Deep tab draws at 1076x576), one opened with `kernel=cpu` and one under
-// the reader's own rule (no `kernel=`, so a frame the quarter pass calls cheap stays on the
-// CPU there too; `--forced` opens it with `kernel=gpu` instead, which draws every frame on
-// the device and exposes its record), each kept open for the whole run. Every frame of `deep-gpu-frames.mjs`'s
+// the rule a reader who ticked the GPU box gets (no `kernel=`, and `explorer.deep-gpu` set
+// to `on` before the page's scripts run, in that browser alone: the GPU is opt-in since
+// gpu_optin_downloads_ckpt162, so an unticked browser would never touch it; a frame the
+// quarter pass calls cheap stays on the CPU there too; `--forced` opens it with
+// `kernel=gpu` instead, which beats the box and draws every frame on the device), each kept
+// open for the whole run. Every frame of `deep-gpu-frames.mjs`'s
 // seeded sample is landed in each by the page's own door for a link (`openAny`, reached
 // through demo mode's `open`, the way a Saved tile or a gallery tile opens one), so the
-// reader's realistic case is measured: the page is up, the pool is started, the self-test
-// has passed, and the frame is one more link. One browser draws at a time; the other idles.
+// ticked reader's realistic case is measured: the page is up, the pool is started, the
+// self-test has passed, and the frame is one more link. One browser draws at a time; the
+// other idles.
 //
 // Per frame and per kernel it records, off the Deep tab's own log (`explorer.deep-log`):
 // the **wall** time from the link landing to the full pass finished (the quarter pass, the
@@ -20,10 +24,10 @@
 // compared by stage 2's visible-pixel rule (`visible.mjs`, the CPU picture the reference).
 //
 // After the warm run, a stratified subset is drawn again **cold**: a fresh navigation per
-// frame, timed from navigation start, with the GPU browser unforced (no `kernel=`), which
-// is a reader opening a deep link in a new tab: the page loads, the pool starts, the
-// self-test runs beside the quarter pass, and the full stage goes to the GPU only if it
-// passed in time. The first frame of each browser is a fresh profile's first visit and is
+// frame, timed from navigation start, with the GPU browser unforced (no `kernel=`, the box
+// ticked), which is a reader who ticked it on an earlier visit opening a deep link in a new
+// tab: the page loads, the pool starts, the self-test runs beside the quarter pass, and the
+// full stage goes to the GPU only if it passed in time. The first frame of each browser is a fresh profile's first visit and is
 // recorded as such.
 //
 //   node explorer/bench/deep-gpu-time.mjs [--limit=N] [--cold=N] [--port=8000] [--seed=162] [--forced]
@@ -104,6 +108,13 @@ const INSTRUMENT = `(() => {
   };
 })();`;
 
+/** Before any of the GPU browser's scripts, and never the CPU browser's: the Deep tab's GPU
+ *  box ticked, as a reader who ticked it on an earlier visit has it. The box is remembered
+ *  in `localStorage` as `on` or `off` and is off where it was never ticked. */
+const TICKED = `(() => {
+  try { localStorage.setItem("explorer.deep-gpu", "on"); } catch {}
+})();`;
+
 const QUIET = `(() => {
   const deep = document.getElementById("deep-render");
   const prog = document.getElementById("deep-progress");
@@ -142,7 +153,8 @@ const FINISHED = (mark, within) => `new Promise((resolve) => {
   ask();
 })`;
 
-/** The GPU's record of the frame it last drew, where the page exposes it. */
+/** The GPU's record of the frame it last drew, where the page exposes it: `deep.js` puts it
+ *  on `__deepGpu` where `kernel=` was asked or the log is on, which `INSTRUMENT` turns on. */
 const LAST = `(() => {
   const g = globalThis.__deepGpu;
   if (!g) return null;
@@ -294,6 +306,8 @@ async function start(kernel) {
   const b = browsers[kernel];
   b.page = await open({ port: b.port, width: WIDTH, height: HEIGHT });
   await b.page.send("Page.addScriptToEvaluateOnNewDocument", { source: INSTRUMENT });
+  // The GPU browser opts in; under `--forced` its `kernel=gpu` beats the box anyway.
+  if (kernel === "gpu") await b.page.send("Page.addScriptToEvaluateOnNewDocument", { source: TICKED });
   const first = await navigate(b.page, `${PRIMER}&panel=deep&${b.query}`);
   await rest(b.page);
   // The self-test's background compiles (degree two, the switch on and off) land here.
@@ -375,7 +389,7 @@ try {
     const row = { ...frame, ...shapeOf(frame.link) };
     row.cpu = await navigate(browsers.cpu.page, `${frame.link}&panel=deep&kernel=cpu`);
     await rest(browsers.cpu.page);
-    // Unforced: the reader's own rule, so a self-test that has not passed in time is the CPU.
+    // Unforced: the ticked reader's rule, so a self-test that has not passed in time is the CPU.
     row.gpu = await navigate(browsers.gpu.page, `${frame.link}&panel=deep`);
     await rest(browsers.gpu.page);
     if (row.cpu?.wallMs && row.gpu?.wallMs) row.speedup = +(row.cpu.wallMs / row.gpu.wallMs).toFixed(3);

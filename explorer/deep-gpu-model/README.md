@@ -5,8 +5,9 @@ kernel's oracle *(gpu_deep_ship_ckpt162)*. It restates `perturb`'s perturbation 
 (`explorer/perturb-wasm`) in the only types WGSL has, runs it natively, and measures it
 against `perturb`'s own `f64` kernel sample for sample. The shader is
 `explorer/deep-gpu-wgsl.js`, the double-single loop and its interior proof line for line,
-and the page reaches this crate only through bytes it exported: the self-test a page load
-runs before the GPU may draw (`explorer/deep-gpu-selftest/`, written by its `export.mjs`)
+and the page reaches this crate only through bytes it exported: the self-test the page runs
+before the GPU may draw, once a reader has ticked the Deep tab's GPU box
+(`explorer/deep-gpu-selftest/`, written by its `export.mjs`)
 is this model's output, word for word. Nothing here is compiled into the page, and the
 crate uses `perturb` as a library for the reference orbit and for the kernel it is compared
 with.

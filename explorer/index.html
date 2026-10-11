@@ -364,6 +364,13 @@
               <input type="checkbox" id="deep-auto" class="flag" checked
                      title="Draws each frame you open or move to at the width's own cap, without pressing Render. Remembered on this browser.">
             </span>
+            <!-- The GPU kernel, off unless ticked (gpu_optin_downloads_ckpt162). Its title is on
+                 the group, since a disabled box's own never shows, and the label carries an
+                 unavailable state in words; deep.js writes both. -->
+            <span class="group" id="deep-gpu-group">
+              <label for="deep-gpu" id="deep-gpu-label">GPU (experimental)</label>
+              <input type="checkbox" id="deep-gpu" class="flag">
+            </span>
             <!-- The pass in progress, beside the button that cancels it. What it is doing is the
                  bar's hover title and the live region a screen reader hears, never a line of
                  its own: nothing that is up only while a pass runs may move the grid. -->

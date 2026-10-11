@@ -161,7 +161,7 @@ walk.js               the Walk tab: a simplified mining pipeline, run here and w
 deep.js               the Deep tab: the Mandelbrot set below the f64 floor — see below
 deep-render.js        its pool, its one reference orbit a frame, and its shade spec
 deep-worker.js        one worker: one perturb instance, one held orbit, one band
-deep-gpu.js           the GPU: device, page-load self-test, passes, the CPU's share
+deep-gpu.js           the GPU, off unless ticked: device, self-test, passes, the CPU's share
 deep-gpu-wgsl.js      the GPU kernel's text: deep-gpu-model's double-single loop in WGSL
 deep-gpu-selftest/    the self-test's vectors and two exported frames, and how they were made
 deep-fx.js            exact decimal coordinates, BigInt fixed point
@@ -206,7 +206,7 @@ deep-fx.test.mjs      13 tests: the Deep tab's arithmetic is exact where a doubl
 deep-link.test.mjs    45 tests: the deep contract, the shallow one held to not moving,
                       and the gallery register held to the deep one
 deep.test.mjs         30 tests: where the two modules meet, against both committed ones
-deep-gpu.test.mjs     26 tests: the GPU path's frame, orbit, passes and dispatches, tail and cheap rules, and the key
+deep-gpu.test.mjs     28 tests: the GPU path's frame, orbit, passes and dispatches, tail and cheap rules, the box, and the key
 hold.test.mjs         7 tests: a held move keeps the colour at the reference value
 fit.test.mjs          15 tests: a fit runs the palette its passes across Leveled's stretch
 dives.test.mjs        21 tests: the Dive block's chains, draws and results, and Random dives
@@ -1915,7 +1915,7 @@ says so instead of doing nothing silently.
 
 ### The render controls are under the picture *(deep_ui_ckpt140, 2026-09-21)*
 
-Render, Cancel, the render bar, the activity line and **Auto-render** are a control group of
+Render, Cancel, the render bar, the activity line, **Auto-render**, and the **GPU** box are a control group of
 their own in the right pane, first under the canvas and above Download, shown only while
 this tab owns the viewer. They were in the left panel until Matt used the tab and said
 otherwise, and the reason is what a reader is looking at: pressing Render is watching the
@@ -1951,7 +1951,7 @@ Download row drops its heading on this tab and sits directly under the Iteration
 line shorter. The heading stays in the document as the row's accessible name.
 
 **And the block is a two-by-two grid** *(Matt, deep_tab_controls_grid_ckpt144)*: **Render**
-(Render or Cancel, Auto-render, the bar) and **Navigation** (Box (b), Julia at this c,
+(Render or Cancel, Auto-render, the GPU box, the bar) and **Navigation** (Box (b), Julia at this c,
 Nearby minibrots, Save, Back to the explorer) over **Iterations** and **Download**, each
 cell the studio's own section heading over one row. The Render group is `display:
 contents`, so its three cells and the Download group are the grid's items in document
@@ -2109,6 +2109,40 @@ machine or a moment that does not want the work, and a reader who turned it off 
 laptop should not have to turn it off again on every visit. It is a way of working rather
 than part of a picture, so no link carries it. The box is beside Render, and it is the one
 switch.
+
+**The GPU is the reader's to turn on** *(Matt, gpu_optin_downloads_ckpt162)*. A second box
+sits after Auto-render in the same Render row, labeled **GPU (experimental)**, and it is off
+by default: while the display-driver resets the GPU kernel was seen beside stay unexplained,
+nobody's machine runs it without being asked. Off means off entirely — no adapter request,
+no device, no kernel compile, no self-test — so a reader who never ticks it touches no WebGPU
+at all, and every frame is the CPU pool's exactly as it was before the GPU existed. The choice
+is remembered in `localStorage` under `explorer.deep-gpu` (`on` or `off`, absent reads as
+off), the same way as Auto-render's and for the same reason, and it is never written into a
+link, so a link draws the same for a reader with the box off as it always did. Ticking it
+asks for the device and runs the self-test then (a box ticked on an earlier visit asks when
+the tab starts its pool), and from the moment it passes, frames go to the GPU by the rules in
+*The GPU draws the full pass where it has earned it* below; until then the CPU draws. Where
+the GPU cannot be had for this visit the box is unticked and disabled, and its label says why
+in a few words, because a touch reader never sees a title: **GPU unavailable: no WebGPU**,
+**software only** (a fallback adapter), **failed its self-test**, **stopped twice** (the
+second lost device in a page load), or **could not start** (three acquisitions missed: no
+adapter, a device refused, or a file not fetched). The group's title carries the full
+sentence, and each lasts until a reload; the stored choice stays `on`, since a disabled box
+cannot be unticked, so the next visit tries again, and the title says that too. Ticked, the
+title says which of four states it is in: waiting (untested, and tested by the first frame
+that wants it), testing, ready, or retrying (a device lost once, or an acquisition missed,
+which the next slow frame asks again). Under `?kernel=cpu` or `?kernel=gpu` the address
+decides and the box gives way: it shows the kernel asked for, ticked for `gpu` (or `GPU
+unavailable:` with the reason, if the GPU is), and is disabled, its title naming the
+override. **The Render cell is contained** (`contain: inline-size`, as the shallow mode cell
+is), because uncontained the box's label widened the left column by up to 208 px, moving
+Navigation off the shallow view's x and moving it again as the label changed state; contained,
+the row wraps inside the 21rem floor with the box on its second line. Unticking lets a self-test or
+a frame already on the device finish, since stopping either would read as a lost device, then
+gives the device up without counting a loss (`Health.stoodDown`), so a later tick tests a
+fresh device; a frame decided for the GPU and still queued behind it goes to the CPU.
+`deep.js`'s `syncGpu` writes the box from `DeepGpu.standing()` and `GPU_UNAVAILABLE` holds
+its words.
 
 **A superseded pass yields in milliseconds, so the settle is the only debounce there is**
 *(measured, ckpt146, `bench/deep-supersede.mjs`)*. A wheel notch during the anchor's full
@@ -3443,11 +3477,15 @@ with `NaN` for the interior, so the coloring, the kept field, and a recolor neve
 kernel drew it. The quarter pass is always the CPU's, and so is the reference orbit, which
 the GPU reads as a `HiLo` buffer of the orbit the pool already computed. Details says which
 drew the picture up: "Drawn on the CPU.", or "Drawn on the GPU in double-single precision",
-with how many pixels the CPU finished. Nothing else on the page says so, and the reason a
+with how many pixels the CPU finished. The GPU box says whether the GPU is on and, where it
+cannot be, why (*Rendering, and what starts on its own* above); the reason a particular
 frame went to the CPU is the tab's log (`explorer.deep-log`) and nowhere else.
 
-**When it is used.** Every page load earns the GPU afresh. When the Deep tab first starts its
-pool, `DeepGpu.start` asks for a high-performance adapter and runs a self-test on it: the
+**When it is used.** Only once the reader has ticked the GPU box, which is off by default
+*(gpu_optin_downloads_ckpt162)*; with it off nothing here runs and nothing touches WebGPU.
+Every page load with the box ticked earns the GPU afresh. When the box is ticked, or when
+the Deep tab first starts its pool with it already ticked, `DeepGpu.start` asks for a
+high-performance adapter and runs a self-test on it: the
 exported double-single vectors bit for bit, then two small frames `deep-gpu-model` exported
 (`deep-gpu-selftest/`) word for word, `frac` apart, at two budget schedules each so that a
 resumed pass is tested too. The second schedule runs the way a frame does, compacting the
@@ -3456,8 +3494,11 @@ steps a pass. So every dispatch's offset and the running count's reset are held 
 too. Then a full stage goes to the GPU unless one of these sends it to
 the CPU, checked in this order:
 
-- **`?kernel=cpu`**, the debugging override. `?kernel=gpu` is the other one: it lifts the
+- **`?kernel=cpu`**, the debugging override, which beats a ticked box. `?kernel=gpu` is the
+  other one, and beats an unticked box: it turns the GPU on whatever the box says, lifts the
   small-frame gate and the cheap rule below, and waits up to two minutes for the self-test.
+  Under either the box is disabled and shows what the address asked for.
+- **Not chosen**: the box is off and no override asked for the GPU.
   Neither is part of either link contract; `takeKernel` removes the key from the address
   before a link reader sees it, so no link written from the view carries it.
 - **Small**: under 65,536 samples (`GPU_MIN_SAMPLES`), where the GPU's fixed costs are the
@@ -3485,8 +3526,8 @@ the CPU, checked in this order:
 - **Not ready**: no WebGPU, no adapter, a fallback adapter (a software rasterizer is not a GPU
   path), a failed self-test, or one still running. A frame waits on a test still running for
   eight quarter passes, half what the CPU would take over the stage, and never less than 3 s
-  or more than 30 s (`readyWait`). A failed self-test is final for the page load; no adapter or
-  a refused device is asked again by later frames, up to three times.
+  or more than 30 s (`readyWait`). A failed self-test is final for the page load, and the box
+  says so; no adapter or a refused device is asked again by later frames, up to three times.
 - **Does not fit**: a degree past six, a dispatch past one dimension's workgroups, or a
   sample state (128 bytes a sample with the proof, 56 without), an orbit, or an output buffer
   past the adapter's limits. The Download row's estimate
@@ -3592,12 +3633,18 @@ lane is either the GPU kernel's or exactly the CPU kernel's:
   the clock, so the samples handed over are the same on every run.
 - **A lost device**: every unfinished sample, as of the last read-back, or the whole frame
   where nothing was read back. The next frame asks for a fresh device and a fresh self-test;
-  the second loss in a page load turns the GPU off until a reload.
+  the second loss in a page load turns the GPU off until a reload, and the box shows it
+  unavailable (stopped twice) rather than staying ticked. A loss under the self-test's own
+  read-back is a loss too: a destroyed device rejects `mapAsync` before `device.lost`
+  resolves, so `#guard` waits up to a second for the loss to show before taking a rejection
+  as the test's own failure, which would be final.
 
 **Measured** *(Phase 4, 2026-10-11)*, on the RTX 2060 SUPER and twelve cores, a maximized
 1920x1055 headless Chrome on a 1920x1080 display at 100%, so the Deep canvas is 1076x576
-(619,776 samples). `bench/deep-gpu-time.mjs` keeps one browser with `kernel=cpu` and one
-under the reader's own rule, both warm, and lands every frame in each through the page's own
+(619,776 samples). The GPU was on by default when this was taken; the bench now ticks the
+GPU box in its GPU browser alone, before the page's scripts run, which is the same rule.
+`bench/deep-gpu-time.mjs` keeps one browser with `kernel=cpu` and one under the rule of a
+reader who ticked the box, both warm, and lands every frame in each through the page's own
 door for a link, the one a Saved or gallery tile uses. The time is the tab's own log, from the
 link landing to the full pass finished: the reference orbit, the quarter pass, the full
 field, and both colorings, which is what a reader waits for. The sample is seeded (162) and
@@ -3670,11 +3717,13 @@ degree above two has one to three busy Julia frames in the sample, so those colu
   whole wait (131 of 708 s). The worst are random dives with caps of one to two million:
   `#324` spent 9.9 s of an 18.1 s field on its tail, `#970` 9.5 of 20.7, `#39` 9.0 of 12.2,
   and `#758` 8.6 of 12.9. Those still landed 1.17x to 1.49x as fast.
-- **A first visit on a fresh browser profile**: the self-test is ready only after 4.8 to 4.9 s,
+- **A first visit on a fresh browser profile**, with the box ticked (a box a reader ticks
+  partway through a visit starts the same test then): the self-test is ready only after 4.8 to 4.9 s,
   its kernels compiling uncached, so the first frame waits the 3 s floor and draws on the CPU,
   5.2 s against 1.9 s. Every later load in the same profile is ready in 0.8 to 1.2 s.
 
-**Cold loads**: 26 frames opened by a fresh navigation each, as a link opened in a new tab is.
+**Cold loads**: 26 frames opened by a fresh navigation each, the way a reader who ticked the
+box on an earlier visit opens a link in a new tab.
 16 drew on the GPU at 1.11x to 4.29x (median 2.30x), and 10 stayed on the CPU as cheap at
 0.90x to 1.01x; in all 406 s to 139 s, 2.92x. A cold load costs the CPU about 0.39 s more than
 a warm one and the GPU about 0.47 s.
@@ -3781,10 +3830,11 @@ deep.js            the tab: state, the staged passes, the gestures, the pending 
 deep-render.js     the pool, the orbit per frame, and the shade spec's placeholder viewport
 deep-worker.js     one worker: one perturb instance, one held orbit, one band, or a list of
                    samples a GPU frame hands back
-deep-gpu.js        the GPU: the device, the self-test that earns it, the passes, the tail
-                   and a lost device handed to the CPU, and the ?kernel=cpu|gpu override
+deep-gpu.js        the GPU, untouched until the reader ticks its box: the device, the
+                   self-test that earns it, the passes, the tail and a lost device handed
+                   to the CPU, where it stands for the box, and the ?kernel=cpu|gpu override
 deep-gpu-wgsl.js   the kernel's WGSL, deep-gpu-model's double-single loop and proof
-deep-gpu-selftest/ the vectors and two exported frames the page-load self-test runs
+deep-gpu-selftest/ the vectors and two exported frames the self-test runs once the box is ticked
 deep-fx.js         exact decimal coordinates, BigInt fixed point
 deep-link.js       the deep link contract — parse, emit, canonicalize, describe
 deep-gallery.js    the gallery under the tab's sentence, and deep-gallery.jsonl its register
@@ -3794,8 +3844,8 @@ deep-link.test.mjs 45 tests: the contract, the shallow one held to not moving, a
 deep.test.mjs      30 tests: where the two modules meet, against both committed ones —
                    and the cap policy's seam, which fails the same way the rest of
                    this file does, by drawing a plausible picture
-deep-gpu.test.mjs  26 tests: the GPU path's frame, orbit, passes, dispatches, tail, cheap frames, health
-                   and key
+deep-gpu.test.mjs  28 tests: the GPU path's frame, orbit, passes, dispatches, tail, cheap frames, health,
+                   the box (off touches no WebGPU, unticking counts no loss), and key
 bench/julia.mjs    what a Julia frame costs against the Mandelbrot frame at the same c
 bench/deep-stall.mjs  a colour change reaches the canvas through every pass, cancel and
                    undo sequence that once lost one — one of two bench files that assert
@@ -5009,7 +5059,7 @@ adapter, so it is no part of `builder check` or CI. `--only=<name>,<name>` narro
 
 **`deep-gpu-check.mjs` holds the kernel to its model rather than to the CPU's picture.** It
 drives `bench/gpu-probe/kernel-check.html` headless, which compiles the shipped
-`deep-gpu-wgsl.js` and runs the page-load self-test's vectors and frames, then every bundle
+`deep-gpu-wgsl.js` and runs the self-test's vectors and frames, then every bundle
 `deep-gpu-model`'s `export --interior on` wrote under the ignored `artifacts/deep-gpu-check/`,
 at two budget schedules each, and compares every pixel's whole state with the model's, word
 for word, `frac` apart. On a clone those bundles do not exist until an export has run, and
@@ -7108,7 +7158,12 @@ nothing installed. `CLAUDE.md` and `.github/workflows/checks.yml` carry the comm
   until the second loss, and an acquisition that failed for the moment until the third; a
   frame waits on a self-test still running for half the CPU's expected cost of it, within
   bounds; every self-test vector is what a JavaScript reference of the same
-  double-single arithmetic gives; and `?kernel=` is taken off the address before either
+  double-single arithmetic gives; the GPU is the reader's to turn on: with the box off
+  nothing asks for `navigator.gpu` (start, ready, refuses, likely, prepare, and draw all
+  decline untouched), `?kernel=cpu` beats a ticked box and `?kernel=gpu` an unticked one, a
+  tick asks then and the box hears both the tick and the outcome, and unticking gives a
+  passed device up without counting a loss, so a later tick tests a fresh one while two
+  losses still keep it off; and `?kernel=` is taken off the address before either
   link reader sees it, so no link written from the view carries it.
 
 ## Rebuilding

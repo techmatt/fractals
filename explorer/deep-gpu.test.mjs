@@ -1,8 +1,8 @@
 // The Deep tab's GPU path, held where a GPU is not needed *(gpu_deep_ship_ckpt162)*: the
 // frame and orbit the page builds for the device against the tracked self-test bundles
 // `deep-gpu-model` exported, the meaning of a sample's `out` word, the pass-sizing and
-// tail rules, the health policy, the self-test vectors against a JavaScript reference of
-// the same arithmetic, and the `kernel` key that never reaches a link. What needs a device
+// tail rules, the health policy and the reader's opt-in, the self-test vectors against a
+// JavaScript reference of the same arithmetic, and the `kernel` key that never reaches a link. What needs a device
 // is held by `bench/gpu-probe/kernel-check.html` and the tab's own self-test.
 //
 // node --test explorer/deep-gpu.test.mjs
@@ -480,6 +480,75 @@ test("a frame the device cannot hold is the CPU's", () => {
   assert.equal(gpu.fits({ samples: hd, degree: 2, interior: true, orbitPoints: 10, limits: small }), "state");
   assert.equal(gpu.fits({ samples: hd, degree: 2, interior: false, orbitPoints: 10, limits: small }), null);
   assert.equal(gpu.fits({ samples: 1000, degree: 2, interior: false, orbitPoints: 1e7, limits: small }), "orbit");
+});
+
+test("the GPU is the reader's to turn on, and off touches no WebGPU", async () => {
+  const touched = [];
+  const before = Object.getOwnPropertyDescriptor(globalThis, "navigator");
+  Object.defineProperty(globalThis, "navigator", {
+    configurable: true,
+    get: () => ({
+      get gpu() {
+        touched.push("navigator.gpu");
+        return undefined;
+      },
+    }),
+  });
+  try {
+    const off = new gpu.DeepGpu();
+    assert.equal(off.off, true, "not chosen is off");
+    assert.deepEqual(off.standing(), { state: "off" });
+    assert.equal(await off.start(), false);
+    assert.equal(await off.ready(), false);
+    assert.equal(await off.refuses({ samples: 1e7, degree: 2, interior: true, orbitPoints: 10 }), "not chosen");
+    assert.equal(off.likely(1e7), false);
+    off.prepare({ degree: 2, julia: false });
+    assert.deepEqual(await off.draw({ live: () => true }), { status: "unserved", why: "off" });
+    assert.equal(await off.choose(false), false);
+    assert.equal(off.health.status, "untested", "an untouched GPU has nothing to report");
+    assert.deepEqual(touched, [], "off never asks for WebGPU");
+
+    // `?kernel=cpu` beats a ticked box, and `?kernel=gpu` an unticked one.
+    const cpu = new gpu.DeepGpu({ kernel: "cpu", chosen: true });
+    assert.equal(cpu.off, true);
+    assert.equal(await cpu.start(), false);
+    assert.equal(await cpu.refuses({ samples: 1e7, degree: 2, interior: true, orbitPoints: 10 }), "asked for the CPU");
+    assert.deepEqual(cpu.standing(), { state: "forced", kernel: "cpu", unavailable: null });
+    assert.deepEqual(touched, []);
+    assert.equal(new gpu.DeepGpu({ kernel: "gpu" }).off, false);
+
+    // Ticking it asks, then and not before; here there is no WebGPU, which is final and
+    // the box says why.
+    let changes = 0;
+    const chosen = new gpu.DeepGpu({ changed: () => (changes += 1) });
+    assert.equal(await chosen.choose(true), false);
+    assert.ok(touched.length > 0, "a tick asks for WebGPU");
+    assert.ok(changes >= 2, "the box hears the tick and the outcome");
+    assert.deepEqual(chosen.standing(), { state: "unavailable", why: "no-webgpu" });
+    // Unticked, it is off again, and a box ticked on an earlier visit asks at the pool's start.
+    await chosen.choose(false);
+    assert.deepEqual(chosen.standing(), { state: "off" });
+    const remembered = new gpu.DeepGpu({ chosen: true });
+    assert.equal(remembered.off, false);
+    assert.deepEqual(remembered.standing(), { state: "waiting" }, "nothing tests it until a frame wants it");
+  } finally {
+    if (before) Object.defineProperty(globalThis, "navigator", before);
+    else delete globalThis.navigator;
+  }
+});
+
+test("unticking gives a passed device up without counting a loss", () => {
+  const h = new gpu.Health();
+  h.passed();
+  h.stoodDown();
+  assert.equal(h.status, "untested");
+  assert.equal(h.losses, 0);
+  assert.equal(h.wants, true, "a later tick tests a fresh device");
+  const lost = new gpu.Health();
+  lost.lost("hung");
+  lost.lost("hung again");
+  lost.stoodDown();
+  assert.equal(lost.status, "off", "off for the session stays off");
 });
 
 test("a lost device is retried until the second loss, and a failed self-test is final", () => {

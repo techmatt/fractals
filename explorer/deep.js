@@ -153,6 +153,13 @@ const LOG_FLAG = "explorer.deep-log";
  *  way of working and not part of a picture, so no link carries it. */
 const AUTO_RENDER = "explorer.deep-auto-render";
 
+/** Where the GPU box is remembered *(Matt, gpu_optin_downloads_ckpt162)*: `localStorage`,
+ *  like Auto-render, and off where the viewer has never ticked it, because the GPU kernel
+ *  is experimental while the display-driver resets it was seen beside stay unexplained. A
+ *  way of working and not part of a picture, so no link carries it, and a link draws the
+ *  same for a reader who never ticked it as it did before the GPU existed. */
+const GPU_CHOSEN = "explorer.deep-gpu";
+
 /**
  * How much of the viewport the pending frame takes while a gesture is being shown.
  *
@@ -316,10 +323,26 @@ export function mount(host) {
 
   let renderer = null;
   let starting = null;
-  /** The page's GPU *(gpu_deep_ship_ckpt162)*: acquired and self-tested in the background
-   *  when the pool starts, and handed to the renderer, which asks it per field. `kernel` is
-   *  `?kernel=cpu|gpu`, a debugging override that `explorer.js` took off the address. */
-  let gpu = null;
+  /** The page's GPU *(gpu_deep_ship_ckpt162)*: handed to the renderer, which asks it per
+   *  field. **Untouched unless the reader ticked the GPU box** *(gpu_optin_downloads_ckpt162)*:
+   *  built here because building it touches no WebGPU, and acquired and self-tested only
+   *  once the box is ticked, then (or when the pool starts, for a box ticked on an earlier
+   *  visit). `kernel` is `?kernel=cpu|gpu`, a debugging override that `explorer.js` took off
+   *  the address, and it beats the box. */
+  const gpu = new DeepGpu({
+    kernel: host.kernel ?? null,
+    chosen: storedFlag(GPU_CHOSEN, false),
+    log: (event, detail) => log(event, detail),
+    changed: () => syncGpu(),
+    // The kernels a frame most often wants, compiled once the self-test has passed so
+    // the first such frame does not pay for it: degree two, the switch on and off.
+    warm: [
+      { degree: 2, julia: false, interior: true },
+      { degree: 2, julia: false, interior: false },
+    ],
+  });
+  // A harness that asked for a kernel, or turned the log on, may reach the device.
+  if (host.kernel != null || logRequested()) globalThis.__deepGpu = gpu;
   /** A partial picture's shade in flight, so that the next is skipped rather than queued. */
   let partialShading = false;
   /** While a partial of the GPU's full stage is up, the picture it covered — the quarter
@@ -734,22 +757,9 @@ export function mount(host) {
     // clears itself.
     starting ??= (async () => {
       activity("starting the deep renderer…");
-      // The GPU's self-test runs beside the pool's start and never ahead of it: nothing
-      // here waits on it, and a frame asks whether it passed only when it is ready to draw.
-      if (gpu === null) {
-        gpu = new DeepGpu({
-          kernel: host.kernel ?? null,
-          log: (event, detail) => log(event, detail),
-          // The kernels a frame most often wants, compiled once the self-test has passed so
-          // the first such frame does not pay for it: degree two, the switch on and off.
-          warm: [
-            { degree: 2, julia: false, interior: true },
-            { degree: 2, julia: false, interior: false },
-          ],
-        });
-        // A harness that asked for a kernel may reach the device; a reader never does.
-        if (host.kernel != null) globalThis.__deepGpu = gpu;
-      }
+      // Where the GPU is chosen, its self-test runs beside the pool's start and never ahead
+      // of it: nothing here waits on it, and a frame asks whether it passed only when it is
+      // ready to draw. Where it is not, `start` touches nothing.
       gpu.start();
       renderer = await DeepRenderer.start(
         new URL("./perturb.wasm", import.meta.url),
@@ -789,6 +799,15 @@ export function mount(host) {
    *  never moves. */
   function pinned() {
     return view.capFrom === "reader";
+  }
+
+  /** Whether the log flag is set, without turning the log on. */
+  function logRequested() {
+    try {
+      return window.localStorage.getItem(LOG_FLAG) !== null;
+    } catch {
+      return false;
+    }
   }
 
   /** Read the log flag, once a pass. The only cost the log has when it is off. */
@@ -3711,6 +3730,64 @@ export function mount(host) {
     els.capSaid.textContent = `cap ${count(view.maxiter)} · ${CAP_SOURCES[view.capFrom] ?? CAP_SOURCES.reader}`;
   }
 
+  // ------------------------------------------------------------------- the GPU box
+
+  /** The few words the label carries where the GPU cannot be used this visit, and the
+   *  sentence its title does. */
+  const GPU_UNAVAILABLE = {
+    "no-webgpu": ["no WebGPU", "This browser has no WebGPU, so the CPU draws every frame."],
+    fallback: ["software only", "This browser offers only a software adapter, which is no faster than the CPU, so the CPU draws every frame."],
+    failed: ["failed its self-test", "The graphics card failed the self-test, so the CPU draws every frame until the page is reloaded."],
+    lost: ["stopped twice", "The graphics card stopped responding twice on this visit, so the CPU draws every frame until the page is reloaded."],
+    missed: ["could not start", "The graphics card could not be started after three tries (no adapter, a device the browser refused, or a file that did not load), so the CPU draws every frame until the page is reloaded."],
+  };
+  const GPU_LABEL = "GPU (experimental)";
+  const GPU_REMEMBERED = " Remembered on this browser.";
+  /** Said under an unavailable box, which cannot be unticked: the choice it stored stands. */
+  const GPU_STILL_ON = " The box stays ticked for this browser, so the next visit tries again.";
+
+  /** The GPU box, from where the GPU stands: its tick, whether it can be changed, its
+   *  label (which carries an unavailable state, since a touch reader has no title), and
+   *  its group's title (a disabled box's own title never shows). */
+  function syncGpu() {
+    if (els.gpu == null) return;
+    const standing = gpu.standing();
+    let label = GPU_LABEL;
+    let title;
+    if (standing.state === "forced") {
+      els.gpu.checked = standing.kernel === "gpu" && standing.unavailable === null;
+      els.gpu.disabled = true;
+      if (standing.unavailable !== null) label = `GPU unavailable: ${GPU_UNAVAILABLE[standing.unavailable][0]}`;
+      title =
+        `Set by kernel=${standing.kernel} in this page's address, which overrides the box.` +
+        (standing.unavailable !== null ? ` ${GPU_UNAVAILABLE[standing.unavailable][1]}` : "");
+    } else if (standing.state === "unavailable") {
+      const [words, sentence] = GPU_UNAVAILABLE[standing.why];
+      els.gpu.checked = false;
+      els.gpu.disabled = true;
+      label = `GPU unavailable: ${words}`;
+      title = sentence + GPU_STILL_ON;
+    } else {
+      els.gpu.checked = standing.state !== "off";
+      els.gpu.disabled = false;
+      title = {
+        off: "Draws slow Deep frames and downloads on the graphics card, once it passes a self-test. Off until ticked, and the CPU draws everything until then.",
+        waiting: "On: the graphics card is tested before the first frame that needs it. The CPU draws until it passes.",
+        testing: "Testing the graphics card. The CPU draws until it passes.",
+        retrying: "The graphics card stopped responding once, so the next slow frame tests it again. The CPU draws until it passes.",
+        ready: "On: slow Deep frames and downloads draw on the graphics card, which passed its self-test.",
+      }[standing.state] + GPU_REMEMBERED;
+    }
+    els.gpu.dataset.state = standing.state === "forced" ? `forced-${standing.kernel}` : standing.state;
+    if (els.gpuLabel.textContent !== label) els.gpuLabel.textContent = label;
+    els.gpuGroup.title = title;
+  }
+
+  function setGpu(value) {
+    storeFlag(GPU_CHOSEN, value);
+    gpu.choose(value);
+  }
+
   // ------------------------------------------------------------------- auto-render
 
   function storedAuto() {
@@ -4034,6 +4111,8 @@ export function mount(host) {
   });
 
   els.auto.addEventListener("change", () => setAuto(els.auto.checked));
+  els.gpu?.addEventListener("change", () => setGpu(els.gpu.checked));
+  syncGpu();
 
   /**
    * A cap control, pressed while a pass runs: the pass stops and starts again at the new

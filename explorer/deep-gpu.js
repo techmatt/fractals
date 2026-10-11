@@ -1,13 +1,16 @@
 // The Deep tab's GPU path *(gpu_deep_ship_ckpt162)*: the device, the self-test that earns
 // it, and the pass loop that draws a field on it.
 //
-// **The GPU draws a Deep frame only where this page load's self-test passed, and the CPU
-// kernel draws it otherwise, silently.** The self-test is stage 2's: the exported vectors
+// **The GPU is the reader's to turn on, and off is off** *(gpu_optin_downloads_ckpt162)*.
+// Until the Deep tab's GPU box is ticked (or `?kernel=gpu` asks), nothing here touches
+// WebGPU: no adapter, no device, no kernel module fetched, no self-test (`DeepGpu.off`).
+// **Once it is ticked, the GPU draws a Deep frame only where this page load's self-test
+// passed, and the CPU kernel draws it otherwise.** The self-test is stage 2's: the exported vectors
 // through every double-single primitive bit for bit, then two small exported frames
 // (`deep-gpu-selftest/`) word for word, `frac` excepted, at two budget schedules each so
 // that the resume path is tested too. Any miss, no WebGPU, no adapter, or a fallback
-// adapter (a software rasterizer is not a GPU path) leaves the CPU kernel drawing, and the
-// reason goes to the tab's log and nowhere else.
+// adapter (a software rasterizer is not a GPU path) leaves the CPU kernel drawing; the
+// reason goes to the tab's log, and the box says the GPU is unavailable (`DeepGpu.standing`).
 //
 // **What a frame on the GPU hands back is the field the CPU kernel would**: one `f64` lane a
 // sample, the smooth count where it escaped and `NaN` where it did not, so nothing
@@ -629,6 +632,12 @@ export class Health {
     if (this.status !== "off") this.status = this.misses >= this.maxMisses ? "off" : "unavailable";
   }
 
+  /** The reader turned the GPU off and the device was given up: not a loss, and nothing
+   *  the arithmetic said, so a later tick tests a fresh device. */
+  stoodDown() {
+    if (this.status === "ready") this.status = "untested";
+  }
+
   get usable() {
     return this.status === "ready";
   }
@@ -640,6 +649,10 @@ export class Health {
 }
 
 // ---- The device -----------------------------------------------------------------------
+
+/** How long a rejected device call waits for `device.lost` before it is taken as the
+ *  call's own failure (`#guard`). */
+const LOSS_SETTLE_MS = 1000;
 
 /** Thrown where the device was lost under a frame: the frame finishes on the CPU. */
 export class GpuLost extends Error {}
@@ -876,12 +889,16 @@ class Runner {
  * `draw()` runs one frame's passes and says which samples the CPU still owes.
  *
  * `kernel` is the debugging override: `"cpu"` never touches WebGPU, `"gpu"` lifts the
- * small-frame rule (never the self-test or the device's limits).
+ * small-frame rule (never the self-test or the device's limits). `chosen` is the reader's
+ * box, which the override beats: with neither, the GPU is `off` and never touched.
+ * `changed` is called whenever what `standing()` says may have moved.
  */
 export class DeepGpu {
-  constructor({ kernel = null, log = () => {}, warm = [] } = {}) {
+  constructor({ kernel = null, chosen = false, log = () => {}, changed = () => {}, warm = [] } = {}) {
     this.kernel = kernel;
+    this.chosen = chosen;
     this.log = log;
+    this.changed = changed;
     /** Kernels (`{degree, julia, interior}`) compiled in the background once the self-test
      *  passes, so the first frame that wants one does not wait on its compile. */
     this.warm = warm;
@@ -919,10 +936,69 @@ export class DeepGpu {
     };
   }
 
+  /** Whether the GPU is not to be touched at all: asked for the CPU by the address, or
+   *  neither asked for by it nor chosen by the reader. Read at every door, never kept. */
+  get off() {
+    return this.kernel === "cpu" || (this.kernel === null && !this.chosen);
+  }
+
+  /**
+   * Where the GPU stands, for the box: `forced` (the address decides, `kernel` says which),
+   * `off` (not chosen), `testing` (a self-test is running), `ready`, `waiting` (chosen and
+   * untested, which the next frame that wants it tests), `retrying` (a device lost once, or
+   * an acquisition missed, which the next frame asks again), or `unavailable` for the
+   * session with `why` one of `no-webgpu`, `fallback`, `failed`, `lost` or `missed`.
+   */
+  standing() {
+    const status = this.health.status;
+    const why = this.health.why ?? "";
+    const unavailable =
+      status !== "off"
+        ? null
+        : why === "no-webgpu"
+          ? "no-webgpu"
+          : why === "fallback-adapter"
+            ? "fallback"
+            : this.health.losses >= this.health.max
+              ? "lost"
+              : this.health.misses >= this.health.maxMisses
+                ? "missed"
+                : "failed";
+    if (this.kernel !== null) return { state: "forced", kernel: this.kernel, unavailable };
+    if (!this.chosen) return { state: "off" };
+    if (unavailable !== null) return { state: "unavailable", why: unavailable };
+    if (this.testing !== null) return { state: "testing" };
+    if (status === "ready" && this.device !== null) return { state: "ready" };
+    return { state: status === "lost" || status === "unavailable" ? "retrying" : "waiting" };
+  }
+
+  /**
+   * The reader ticked or unticked the box. On starts the self-test now; off lets a test or
+   * a frame already on the device finish (stopping either would read as a lost device),
+   * then gives the device up without counting a loss. Resolves whether the GPU is ready.
+   */
+  async choose(on) {
+    this.chosen = on;
+    this.changed();
+    if (on) {
+      const passed = await this.start();
+      this.changed();
+      return passed;
+    }
+    await Promise.allSettled([this.testing, this.idle]);
+    if (this.off && this.device !== null) {
+      this.#release();
+      this.health.stoodDown();
+      this.log("gpu stood down");
+    }
+    this.changed();
+    return false;
+  }
+
   /** Acquire the device and test it, once, in the background; resolves whether it passed.
    *  Safe to call again: a test in flight is shared, and a lost device is re-acquired. */
   start() {
-    if (this.kernel === "cpu") return Promise.resolve(false);
+    if (this.off) return Promise.resolve(false);
     if (this.testing !== null) return this.testing;
     if (!this.health.wants) return Promise.resolve(this.health.usable);
     const started = performance.now();
@@ -952,7 +1028,9 @@ export class DeepGpu {
       })
       .finally(() => {
         this.testing = null;
+        this.changed();
       });
+    this.changed();
     return this.testing;
   }
 
@@ -970,7 +1048,7 @@ export class DeepGpu {
    * compile is said when a frame asks.
    */
   prepare({ degree, julia }) {
-    if (this.kernel === "cpu" || !this.health.usable || this.device === null) return;
+    if (this.off || !this.health.usable || this.device === null) return;
     if (!(degree >= 2 && degree <= 6)) return;
     const device = this.device;
     (async () => {
@@ -986,7 +1064,7 @@ export class DeepGpu {
     try {
       const W = await wgsl();
       for (const { degree, julia, interior } of this.warm) {
-        if (this.device !== device) return;
+        if (this.device !== device || this.off) return;
         await this.#pipelines(W, device, degree, julia, interior);
       }
     } catch {
@@ -999,7 +1077,7 @@ export class DeepGpu {
    *  name waits for the self-test however long it takes, so its frames say which kernel
    *  drew them for a reason and not for a race. */
   async ready(within = READY_WAIT_MS) {
-    if (this.kernel === "cpu") return false;
+    if (this.off) return false;
     if (this.health.usable) return true;
     if (this.health.status === "off") return false;
     const testing = this.start();
@@ -1015,6 +1093,7 @@ export class DeepGpu {
    *  stage from that pass, keeps a cheap one on the CPU (`cheap`) without waiting at all. */
   async refuses({ samples, degree, interior, orbitPoints, quarterMs = null, iterations = null, workers = TAIL_WORKERS }) {
     if (this.kernel === "cpu") return "asked for the CPU";
+    if (this.off) return "not chosen";
     if (this.kernel !== "gpu" && samples < GPU_MIN_SAMPLES) return "small";
     if (this.kernel !== "gpu" && cheap({ iterations, workers })) return "cheap";
     if (!(await this.ready(this.kernel === "gpu" ? FORCED_WAIT_MS : readyWait(quarterMs)))) return `not ready (${this.health.status}${this.health.why ? `: ${this.health.why}` : ""})`;
@@ -1025,7 +1104,7 @@ export class DeepGpu {
    *  and inside the device's limits with the proof's state, the larger — without waiting
    *  on anything. The Download row's estimate asks it; a frame still asks `refuses`. */
   likely(samples) {
-    if (this.kernel === "cpu" || !this.health.usable || this.limits === null) return false;
+    if (this.off || !this.health.usable || this.limits === null) return false;
     if (this.kernel !== "gpu" && samples < GPU_MIN_SAMPLES) return false;
     return fits({ samples, degree: 2, interior: true, orbitPoints: 0, limits: this.limits }) === null;
   }
@@ -1095,6 +1174,7 @@ export class DeepGpu {
     this.health.lost(why);
     this.log("gpu lost", { why, losses: this.health.losses, status: this.health.status });
     this.#release();
+    this.changed();
   }
 
   #release() {
@@ -1114,7 +1194,19 @@ export class DeepGpu {
   #guard(device) {
     const lost = this.lostSignal;
     return async (promise) => {
-      const value = await Promise.race([promise, lost]);
+      let value;
+      try {
+        value = await Promise.race([promise, lost]);
+      } catch (error) {
+        if (error instanceof GpuLost) throw error;
+        // **A lost device rejects a read-back before it says it is lost** *(found by
+        // gpu_optin_downloads_ckpt162's review)*: `mapAsync` fails at once and `device.lost`
+        // resolves after, so a loss under the self-test read as a wrong answer, and a
+        // failed test is final. A rejection waits a moment for the loss to show itself.
+        const gone = await Promise.race([device.lost.then(() => true), new Promise((resolve) => setTimeout(() => resolve(false), LOSS_SETTLE_MS))]);
+        if (gone) throw new GpuLost(`the device went away under a read: ${error?.message ?? error}`);
+        throw error;
+      }
       if (this.fault !== null || this.device !== device) throw new GpuLost(this.fault ?? "the device went away");
       return value;
     };
@@ -1339,6 +1431,8 @@ export class DeepGpu {
   }
 
   async #draw(job) {
+    // A frame decided before the box was unticked, still queued on `idle`, is the CPU's.
+    if (this.off) return { status: "unserved", why: "off" };
     const W = await wgsl();
     const device = this.device;
     if (device === null || !this.health.usable) return { status: "unserved", why: "no device" };

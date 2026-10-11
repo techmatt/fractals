@@ -4276,6 +4276,9 @@ async function mountDeep() {
       elements: {
         render: at("deep-render"),
         auto: at("deep-auto"),
+        gpu: at("deep-gpu"),
+        gpuLabel: at("deep-gpu-label"),
+        gpuGroup: at("deep-gpu-group"),
         bar: at("deep-bar"),
         spinner: at("deep-spinner"),
         progress: at("deep-progress"),
