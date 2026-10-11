@@ -963,6 +963,58 @@ test("a dive's landings are the crate's: the counts, the cap rule and the airshi
   assert.match(over.why, /ceiling/);
 });
 
+test("a deep landing is spelled as a link, and one past the guard is rounded to it", { skip }, () => {
+  // A view centred long and deep, carried into the airship to first order: at 1e-100 the
+  // landing is about 1e-102 and spelled at its decade and eight; from 1e-113 it is past the
+  // 120-digit guard and the module rounds it there (gpu_deep_ship_ckpt162). Both read as a
+  // `dv` link and re-emit to the same centre. This holds the spelling and not the place: an
+  // unanchored carry at this depth is nowhere near its own copy, and `deep.js` refuses it
+  // after the module answers (`FIRST_ORDER_PIXELS`).
+  const context = {
+    palettes: new Map([["twilight_shifted", { cyclic: true }]]),
+    defaultPalette: "twilight_shifted",
+    deepHome: () => ({ x: "-0.5", y: "0", w: "3" }),
+    deepCap: () => 1000,
+  };
+  const places = (text) => text.length - text.indexOf(".") - 1;
+  for (const [viewWidth, guarded] of [
+    [1e-100, false],
+    [1e-113, true],
+  ]) {
+    const landing = ask("dive_land", {
+      landing: "mapped",
+      degree: 2,
+      re: AIRSHIP,
+      im: "0",
+      period: 3,
+      size_log2: -8,
+      view_re: `-0.7${"3".repeat(130)}1`,
+      view_im: `0.1${"7".repeat(130)}1`,
+      view_width: viewWidth,
+      count: 100,
+    });
+    assert.equal(landing.ok, true, landing.why);
+    const decade = Math.ceil(-Math.log10(landing.width));
+    assert.equal(places(landing.re), guarded ? fx.MAX_SCALE : decade + 8);
+    assert.ok(decade + 8 > fx.MAX_SCALE === guarded, `${landing.width}`);
+    assert.ok(landing.re.length <= deep.COORDINATE_LIMIT && landing.im.length <= deep.COORDINATE_LIMIT);
+    // The colour a plain link means, and the landing's frame on it, as `frameOfAnswer` does.
+    const frame = {
+      ...deep.parse("?dv=3&x=0&y=0&w=1&p=twilight_shifted", context),
+      x: deep.coordinateOf(fx.parse(landing.re)),
+      y: deep.coordinateOf(fx.parse(landing.im)),
+      w: deep.widthOf(landing.width),
+      maxiter: landing.cap,
+      capFrom: "tile",
+    };
+    // Read back to the same place: the module's spelling, its trailing zeros dropped.
+    const read = deep.parse(`?${deep.emit(frame)}`, context);
+    assert.equal(read.x.text, fx.text(fx.parse(landing.re)));
+    assert.equal(read.y.text, fx.text(fx.parse(landing.im)));
+    assert.equal(fx.compare(read.x.dec, fx.parse(landing.re)), 0);
+  }
+});
+
 test("the rung rule steps down, skips a bulb and keeps to the budget", { skip }, () => {
   const found = {
     width: 1,

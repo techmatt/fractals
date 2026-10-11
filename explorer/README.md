@@ -1865,9 +1865,29 @@ deepest frame is therefore set by the guard and its eight guard digits, 1e-112
 - **Find minibrots** greys an entry whose frame needs more than 120 digits with its guard,
   since `deep-render.js` trims a solved centre to `MAX_SCALE` and would otherwise open it
   a little off its own minibrot.
-- **Dive and Keep diving** land through the native `digits_for`, which is not capped, so a
-  landing below 1e-112 has more than 120 digits and is refused as "deeper than a link can
-  spell a center", which it is.
+- **Dive and Keep diving** spell a mapped landing's centre through `dive::spell`: where
+  the native `digits_for` (the width's decade and eight guard digits) fits in 120 places it
+  is spelled exactly as it always was, truncated there, and a narrower one is rounded to
+  the 120th place (`fromStep`'s rule). Until the fix every mapped landing below 1e-112 came
+  back with more than 120 digits and was refused as "deeper than a link can spell a
+  center". A centre or halfway landing passes the copy's own text through, which is the
+  solve truncated at 120 places. Any landing is placed down to 1e-116 (`deep.js`'s
+  `NARROWEST_LANDING`), where a centre missing by a unit of its 120th place is still a
+  ten-thousandth of the frame; narrower, it is refused with its width named, including
+  centre landings the contract alone would read down to its 1e-120 floor. That is past the
+  zoom's stop on purpose, so that a dive from a view at the stop can land: such a landing
+  pans and zooms out, and the zoom in stops at it. So three widths hold three things: Find
+  minibrots opens a copy whose frame fits the guard (1e-112), a dive lands to 1e-116, and
+  a link reads to 1e-120.
+- **What a reader can reach is narrower than what is spelled.** A copy found near a
+  generic view at 1e-n is near 1e-2n, and at depth the nuclei that are found have their
+  solves trimmed to 120 places and then fail the root test, which the press reports as
+  nuclei left out beside "No minibrot was found". Measured in the served explorer at
+  ckpt162: Dive from views at 1e-60, 1e-80, 1e-100 and 1e-110 found nothing, and a Keep
+  diving chain of centre landings from a shallow copy ran out near 1.6e-14. A carry of B
+  with no nucleus anchoring it is placed to first order, `c_A + s·C` with `C` a double, so
+  `deep.js` refuses one whose B is narrower than a double of its centre can place a pixel
+  of (`FIRST_ORDER_PIXELS`), rather than say B is inside a copy it lands nowhere near.
 
 Until ckpt162 the deep reader borrowed the shallow contract's 64 characters, which ended a
 shareable view near 1e-45 to 1e-54 while the guard allowed twice the depth. The shallow cap

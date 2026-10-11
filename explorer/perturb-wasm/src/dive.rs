@@ -530,8 +530,13 @@ pub struct Frame {
     pub twin: Option<(u64, Vec<f64>)>,
 }
 
+/// The most fraction digits a landing's centre is spelled to: `deep-fx.js`'s `MAX_SCALE`, the
+/// centre guard every reader of a `dv` link holds a coordinate to.
+pub const MAX_PLACES: usize = 120;
+
 /// The fraction digits a centre needs to place a pixel of a frame this wide: the width's own
-/// decade and eight guard digits, `deep-render.js`'s `digitsFor`.
+/// decade and eight guard digits, `deep-render.js`'s `digitsFor`. Uncapped: a landing's
+/// centre is held to [`MAX_PLACES`] by [`spell`], which is the one place it is spelled.
 pub fn digits_for(width: f64) -> usize {
     let decade = if width > 0.0 && width.is_finite() {
         (-width.log10()).ceil().max(0.0) as usize
@@ -539,6 +544,50 @@ pub fn digits_for(width: f64) -> usize {
         0
     };
     decade + 8
+}
+
+/// A landing's centre as the text its link carries: [`Fx::to_decimal`] at [`digits_for`]
+/// wherever the width's decade and its guard fit under [`MAX_PLACES`], **byte for byte what
+/// it always was**, and otherwise rounded to the guard's last place, the way `deep-fx.js`'s
+/// `fromStep` rounds a gesture there. Rounding rather than truncating halves the miss at the
+/// one place where the miss is the whole budget.
+fn spell(value: &Fx, width: f64) -> String {
+    let places = digits_for(width);
+    if places <= MAX_PLACES {
+        return value.to_decimal(places);
+    }
+    round_last(&value.to_decimal(MAX_PLACES + 1))
+}
+
+/// A plain decimal with one digit past the place it is wanted to, rounded half away from
+/// zero at that place: `to_decimal` truncates toward zero, so the dropped digit is the exact
+/// one and five or more is at least half a unit. A carry may run into the integer part.
+fn round_last(text: &str) -> String {
+    let (sign, body) = match text.strip_prefix('-') {
+        Some(rest) => ("-", rest),
+        None => ("", text),
+    };
+    let mut digits: Vec<u8> = body.bytes().collect();
+    let last = digits.pop().unwrap_or(b'0');
+    if last >= b'5' {
+        let mut at = digits.len();
+        loop {
+            if at == 0 {
+                digits.insert(0, b'1');
+                break;
+            }
+            at -= 1;
+            match digits[at] {
+                b'.' => continue,
+                b'9' => digits[at] = b'0',
+                d => {
+                    digits[at] = d + 1;
+                    break;
+                }
+            }
+        }
+    }
+    format!("{sign}{}", String::from_utf8(digits).unwrap_or_default())
 }
 
 /// The copy, framed: [`nuclei::copy_width`] of its size, thirty-two periods.
@@ -676,11 +725,10 @@ pub fn mapped(
         }
     };
     let width = v_width * local[0].hypot(local[1]);
-    let places = digits_for(width);
     let turn = local[1].atan2(local[0]).to_degrees();
     Ok(Frame {
-        re: re.to_decimal(places),
-        im: im.to_decimal(places),
+        re: spell(&re, width),
+        im: spell(&im, width),
         width,
         cap: cap_for(period, count, width),
         turn,
@@ -980,6 +1028,66 @@ mod tests {
             "turn {}",
             anchored.turn
         );
+    }
+
+    /// The guard's cap, and the rounding at it: half away from zero on the exact dropped
+    /// digit, carrying through nines and into the integer part, the sign kept.
+    #[test]
+    fn a_centre_is_spelled_under_the_guard_and_rounded_at_it() {
+        assert_eq!(digits_for(1e-3), 11);
+        assert_eq!(digits_for(1e-100), 108);
+        assert_eq!(digits_for(2e-112), 120);
+        assert_eq!(digits_for(1e-115), 123);
+        let n = limbs_for_landing(1e-130);
+        let value = Fx::parse("0.5", n).unwrap();
+        assert_eq!(spell(&value, 1e-115).len(), 2 + MAX_PLACES);
+        assert_eq!(spell(&value, 1e-300).len(), 2 + MAX_PLACES);
+        assert_eq!(round_last("0.1234"), "0.123");
+        assert_eq!(round_last("0.1235"), "0.124");
+        assert_eq!(round_last("-0.1239"), "-0.124");
+        assert_eq!(round_last("-0.9995"), "-1.000");
+        assert_eq!(round_last("9.995"), "10.00");
+        assert_eq!(round_last("-0.0004"), "-0.000");
+        assert_eq!(round_last("-0.0005"), "-0.001");
+    }
+
+    /// The whole-set view at `centre`, `width` wide, carried into the airship, first order.
+    fn carried(width: f64) -> Frame {
+        let airship = "-1.7548776662466927600495088963585286918946";
+        let re = format!("-0.7{}1", "3".repeat(130));
+        let im = format!("0.1{}1", "7".repeat(130));
+        mapped((airship, "0", 3), 2, (&re, &im, width, 100), None).unwrap()
+    }
+
+    /// **A landing near 1e-100 is spelled as it always was** *(gpu_deep_ship_ckpt162)*:
+    /// carried into the airship the frame is about 1e-102, under the guard, and its centre is
+    /// truncated at its decade and eight. Just past the guard (a view at 1e-113 lands near
+    /// 2e-115) the centre is 120 places, rounded, and within half its last place of the
+    /// landing computed at the full count. **This holds the spelling and nothing else**: the
+    /// view is carried with no anchor, to first order, which is thousands of frames off its
+    /// own copy at this depth, and `deep.js` refuses that landing before it asks for it.
+    #[test]
+    fn a_deep_landing_is_spelled_to_the_guard_and_rounded() {
+        let near_100 = carried(1e-100);
+        let places = |text: &str| text.len() - text.find('.').unwrap() - 1;
+        assert!(near_100.width < 1e-101 && near_100.width > 1e-104);
+        assert_eq!(places(&near_100.re), digits_for(near_100.width));
+        assert!(places(&near_100.re) < MAX_PLACES);
+
+        let past = carried(1e-113);
+        assert!(past.width < 1e-113, "{:e}", past.width);
+        assert_eq!(places(&past.re), MAX_PLACES);
+        assert_eq!(places(&past.im), MAX_PLACES);
+        assert!(past.re.len() <= 128 && past.im.len() <= 128);
+        // Under the guard the spelling is the truncation; past it, the rounding of the same
+        // number, so the two agree to the 119th place and differ by at most one unit at the
+        // 120th.
+        let n = limbs_for_landing(1e-130);
+        let value = Fx::parse(&format!("-0.25{}6", "9".repeat(118)), n).unwrap();
+        assert_eq!(spell(&value, 1e-3), "-0.25999999999");
+        assert_eq!(spell(&value, 1e-130), format!("-0.26{}", "0".repeat(118)));
+        let value = Fx::parse(&format!("0.25{}4", "1".repeat(118)), n).unwrap();
+        assert_eq!(spell(&value, 1e-130), format!("0.25{}", "1".repeat(118)));
     }
 
     #[test]

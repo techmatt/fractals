@@ -205,6 +205,37 @@ const RANDOM_TRIES = 4;
 const WIDEN = [1, 16, 256];
 
 /**
+ * The narrowest frame a dive lands on: 1e-116, where a centre spelled to the guard's last
+ * place still carries four digits below the frame's own decade *(gpu_deep_ship_ckpt162)*.
+ *
+ * A landing's centre is never spelled past `MAX_SCALE` places: a mapped one is rounded to
+ * the last of them (`perturb-wasm`'s `dive::spell`), a copy's own is the solve truncated
+ * there (`deep-render.js`'s `digitsFor`). Either way it misses by at most one unit of the
+ * 120th place, which at this width is a ten-thousandth of the frame, under half a pixel of
+ * a picture 4096 across. Narrower than this the miss is a visible share of the frame, and
+ * the landing is refused rather than drawn off its copy. It is deeper than the zoom's own
+ * stop at `DEEPEST_WIDTH` on purpose: a dive from a view at that stop lands on a smaller
+ * copy, which is by construction narrower than the view, and it is placed all the same.
+ * Such a landing can be panned and zoomed out of; the zoom in stops at it. Centre and
+ * halfway landings between this and the contract's 1e-120 floor, which the contract alone
+ * would read, are refused too: truncated at 120 places, a centre there misses by a share of
+ * the frame up to the whole of it.
+ */
+const LANDING_GUARD = 4;
+const NARROWEST_LANDING = Number(`1e-${fx.MAX_SCALE - LANDING_GUARD}`);
+
+/**
+ * **A view carried with no nucleus to anchor it is carried only where a double holds it**
+ * *(gpu_deep_ship_ckpt162's review)*. The first-order place is `c_A + s·C` with `C` read as
+ * a double (`dive::mapped`), so any digit of B's centre finer than a double's precision of
+ * it is gone before the tuning's own nonlinearity is counted: B narrower than that lands on
+ * the same place as every view within a double of it, and nowhere near its own copy. The
+ * press is refused where a double of B's centre cannot place a pixel of B, a picture this
+ * many across.
+ */
+const FIRST_ORDER_PIXELS = 4096;
+
+/**
  * The Dive block's one bar, by the part of a press it is in: `[from, width]` of the bar.
  * The search is most of what a press waits on before anything is drawn and has most of the
  * first half, a mapped landing's own search round its view and its shooting the rest of it,
@@ -2522,8 +2553,32 @@ export function mount(host) {
     if (answer === null || generation !== pass) return null;
     if (!answer.ok) return { why: answer.why };
 
+    // A carry the shooting did not anchor, with no anchor or one that did not converge, is
+    // placed to first order, and that holds B only as far as a double of its centre does.
+    if (request.landing === "mapped" && answer.twin_period === null) {
+      const far = Math.hypot(Number.parseFloat(into.x.text), Number.parseFloat(into.y.text));
+      if (into.w.value < far * Number.EPSILON * FIRST_ORDER_PIXELS) {
+        return {
+          why:
+            `No nucleus near ${intoWords} anchors it in the copy near ${where}, and at ` +
+            `${exponent(into.w.value)} across it is too narrow to carry to first order: its ` +
+            "center would be read as a double and land nowhere near it.",
+        };
+      }
+    }
+
     // **An ordinary link, or nowhere**: the frame goes through the contract's own reader, so a
     // centre past what a link can spell is refused here rather than landed on and stranded.
+    // First the one width a centre held to the guard cannot place, said as that.
+    if (!(answer.width >= NARROWEST_LANDING)) {
+      const what =
+        request.landing === "mapped" ? `${intoWords}, carried into the copy near ${where},` : `The copy near ${where}`;
+      return {
+        why:
+          `${what[0].toUpperCase()}${what.slice(1)} lands ${exponent(answer.width)} across, narrower than ` +
+          `${NARROWEST_LANDING}, where a link's center can no longer place it.`,
+      };
+    }
     const frame = frameOfAnswer(answer, degree, here);
     if (frame === null) return { why: `The copy near ${where} lands deeper than a link can spell a center.` };
     const placed =
