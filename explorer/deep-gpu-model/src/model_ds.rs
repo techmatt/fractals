@@ -32,7 +32,13 @@
 //!   `2^-76` (`2^-100`), and a `δ` below `2^-100` at least `2^50` below `|Z|` (`2^30`),
 //!   so that the flushed `δ` is under the pair's rounding of `F` rather than the `f32`
 //!   rounding. Under those, what a GPU flushes is at most `2^-126` absolute against a sum
-//!   at least `2^-64`, which is under the `2^-48` the pair carries. The careful path takes
+//!   at least `2^-64`, which is under the `2^-48` the pair carries. That is a bound on
+//!   accuracy and not a promise of bits: near the `2^-76` gate a flushed error term moves
+//!   `lo` by an ulp or two, and this model, which keeps subnormals, is then not a bit-exact
+//!   oracle for a GPU that flushes them. Measured on the RTX 2060 SUPER under D3D12
+//!   (`explorer/bench/gpu-probe/`): `A-1e-60`'s pixel (160, 93) carries a `d_lo` two ulps
+//!   off the model's from step 8541 to its escape, with `n`, status and `frac` unmoved; a
+//!   chaotic pixel could carry such a difference into its count. The careful path takes
 //!   what the quick one now refuses (near a nucleus and after a rebase, where `|Z|` is
 //!   small); how many steps that moves per pixel was not measured.
 //! - **The careful path is the same rescaling in double-single**: `Z` and `δ` moved to the

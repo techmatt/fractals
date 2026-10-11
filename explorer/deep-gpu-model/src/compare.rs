@@ -48,7 +48,7 @@ pub struct FrameSpec {
     pub julia: Option<(String, String)>,
     pub anchor: Anchor,
     pub period: Option<u32>,
-    /// The row's Deep link (`dv=3&…`), carried into a dump's metadata so a colouring
+    /// The row's Deep link (`dv=3&â€¦`), carried into a dump's metadata so a colouring
     /// script can colour the frame the way that link is coloured on the site.
     pub link: Option<String>,
 }
@@ -132,7 +132,7 @@ pub struct Options {
     /// Steps per pass for the model; `u32::MAX` is one pass.
     pub budget: u32,
     pub dump: Option<PathBuf>,
-    /// Puts the cap in a dump's file names (`<id>_n<cap>.…`), for a cap ladder that
+    /// Puts the cap in a dump's file names (`<id>_n<cap>.â€¦`), for a cap ladder that
     /// dumps one frame several times.
     pub cap_in_name: bool,
     /// Also runs the `f64` kernel on the `f32`-narrowed reference
@@ -152,7 +152,7 @@ pub struct Options {
     /// differ in the entries read.
     pub extra_searches: Vec<Search>,
     /// Also runs every order with the gate flipped from `bla_options.gate`, keyed
-    /// `…+gate` (or `…+nogate`). The same field again, and fewer reads.
+    /// `â€¦+gate` (or `â€¦+nogate`). The same field again, and fewer reads.
     pub flip_gate: bool,
     /// Also runs the double-single kernel on the `HiLo` orbit, keyed `ds` (and `ds+bla`
     /// with the skip).
@@ -160,7 +160,7 @@ pub struct Options {
     /// The skip tolerance of the double-single kernel's own table.
     pub ds_eps: f64,
     /// Also runs the survivors' way once per threshold, keyed `survivors@<threshold>`
-    /// (and `…+bla`): `F32Pair` first, `HiLo` double-single for what is still running.
+    /// (and `â€¦+bla`): `F32Pair` first, `HiLo` double-single for what is still running.
     pub survivors: Vec<u32>,
     /// What becomes of a gated sample the interior proof does not close on, in every model
     /// (the `f64` kernel's own is always `cap`). A sample a model hands back `GATED` is
@@ -267,7 +267,7 @@ impl ModelField {
 }
 
 /// Rows `0..height` over `threads` workers, two rows at a time, reassembled in order.
-fn par_rows<T: Send>(height: u32, threads: usize, f: impl Fn(u32) -> Vec<T> + Sync) -> Vec<T> {
+pub fn par_rows<T: Send>(height: u32, threads: usize, f: impl Fn(u32) -> Vec<T> + Sync) -> Vec<T> {
     let next = AtomicU32::new(0);
     let mut parts: Vec<(u32, Vec<T>)> = std::thread::scope(|scope| {
         let workers: Vec<_> = (0..threads.max(1))
@@ -557,14 +557,14 @@ pub struct Agreement {
     pub f64_only_escaped: usize,
     /// The model escapes and `perturb` does not.
     pub model_only_escaped: usize,
-    /// `|Δ smooth|` over the samples both escape at.
+    /// `|Î” smooth|` over the samples both escape at.
     pub p50: f64,
     pub p90: f64,
     pub p99: f64,
     pub max: f64,
-    /// Shares of the both-escaped samples whose `|Δ smooth|` exceeds 0.01, 0.1, 1, 10.
+    /// Shares of the both-escaped samples whose `|Î” smooth|` exceeds 0.01, 0.1, 1, 10.
     pub over: [f64; 4],
-    /// Shares of the both-escaped samples whose `|Δ smooth|` exceeds each of [`LADDER`].
+    /// Shares of the both-escaped samples whose `|Î” smooth|` exceeds each of [`LADDER`].
     pub ladder: Vec<f64>,
     /// The same, split by the decade of the iteration count (see [`IterBin`]).
     pub by_iter: Vec<IterBin>,
@@ -581,7 +581,7 @@ pub struct IterBin {
     /// Of `both_escaped`, how many exceed 0.1 and 1.
     pub over_tenth: usize,
     pub over_one: usize,
-    /// The largest `|Δ smooth|` in the decade.
+    /// The largest `|Î” smooth|` in the decade.
     pub max: f64,
     pub class_changes: usize,
 }
@@ -745,7 +745,8 @@ fn num(x: f64) -> String {
     }
 }
 
-fn safe_name(id: &str) -> String {
+/// `id` as a file name: anything but letters, digits and `-_.@` becomes `_`.
+pub fn safe_name(id: &str) -> String {
     id.chars()
         .map(|c| {
             if c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '.' || c == '@' {
@@ -828,8 +829,11 @@ fn model_json(
     )
 }
 
-/// Compares one frame, and returns its JSON line.
-pub fn compare_frame(fs_: &FrameSpec, opts: &Options) -> Result<String, String> {
+/// The `perturb::Spec` a comparison runs `fs_` at: the resolution, the cap (`opts.cap`, or
+/// the row's own lowered to `opts.cap_max`) and the interior switch from `opts`, refused
+/// where `perturb` would not draw it. `export` builds its bundles from this too, so a
+/// bundle is the frame `compare` runs.
+pub fn spec_for(fs_: &FrameSpec, opts: &Options) -> Result<Spec, String> {
     let cap = match (opts.cap, opts.cap_max) {
         (Some(c), _) => Some(c),
         (None, Some(mx)) => Some(fs_.n.unwrap_or(mx).min(mx)),
@@ -845,6 +849,12 @@ pub fn compare_frame(fs_: &FrameSpec, opts: &Options) -> Result<String, String> 
             fs_.id
         ));
     }
+    Ok(spec)
+}
+
+/// Compares one frame, and returns its JSON line.
+pub fn compare_frame(fs_: &FrameSpec, opts: &Options) -> Result<String, String> {
+    let spec = spec_for(fs_, opts)?;
     let t0 = Instant::now();
     let orbit = spec.reference_orbit()?;
     let ref_s = t0.elapsed().as_secs_f64();

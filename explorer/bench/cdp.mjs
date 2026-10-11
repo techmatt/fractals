@@ -24,8 +24,9 @@ export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
  *
  * A throwaway profile per run because the explorer keeps a Saved list in `localStorage`
  * and a cold-load measurement is only cold on a browser that has not been here before.
+ * `flags` are extra Chrome switches, for a harness that needs one.
  */
-export async function open({ port = 9422, width = 1600, height = 1000, headless = true } = {}) {
+export async function open({ port = 9422, width = 1600, height = 1000, headless = true, flags = [] } = {}) {
   const profile = mkdtempSync(join(tmpdir(), "explorer-bench-"));
   const args = [
     `--remote-debugging-port=${port}`,
@@ -37,6 +38,7 @@ export async function open({ port = 9422, width = 1600, height = 1000, headless 
     "--disable-background-networking",
     "--disable-features=Translate,MediaRouter",
     `--window-size=${width},${height}`,
+    ...flags,
     "about:blank",
   ];
   if (headless) args.unshift("--headless=new");
