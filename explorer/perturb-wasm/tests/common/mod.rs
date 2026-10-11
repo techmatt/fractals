@@ -112,9 +112,10 @@ pub const DEEP_FRAMES: &[Frame] = &[
     },
     // **The deepest frame a link can spell.** Not the deepest the crate draws —
     // a rung costs about five seconds a tile here and the descent was still
-    // going down — but the deepest whose centre fits the 64 characters
-    // `explorer/deep-link.js` caps a coordinate at, with the eight guard digits
-    // that put the truncation well under a pixel. It is 63.
+    // going down — but the deepest whose centre fitted the 64 characters
+    // `explorer/deep-link.js` capped a coordinate at when it was chosen, with the
+    // eight guard digits that put the truncation well under a pixel. It is 63.
+    // The deep cap is 128 since gpu_deep_ship_ckpt162; the frame stays as chosen.
     Frame {
         label: "tangle 1e-54",
         re: "-0.745017728290198619298779298918851031533262270733325571484375",

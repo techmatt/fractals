@@ -75,8 +75,12 @@ ADAPT_LANDED = 1
 ADAPT_FLOOR = 0.05
 #: A weight at or under this is at its floor already, and is left there.
 ADAPT_HALVES_ABOVE = 0.06
-#: A coordinate longer than this is one the link will not spell.
-SPELLABLE = 64
+#: `deep-fx.js`'s `MAX_SCALE`: a coordinate with more fraction digits than this is one the
+#: tab's centre guard refuses.
+MAX_SCALE = 120
+#: A coordinate longer than this is one the link will not spell: `deep-link.js`'s deep
+#: `COORDINATE_LIMIT`, the guard and eight (gpu_deep_ship_ckpt162; the shallow 64 before).
+SPELLABLE = MAX_SCALE + 8
 ALL_INTERIOR = 0.97
 #: A picture whose luminance spread is under this is blank.
 BLANK_SPREAD = 4.0
@@ -180,11 +184,14 @@ def apart(a: dict, b: dict) -> Decimal:
         )
 
 
-def canonical_len(text: str) -> int:
-    """The length of a coordinate as `deep-fx` spells it: trailing zeros trimmed."""
-    if "." in text:
-        text = text.rstrip("0").rstrip(".")
-    return len(text)
+def spellable(text: str) -> bool:
+    """Whether the tab's link carries this coordinate as `deep-fx` spells it, trailing zeros
+    trimmed: inside the deep cap, and inside the centre guard, which binds first now the cap
+    is the guard's own. A landing below about 1e-112 needs more than `MAX_SCALE` digits,
+    and the tab refuses it the same way."""
+    trimmed = text.rstrip("0").rstrip(".") if "." in text else text
+    fraction = len(trimmed.split(".", 1)[1]) if "." in trimmed else 0
+    return len(trimmed) <= SPELLABLE and fraction <= MAX_SCALE
 
 
 # ------------------------------------------------------------------------------ a press
@@ -515,7 +522,7 @@ class Run:
         frame, copy, said = landed
         record.update(said)
         record["rung"] = len(chain) + 1
-        if max(canonical_len(frame["re"]), canonical_len(frame["im"])) > SPELLABLE:
+        if not (spellable(frame["re"]) and spellable(frame["im"])):
             record["dropped"] = self.drop("refused: unspellable")
             return self.finish(record, route, started, False)
         refused = self.refuse(record, frame)

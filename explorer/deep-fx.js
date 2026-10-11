@@ -31,8 +31,13 @@
  *  A guard against unbounded growth rather than a precision limit. Each increment's scale
  *  is about seventeen digits past the view's own width, so the digit count is bounded by
  *  how deep the reader has gone and grows by decades, not by gestures — but a number with
- *  no ceiling at all is a number that can be made to cost `BigInt` time by scrolling, and
- *  a coordinate this long is already far past what the link's 64 characters can carry. */
+ *  no ceiling at all is a number that can be made to cost `BigInt` time by scrolling.
+ *
+ *  **This is the deep wall, and the link follows it** *(gpu_deep_ship_ckpt162)*: the deep
+ *  contract's `COORDINATE_LIMIT` is this and eight, so a link spells every centre this
+ *  module holds — down to a frame about 1e-112 wide, with `deep-link.js`'s eight guard
+ *  digits — and a gesture whose step would pass it is rounded to it by [`fromStep`]. Until
+ *  then the link's 64 characters bound first, near 1e-45 to 1e-54. */
 export const MAX_SCALE = 120;
 
 const DIGITS = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/;
@@ -95,13 +100,23 @@ export function parse(text) {
  * reader something is the exception.
  */
 export function refusal(text) {
-  if (typeof text !== "string") return NOT_A_NUMBER;
-  const trimmed = text.trim();
-  if (trimmed === "" || !DIGITS.test(trimmed)) return NOT_A_NUMBER;
+  if (!isDecimal(text)) return NOT_A_NUMBER;
   return read(text) === null ? TOO_LONG : null;
 }
 
-/** The reading itself, which both of the above are a view of. */
+/**
+ * Whether the text is a decimal at all — the syntax and nothing else, so nothing is built.
+ *
+ * For a caller that has to weigh the number before [`parse`] builds it: `1e99999999` is a
+ * decimal, and its `BigInt` is a hundred million digits *(gpu_deep_ship_ckpt162's review)*.
+ */
+export function isDecimal(text) {
+  if (typeof text !== "string") return false;
+  const trimmed = text.trim();
+  return trimmed !== "" && DIGITS.test(trimmed);
+}
+
+/** The reading itself, which `parse` and `refusal` are views of. */
 function read(text) {
   if (typeof text !== "string") return null;
   const trimmed = text.trim();
@@ -126,7 +141,8 @@ function read(text) {
   const scale = fraction - exponent;
   let units = BigInt(body);
   if (negative) units = -units;
-  if (scale < 0) return make(units * pow10(-scale), 0);
+  // A zero is a zero however many zeros its exponent asks for, and is not built as one.
+  if (scale < 0) return make(units === 0n ? 0n : units * pow10(-scale), 0);
   if (scale > MAX_SCALE) return null;
   return make(units, scale);
 }
@@ -168,6 +184,32 @@ export function isZero(value) {
 export function fromNumber(value) {
   if (!Number.isFinite(value)) return null;
   return parse(String(value));
+}
+
+/**
+ * A gesture's step as an exact decimal: [`fromNumber`] wherever that fits under
+ * [`MAX_SCALE`], and the step rounded to the ceiling's last place where it does not.
+ *
+ * **Only the second branch is new** *(gpu_deep_ship_ckpt162)*, so every step that was a
+ * step before is the same decimal to the digit. A step's shortest spelling carries about
+ * seventeen significant digits, so below a view about 1e-103 wide it reaches past 120
+ * places, `fromNumber` refuses it, and a pan or a wheel notch used to do nothing at all —
+ * the wall gestures met long before the 120-digit centre guard did. Rounded instead, the
+ * step keeps every digit the centre can hold, which at a 1e-110 frame is still seven
+ * significant figures of a pixel. A step under the ceiling's last place is no step: zero.
+ */
+export function fromStep(value) {
+  if (!Number.isFinite(value)) return null;
+  const exact = fromNumber(value);
+  if (exact !== null) return exact;
+  // `value` is tiny here. Its decade, and as many fraction digits of its mantissa as keep
+  // the scale at or under the ceiling — one fewer whenever `log10` lands a decade off.
+  const decade = Math.floor(Math.log10(Math.abs(value)));
+  for (let places = Math.min(100, MAX_SCALE + decade); places >= 0; places--) {
+    const rounded = parse(value.toExponential(places));
+    if (rounded !== null) return rounded;
+  }
+  return ZERO;
 }
 
 /**

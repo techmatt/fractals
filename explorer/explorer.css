@@ -1826,11 +1826,15 @@ canvas.palette-final {
 }
 .deep-note:empty { display: none; }
 
-/* Details' coordinates. A deep centre is up to sixty-four digits and is the one number on
-   the page worth reading digit by digit, so its box is wide enough to hold one whole rather
-   than scroll it — and wraps onto its own line where the row is narrower than that. */
+/* Details' coordinates. A deep centre is up to 123 characters (120 digits after the point,
+   gpu_deep_ship_ckpt162) and is the one number on the page worth reading digit by digit, so
+   its box is wide enough to hold one whole rather than scroll it, in the box's own `ch` —
+   and wraps onto its own line where the row is narrower than that, where it scrolls only
+   because the row cannot hold it. The width is a double's seventeen digits and keeps the
+   narrower box. */
 .bar.deep-coordinates { gap: 0.3rem 0.5rem; }
-.bar.deep-coordinates input.constant { width: min(100%, 31rem); }
+.bar.deep-coordinates input.constant { width: min(100%, 126ch); }
+.bar.deep-coordinates input#deep-w { width: min(100%, 31rem); }
 
 /* Navigation's buttons are the bar's own outline buttons, the shallow row's look, and Box
    (b) is lit while armed exactly as the shallow one is. */

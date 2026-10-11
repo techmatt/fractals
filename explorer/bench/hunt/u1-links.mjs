@@ -172,7 +172,10 @@ const fuzz = [
   ["deep n missing", DEEP.replace("&n=48551", ""), "draws"],
   ["deep w zero", DEEP.replace("w=2e-11", "w=0"), "refused"],
   ["deep w negative", DEEP.replace("w=2e-11", "w=-1"), "refused"],
-  ["deep x past 64 chars", DEEP.replace(/x=[^&]+/, `x=${LONG}${LONG}`), "refused"],
+  // The deep cap is its own since gpu_deep_ship_ckpt162: 128 characters, the centre guard's.
+  ["deep x past 128 chars", DEEP.replace(/x=[^&]+/, `x=${LONG}${LONG}`), "refused"],
+  ["deep x at the guard", DEEP.replace(/x=[^&]+/, `x=-${LONG}${LONG.slice(2, 51)}7`), "draws"],
+  ["deep x past the guard", DEEP.replace(/x=[^&]+/, `x=${LONG}${LONG.slice(2, 52)}7`), "refused"],
   ["deep x letters", DEEP.replace(/&x=[^&]+/, "&x=abc"), "refused"],
   ["deep cx without cy", `${DEEP}&cx=-0.4`, "refused"],
   ["deep julia", `${DEEP}&cx=-0.4&cy=0.6`, "draws"],

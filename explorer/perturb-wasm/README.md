@@ -768,12 +768,15 @@ the first two backtracked once.
 | body 1e-28 | **470,072** | 78.9% | `dv=2&x=-0.74501772828885257904614927236638684&y=0.14993443275762655061538134007789221&w=1e-28&n=470072` |
 
 All seven parse and round-trip byte for byte through `explorer/deep-link.js`, and
-a cheap test in `tests/frames.rs` holds every centre to the 64 characters a
+a cheap test in `tests/frames.rs` holds every centre to the characters a
 coordinate is capped at and every cap to the policy's or the stated multiple of it
 — the two ways a committed frame goes quietly wrong without rendering anything.
 **The deepest is 1e-54 because of the link and not the renderer**: a rung costs
 about five seconds a tile there and the descent was still going down, but a centre
-is 63 characters at that width and `COORDINATE_LIMIT` is 64.
+is 63 characters at that width and `COORDINATE_LIMIT` was 64 when it was chosen.
+Since gpu_deep_ship_ckpt162 the deep cap is its own, 128 characters (`deep-fx.js`'s
+120-digit `MAX_SCALE` and eight), so a link spells a frame down to about 1e-112; the
+seven frames stay as they were chosen.
 
 ⚠ **And they found something that is not about the skip at all: at these depths
 the policy cap paints exterior as interior.** This is the open problem the section
@@ -1132,8 +1135,10 @@ timed at 80×45 and scaled to 316×178, wasm's 1.05× and the pool's 4.7×.
 | body 1e-28 | 940,144 | 9.23 s | 47 | 2.28 s | 6 | **6 of 6** |
 | anchor 2e-11 | 48,551 | 0.62 s | 36 | 0.05 s | 6 | **6 of 6** |
 
-**Two walls, and they land in the same place.** A `dv` centre is capped at 64
-characters, so a tile below about 1e-54 cannot be spelled; and 8 periods of a
+**Two walls, and they land in the same place.** A `dv` centre was capped at 64
+characters when this was measured, so a tile below about 1e-54 could not be spelled (the
+deep cap is 128 since gpu_deep_ship_ckpt162, which moves that wall to a tile of about
+1e-112 and leaves the second one where it is); and 8 periods of a
 nucleus past 125,000 is over the automatic million-iteration ceiling, so its tile cannot be
 resolved either. The `tangle 1e-40` and `tangle 1e-54` tiles come back **100%
 interior at the ceiling** — black, and not fixable under it. Both walls sit at a

@@ -3806,7 +3806,7 @@ function canonicalOf(query) {
   if (known === undefined) {
     try {
       // **Each contract canonicalizes its own, and the deep one does not truncate.** A
-      // deep centre is up to sixty-four characters of decimal and every one of them says
+      // deep centre is up to 128 characters of decimal and every one of them says
       // where the view is, so putting it through the shallow reader — which holds a
       // coordinate as a double — would store a link to a place nobody asked for.
       known = link.isDeep(`?${query}`)

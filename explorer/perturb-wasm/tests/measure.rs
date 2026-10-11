@@ -349,8 +349,12 @@ const POOL: f64 = 4.7;
 /// Wasm's own overhead over native on this loop, from the crate README §4.
 const WASM: f64 = 1.05;
 
-/// `explorer/permalink.js`'s `COORDINATE_LIMIT`, which the deep contract shares.
-const COORDINATE_LIMIT: usize = 64;
+/// `explorer/deep-link.js`'s `COORDINATE_LIMIT`, the deep contract's own: the
+/// 120-digit centre guard and eight (gpu_deep_ship_ckpt162; the shallow 64 before).
+const COORDINATE_LIMIT: usize = MAX_SCALE + 8;
+
+/// `explorer/deep-fx.js`'s `MAX_SCALE`, which binds before the length now.
+const MAX_SCALE: usize = 120;
 
 /// The digits a centre needs to place a pixel of a frame this wide: the width's
 /// own decade, plus the eight guard digits `tests/descend.rs` spends, which put
@@ -363,7 +367,8 @@ fn digits_for(width: f64) -> usize {
 /// answered per entry rather than argued in general.
 fn spellable(c_re: &perturb::fx::Fx, c_im: &perturb::fx::Fx, width: f64) -> bool {
     let digits = digits_for(width);
-    c_re.to_decimal(digits).len() <= COORDINATE_LIMIT
+    digits <= MAX_SCALE
+        && c_re.to_decimal(digits).len() <= COORDINATE_LIMIT
         && c_im.to_decimal(digits).len() <= COORDINATE_LIMIT
 }
 
@@ -477,7 +482,7 @@ fn what_the_nucleus_search_finds_and_what_it_costs() {
             if spellable(&nucleus.c_re, &nucleus.c_im, width) {
                 "yes"
             } else {
-                "**past 64 characters**"
+                "**past what a link spells**"
             },
         );
     }

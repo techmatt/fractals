@@ -30,9 +30,11 @@ export const KEY = "fractal-website.explorer.saved";
 /** The schema's version. A value carrying another reads as empty rather than guessed at. */
 export const VERSION = 1;
 
-/** The most pictures the list holds. A link is at most a few hundred characters, so five
- *  thousand of them is under two million, well inside the five-million-character quota a
- *  browser gives an origin; a list that reaches it is told so, and nothing is evicted. */
+/** The most pictures the list holds. A link is at most about seven hundred characters — a
+ *  deep Julia view at the centre guard, four coordinates of up to 123 each
+ *  *(gpu_deep_ship_ckpt162)* — so five thousand of the longest is about three and a half
+ *  million, inside the five-million-character quota a browser gives an origin; a list that
+ *  reaches it is told so, and nothing is evicted. */
 export const MAX = 5000;
 
 /** The items of a stored value, or `[]` for anything that is not one. */

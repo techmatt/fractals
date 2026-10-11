@@ -36,7 +36,6 @@ import {
   CAP_FLOOR,
   CAP_KEY,
   CAP_LIMIT,
-  COORDINATE_LIMIT,
   DEEP_MARKER,
   LEVEL_KEY,
   PermalinkError,
@@ -139,11 +138,62 @@ export function familyOf(view) {
  *  its v4 took the same key: one `n`, one reader, one range. */
 export { CAP_FLOOR, CAP_LIMIT };
 
-/** The shallow contract's own cap on a coordinate's length, re-exported rather than
- *  restated — a URL is one thing however deep the picture is, and a caller that needs to
- *  know whether a place it has just computed can be spelled should ask this contract
- *  rather than carry a 64 of its own. */
-export { COORDINATE_LIMIT };
+/** The guard digits a centre carries past its frame's own decade: `deep-render.js`'s
+ *  `digitsFor` and `perturb-wasm`'s `digits_for`, which put the truncation of a centre
+ *  far under one pixel of the frame it names. */
+export const GUARD_DIGITS = 8;
+
+/**
+ * The longest a deep coordinate may be, in characters: `deep-fx`'s `MAX_SCALE` and eight.
+ *
+ * **Derived from the centre guard, so the link can never bind before it**
+ * *(gpu_deep_ship_ckpt162)*. `fx.text` spells a centre as a plain decimal, never an
+ * exponent — a sign, the integer digits, the point, and at most `MAX_SCALE` (120) fraction
+ * digits — so every centre `deep-fx` will hold, with an integer part of up to six digits,
+ * re-emits inside this cap, and what refuses a centre past it is the guard and its own
+ * sentence rather than a length. Every deep plane sits within a few units of the origin, so
+ * a real centre is at most 123 characters: 118 fraction digits at a 1e-110 frame, and 120
+ * where a pan has spent the last of them.
+ *
+ * **Its own number and no longer the shallow one.** Until ckpt162 this re-exported the
+ * shallow contract's 64, which ended a shareable deep view near 1e-45 to 1e-54. The shallow
+ * cap stays 64 — a shallow coordinate is read into a double, so more characters buy it
+ * nothing — and `permalink.js` keeps it. **No version**: every link that read before reads
+ * to the same view and re-emits byte for byte, and only links this used to refuse for their
+ * length now read, which is the test a widening passes (`CAP_LIMIT`'s widening to two
+ * million is the precedent). A page from before it meets a long link with its visible
+ * length refusal, never with a wrong picture.
+ */
+export const COORDINATE_LIMIT = fx.MAX_SCALE + 8;
+
+/**
+ * The narrowest frame a gesture zooms to: the width at which a centre spelled to the guard's
+ * last digit still carries its `GUARD_DIGITS` below the frame's decade, 1e-112.
+ *
+ * A link may name a narrower width, down to [`NARROWEST_WIDTH`], but no wheel or box goes
+ * past this, because below it a pan can no longer place the centre to a pixel and a found
+ * minibrot's centre is cut coarser than its own frame. A view between the two draws, zooms
+ * out, and says so when a pan cannot move it (`deep.js`'s `pan`).
+ */
+export const DEEPEST_WIDTH = Number(`1e-${fx.MAX_SCALE - GUARD_DIGITS}`);
+
+/**
+ * The narrowest width a link may name: the centre guard's last place, 1e-120.
+ *
+ * **A floor on the value, not on the spelling** *(gpu_deep_ship_ckpt162's review)*. Until
+ * ckpt162 a width was held to `fx.parse`, so a width needing more than 120 places was
+ * refused as "not a decimal" — which refused the tab's own seventeen-digit widths below
+ * about 1e-104, and that is why the reader now asks only the syntax. Asked only the syntax,
+ * though, it read every width down to the subnormal 5e-324, frames a 120-digit centre
+ * cannot place to a pixel. This floor is exactly the old acceptance's lower edge — every
+ * positive decimal below 1e-120 needs more than 120 places — so nothing the reader took
+ * before is refused, and what it takes now that it did not is the long spellings of widths
+ * at and above it.
+ */
+export const NARROWEST_WIDTH = Number(`1e-${fx.MAX_SCALE}`);
+
+/** Past this magnitude a coordinate has more than `COORDINATE_LIMIT` integer digits. */
+const WRITTEN_OUT_CEILING = Number(`1e${fx.MAX_SCALE + GUARD_DIGITS}`);
 
 /** The aspect a link means when it says nothing — the shallow contract's, because a
  *  canvas is a canvas. */
@@ -448,20 +498,45 @@ function stripLeadingQuestion(search) {
 /**
  * A coordinate as an exact decimal and the text it will be written back as.
  *
- * The cap is the shallow contract's 64 characters, and it is the shallow contract's
- * `COORDINATE_LIMIT` rather than a second number: a URL is one thing however deep the
- * picture is. What it bounds here is real — a plain decimal at 1e-45 is about sixty-two
- * characters — so the sentence says what to do about it rather than only that it is long.
+ * Two walls, and each says which it is. The length is [`COORDINATE_LIMIT`], a cheap guard
+ * before any `BigInt` is built; past it, and inside it, `deep-fx`'s `MAX_SCALE` is the one
+ * that binds — a centre of more than 120 fraction digits, however it is spelled — and that
+ * refusal is told apart from a text that is not a number at all, because once the length
+ * cap stopped binding first the guard's refusal is the one a too-deep link meets, and
+ * calling it "not a decimal number" would be a wrong sentence about a right number.
+ *
+ * **And the cap holds the coordinate as it will be written back, not only as it came in**
+ * *(gpu_deep_ship_ckpt162's review)*. An exponent spells a huge number in a few
+ * characters — `x=1e1001` is six — and `fx.text` writes it back as a plain decimal of a
+ * thousand and two, which this reader would then refuse from the tab's own link. So a
+ * coordinate whose written-out form passes the cap is refused here, before the `BigInt`
+ * where its size alone says so; a link that read and wrote itself back before still does,
+ * because the written form of any such link was already inside the cap.
  */
 function coordinate(text, key) {
   if (text === null || text === undefined) return null;
   if (text.length > COORDINATE_LIMIT) {
     throw new PermalinkError(
       `The ${wordsFor(key)} is ${text.length} characters long, and a coordinate can be at most ${COORDINATE_LIMIT}. ` +
-        "That is about as deep as a link can spell a place; the view itself can go further.",
+        "That is about as deep as a link can spell a place.",
     );
   }
+  const tooWide = () =>
+    new PermalinkError(
+      `The ${wordsFor(key)}, ${text}, is longer than ${COORDINATE_LIMIT} characters written out, ` +
+        `and a coordinate can be at most ${COORDINATE_LIMIT}.`,
+    );
+  // A number of 129 integer digits or more is past the cap however it is written, and is
+  // told so before `fx.parse` builds it.
+  if (fx.isDecimal(text) && !(Math.abs(Number(text)) < WRITTEN_OUT_CEILING)) throw tooWide();
   const dec = fx.parse(text);
+  if (dec !== null && fx.text(dec).length > COORDINATE_LIMIT) throw tooWide();
+  if (dec === null && fx.refusal(text) === fx.TOO_LONG) {
+    throw new PermalinkError(
+      `The ${wordsFor(key)} carries more than ${fx.MAX_SCALE} digits after the point, and that is ` +
+        "deeper than a link can spell a place.",
+    );
+  }
   if (dec === null) {
     throw new PermalinkError(`The ${wordsFor(key)} has to be a decimal number, like -0.75 or 1.5e-8, not ${text}.`);
   }
@@ -502,10 +577,26 @@ function width(text) {
   if (typeof text !== "string" || text.length > COORDINATE_LIMIT) {
     throw new PermalinkError(`The width can be at most ${COORDINATE_LIMIT} characters long, and this is ${text}.`);
   }
-  if (fx.parse(text) === null) {
+  // **The syntax, and not `deep-fx`'s ceiling.** A width is kept as a double, so the
+  // centre's 120-digit guard has nothing to say about it — and asking `fx.parse` here used
+  // to refuse the tab's own frames below about 1e-104, where `shortest` spells a width with
+  // seventeen significant digits and an exponent that puts it past 120 places
+  // (`1.2345678901234567e-110` is 126), so a frame the tab had just drawn could not be
+  // read back from its own link *(gpu_deep_ship_ckpt162)*. The one thing the guard did
+  // bound that a width needs, its lower edge at 1e-120, is [`NARROWEST_WIDTH`] below.
+  if (!fx.isDecimal(text)) {
     throw new PermalinkError(`The width has to be a decimal number, like 1.5e-20, not ${text}.`);
   }
   const value = Number(text);
+  // Below the floor, and that includes a positive width so small a double holds it as 0
+  // (`1e-400`), which is not "0 or less" and is not told it is.
+  const written = text.trim();
+  const positive = !written.startsWith("-") && /[1-9]/.test(written.split(/[eE]/)[0]);
+  if (positive && value < NARROWEST_WIDTH) {
+    throw new PermalinkError(
+      `The width can be no narrower than ${NARROWEST_WIDTH}, the last place a link spells a center to, not ${text}.`,
+    );
+  }
   if (!(value > 0) || !Number.isFinite(value)) {
     throw new PermalinkError(`The width has to be more than 0, not ${text}.`);
   }

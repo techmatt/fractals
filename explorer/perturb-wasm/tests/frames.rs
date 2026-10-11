@@ -37,16 +37,17 @@ use perturb::cap;
 /// own row claims.
 ///
 /// Cheap on purpose — it renders nothing. What it guards is the two ways a
-/// committed frame goes quietly wrong: a centre that grew past the 64
+/// committed frame goes quietly wrong: a centre that grew past the 128
 /// characters `explorer/deep-link.js` caps a coordinate at, so the `dv` link
 /// beside it in `README.md` would be refused by the page rather than by
 /// anything here; and a cap that stopped being the policy's, which would make
 /// every number ever taken on it a number of a frame the tab does not draw.
 #[test]
 fn the_deep_frames_are_spellable_and_at_the_cap_they_claim() {
-    /// `explorer/permalink.js`'s `COORDINATE_LIMIT`, which the deep contract
-    /// shares rather than restating — a URL is one thing however deep it is.
-    const COORDINATE_LIMIT: usize = 64;
+    /// `explorer/deep-link.js`'s `COORDINATE_LIMIT`: the deep contract's own
+    /// cap, `deep-fx.js`'s 120-digit `MAX_SCALE` and eight
+    /// (gpu_deep_ship_ckpt162). It shared the shallow contract's 64 until then.
+    const COORDINATE_LIMIT: usize = 120 + 8;
     assert_eq!(DEEP_FRAMES.len(), 7, "the descent settled on seven");
     // And seven at each higher degree, the same seven kinds.
     for degree in 3..=6 {

@@ -1847,9 +1847,46 @@ because `make` trims trailing zeros.
 
 `MAX_SCALE` is 120 fraction digits — a guard against a number that can be made to cost
 `BigInt` time by scrolling, not a precision limit; the digit count is bounded by how deep
-the reader has gone and grows by decades rather than by gestures. The link's own limit
-binds first: a plain decimal at about 1e-45 reaches the shallow contract's 64-character
-`COORDINATE_LIMIT`, and past that the link says so rather than truncating.
+the reader has gone and grows by decades rather than by gestures.
+
+**It is the deep wall, and the link follows it** *(gpu_deep_ship_ckpt162)*. The deep
+contract's `COORDINATE_LIMIT` is its own, `MAX_SCALE + 8` = 128 characters, so a link spells
+every centre `deep-fx` holds: 118 fraction digits (121 characters) at a 1e-110 frame, and at
+most 120 (123 characters, `-0.` and the digits) wherever a pan spent the last of them. The
+deepest frame is therefore set by the guard and its eight guard digits, 1e-112
+(`deepLink.DEEPEST_WIDTH`), and three things meet it there rather than earlier:
+
+- **Gestures.** A step's shortest spelling carries about seventeen significant digits, so
+  below a view about 1e-103 wide `fromNumber` refused it and a pan or wheel notch silently
+  did nothing. `fx.fromStep` now rounds such a step to the guard's last place instead
+  (seven significant figures of a pixel at 1e-110) and is `fromNumber` to the digit
+  everywhere that answered before, so no gesture above that depth moved. A wheel or box
+  zoom stops at 1e-112, the outer stop's shape mirrored.
+- **Find minibrots** greys an entry whose frame needs more than 120 digits with its guard,
+  since `deep-render.js` trims a solved centre to `MAX_SCALE` and would otherwise open it
+  a little off its own minibrot.
+- **Dive and Keep diving** land through the native `digits_for`, which is not capped, so a
+  landing below 1e-112 has more than 120 digits and is refused as "deeper than a link can
+  spell a center", which it is.
+
+Until ckpt162 the deep reader borrowed the shallow contract's 64 characters, which ended a
+shareable view near 1e-45 to 1e-54 while the guard allowed twice the depth. The shallow cap
+stays 64. A coordinate past the guard is refused with its own sentence ("more than 120
+digits after the point") rather than as not a number, and a width is checked for its syntax
+and not against the guard, because `shortest` spells a width below about 1e-104 with
+seventeen digits and more than 120 places, so before this fix the tab could not read back
+its own deepest frames.
+
+The review of that change closed what the syntax-only width check opened. A width has a
+floor, **1e-120** (`NARROWEST_WIDTH`, the guard's last place), with its own sentence: every
+positive decimal below it needs more than 120 places, so the old reader refused all of them
+too and nothing that read before is refused now, while a hand-written `w=1e-200` or the
+underflowing `w=1e-400` no longer opens a frame its centre cannot place. A coordinate is
+held to the cap as it will be written back as well as it came in, so `x=1e1001`, six
+characters that `fx.text` writes back as a thousand and two, is refused rather than read
+into a link the tab could not read back. A view between the zoom's stop and the floor,
+which only a link can open, draws and zooms out, and a pan there that rounds to nothing
+says so instead of doing nothing silently.
 
 ### The render controls are under the picture *(deep_ui_ckpt140, 2026-09-21)*
 
@@ -2756,11 +2793,13 @@ shape what this tab can offer, and the third is the reason the list looks the wa
   atom domain `1/|A|` over an `O(1)` correction — on the audit's anchor, 9.75e-6 against a
   body of 6.478e-12. A tile framed on the domain would put its minibrot in it at a
   millionth of the frame.
-- **A `dv` centre is 64 characters**, and a minibrot found in a view at 1e-n sits near
-  1e-2n — near 1e-(d/(d−1))n at degree `d`, so 1e-1.5n at three and 1e-1.2n at six, which
-  puts the link wall deeper there — so below about a 1e-30 view the entries are places this site can find and cannot
-  spell a link to. They are **listed anyway, greyed, and the footer counts them** — the
-  link contract does not move for this, and the honest thing is to say what is there.
+- **A `dv` centre spells a frame down to 1e-112** (the 120-digit guard and eight guard
+  digits; it was 1e-54, the 64-character cap, until gpu_deep_ship_ckpt162), and a minibrot
+  found in a view at 1e-n sits near 1e-2n — near 1e-(d/(d−1))n at degree `d`, so 1e-1.5n
+  at three and 1e-1.2n at six, which puts the link wall deeper there — so below about a
+  1e-56 view at degree two the entries are places this site can find and cannot spell a
+  link to. They are **listed anyway, greyed, and the footer counts them**, because the
+  honest thing is to say what is there.
 - ⚠ **A tile's cap is eight periods of its own nucleus, and that is expensive** — and the
   frame an entry *opens* at is thirty-two (above). At the
   *width's* cap a deep minibrot's tile is 100% unresolved — a flat black rectangle — because
@@ -3220,7 +3259,10 @@ What is shared is shared rather than copied: the eleven shade keys, the `level` 
 the two encoders come from `permalink.js` by import. They are the engine's palette recipe
 and a URL's escaping rule, neither of which has anything to do with how deep the view is.
 
-- **`x` and `y`** are the exact decimal centre, up to the shallow contract's 64 characters.
+- **`x` and `y`** are the exact decimal centre, up to the deep contract's own 128
+  characters (`MAX_SCALE + 8`; gpu_deep_ship_ckpt162 raised it from the shallow
+  contract's 64 **without a version**, because every link that read before reads to the
+  same view and re-emits byte for byte, and only links refused for their length now read).
   **Normalized to one spelling rather than echoed** — the one place this contract
   deliberately differs. The shallow one echoes a coordinate exactly as it arrived because
   reading it means reading it into a double, which cannot give it back; here it is read into
@@ -3572,8 +3614,10 @@ and Safari may drop it after a week away.
 **One picture is one entry.** Every link is put through the contract and back
 (`link.emit(link.parse(…))`) before it is compared or stored. A gallery row's link, an atlas
 slot's and the viewer's are then one string when they are one picture, and saving is
-idempotent on it. The list stops at 5,000 links, about 1.75 million characters against a
-quota of five million. At the cap a save is refused with a sentence, and nothing is
+idempotent on it. The list stops at 5,000 links. At about 350 characters a link that is
+1.75 million characters, and even five thousand of the longest a link can now be (a deep
+Julia view at the centre guard, four coordinates of up to 123 characters, about 700) is
+about 3.5 million, inside a quota of five million. At the cap a save is refused with a sentence, and nothing is
 evicted.
 
 **Saving, from anywhere.** *Save*, beside the download buttons, saves the view on the screen,
@@ -6531,7 +6575,9 @@ belong to.
 
 - **Links**, 215 cases — every registry link, eleven families × four coloring shapes, and
   ~130 malformed across both contracts: bad, missing and duplicated version, family, mode and
-  mode parameters; coordinates past 64 characters; `w` at zero, negative and overflowing;
+  mode parameters; coordinates past 64 characters (128 on a deep link since
+  gpu_deep_ship_ckpt162, with one at the 120-digit guard that draws and one past it that is
+  refused); `w` at zero, negative, and overflowing, and below the 1e-120 floor;
   every aspect malformation; unknown and duplicated palettes; all seven shade keys at and past
   their bounds; both tagged kinds with and without their parameter; constants on families that
   have none; `iv` and `q` at both doors; each contract's keys at the other's; invalid escapes,

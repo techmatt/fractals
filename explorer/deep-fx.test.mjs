@@ -102,6 +102,32 @@ test("fromNumber is the double's own shortest spelling", () => {
   assert.equal(fx.fromNumber(5e-324), null);
 });
 
+test("fromStep is fromNumber wherever that answers, and rounds to the ceiling where it does not", () => {
+  // Every step fromNumber reads is the same decimal, to the digit: nothing that panned
+  // before pans differently.
+  for (const value of [0.1, -2.5e-17, 1 / 3, 6.478e-12, 1e-100, -7.123456789012345e-90, 0]) {
+    assert.deepEqual(fx.fromStep(value), fx.fromNumber(value));
+  }
+  // A pixel of a 1e-110 frame: seventeen digits is 129 places, past the guard. Rounded,
+  // it keeps every place the guard allows and is within one of them of the double.
+  for (const value of [
+    7.142857142857143e-114,
+    -3.3333333333333335e-113,
+    1.2345678901234567e-105,
+    9.876543210987654e-106,
+  ]) {
+    assert.equal(fx.fromNumber(value), null);
+    const step = fx.fromStep(value);
+    assert.ok(step.scale <= fx.MAX_SCALE, `${value}`);
+    assert.ok(Math.abs(fx.toNumber(step) - value) <= 1e-120, `${value}`);
+  }
+  // Under the ceiling's last place, a step is no step; a non-number is still refused.
+  assert.ok(fx.isZero(fx.fromStep(4e-121)));
+  assert.ok(fx.isZero(fx.fromStep(5e-324)));
+  assert.equal(fx.fromStep(NaN), null);
+  assert.equal(fx.fromStep(-Infinity), null);
+});
+
 test("a difference is taken in decimal and narrowed after", () => {
   const a = fx.parse("-0.74501772828532335842941892835857434");
   const b = fx.parse("-0.74501772828532335842941892835857000");

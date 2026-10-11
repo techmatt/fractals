@@ -1919,8 +1919,9 @@ has neither Fit nor the Deep tab's fold on an open map. The tile is WebP at qual
 
 - `refused`: no copy to take (`why` carries the search's own word, `none_smaller`,
   `no_copy`, or `over_budget` with the period and what it needs), a landing refused, a carried
-  view drawn at a cap over half of `EXPLICIT_CEILING`, a coordinate over 64 characters, a
-  render over 15 minutes, a link that failed, or an error;
+  view drawn at a cap over half of `EXPLICIT_CEILING`, a coordinate the tab's link will not
+  spell (over 128 characters or 120 fraction digits, the deep contract's cap and its centre
+  guard; 64 characters before gpu_deep_ship_ckpt162), a render over 15 minutes, a link that failed, or an error;
 - `all-interior`: over 97% of the field is interior;
 - `blank`: the coloring rule refused the field, or the shaded tile's luminance spread is
   under 4.

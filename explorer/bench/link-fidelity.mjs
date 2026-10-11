@@ -56,9 +56,18 @@ const READ = `(() => {
     }
     blocks.push(r / n, g / n, b / n);
   }
+  // How much the picture varies: the spread of the blocks' brightness. A frame that is one
+  // colour matches a fresh load at any centre, so its "exact" proves nothing.
+  let sum = 0, sq = 0;
+  for (let i = 0; i < blocks.length; i += 3) {
+    const v = (blocks[i] + blocks[i + 1] + blocks[i + 2]) / 3;
+    sum += v; sq += v * v;
+  }
+  const count = blocks.length / 3;
+  const spread = Math.sqrt(Math.max(0, sq / count - (sum / count) ** 2));
   const n = document.getElementById("notice");
   return {
-    hash: h, size: c.width + "x" + c.height, blocks, dark: dark / (d.length / 4),
+    hash: h, size: c.width + "x" + c.height, blocks, dark: dark / (d.length / 4), spread,
     url: location.search.replace(/^\\?/, ""),
     refused: !n.hidden && n.textContent.trim().length > 0 ? n.textContent.trim().slice(0, 200) : null,
   };
@@ -134,6 +143,9 @@ function compare(a, b) {
 
 /** A block difference past this is a different picture; sampling alone stays under it. */
 const MISS = 2;
+
+/** Under this spread of block brightness a frame is one colour, for a `structured` tab. */
+const FLAT = 4;
 
 // ------------------------------------------------------------------------ gestures
 
@@ -255,6 +267,31 @@ function linkOf(family, mode) {
 
 // ------------------------------------------------------------------------ the sweep
 
+/** Deep frames past the old 64-character wall, as committed literals: stage 2's corpus views
+ *  (ignored `scratch/gpu-model/deep/frames.jsonl`), put through `deep-link.js`'s
+ *  `canonicalize` so each is its own canonical spelling. */
+const DEPTH = {
+  A60:
+    "dv=3&f=multibrot5&x=0.6477473116173450093090170021243187238082842294228079986531972265625" +
+    "&y=0.5177656398110725968877340046398762808296533138887045880159123046875&w=1e-60&n=245080&p=twilight_shifted",
+  B80:
+    "dv=3&x=-0.747102167390933138624904793338996994904308695362993964762533162938471238595520844140625" +
+    "&y=-0.125652637396963165462380965272284382567197549561391109397067549423809159778107326171875" +
+    "&w=1e-80&n=649614&p=twilight_shifted",
+  C80:
+    "dv=3&cx=-0.747102167390933138625728909934578786053109039383977227197551796239669129000470514453125" +
+    "&cy=-0.125652637396963165457448222514078642178107541347455939820652471040391047399697773828125" +
+    "&x=-0.747102167390933138625728909934578786053109039383977227197551796239669129000470514453125" +
+    "&y=-0.125652637396963165457448222514078642178107541347455939820652471040391047399697773828125" +
+    "&w=1e-80&n=324807&p=twilight_shifted",
+  // The Misiurewicz point c = i, a quarter and a sixth of a frame off it so the centre is
+  // spelled long: the set has filaments through it at every scale, so these frames have
+  // structure at 1e-100 and 1e-110 where stage 2's degree-3 minibrot was solid interior —
+  // and one colour all over matches a fresh load at any centre, which proves nothing.
+  M100: `dv=3&x=0.${"0".repeat(100)}25&y=1.${"0".repeat(100)}15&w=1e-100&p=twilight_shifted`,
+  M110: `dv=3&x=0.${"0".repeat(110)}25&y=1.${"0".repeat(110)}15&w=1e-110&p=twilight_shifted`,
+};
+
 /** Each tab: where it starts, and the steps it takes. A step is checked after it rests. */
 const TABS = {
   gallery: {
@@ -299,6 +336,34 @@ const TABS = {
       ["pan", pan],
       ["zoom", zoom],
       ["palette", clickNth("#palette-list .swatch", 5)],
+    ],
+  },
+  // **Past the old 64-character wall** *(gpu_deep_ship_ckpt162)*: frames at 1e-60 to 1e-110
+  // reached by a link whose centre is 67 to 114 digits, then a gesture on each. A, B and C
+  // are stage 2's corpus views (`gpu_ds_probe_stage2_ckpt162`): A at degree 5, B at degree
+  // 2, C its Julia set at the same depth. M is the Misiurewicz point i at 1e-100 and at
+  // 1e-110, where a pan's step is past `fromNumber`'s 120 places and `fromStep` rounds it,
+  // then zoomed to the 1e-112 stop. Every frame is held to having structure (`structured`,
+  // the review of ckpt162: stage 2's minibrot interior stood here first, and a black frame
+  // matched itself at any centre). B and C cost minutes a frame, so this tab rests longer.
+  depth: {
+    from: "dv=3&x=-0.5&y=0&w=3&p=twilight_shifted&panel=deep",
+    within: 900000,
+    structured: true,
+    steps: [
+      ...[
+        ["A 1e-60", DEPTH.A60],
+        ["B 1e-80", DEPTH.B80],
+        ["C 1e-80 Julia", DEPTH.C80],
+        ["M 1e-100", DEPTH.M100],
+        ["M 1e-110", DEPTH.M110],
+      ].flatMap(([name, link]) => [
+        [`link ${name}`, async (page) => load(page, `${link}&panel=deep`)],
+        [`pan ${name}`, pan],
+      ]),
+      ["zoom M 1e-110", zoom],
+      // Forty notches of 1.15 is past 1e-112: the last of them meet the stop.
+      ["zoom M to the 1e-112 stop", wheel("#canvas", [0.55, 0.45], -40)],
     ],
   },
   phoenix: {
@@ -384,13 +449,17 @@ const pictureOf = (query) =>
     .join("&");
 
 /** One step: act, rest, copy, and hold the rest to a fresh load of its own address. */
-async function step(driver, checker, tabName, name, act) {
+async function step(driver, checker, tabName, name, act, within, structured) {
   const row = { tab: tabName, step: name };
   row.did = await act(driver);
-  const after = await rest(driver);
+  const after = await rest(driver, within);
   if (after === null) return { ...row, verdict: "BUSY", error: "never came to rest" };
   row.url = after.url;
   row.dark = Number(after.dark.toFixed(3));
+  row.spread = Number(after.spread.toFixed(1));
+  // A tab that exists to show a centre is placed holds every frame to having something to
+  // place: one colour all over would match a fresh load anywhere.
+  if (structured && after.spread < FLAT) return { ...row, verdict: "FLAT" };
   if (after.refused) return { ...row, verdict: "REFUSED", said: after.refused };
   await driver.ev(`window.__copied = null; document.getElementById("copy").click(); true`);
   await until(driver, `window.__copied !== null`, 3000);
@@ -400,7 +469,7 @@ async function step(driver, checker, tabName, name, act) {
     row.copied = copiedQuery;
   }
   await load(checker, after.url);
-  const again = await rest(checker);
+  const again = await rest(checker, within);
   if (again === null) return { ...row, verdict: "BUSY", error: "the fresh load never came to rest" };
   if (again.refused) return { ...row, verdict: "REFUSED", said: again.refused };
   const found = compare(after, again);
@@ -423,15 +492,15 @@ let checker = await fresh(DEBUG + 1);
 const rows = [];
 let misses = 0;
 try {
-  for (const [tabName, { from, steps }] of Object.entries(TABS)) {
+  for (const [tabName, { from, steps, within, structured }] of Object.entries(TABS)) {
     if (only !== null && !only.includes(tabName)) continue;
     if (tabName === "walk" && !walk) continue;
     await load(driver, from);
-    await rest(driver);
+    await rest(driver, within);
     for (const [name, act] of steps) {
       let row;
       try {
-        row = await step(driver, checker, tabName, name, act);
+        row = await step(driver, checker, tabName, name, act, within, structured);
       } catch (error) {
         row = { tab: tabName, step: name, verdict: "ERROR", error: String(error.message ?? error).slice(0, 200) };
         await finish(driver);

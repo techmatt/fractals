@@ -1454,9 +1454,20 @@ export function mount(host) {
    *  turned into an exact decimal and added, so nothing about the place is re-spelled. */
   function pan(dx, dy) {
     const grid = host.grid();
-    const acrossStep = fx.fromNumber(-(dx / grid.width) * view.w.value);
-    const downStep = fx.fromNumber((dy / grid.height) * planeHeight(view));
+    const acrossStep = fx.fromStep(-(dx / grid.width) * view.w.value);
+    const downStep = fx.fromStep((dy / grid.height) * planeHeight(view));
     if (acrossStep === null || downStep === null) return;
+    // **Said, not swallowed** *(gpu_deep_ship_ckpt162's review)*. Only a link can open a view
+    // narrower than the zoom's stop, and below about 1e-117 a pan's step is under the
+    // centre's last digit and rounds to nothing, which is the silent gesture `fromStep` was
+    // written to end. A zoom out still works, and the sentence says so.
+    if ((dx !== 0 || dy !== 0) && fx.isZero(acrossStep) && fx.isZero(downStep)) {
+      host.say(
+        `This view is narrower than ${deepLink.DEEPEST_WIDTH}, where the zoom stops, and a pan here ` +
+          "moves the center by less than its last digit. Zoom out to move it.",
+      );
+      return;
+    }
     view = {
       ...view,
       x: deepLink.coordinateOf(fx.add(view.x.dec, acrossStep)),
@@ -1497,6 +1508,15 @@ export function mount(host) {
       held = width > stop.w;
       width = Math.min(width, stop.w);
     }
+    // **In no further than the guard's deepest frame** *(gpu_deep_ship_ckpt162)*: below
+    // `DEEPEST_WIDTH` a step rounded to the centre's last digit no longer places a pixel.
+    // The same shape as the outer stop — the width is clamped and a zoom already there is
+    // refused — so a wheel at the wall says nothing new rather than drawing a frame whose
+    // centre cannot follow the pointer.
+    if (width < view.w.value && width < deepLink.DEEPEST_WIDTH) {
+      if (view.w.value <= deepLink.DEEPEST_WIDTH) return false;
+      width = deepLink.DEEPEST_WIDTH;
+    }
     const pull = held ? 0 : pullOf(width);
     // The point is taken on what the canvas is SHOWING, which is the widened frame while
     // something is pending — so the wheel zooms about what is under the pointer rather
@@ -1505,8 +1525,8 @@ export function mount(host) {
     const downOffset = (0.5 - py / grid.height) * planeHeight(on);
     const centreAcross = fx.difference(view.x.dec, on.x.dec);
     const centreDown = fx.difference(view.y.dec, on.y.dec);
-    const shiftAcross = fx.fromNumber((acrossOffset - centreAcross) * pull);
-    const shiftDown = fx.fromNumber((downOffset - centreDown) * pull);
+    const shiftAcross = fx.fromStep((acrossOffset - centreAcross) * pull);
+    const shiftDown = fx.fromStep((downOffset - centreDown) * pull);
     if (shiftAcross === null || shiftDown === null) return false;
     const x = held ? view.x.dec : fx.add(view.x.dec, shiftAcross);
     const y = held ? view.y.dec : fx.add(view.y.dec, shiftDown);
@@ -1873,9 +1893,11 @@ export function mount(host) {
       minibrots = found;
       minibrotSide = side;
       show(found, target, pick);
-      // **The unreachable ones are said rather than hidden.** A `dv` centre is capped at 64
-      // characters, and a minibrot found in a view at 1e-n sits near 1e-2n — so below about
-      // 1e-30 the best entries are places this site can find and cannot spell a link to.
+      // **The unreachable ones are said rather than hidden.** A `dv` centre spells a frame
+      // down to about 1e-112 (the 120-digit guard and eight guard digits; 1e-54 while the
+      // cap was 64 characters), and a minibrot found in a view at 1e-n sits near 1e-2n — so
+      // below about 1e-56 at degree two the best entries are places this site can find and
+      // cannot spell a link to.
       const reachable = found.filter((one) => spellable(one));
       const lost = found.length - reachable.length;
       els.minibrotNote.hidden = false;
@@ -1987,12 +2009,20 @@ export function mount(host) {
     return found;
   }
 
-  /** Whether a `dv` link can carry this entry's frame — the same 64 characters every other
-   *  coordinate on this site is held to. */
+  /** Whether a `dv` link can carry this entry's frame: its centre inside the deep contract's
+   *  `COORDINATE_LIMIT`, **and its frame no deeper than the guard spells to a pixel**
+   *  *(gpu_deep_ship_ckpt162)*. The second half is the one that binds now the length cap is
+   *  the guard's own: `deep-render.js` trims a solved centre to `MAX_SCALE` digits at most,
+   *  so a frame needing more than that and its eight guard digits would open at a centre cut
+   *  coarser than it should be — a misplaced picture, which is worse than an honest "cannot
+   *  spell". Every entry that passed the old 64-character test passes this one. */
   function spellable(nucleus) {
+    const width = frameOf(nucleus).w.value;
+    const decade = width > 0 && Number.isFinite(width) ? Math.ceil(-Math.log10(width)) : 0;
     return (
       nucleus.x.text.length <= deepLink.COORDINATE_LIMIT &&
-      nucleus.y.text.length <= deepLink.COORDINATE_LIMIT
+      nucleus.y.text.length <= deepLink.COORDINATE_LIMIT &&
+      decade + deepLink.GUARD_DIGITS <= fx.MAX_SCALE
     );
   }
 

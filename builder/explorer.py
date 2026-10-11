@@ -372,6 +372,20 @@ ENGINE_CHANGES = [
     "this crate calls moved: 540 renders of the identity battery byte-identical before and "
     "after, engine tests 256 unmoved plus one new; this module does not call link and its "
     "bytes are unmoved by it.",
+    "link.rs's deep reader takes DEEP_COORDINATE_LIMIT, MAX_SCALE + 8 = 128, in place of the "
+    "shallow contract's 64 (which the shallow reader keeps), tells a coordinate past the "
+    "120-digit guard from a non-number, and checks a deep width's syntax rather than holding "
+    "it to MAX_SCALE, with a floor at 1e-120 (NARROWEST_WIDTH, the old check's own lower "
+    "edge), and refuses a coordinate whose plain spelling passes the cap (WRITTEN_OUT_CEILING, "
+    "so 1e1001 is no longer read or mis-explained), and Decimal::parse reads a zero mantissa "
+    "as zero at any exponent: private constants and three function bodies, no signature. It "
+    "is a parser that accepts more, not zero behaviour, and gpu_deep_ship_ckpt162 was sent "
+    "for exactly that (deep links to about 1e-112); fixtures/link-cases.json regenerates at "
+    "730 cases and names the website contract's blobs. No render reads it (deep rendering is "
+    "not built next door): 540 renders of the identity battery and render-link over 40 "
+    "shallow site links byte-identical before and after, the three anchors at 1600x900 ss4 "
+    "0.99x to 1.01x and byte-identical, engine tests 257 unmoved; this module does not call "
+    "link and its bytes are unmoved by it.",
 ]
 
 _RUSTC_VERSION = re.compile(r"^rustc (\S+ \([0-9a-f]+ \d{4}-\d{2}-\d{2}\))")

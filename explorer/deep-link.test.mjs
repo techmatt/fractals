@@ -158,8 +158,120 @@ test("a cyclic map is refused a fold, in the shallow contract's own words", () =
 });
 
 test("a coordinate past the link's cap says so rather than being truncated", () => {
-  const long = `0.${"1".repeat(70)}`;
-  assert.throws(() => deep.parse(`?dv=1&x=${long}&p=inferno`, context), /can be at most 64/);
+  const long = `0.${"1".repeat(deep.COORDINATE_LIMIT)}`;
+  assert.ok(long.length > deep.COORDINATE_LIMIT);
+  assert.throws(
+    () => deep.parse(`?dv=1&x=${long}&p=inferno`, context),
+    new RegExp(`can be at most ${deep.COORDINATE_LIMIT}\\.`),
+  );
+});
+
+// **The deep cap is its own, and derived from the centre guard** *(gpu_deep_ship_ckpt162)*.
+// A centre at the guard's last digit is the longest anything here writes, so the link can
+// never be what refuses a centre `deep-fx` would hold.
+test("the deep cap is the centre guard's, and the shallow cap stays where it was", () => {
+  assert.equal(deep.COORDINATE_LIMIT, 128);
+  assert.equal(deep.COORDINATE_LIMIT, 8 + 120);
+  assert.ok(deep.COORDINATE_LIMIT >= "-0.".length + 120);
+  assert.equal(link.COORDINATE_LIMIT, 64);
+  assert.equal(deep.DEEPEST_WIDTH, 1e-112);
+});
+
+/** A centre with `digits` fraction digits, not ending in a zero, so it is its own spelling. */
+function deepCentre(sign, digits) {
+  const body = "74501772828532335842941892835857434".repeat(4).slice(0, digits - 1);
+  return `${sign}0.${body}7`;
+}
+
+test("a centre at 1e-60, 1e-80, 1e-110 and the guard's last digit reads and re-emits byte for byte", () => {
+  for (const [digits, w] of [
+    [68, "1.5e-60"],
+    [88, "2.25e-80"],
+    [118, "1e-110"],
+    [120, "1.2345678901234567e-110"],
+  ]) {
+    const x = deepCentre("-", digits);
+    const y = deepCentre("", digits);
+    assert.equal(x.length, digits + 3);
+    const query = `dv=3&x=${x}&y=${y}&w=${w}&n=1000000&p=inferno&scale=leveled`;
+    const view = deep.parse(`?${query}`, context);
+    assert.equal(view.x.text, x, `${digits}: x`);
+    assert.equal(view.y.text, y, `${digits}: y`);
+    assert.equal(view.w.text, w, `${digits}: w`);
+    assert.equal(deep.emit(view), query, `${digits}: emit`);
+    assert.equal(deep.canonicalize(`?${query}`, context), query, `${digits}: canonical`);
+    assert.equal(deep.emit(deep.parse(`?${deep.emit(view)}`, context)), query, `${digits}: fixed point`);
+  }
+  // A Julia link carries four of them.
+  const c = deepCentre("-", 118);
+  const julia = `dv=3&cx=${c}&cy=${deepCentre("", 118)}&x=${c}&y=0&w=1e-110&n=500&p=inferno&scale=absolute`;
+  assert.equal(deep.canonicalize(`?${julia}`, context), julia);
+});
+
+test("a centre past the guard is refused by the guard's own sentence, not as a non-number", () => {
+  // 121 fraction digits is 123 characters: inside the length cap, past the guard.
+  const x = deepCentre("", 121);
+  assert.ok(x.length <= deep.COORDINATE_LIMIT);
+  assert.throws(() => deep.parse(`?dv=3&x=${x}&p=inferno`, context), /more than 120 digits after the point/);
+  // And a short spelling of a place past it says the same.
+  assert.throws(() => deep.parse("?dv=3&x=1e-125&p=inferno", context), /more than 120 digits after the point/);
+  assert.throws(() => deep.parse("?dv=3&x=one&p=inferno", context), /has to be a decimal number/);
+});
+
+test("a width's syntax is checked, and the centre's guard is not a width's", () => {
+  // `shortest` spells a width this deep with seventeen digits and an exponent — 126
+  // places, past the guard — and it is the tab's own spelling, so it has to read back.
+  const view = deep.parse("?dv=3&x=0.5&y=0&w=1.2345678901234567e-110&p=inferno", context);
+  assert.equal(view.w.value, 1.2345678901234567e-110);
+  assert.equal(view.w.text, "1.2345678901234567e-110");
+  assert.equal(deep.widthOf(view.w.value).text, view.w.text);
+  assert.throws(() => deep.parse("?dv=3&w=0x10&p=inferno", context), /decimal number/);
+});
+
+test("a width has a floor at the guard's last place, and what read before still reads", () => {
+  // The floor is the old reader's own lower edge: 1e-120 read then and reads now.
+  assert.equal(deep.NARROWEST_WIDTH, 1e-120);
+  assert.equal(deep.parse("?dv=3&x=0.5&y=0&w=1e-120&p=inferno", context).w.value, 1e-120);
+  for (const w of ["1e-121", "9.99e-121", "1e-200", "5e-324", "1e-400"]) {
+    assert.throws(
+      () => deep.parse(`?dv=3&x=0.5&y=0&w=${w}&p=inferno`, context),
+      /no narrower than 1e-120/,
+      w,
+    );
+  }
+  // Zero and negative are still told they are not positive.
+  assert.throws(() => deep.parse("?dv=3&w=0e-400&p=inferno", context), /has to be more than 0/);
+  assert.throws(() => deep.parse("?dv=3&w=-1e-400&p=inferno", context), /has to be more than 0/);
+});
+
+test("a coordinate is held to the cap as it will be written back", () => {
+  // Six characters, a thousand and two written out: refused, not read into a link the
+  // tab could not read back.
+  // `1e128` is refused on its size before it is built; `-1e127` only once it is spelled.
+  assert.equal(deep.parse("?dv=3&x=1e127&p=inferno", context).x.text.length, 128);
+  for (const x of ["1e1001", "1e128", "-1e127", "-1e200", "1e99999999"]) {
+    assert.throws(() => deep.parse(`?dv=3&x=${x}&p=inferno`, context), /longer than 128 characters written out/, x);
+  }
+  // At the edge: 128 characters written out reads, and reads to itself.
+  const edge = `1e6`;
+  assert.equal(deep.parse(`?dv=3&x=${edge}&p=inferno`, context).x.text, "1000000");
+  const full = `${"9".repeat(7)}.${"1".repeat(120)}`;
+  assert.equal(full.length, 128);
+  assert.equal(deep.parse(`?dv=3&x=${full}&p=inferno`, context).x.text, full);
+  // A zero is a zero however many zeros its exponent asks for.
+  assert.equal(deep.parse("?dv=3&x=0e2000&p=inferno", context).x.text, "0");
+});
+
+test("every link the 64-character cap read, reads the same under the deep cap", () => {
+  // At the old wall exactly: 64 characters reads, and reads to itself.
+  const x = deepCentre("-", 61);
+  assert.equal(x.length, 64);
+  const query = `dv=3&x=${x}&y=0.1&w=1e-54&n=500&p=inferno`;
+  assert.equal(deep.canonicalize(`?${query}`, context), query);
+  // One past it was refused and now reads.
+  const past = deepCentre("-", 62);
+  assert.equal(past.length, 65);
+  assert.equal(deep.parse(`?dv=3&x=${past}&p=inferno`, context).x.text, past);
 });
 
 test("a width has to be a positive number", () => {
