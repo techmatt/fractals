@@ -711,12 +711,21 @@ pub extern "C" fn plan(spec_ptr: *const u8, spec_len: usize) -> *mut u8 {
             DELTA_ULPS,
         )),
     }).map(|spec| {
+        // **The numbers a second kernel needs to form `dc` exactly as this one does**
+        // *(gpu_deep_ship_ckpt162)*: the offset `compute_rows` reads (the same
+        // `unwrap_or`), the entry index, and the plane's width and height and the sample
+        // spacing, each the `f64` this crate computes rather than one a reader re-derives.
+        // Written `{:e}`, Rust's shortest round-trip form, so `JSON.parse` lands on the
+        // same `f64` bit for bit, signed zero included.
+        let offset = spec.centre_offset().unwrap_or((0.0, 0.0));
         format!(
             concat!(
                 r#"{{"ok":true,"maxiter":{},"limbs":{},"fraction_bits":{},"#,
                 r#""sample_width":{},"sample_height":{},"interior":{},"#,
                 r#""julia":{},"anchor":"{}","degree":{},"delta_ulps":{},"#,
-                r#""reference_bytes":{},"ceiling":{},"explicit_ceiling":{}}}"#
+                r#""reference_bytes":{},"ceiling":{},"explicit_ceiling":{},"#,
+                r#""offset_re":{:e},"offset_im":{:e},"entry":{},"width":{:e},"#,
+                r#""plane_height":{:e},"spacing":{:e},"interior_floor":{}}}"#
             ),
             spec.maxiter(),
             spec.limbs(),
@@ -743,6 +752,13 @@ pub extern "C" fn plan(spec_ptr: *const u8, spec_len: usize) -> *mut u8 {
                 },
             cap::AUTOMATIC_CEILING as u32,
             cap::EXPLICIT_CEILING as u32,
+            offset.0,
+            offset.1,
+            spec.entry(),
+            spec.width,
+            spec.plane_height(),
+            spec.width / spec.sample_width() as f64,
+            kernel::INTERIOR_EXPONENT,
         )
     }))
 }
@@ -795,6 +811,108 @@ pub extern "C" fn compute_band(
     };
     let ss = spec.supersample;
     release(compute_rows(&spec, &orbit, row_start * ss, row_end * ss))
+}
+
+/// The smooth field for the listed samples, as little-endian `f64` in list order.
+///
+/// A sample is named by its global index into the supersampled grid, `row · W + col`
+/// with `W` the sample width: the index the `values` array of a whole field stores it
+/// at. **Each sample is the same arithmetic [`compute_rows`] does for it** — the same
+/// kernel at the same entry, the same `dc` from the same offset, the same
+/// monomorphization — so its eight bytes are bit for bit the eight a band covering its
+/// row writes. What this exists for is a scattered list: the samples a GPU pass left
+/// running, which rows would redo most of the frame to finish.
+///
+/// `BAND_RAN` and `BAND_SAVED` are the list's, as they are a band's. Null on a spec
+/// that will not parse, an orbit that will not unpack, an empty list, or any index
+/// outside the grid. The index list and the orbit are **borrowed**.
+pub fn compute_listed(spec: &Spec, orbit: &Reference, indices: &[u32]) -> Option<Vec<u8>> {
+    let samples = spec.sample_width() as u64 * spec.sample_height() as u64;
+    if indices.is_empty() || indices.iter().any(|&index| index as u64 >= samples) {
+        return None;
+    }
+    // Every line from here to the fork is `compute_rows`'s, so a sample cannot be told
+    // which of the two asked for it.
+    let kernel = Kernel::new(orbit, spec.maxiter(), spec.interior).at_entry(spec.entry());
+    let offset = spec.centre_offset().unwrap_or((0.0, 0.0));
+    let mut bytes = Vec::with_capacity(indices.len() * 8);
+    macro_rules! fill_at {
+        ($d:literal, $julia:literal) => {
+            fill_listed::<$d, $julia>(spec, &kernel, offset, indices, &mut bytes)
+        };
+    }
+    match (spec.degree, spec.julia.is_some()) {
+        (2, false) => fill_at!(2, false),
+        (2, true) => fill_at!(2, true),
+        (3, false) => fill_at!(3, false),
+        (3, true) => fill_at!(3, true),
+        (4, false) => fill_at!(4, false),
+        (4, true) => fill_at!(4, true),
+        (5, false) => fill_at!(5, false),
+        (5, true) => fill_at!(5, true),
+        (6, false) => fill_at!(6, false),
+        (6, true) => fill_at!(6, true),
+        _ => return None,
+    }
+    Some(bytes)
+}
+
+/// [`fill`] over a list of global sample indices rather than a range of rows.
+fn fill_listed<const D: usize, const JULIA: bool>(
+    spec: &Spec,
+    kernel: &Kernel,
+    offset: (f64, f64),
+    indices: &[u32],
+    bytes: &mut Vec<u8>,
+) {
+    let width = spec.sample_width();
+    let (mut ran, mut saved) = (0u64, 0u64);
+    for &index in indices {
+        let (col, row) = (index % width, index / width);
+        let (re, im) = spec.dc(offset, col, row);
+        let outcome = kernel.sample_with::<D, JULIA>(re, im);
+        ran += outcome.iterations as u64;
+        if outcome.detected_interior {
+            saved += spec.maxiter().saturating_sub(outcome.iterations) as u64;
+        }
+        bytes.extend_from_slice(&outcome.smooth.to_le_bytes());
+    }
+    BAND_RAN.store(ran, Ordering::Relaxed);
+    BAND_SAVED.store(saved, Ordering::Relaxed);
+}
+
+/// [`compute_listed`] across the boundary: `count` little-endian `u32` sample indices at
+/// `index_ptr`, and `8 · count` bytes back, one `f64` per index in list order, freed by
+/// the caller through [`dealloc`]. The orbit and the list are **borrowed**.
+#[unsafe(no_mangle)]
+pub extern "C" fn compute_samples(
+    spec_ptr: *const u8,
+    spec_len: usize,
+    orbit_ptr: *const u8,
+    orbit_len: usize,
+    index_ptr: *const u8,
+    count: u32,
+) -> *mut u8 {
+    let Some(spec) = text(spec_ptr, spec_len).and_then(|text| Spec::parse(&text).ok()) else {
+        return std::ptr::null_mut();
+    };
+    if orbit_ptr.is_null() || index_ptr.is_null() || count == 0 {
+        return std::ptr::null_mut();
+    }
+    let bytes = unsafe { std::slice::from_raw_parts(orbit_ptr, orbit_len) };
+    let Some(orbit) = unpack_reference(bytes) else {
+        return std::ptr::null_mut();
+    };
+    // Read as bytes, so the list need not be four-byte aligned in the heap.
+    let raw = unsafe { std::slice::from_raw_parts(index_ptr, count as usize * 4) };
+    let indices: Vec<u32> = raw
+        .chunks_exact(4)
+        .map(|word| u32::from_le_bytes([word[0], word[1], word[2], word[3]]))
+        .collect();
+    match compute_listed(&spec, &orbit, &indices) {
+        Some(out) => release(out),
+        None => std::ptr::null_mut(),
+    }
 }
 
 // ------------------------------------------------- the minibrots in and around a view
@@ -1909,6 +2027,93 @@ mod tests {
         // Half a parameter is not a parameter.
         let half = ANCHOR.replace(r#""schema": 1"#, r#""schema": 1, "julia_re": "0.25""#);
         assert!(Spec::parse(&half).unwrap_err().contains("julia_im"));
+    }
+
+    // ------------------------------------------------------------- the sample list
+
+    /// **A listed sample is the band's sample, bit for bit**, at every degree, on both
+    /// planes, with the interior switch either way, and supersampled: every index of the
+    /// grid, listed in a scrambled order, lands on the eight bytes `compute_rows` wrote.
+    #[test]
+    fn a_listed_sample_is_the_bands_sample_to_the_bit() {
+        let shallow = r#"{"schema": 1,
+            "center_re": "-0.743643887037158704752191506114774",
+            "center_im": "0.131825904205311970493132056385139",
+            "width": 1e-6, "resolution": [24, 14], "maxiter": 3000"#;
+        let mut specs = Vec::new();
+        for degree in 2..=6 {
+            for interior in [false, true] {
+                specs.push(format!(
+                    r#"{shallow}, "degree": {degree}, "interior": {interior}}}"#
+                ));
+            }
+        }
+        specs.push(format!(
+            r#"{shallow}, "supersample": 2, "interior": true}}"#
+        ));
+        let small = |text: &str| {
+            text.replace(r#""resolution": [480, 270]"#, r#""resolution": [20, 12]"#)
+                .replace(r#""schema": 1"#, r#""schema": 1, "maxiter": 4000"#)
+        };
+        specs.push(small(ANCHOR));
+        specs.push(small(
+            &ANCHOR.replace(r#""schema": 1"#, r#""schema": 1, "interior": true"#),
+        ));
+        specs.push(small(&julia_spec()));
+        specs.push(small(
+            &julia_spec().replace(r#""schema": 1"#, r#""schema": 1, "degree": 3"#),
+        ));
+        for text in &specs {
+            let spec = Spec::parse(text).unwrap();
+            let orbit = spec.reference_orbit().unwrap();
+            let rows = compute_rows(&spec, &orbit, 0, spec.sample_height());
+            let total = spec.sample_width() * spec.sample_height();
+            // A fixed scramble: 7 is prime to every total here.
+            let indices: Vec<u32> = (0..total).map(|k| (k * 7 + 3) % total).collect();
+            let listed = compute_listed(&spec, &orbit, &indices).unwrap();
+            for (k, &index) in indices.iter().enumerate() {
+                let at = index as usize * 8;
+                assert_eq!(
+                    &listed[k * 8..k * 8 + 8],
+                    &rows[at..at + 8],
+                    "{text} at {index}"
+                );
+            }
+            // `BAND_RAN` is not compared here: it is one static, and the test harness
+            // runs other bands beside this one. The wasm check compares it.
+        }
+    }
+
+    #[test]
+    fn a_list_outside_the_grid_or_empty_is_refused() {
+        let spec = Spec::parse(&ANCHOR.replace("[480, 270]", "[8, 4]")).unwrap();
+        let orbit = Reference {
+            points: vec![[0.0, 0.0]; 4],
+            escaped: false,
+            periodic: false,
+            period_residual: 0.0,
+            limbs: 0,
+        };
+        assert!(compute_listed(&spec, &orbit, &[]).is_none());
+        assert!(compute_listed(&spec, &orbit, &[0, 32]).is_none());
+        assert!(compute_listed(&spec, &orbit, &[31]).is_some());
+    }
+
+    /// `plan` says where `dc` comes from in numbers that round-trip: the offset the band
+    /// reads, the entry, and the plane's own `f64`s.
+    #[test]
+    fn plan_carries_the_frames_dc_constants() {
+        let report = plan_text(&julia_spec());
+        assert!(report.contains(r#""entry":1"#), "{report}");
+        assert!(report.contains(r#""offset_re":0e0"#), "{report}");
+        assert!(report.contains(r#""width":2e-11"#), "{report}");
+        assert!(report.contains(r#""interior_floor":-64"#), "{report}");
+        let object = json::object(&report).unwrap();
+        let spec = Spec::parse(&julia_spec()).unwrap();
+        match object.get("spacing") {
+            Some(Value::Num(value)) => assert_eq!(*value, spec.width / 480.0),
+            other => panic!("{other:?}"),
+        }
     }
 
     /// `plan`'s report, read back as text.

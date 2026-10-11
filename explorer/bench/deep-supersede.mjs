@@ -57,7 +57,10 @@ const NOTCH = `(() => {
 })()`;
 
 async function load(page, query) {
-  await page.evaluate(`location.href = ${JSON.stringify(BASE + query)}`);
+  // `kernel=cpu` *(gpu_deep_ship_ckpt162)*: the supersede costs measured here are the CPU
+  // pool's, and `entry` asks two loads for one raster, which a GPU self-test still running at
+  // one load and done at the other would answer from two kernels.
+  await page.evaluate(`location.href = ${JSON.stringify(`${BASE}${query}&kernel=cpu`)}`);
   await sleep(500);
   await page.until(`!!document.getElementById("deep-progress") && document.querySelector(".viewer.is-deep") !== null`, { within: 60000 });
   await page.evaluate(TRACE);

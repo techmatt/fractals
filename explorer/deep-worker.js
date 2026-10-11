@@ -258,6 +258,52 @@ function handle(message) {
     return;
   }
 
+  // **A list of samples rather than a range of rows** *(gpu_deep_ship_ckpt162)*. What a GPU
+  // pass leaves running is scattered across the frame, and rows would redo most of it, so
+  // the CPU finishes it a sample at a time: `indices` is a transferred `Uint32Array`'s
+  // buffer of global sample indices (`row · sampleWidth + col`), and the answer is one
+  // little-endian `f64` per index, in list order — each the eight bytes a band covering
+  // that sample writes (`compute_samples` in `perturb-wasm/src/lib.rs`). The orbit is
+  // borrowed exactly as a band borrows it.
+  if (message.kind === "samples") {
+    const { spec } = message;
+    const list = new Uint8Array(message.indices);
+    const count = list.length / 4;
+    if (orbit === null || count === 0) {
+      answer(message, { count, refused: true });
+      return;
+    }
+    const started = performance.now();
+    const at = wasm.alloc(list.length);
+    new Uint8Array(wasm.memory.buffer, at, list.length).set(list);
+    let pointer;
+    try {
+      pointer = withText(spec, (specPointer, specLength) =>
+        wasm.compute_samples(specPointer, specLength, orbit.pointer, orbit.length, at, count),
+      );
+    } finally {
+      wasm.dealloc(at, list.length);
+    }
+    if (pointer === 0) {
+      answer(message, { count, refused: true });
+      return;
+    }
+    const values = new Uint8Array(wasm.memory.buffer, pointer, count * 8).slice().buffer;
+    wasm.dealloc(pointer, count * 8);
+    answer(
+      message,
+      {
+        count,
+        values,
+        elapsed: performance.now() - started,
+        ran: wasm.band_ran(),
+        saved: wasm.band_saved(),
+      },
+      [values],
+    );
+    return;
+  }
+
   if (message.kind === "drop") {
     release();
     answer(message, {});

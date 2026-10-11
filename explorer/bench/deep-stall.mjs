@@ -307,7 +307,8 @@ page.on((m) => {
   }
 });
 try {
-  await page.send("Page.navigate", { url: BASE + FRAME });
+  // The CPU pool's stalls are what this drives *(gpu_deep_ship_ckpt162)*.
+  await page.send("Page.navigate", { url: `${BASE}${FRAME}&kernel=cpu` });
   await sleep(1500);
   if (process.env.LOG) await page.evaluate(`localStorage.setItem("explorer.deep-log", "1")`);
   const up = await page.until(`!!document.getElementById("deep-stats")?.textContent`, { within: 120000 });

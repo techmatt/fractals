@@ -364,7 +364,9 @@ async function armed(page, { id, when }, actions) {
 const MISS = 2;
 
 async function trial(page, scenario, at, offset, actions) {
-  await page.send("Page.navigate", { url: `http://localhost:${page.port}/explorer/?${scenario.link}` });
+  // `kernel=cpu` on both loads *(gpu_deep_ship_ckpt162)*: the race is the CPU pool's, and the
+  // page takes the key off the address, so `after.url` never carries it.
+  await page.send("Page.navigate", { url: `http://localhost:${page.port}/explorer/?${scenario.link}&kernel=cpu` });
   await sleep(100);
   if (!(await moment(page, MOMENTS.start))) return { error: "the studio never came up" };
   if (scenario.before) await scenario.before(page);
@@ -388,7 +390,7 @@ async function trial(page, scenario, at, offset, actions) {
   if (!reached) return { error: `the moment ${at} never came`, fired };
   const after = await rest(page);
   if (after === null) return { error: "never came to rest", fired };
-  await page.send("Page.navigate", { url: `http://localhost:${page.port}/explorer/?${after.url}` });
+  await page.send("Page.navigate", { url: `http://localhost:${page.port}/explorer/?${after.url}&kernel=cpu` });
   await sleep(100);
   await moment(page, MOMENTS.start);
   const fresh = await rest(page);

@@ -52,6 +52,7 @@ import * as dives from "./dives.js";
 import { Trail } from "./undo.js";
 import { heldOut, stopOf } from "./outermost.js";
 import { tracker } from "./pointers.js";
+import { takeKernel } from "./deep-gpu.js";
 import {
   PREVIEW_DIVISOR,
   Renderer,
@@ -4291,6 +4292,7 @@ async function mountDeep() {
         y: at("deep-y"),
         w: at("deep-w"),
         capSaid: at("deep-cap-said"),
+        kernel: at("deep-kernel"),
         julia: at("deep-julia"),
         origin: at("deep-origin"),
         minibrots: at("deep-minibrots"),
@@ -4310,6 +4312,8 @@ async function mountDeep() {
         diveStatus: at("dive-status"),
       },
       context: deepContext,
+      // `?kernel=cpu|gpu`, taken off the address at load (`KERNEL`): a debugging override.
+      kernel: KERNEL,
       grid: () => grid,
       compose,
       shading: () => renderer.shading,
@@ -6111,6 +6115,19 @@ const DEMO = (() => {
   return true;
 })();
 
+/** `?kernel=cpu|gpu` *(gpu_deep_ship_ckpt162)*: which kernel the Deep tab draws with, for
+ *  debugging and the harnesses, and no part of the link contract. Taken off the address
+ *  here, before either link reader sees it (both refuse a key they do not know), so no
+ *  link, copy or save carries it; `deep-gpu.js`'s `takeKernel` is the one spelling, and
+ *  `deep-gpu.test.mjs` holds it. `null` is the ordinary rule: the GPU where it passed. */
+const KERNEL = (() => {
+  const { kernel, search } = takeKernel(window.location.search);
+  if (search !== window.location.search) {
+    history.replaceState(null, "", `${window.location.pathname}${search}${window.location.hash}`);
+  }
+  return kernel;
+})();
+
 async function json(url) {
   try {
     const response = await fetch(url);
@@ -6284,7 +6301,7 @@ async function main() {
       view: () => deep.view(),
       query: () => deep.link(),
       plan: (width, height, supersample) => deep.plan(width, height, supersample),
-      measured: () => deep.measured(),
+      measured: (samples) => deep.measured(samples),
       shown: () => deep.shown(),
       finalSupersample: () => deep.finalSupersample(),
       picture: (width, height, options) => deep.picture(width, height, options),

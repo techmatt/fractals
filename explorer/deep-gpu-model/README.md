@@ -1,11 +1,15 @@
 # deep-gpu-model
 
-A native Rust model of the WebGPU kernel the Deep tab would use as a fast preview, and,
-once that shader exists, its oracle. It restates `perturb`'s perturbation kernel
+A native Rust model of the WebGPU kernel the Deep tab draws its full passes with, and that
+kernel's oracle *(gpu_deep_ship_ckpt162)*. It restates `perturb`'s perturbation kernel
 (`explorer/perturb-wasm`) in the only types WGSL has, runs it natively, and measures it
-against `perturb`'s own `f64` kernel sample for sample. Nothing here is on the page: the
-shipped Deep path, its wasm, its links, and its pictures are untouched by this crate, which
-uses `perturb` as a library for the reference orbit and for the kernel it is compared with.
+against `perturb`'s own `f64` kernel sample for sample. The shader is
+`explorer/deep-gpu-wgsl.js`, the double-single loop and its interior proof line for line,
+and the page reaches this crate only through bytes it exported: the self-test a page load
+runs before the GPU may draw (`explorer/deep-gpu-selftest/`, written by its `export.mjs`)
+is this model's output, word for word. Nothing here is compiled into the page, and the
+crate uses `perturb` as a library for the reference orbit and for the kernel it is compared
+with.
 
 **The frontier, as measured** (the runs and the numbers are under "The frontier as
 measured", below): on the site's Deep frames `f32` shows no depth limit, though the deep
@@ -347,18 +351,42 @@ level that refuses the pixel. A list of orders, or `--gate both`, runs each vari
 
 ### Exporting for the GPU bench page
 
-`export` writes what `explorer/bench/gpu-probe/` reads. `--vectors FILE` writes
-`ds::self_test_vectors()` as the page's `vectors.json`. `--frames FILE[,FILE..] --ids a,b
---res WxH --cap-max N --out DIR` writes, per frame, `<id>.manifest.json` and `<id>.bin`
+`export` writes what the page's GPU path and its bench pages read; `export --help` has
+every flag. `--vectors FILE` writes `ds::self_test_vectors()` as a `vectors.json`, and
+`--extra-vectors on` adds the primitives those 31 cases leave out (`two_sqr`, `ds_sqr`,
+`ds_mul_f32`), derived from their inputs. `--frames FILE[,FILE..] --ids a,b --res WxH
+--cap-max N --out DIR` writes, per frame, `<id>.manifest.json` and `<id>.bin`
 (little-endian arrays at 16-byte-aligned offsets the manifest names): the `Frame` and
 `FrameLo` uniforms as their `#[repr(C)]` bytes, the orbit as `F32Pair` and as `HiLo`, and
 per pixel the `f32` kernel's and the double-single kernel's `n`, `frac`, `status` and
-`steps`, and each kernel's whole state but the proof as `f32_state` and `ds_state` (no skip
-table, unbounded budget), beside `perturb`'s `f64` smooth count and
-iterations; and an `index.json` over every manifest in the directory. The frame is built by
-`compare::spec_for`, so it is the frame `compare` runs. Every bundle is read back from
-disk and a spread of pixels re-run from its bytes alone, bit for bit, before the run goes
-on. Bundles go under the repository's ignored `artifacts/`, never a tracked path.
+`steps`, each kernel's whole state as `f32_state` and `ds_state`, and the double-single
+state's proof as `ds_proof` (18 words a pixel; no skip table, unbounded budget), beside
+`perturb`'s `f64` smooth count and iterations; and an `index.json` over every manifest in
+the directory. The frame is built by `compare::spec_for`, so it is the frame `compare`
+runs. Every bundle is read back from disk and a spread of pixels re-run from its bytes
+alone, bit for bit, before the run goes on.
+
+Four flags shape a bundle for its reader. `--interior on` compiles the proof in, and
+`--interior-policy cap|flag|handoff` says what a sample the proof gives up on becomes
+(`handoff`, `GATED` and back to the CPU, is the Deep tab's). `--slim on` writes only
+`frame`, `frame_lo`, `orbit_hilo`, `ds_state` and `ds_proof`, which is all a device test
+reads. `--ftz-check on` runs the double-single kernel a second time with x86's flush-to-zero
+and denormals-are-zero set, and records in the manifest how many pixels' state, and apart
+from it how many `frac`s, that moves (`ftz`; a full bundle also carries `ds_state_ftz` and
+`ds_proof_ftz`): a GPU that flushes subnormals, as D3D12 does, matches the flushing run and
+not the plain one wherever the two differ.
+
+Three readers. **The self-test** is tracked: `node explorer/deep-gpu-selftest/export.mjs`
+writes the vectors and two slim frames into `explorer/deep-gpu-selftest/` with `--ftz-check
+on`, refuses a frame that flushing moves (it would fail on a flushing GPU for no defect),
+and rewrites nothing on a rerun of an unchanged model. **The kernel check**,
+`explorer/bench/gpu-probe/kernel-check.html` (driven headless by
+`explorer/bench/deep-gpu-check.mjs`), runs the shipped kernel against the self-test and
+then against whatever bundles `export --interior on` wrote under the repository's ignored
+`artifacts/deep-gpu-check/`, word for word, and says by name when there are none.
+**The probe**, `explorer/bench/gpu-probe/index.html`, is stage 2's rate and agreement page
+and reads bundles without the proof. Bundles other than the self-test's go under the
+ignored `artifacts/`, never a tracked path.
 
 ### The runs behind the frontier
 
@@ -750,17 +778,19 @@ exponent per point beside the `vec4`, read only where `Z` is rescaled into the d
 units, so that nothing flushes; it touches the per-pixel path and waits for a frame that
 needs it.
 
-**The WGSL port** (`explorer/bench/gpu-probe/kernel-wgsl.js`) has not followed, and
-nothing in WGSL has yet run a flush above 125. The port has no proof, so it reads no
-flush at all: neither manifest field reaches it, and the proof's flush arithmetic
-(`Mag::pow2(-flush)`, `scale(p, FLUSH_STEP - flush)`, plain `i32` exponents up to 1021)
-is expressible there and untested on a GPU. A port of the proof reads its own orbit's
-field, `flush` beside `F32Pair` and `flush_hilo` beside `HiLo`. The kernels themselves
-want two edits for the probe to keep agreeing with the model bit for bit on a frame like
-the D frames: the four gate tests (reconstruct and rebase, in each kernel) want the same
-`ez == -127 ||` as `reads_scaled`, and the two careful steps want `careful_unit`'s
-`select(max(ez, ed), ed, ez == -127)`. Until then the probe disagrees with the model
-wherever a stored zero meets `s < -187`, or a careful step at one meets `ed < -127`.
+**The WGSL ports have followed** *(gpu_deep_ship_ckpt162, Phase 3)*. The shipped kernel,
+`explorer/deep-gpu-wgsl.js`, carries both edits — the four gate tests read
+`ez == -127 ||` beside the gate as `reads_scaled` does, and the careful steps take
+`careful_unit`'s `select(max(ez, ed), ed, ez == -127)` — and ports the proof, which reads
+its own orbit's flush (`flush_hilo` beside `HiLo`) through the same `Mag::pow2(-flush)` and
+`scale(p, FLUSH_STEP - flush)`. On the RTX 2060 SUPER it ran the first proofs with a flush
+above 125 (the D frames at 267 and 320, `Dedge-3e-23` at 139) and matched the model word
+for word, `frac` apart. The bench's own `f32` scheme, `explorer/bench/gpu-probe/
+kernel-wgsl.js`, carries the two edits too, and imports its double-single kernel from the
+shipped module. One port detail had to be added to reach bit identity in the proof: WGSL's
+`sqrt` is not correctly rounded, so radii came out 1 to 90 ulps off; the port's `sqrt_rn`
+corrects it on the one domain the proof takes a root over. Soundness never rested on it,
+since `UP_SQRT` covers WGSL's `sqrt`.
 
 ### On a GPU (`explorer/bench/gpu-probe/`)
 

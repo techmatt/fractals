@@ -16,6 +16,7 @@
 
 import { ARITY, CASE_STRIDE, FORMS, OPS, WORKGROUP, source } from "./ds-wgsl.js";
 import { ESCAPED, KERNEL_FORMS, RUNNING, STATE_BYTES, STATE_NAMES, kernelSource } from "./kernel-wgsl.js";
+import { PARAMS_BYTES, paramsBytes } from "../../deep-gpu-wgsl.js";
 
 const query = new URLSearchParams(location.search);
 /** A comma-separated query parameter, or `fallback` when it is absent. */
@@ -404,11 +405,13 @@ class Bench {
     this.frame = upload(bundle.arrays.frame, usage.UNIFORM);
     this.frameLo = upload(bundle.arrays.frame_lo, usage.UNIFORM);
     this.orbits = { f32: upload(bundle.arrays.orbit_f32pair, usage.STORAGE), ds: upload(bundle.arrays.orbit_hilo, usage.STORAGE) };
-    this.params = device.createBuffer({ size: 32, usage: usage.UNIFORM | usage.COPY_DST });
+    this.params = device.createBuffer({ size: PARAMS_BYTES, usage: usage.UNIFORM | usage.COPY_DST });
     const maxState = Math.max(STATE_BYTES.f32, STATE_BYTES.ds);
     this.states = device.createBuffer({ size: this.count * maxState, usage: usage.STORAGE | usage.COPY_SRC });
     this.counters = device.createBuffer({ size: 16, usage: usage.STORAGE | usage.COPY_SRC | usage.COPY_DST });
     this.list = device.createBuffer({ size: this.count * 4, usage: usage.STORAGE });
+    // The shipped layout's `out`, which only `emit` writes and the probe never dispatches.
+    this.out = device.createBuffer({ size: this.count * 8, usage: usage.STORAGE });
     this.indirect = device.createBuffer({ size: 16, usage: usage.STORAGE | usage.INDIRECT });
     // Per pass: the pixels still running after it, and the delta steps it took.
     this.counts = device.createBuffer({ size: BATCH_MAX * 8, usage: usage.COPY_SRC | usage.COPY_DST });
@@ -429,6 +432,7 @@ class Bench {
         entry(4, "storage"),
         entry(5, "storage"),
         entry(6, "storage"),
+        entry(7, "storage"),
       ],
     });
     // The indirect arguments are a group of their own, bound only by `args`: a buffer may
@@ -446,6 +450,7 @@ class Bench {
           { binding: 4, resource: { buffer: this.states, size: this.count * STATE_BYTES[scheme] } },
           { binding: 5, resource: { buffer: this.counters } },
           { binding: 6, resource: { buffer: this.list } },
+          { binding: 7, resource: { buffer: this.out } },
         ],
       });
     }
@@ -455,7 +460,7 @@ class Bench {
 
   destroy() {
     for (const b of [this.frame, this.frameLo, this.orbits.f32, this.orbits.ds, this.params, this.states, this.counters]) b.destroy();
-    for (const b of [this.list, this.indirect, this.counts, this.countsRead]) b.destroy();
+    for (const b of [this.list, this.out, this.indirect, this.counts, this.countsRead]) b.destroy();
     if (this.timestamps) {
       this.query.destroy();
       this.resolve.destroy();
@@ -497,10 +502,8 @@ class Bench {
     const device = this.device;
     const m = this.bundle.manifest;
     const p = await this.pipelinesFor(scheme, form, workgroup, smooth);
-    const params = new ArrayBuffer(32);
-    new Uint32Array(params, 0, 4).set([budget, m.periodic ? 1 : 0, m.orbit_len, this.count]);
-    new Float32Array(params, 16, 2).set([1.0, 0.0]);
-    new Uint32Array(params, 24, 2).set([0, 0]);
+    // The flush term is the proof's alone, and neither kernel here runs it.
+    const params = paramsBytes({ budget, periodic: m.periodic, length: m.orbit_len, count: this.count, flush: 0 });
     device.queue.writeBuffer(this.params, 0, params);
     const groups = Math.ceil(this.count / workgroup);
     const group = this.groups[scheme];
@@ -840,6 +843,14 @@ async function runKernel({ device, timestamps }, log, selftest) {
       continue;
     }
     const m = bundle.manifest;
+    if (m.interior) {
+      // The probe runs both kernels with the switch compiled out; `kernel-check.html` holds
+      // the shipped kernel, proof and all, to an interior bundle.
+      log("");
+      log(`${m.id}: written with the interior switch on; kernel-check.html runs it`);
+      report.frames.push({ id: m.id, error: "interior bundle" });
+      continue;
+    }
     const bench = new Bench(device, timestamps, bundle);
     const frameReport = { id: m.id, stem: bundle.stem, degree: m.degree, julia: m.julia, width_px: m.width_px, height_px: m.height_px, cap: m.cap, orbit_len: m.orbit_len, periodic: m.periodic, schemes: {} };
     report.frames.push(frameReport);

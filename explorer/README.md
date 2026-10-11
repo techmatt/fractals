@@ -161,6 +161,9 @@ walk.js               the Walk tab: a simplified mining pipeline, run here and w
 deep.js               the Deep tab: the Mandelbrot set below the f64 floor — see below
 deep-render.js        its pool, its one reference orbit a frame, and its shade spec
 deep-worker.js        one worker: one perturb instance, one held orbit, one band
+deep-gpu.js           the GPU: device, page-load self-test, passes, the CPU's share
+deep-gpu-wgsl.js      the GPU kernel's text: deep-gpu-model's double-single loop in WGSL
+deep-gpu-selftest/    the self-test's vectors and two exported frames, and how they were made
 deep-fx.js            exact decimal coordinates, BigInt fixed point
 deep-link.js          the deep link contract, its own beside the shallow one
 deep-gallery.js       the Deep tab's gallery: the register read, grouped and tiled
@@ -203,6 +206,7 @@ deep-fx.test.mjs      13 tests: the Deep tab's arithmetic is exact where a doubl
 deep-link.test.mjs    45 tests: the deep contract, the shallow one held to not moving,
                       and the gallery register held to the deep one
 deep.test.mjs         30 tests: where the two modules meet, against both committed ones
+deep-gpu.test.mjs     22 tests: the GPU path's frame, orbit, passes and tail, and the kernel key
 hold.test.mjs         7 tests: a held move keeps the colour at the reference value
 fit.test.mjs          15 tests: a fit runs the palette its passes across Leveled's stretch
 dives.test.mjs        21 tests: the Dive block's chains, draws and results, and Random dives
@@ -227,8 +231,9 @@ perturb.wasm          generated: the perturbation kernel, compiled
 perturb.manifest.json generated: what perturb.wasm was built from
 engine-wasm/          the crate that produces engine.wasm
 perturb-wasm/         the crate that produces perturb.wasm — see The Deep tab
-deep-gpu-model/       a native model of a GPU kernel for the Deep tab, measured against
-                      perturb; no module, nothing on the page — its README
+deep-gpu-model/       a native model of the Deep tab's GPU kernel, measured against
+                      perturb; deep-gpu-wgsl.js is its port, and its bundles are the self-test
+                      — its README
 bench/                the timing harnesses — see Measured
 bench/showcase.mjs    the showcase video's tour, captured and assembled — see Demo mode
 bench/hunt/           the bug hunt's own: lib.mjs, eight units, four probes
@@ -3468,7 +3473,12 @@ depends on it.
 ```
 deep.js            the tab: state, the staged passes, the gestures, the pending frame
 deep-render.js     the pool, the orbit per frame, and the shade spec's placeholder viewport
-deep-worker.js     one worker: one perturb instance, one held orbit, one band
+deep-worker.js     one worker: one perturb instance, one held orbit, one band, or a list of
+                   samples a GPU frame hands back
+deep-gpu.js        the GPU: the device, the self-test that earns it, the passes, the tail
+                   and a lost device handed to the CPU, and the ?kernel=cpu|gpu override
+deep-gpu-wgsl.js   the kernel's WGSL, deep-gpu-model's double-single loop and proof
+deep-gpu-selftest/ the vectors and two exported frames the page-load self-test runs
 deep-fx.js         exact decimal coordinates, BigInt fixed point
 deep-link.js       the deep link contract — parse, emit, canonicalize, describe
 deep-gallery.js    the gallery under the tab's sentence, and deep-gallery.jsonl its register
@@ -3478,6 +3488,7 @@ deep-link.test.mjs 45 tests: the contract, the shallow one held to not moving, a
 deep.test.mjs      30 tests: where the two modules meet, against both committed ones —
                    and the cap policy's seam, which fails the same way the rest of
                    this file does, by drawing a plausible picture
+deep-gpu.test.mjs  22 tests: the GPU path's frame, orbit, passes, tail, health and key
 bench/julia.mjs    what a Julia frame costs against the Mandelbrot frame at the same c
 bench/deep-stall.mjs  a colour change reaches the canvas through every pass, cancel and
                    undo sequence that once lost one — one of two bench files that assert
@@ -3489,11 +3500,17 @@ bench/recolour-race.mjs  the other: at rest, the canvas is a fresh load of the a
 bench/link-fidelity.mjs  and a third: every tab driven through its common actions, and
                    after each the address, what Copy link copied and what Save kept,
                    each a fresh load that redraws the same canvas (link_fidelity_ckpt157)
+bench/deep-gpu-agree.mjs  the GPU kernel's picture against the CPU kernel's, frame by
+                   frame on a real adapter, by stage 2's visible-pixel rule
+bench/visible.mjs  that rule, on two canvases
+bench/deep-gpu-check.mjs  the shipped GPU kernel held to deep-gpu-model word for word on a
+                   real adapter, by driving bench/gpu-probe/kernel-check.html and its .js
+                   headless: the self-test, then any bundles under artifacts/deep-gpu-check/
 perturb.wasm       generated: the perturbation kernel, compiled
 perturb.manifest.json  generated: what perturb.wasm was built from
 perturb-wasm/      the crate that produces it
-deep-gpu-model/    perturb's kernel restated in f32 for a GPU, measured against it; it
-                   builds no module and nothing here loads it — its README
+deep-gpu-model/    perturb's kernel restated for a GPU, measured against it; it builds no
+                   module, and deep-gpu-wgsl.js is its port line for line — its README
 ```
 
 `python -m builder explorer --perturb` rebuilds the module and its manifest and nothing
@@ -4646,6 +4663,45 @@ fresh; the canvases are compared exactly and then as block means, `recolour-race
 rule. It asserts, with a non-zero exit, and it is no part of `builder check`: it needs a
 browser and about ten minutes. `--only=phoenix,saved` narrows it, `--no-walk` skips the
 walk's run.
+
+**It proves the CPU kernel, and only that** *(gpu_deep_ship_ckpt162)*. Every load it makes
+carries `kernel=cpu`, so both browsers' Deep tabs draw on `perturb.wasm` whatever adapter the
+machine has, and a rest whose Details line says the GPU drew it is a `GPU` verdict and a
+failure rather than a `close` that passes. `recolour-race.mjs`, `deep-stall.mjs`, and
+`deep-supersede.mjs` load the same way, since what each of them holds is the CPU pool's.
+Whether the GPU draws the same picture is a different question with a different answer —
+close, not exact — and it is the next harness's.
+
+```
+PORT=8000 node explorer/bench/deep-gpu-agree.mjs    # GPU against CPU, 24 frames
+node explorer/bench/deep-gpu-check.mjs              # the kernel against its model, word for word
+```
+
+**`deep-gpu-agree.mjs` holds the GPU kernel to the CPU kernel by what a reader sees.** One
+headless Chrome loads each frame with `kernel=cpu`, rests, and reads the canvas, then loads
+it with `kernel=gpu` and does the same, and compares the two by stage 2's visible-pixel rule
+(`bench/visible.mjs`; `deep-gpu-model/README.md`, "The visible metric"): a pixel is visible
+when its largest channel moves by more than 8/255 and by more than its own contrast with its
+four neighbours in the CPU picture, and a frame **matches** at 1% visible and is
+**acceptable** at 5%. The frames are committed literals: stage 2's views past 1e-50,
+including D, the degree-3 minibrot whose interior the kernel's proof settles; the published
+deep links, `go:julia3-end` among them; a Mandelbrot and a Julia frame at every degree from 2
+to 6; `random-dives#337`, the long tail the tail rule was measured on; and `siegel-M 1e-6`,
+the golden-mean Siegel boundary, where long chaotic orbits swap capped and escaped samples
+between double-single and `f64` in both directions and which sits nearest the 1% line
+(0.88% when the Phase 3 review found it). A GPU load whose Details line says the CPU drew
+it is a **named skip** with the GPU's own reason, and a browser with no adapter skips the
+whole run by name. It exits non-zero past 5% and lists every frame past 1%; it needs an
+adapter, so it is no part of `builder check` or CI. `--only=<name>,<name>` narrows it.
+
+**`deep-gpu-check.mjs` holds the kernel to its model rather than to the CPU's picture.** It
+drives `bench/gpu-probe/kernel-check.html` headless, which compiles the shipped
+`deep-gpu-wgsl.js` and runs the page-load self-test's vectors and frames, then every bundle
+`deep-gpu-model`'s `export --interior on` wrote under the ignored `artifacts/deep-gpu-check/`,
+at two budget schedules each, and compares every pixel's whole state with the model's, word
+for word, `frac` apart. On a clone those bundles do not exist until an export has run, and
+the page says so by name and checks the self-test alone (`deep-gpu-model/README.md`,
+"Exporting for the GPU bench page", has the flags). It exits 1 when any run differs.
 
 The Phoenix link that started it was right about its own picture: `c = p = 0` is a disk,
 and the frame sat inside it. It was the gallery seat's link that was wrong — seventeen seats
@@ -6663,7 +6719,7 @@ already public and matched, and the engine's fingerprint is unmoved.
 
 ## The test suites
 
-Nineteen suites here and `atlas/atlas.test.mjs` beside them, on Node's own runner with
+Twenty suites here and `atlas/atlas.test.mjs` beside them, on Node's own runner with
 nothing installed. `CLAUDE.md` and `.github/workflows/checks.yml` carry the command line.
 
 - `pointers.test.mjs` holds the pointer bookkeeping the viewer and the Phoenix plane share:
@@ -6727,6 +6783,16 @@ nothing installed. `CLAUDE.md` and `.github/workflows/checks.yml` carry the comm
   writes are the ones `engine.wasm` colours, `shade_level` cannot see the placeholder
   viewport it is given, and the deep kernel's sample grid is the engine's, with a frame
   nudged a tenth of a pixel as the control that proves the test has teeth.
+- `deep-gpu.test.mjs` holds the Deep tab's GPU path where no GPU is needed: the `Frame`,
+  `FrameLo` and HiLo orbit `deep-gpu.js` builds are byte for byte the ones
+  `deep-gpu-model` exported for the tracked self-test frames, read off `perturb.wasm`'s own
+  plan; a sample's `out` word becomes the CPU kernel's lane; passes stay in their bounds
+  and land on the step checkpoints where the tail rule is asked; a lost device is retried
+  until the second loss, and an acquisition that failed for the moment until the third; a
+  frame waits on a self-test still running for half the CPU's expected cost of it, within
+  bounds; every self-test vector is what a JavaScript reference of the same
+  double-single arithmetic gives; and `?kernel=` is taken off the address before either
+  link reader sees it, so no link written from the view carries it.
 
 ## Rebuilding
 

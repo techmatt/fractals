@@ -1,0 +1,51 @@
+{
+ "what": "The Deep tab's GPU self-test, written by explorer/deep-gpu-selftest/export.mjs out of explorer/deep-gpu-model. A device passes when every vector comes back bit for bit and every frame, run at each budget schedule, leaves every pixel's state word for word the model's, frac alone excepted.",
+ "vectors": {
+  "file": "vectors.json",
+  "cases": 45
+ },
+ "budgets": [
+  [
+   37,
+   37
+  ],
+  [
+   1,
+   4096
+  ]
+ ],
+ "frames": [
+  {
+   "id": "selftest-d3-nucleus-edge",
+   "manifest": "selftest-d3-nucleus-edge.manifest.json",
+   "bin": "selftest-d3-nucleus-edge.bin",
+   "classes": {
+    "running": 0,
+    "escaped": 6,
+    "capped": 278,
+    "interior": 274,
+    "gated": 18
+   },
+   "flush_hilo": 0
+  },
+  {
+   "id": "selftest-d2-julia-rabbit",
+   "manifest": "selftest-d2-julia-rabbit.manifest.json",
+   "bin": "selftest-d2-julia-rabbit.bin",
+   "classes": {
+    "running": 0,
+    "escaped": 0,
+    "capped": 0,
+    "interior": 144,
+    "gated": 0
+   },
+   "flush_hilo": 0
+  }
+ ],
+ "commands": [
+  "cargo build --release --bin export (in explorer/deep-gpu-model)",
+  "export --vectors ../deep-gpu-selftest/vectors.json --extra-vectors on",
+  "export --frames ../deep-gpu-selftest/frames.jsonl --ids selftest-d3-nucleus-edge --res 32x18 --interior on --interior-policy flag --slim on --ftz-check on --verify 100000 --out ../deep-gpu-selftest",
+  "export --frames ../deep-gpu-selftest/frames.jsonl --ids selftest-d2-julia-rabbit --res 16x9 --interior on --interior-policy cap --slim on --ftz-check on --verify 100000 --out ../deep-gpu-selftest"
+ ]
+}

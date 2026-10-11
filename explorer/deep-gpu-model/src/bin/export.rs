@@ -26,7 +26,7 @@ use std::path::{Path, PathBuf};
 use std::time::Instant;
 
 use deep_gpu_model::compare::{self, FrameSpec, Options, agree, par_rows, run_f64, safe_name};
-use deep_gpu_model::frame::{Frame, FrameLo};
+use deep_gpu_model::frame::{Frame, FrameLo, GatedPolicy};
 use deep_gpu_model::model::{self, CAPPED, ESCAPED, GATED, INTERIOR, PixelState, RUNNING};
 use deep_gpu_model::model_ds::{self, DsPixelState};
 use deep_gpu_model::orbit::{Encoding, GpuOrbit};
@@ -45,6 +45,15 @@ export: the GPU bench page's inputs, out of the model.
   --cap-max N              lower each frame's own cap to at most N
   --interior on|off        perturb's interior switch on all three kernels (default off);
                            on is compare's default policy, cap
+  --interior-policy P      cap, flag or handoff: what a gated sample the proof never
+                           closes on becomes in the two models (default cap)
+  --ftz-check on|off       also run the double-single kernel with subnormals flushed
+                           (x86 FTZ and DAZ, what a GPU that flushes does) and record in
+                           the manifest how many pixels that moves (default off)
+  --slim on|off            write only frame, frame_lo, orbit_hilo, ds_state and ds_proof
+                           (default off): a self-test bundle
+  --extra-vectors on|off   with --vectors, also the primitives the 31 cases leave out
+                           (two_sqr, ds_sqr, ds_mul_f32), derived from their inputs
   --threads N              worker threads (default: all)
   --verify N               pixels re-run from the written bytes, spread over the frame
                            (default 256; 0 skips the check)
@@ -101,8 +110,15 @@ fn run() -> Result<(), String> {
     let parse_u32 =
         |k: &str| -> Result<Option<u32>, String> { get(k).map(|v| count(k, &v)).transpose() };
 
+    let switch = |k: &str| -> Result<bool, String> {
+        match get(k).as_deref() {
+            None | Some("off") => Ok(false),
+            Some("on") => Ok(true),
+            Some(_) => Err(format!("--{k} is on or off")),
+        }
+    };
     if let Some(path) = get("vectors") {
-        let n = write_vectors(Path::new(&path))?;
+        let n = write_vectors(Path::new(&path), switch("extra-vectors")?)?;
         println!("vectors: {n} cases to {path}");
     }
     let Some(files) = get("frames") else {
@@ -138,7 +154,15 @@ fn run() -> Result<(), String> {
             _ => return Err("--interior is on or off".into()),
         };
     }
+    if let Some(v) = get("interior-policy") {
+        opts.interior_policy =
+            GatedPolicy::parse(&v).ok_or("--interior-policy is cap, flag or handoff")?;
+    }
     let verify = parse_u32("verify")?.unwrap_or(256);
+    let shape = Shape {
+        ftz: switch("ftz-check")?,
+        slim: switch("slim")?,
+    };
 
     let mut rows: Vec<FrameSpec> = Vec::new();
     for path in files.split(',').map(str::trim) {
@@ -154,7 +178,7 @@ fn run() -> Result<(), String> {
             .find(|r| r.id == id)
             .ok_or_else(|| format!("no row has id {id}"))?;
         let t0 = Instant::now();
-        let bundle = build(row, &opts)?;
+        let bundle = build(row, &opts, shape)?;
         let base = safe_name(&row.id);
         let bin_path = out.join(format!("{base}.bin"));
         fs::write(&bin_path, &bundle.bin).map_err(|e| e.to_string())?;
@@ -165,11 +189,18 @@ fn run() -> Result<(), String> {
         let text = fs::read_to_string(&manifest_path).map_err(|e| e.to_string())?;
         let checked = check(&written, &text, verify, opts.threads)?;
         println!(
-            "{id}: {} bytes, orbit {} points, cap {}, {} pixels re-run and equal, {:.1} s",
+            "{id}: {} bytes, orbit {} points, cap {}, {} pixels re-run and equal,{} {:.1} s",
             bundle.bin.len(),
             bundle.orbit_len,
             bundle.frame.maxiter,
             checked,
+            match bundle.ftz {
+                Some(f) => format!(
+                    " flushing subnormals moves {} pixels' state (frac apart) and {} fracs,",
+                    f.differ, f.frac_differ
+                ),
+                None => String::new(),
+            },
             t0.elapsed().as_secs_f64()
         );
     }
@@ -177,12 +208,56 @@ fn run() -> Result<(), String> {
     Ok(())
 }
 
+/// The primitives the kernel runs that [`ds::self_test_vectors`] does not case, derived
+/// from its own inputs so that they reach the same corners: `two_sqr` of every
+/// `two_prod` case's first input, and `ds_sqr` and `ds_mul_f32` (by `b.hi`) of every
+/// `ds_mul` case's operands. Like the 31 they are the model's no-FMA arithmetic, bit for
+/// bit; unlike them, none was chosen to tell a fused or reassociated evaluation apart.
+fn extra_vectors(
+    cases: &[(&'static str, Vec<u32>, Vec<u32>)],
+) -> Vec<(&'static str, Vec<u32>, Vec<u32>)> {
+    let f = f32::from_bits;
+    let b = |x: f32| x.to_bits();
+    let mut out = Vec::new();
+    for (op, input, _) in cases {
+        match *op {
+            "two_prod" => {
+                let (p, e) = ds::two_sqr(f(input[0]));
+                out.push(("two_sqr", vec![input[0]], vec![b(p), b(e)]));
+            }
+            "ds_mul" => {
+                let a = ds::from_hi_lo(f(input[0]), f(input[1]));
+                let r = ds::sqr(a);
+                out.push(("ds_sqr", vec![input[0], input[1]], vec![b(r.hi), b(r.lo)]));
+                let r = ds::mul_f32(a, f(input[2]));
+                out.push((
+                    "ds_mul_f32",
+                    vec![input[0], input[1], input[2]],
+                    vec![b(r.hi), b(r.lo)],
+                ));
+            }
+            _ => {}
+        }
+    }
+    out
+}
+
 /// The self-test vectors in the page's format: one case per line, inputs and outputs as
-/// `u32` bit patterns. Returns the number of cases.
-fn write_vectors(path: &Path) -> Result<usize, String> {
-    let cases = ds::self_test_vectors();
-    let mut text = String::from(
-        "{\n \"generator\": \"deep-gpu-model ds::self_test_vectors (src/ds.rs), written by export --vectors\",\n \"cases\": [\n",
+/// `u32` bit patterns, with [`extra_vectors`] after the 31 when `extra`. Returns the
+/// number of cases.
+fn write_vectors(path: &Path, extra: bool) -> Result<usize, String> {
+    let mut cases = ds::self_test_vectors();
+    if extra {
+        let more = extra_vectors(&cases);
+        cases.extend(more);
+    }
+    let mut text = format!(
+        "{{\n \"generator\": \"deep-gpu-model ds::self_test_vectors (src/ds.rs){}, written by export --vectors\",\n \"cases\": [\n",
+        if extra {
+            " and export's extra_vectors (two_sqr, ds_sqr, ds_mul_f32)"
+        } else {
+            ""
+        }
     );
     for (k, (op, input, output)) in cases.iter().enumerate() {
         let list = |v: &[u32]| {
@@ -339,11 +414,58 @@ struct Bundle {
     arrays: Vec<Array>,
     /// What the manifest says about the run, as JSON members (no braces).
     summary: String,
+    /// The flushing re-run, when asked for.
+    ftz: Option<Ftz>,
+    slim: bool,
+}
+
+/// What a bundle holds beyond the default, from the command line.
+#[derive(Debug, Clone, Copy)]
+struct Shape {
+    /// Re-run the double-single kernel with subnormals flushed ([`with_flush`]).
+    ftz: bool,
+    /// Only what a GPU self-test reads.
+    slim: bool,
+}
+
+/// How far flushing subnormals moves the double-single kernel on a frame: pixels whose
+/// state (all fourteen words but `frac`, and the proof's eighteen) differ, and pixels
+/// whose `frac` does. A frame a GPU self-test is held to bit for bit wants both zero, or a
+/// GPU that flushes would fail a test it has not failed.
+#[derive(Debug, Clone, Copy)]
+struct Ftz {
+    differ: usize,
+    frac_differ: usize,
+}
+
+/// Runs `f` with this thread's `f32` arithmetic flushing subnormals the way a GPU that
+/// flushes does: results to zero (MXCSR FTZ) and inputs read as zero (DAZ). The model
+/// keeps subnormals; nothing else here changes. x86-64 only.
+#[cfg(target_arch = "x86_64")]
+fn with_flush<T>(f: impl FnOnce() -> T) -> T {
+    // MXCSR bit 15 is flush-to-zero, bit 6 denormals-are-zero. `_mm_setcsr` is an
+    // `ldmxcsr` with side effects, which no float operation inside `f`'s non-inlined
+    // kernel is moved across.
+    #[allow(deprecated)]
+    // SAFETY: SSE is part of x86-64; the old control word is restored before returning.
+    unsafe {
+        use std::arch::x86_64::{_mm_getcsr, _mm_setcsr};
+        let old = _mm_getcsr();
+        _mm_setcsr(old | 0x8040);
+        let out = f();
+        _mm_setcsr(old);
+        out
+    }
+}
+
+#[cfg(not(target_arch = "x86_64"))]
+fn with_flush<T>(_f: impl FnOnce() -> T) -> T {
+    panic!("--ftz-check needs x86-64's MXCSR");
 }
 
 /// The frame as `compare` runs it, both kernels and `perturb` over every pixel, and the
 /// `.bin` that holds the inputs and the results.
-fn build(row: &FrameSpec, opts: &Options) -> Result<Bundle, String> {
+fn build(row: &FrameSpec, opts: &Options, shape: Shape) -> Result<Bundle, String> {
     let spec = compare::spec_for(row, opts)?;
     let reference = spec.reference_orbit()?;
     let pair = GpuOrbit::from_reference(&reference, Encoding::F32Pair);
@@ -370,12 +492,151 @@ fn build(row: &FrameSpec, opts: &Options) -> Result<Bundle, String> {
             .collect()
     });
     let ds_s = t.elapsed().as_secs_f64();
+    let mut flushed_states: Vec<DsPixelState> = Vec::new();
+    let ftz = if shape.ftz {
+        let flushed: Vec<DsPixelState> = par_rows(frame.height_px, opts.threads, |row| {
+            with_flush(|| {
+                (0..frame.width_px)
+                    .map(|col| model_ds::run_pixel_ds(&frame, &lo, &hilo, col, row, u32::MAX))
+                    .collect()
+            })
+        });
+        let mut f = Ftz {
+            differ: 0,
+            frac_differ: 0,
+        };
+        for (a, b) in ds_states.iter().zip(&flushed) {
+            let (x, y) = (a.bits(), b.bits());
+            // Word 8 is `frac`.
+            let state = (0..14).any(|k| k != 8 && x[k] != y[k]) || a.proof.bits() != b.proof.bits();
+            f.differ += state as usize;
+            f.frac_differ += (x[8] != y[8]) as usize;
+        }
+        flushed_states = flushed;
+        Some(f)
+    } else {
+        None
+    };
 
     let pixels = f32_states.len();
     let points = pair.len();
     let mut bin = Bin::default();
     bin.push("frame", "u8", 64, frame_bytes(&frame));
     bin.push("frame_lo", "u8", 32, frame_lo_bytes(&lo));
+    if shape.slim {
+        bin.push(
+            "orbit_hilo",
+            "f32",
+            points * 4,
+            le_f32(hilo.points.iter().flat_map(|p| *p)),
+        );
+        bin.push(
+            "ds_state",
+            "u32",
+            pixels * 14,
+            le_u32(ds_states.iter().flat_map(DsPixelState::bits)),
+        );
+        bin.push(
+            "ds_proof",
+            "u32",
+            pixels * 18,
+            le_u32(ds_states.iter().flat_map(|s| s.proof.bits())),
+        );
+    } else {
+        push_full(&mut bin, &pair, &hilo, &f32_states, &ds_states, &f64_field);
+        // The flushed run's whole state, so that a GPU which flushes can be held to it on
+        // exactly the pixels the flush moves.
+        if shape.ftz {
+            bin.push(
+                "ds_state_ftz",
+                "u32",
+                pixels * 14,
+                le_u32(flushed_states.iter().flat_map(DsPixelState::bits)),
+            );
+            bin.push(
+                "ds_proof_ftz",
+                "u32",
+                pixels * 18,
+                le_u32(flushed_states.iter().flat_map(|s| s.proof.bits())),
+            );
+        }
+    }
+    let classes = |status: &mut dyn Iterator<Item = u32>| {
+        let mut c = [0usize; 5];
+        for s in status {
+            c[s.min(4) as usize] += 1;
+        }
+        format!(
+            "{{\"running\":{},\"escaped\":{},\"capped\":{},\"interior\":{},\"gated\":{}}}",
+            c[RUNNING as usize],
+            c[ESCAPED as usize],
+            c[CAPPED as usize],
+            c[INTERIOR as usize],
+            c[GATED as usize]
+        )
+    };
+    let closeness = |smooth: &[f64]| {
+        let a = agree(&f64_field.smooth, smooth);
+        format!(
+            "{{\"both_escaped\":{},\"class_changes\":{},\"p50\":{},\"p99\":{},\"max\":{},\"over_0.1\":{:.5},\"over_1\":{:.5}}}",
+            a.both_escaped,
+            a.f64_only_escaped + a.model_only_escaped,
+            num(a.p50),
+            num(a.p99),
+            num(a.max),
+            a.over[1],
+            a.over[2]
+        )
+    };
+    let mean = |v: &mut dyn Iterator<Item = u32>| {
+        let (sum, n) = v.fold((0f64, 0usize), |(s, n), x| (s + x as f64, n + 1));
+        sum / n.max(1) as f64
+    };
+    let f32_smooth: Vec<f64> = f32_states.iter().map(model::smooth_f64).collect();
+    let ds_smooth: Vec<f64> = ds_states.iter().map(model_ds::smooth_f64_ds).collect();
+    let summary = format!(
+        "\"f64\":{{\"escaped\":{},\"mean_iterations\":{:.1},\"wall_s\":{:.3}}},\"f32\":{{\"classes\":{},\"mean_steps\":{:.1},\"vs_f64\":{},\"wall_s\":{:.3}}},\"ds\":{{\"classes\":{},\"mean_steps\":{:.1},\"vs_f64\":{},\"wall_s\":{:.3}}}",
+        f64_field.smooth.iter().filter(|x| !x.is_nan()).count(),
+        mean(&mut f64_field.iterations.iter().copied()),
+        f64_s,
+        classes(&mut f32_states.iter().map(|s| s.status)),
+        mean(&mut f32_states.iter().map(|s| s.steps)),
+        closeness(&f32_smooth),
+        f32_s,
+        classes(&mut ds_states.iter().map(|s| s.status)),
+        mean(&mut ds_states.iter().map(|s| s.steps)),
+        closeness(&ds_smooth),
+        ds_s
+    );
+
+    Ok(Bundle {
+        row: row.clone(),
+        spec,
+        frame,
+        lo,
+        orbit_len: points,
+        periodic: pair.periodic,
+        flush: pair.flush,
+        flush_hilo: hilo.flush,
+        bin: bin.bytes,
+        arrays: bin.arrays,
+        summary,
+        ftz,
+        slim: shape.slim,
+    })
+}
+
+/// Every array a full bundle carries after the two uniforms.
+fn push_full(
+    bin: &mut Bin,
+    pair: &GpuOrbit,
+    hilo: &GpuOrbit,
+    f32_states: &[PixelState],
+    ds_states: &[DsPixelState],
+    f64_field: &compare::F64Field,
+) {
+    let pixels = f32_states.len();
+    let points = pair.len();
     bin.push(
         "orbit_f32pair",
         "f32",
@@ -462,69 +723,14 @@ fn build(row: &FrameSpec, opts: &Options) -> Result<Bundle, String> {
         le_u32(f64_field.iterations.iter().copied()),
     );
 
-    // How each kernel came out and how far it is from `f64`: what the page's own numbers
-    // should be near, before it has measured anything.
-    let classes = |status: &mut dyn Iterator<Item = u32>| {
-        let mut c = [0usize; 5];
-        for s in status {
-            c[s.min(4) as usize] += 1;
-        }
-        format!(
-            "{{\"running\":{},\"escaped\":{},\"capped\":{},\"interior\":{},\"gated\":{}}}",
-            c[RUNNING as usize],
-            c[ESCAPED as usize],
-            c[CAPPED as usize],
-            c[INTERIOR as usize],
-            c[GATED as usize]
-        )
-    };
-    let closeness = |smooth: &[f64]| {
-        let a = agree(&f64_field.smooth, smooth);
-        format!(
-            "{{\"both_escaped\":{},\"class_changes\":{},\"p50\":{},\"p99\":{},\"max\":{},\"over_0.1\":{:.5},\"over_1\":{:.5}}}",
-            a.both_escaped,
-            a.f64_only_escaped + a.model_only_escaped,
-            num(a.p50),
-            num(a.p99),
-            num(a.max),
-            a.over[1],
-            a.over[2]
-        )
-    };
-    let mean = |v: &mut dyn Iterator<Item = u32>| {
-        let (sum, n) = v.fold((0f64, 0usize), |(s, n), x| (s + x as f64, n + 1));
-        sum / n.max(1) as f64
-    };
-    let f32_smooth: Vec<f64> = f32_states.iter().map(model::smooth_f64).collect();
-    let ds_smooth: Vec<f64> = ds_states.iter().map(model_ds::smooth_f64_ds).collect();
-    let summary = format!(
-        "\"f64\":{{\"escaped\":{},\"mean_iterations\":{:.1},\"wall_s\":{:.3}}},\"f32\":{{\"classes\":{},\"mean_steps\":{:.1},\"vs_f64\":{},\"wall_s\":{:.3}}},\"ds\":{{\"classes\":{},\"mean_steps\":{:.1},\"vs_f64\":{},\"wall_s\":{:.3}}}",
-        f64_field.smooth.iter().filter(|x| !x.is_nan()).count(),
-        mean(&mut f64_field.iterations.iter().copied()),
-        f64_s,
-        classes(&mut f32_states.iter().map(|s| s.status)),
-        mean(&mut f32_states.iter().map(|s| s.steps)),
-        closeness(&f32_smooth),
-        f32_s,
-        classes(&mut ds_states.iter().map(|s| s.status)),
-        mean(&mut ds_states.iter().map(|s| s.steps)),
-        closeness(&ds_smooth),
-        ds_s
+    // The interior proof's eighteen words, in `Proof::bits`'s order: with the switch on, a
+    // port of the proof is held to these word for word as well.
+    bin.push(
+        "ds_proof",
+        "u32",
+        pixels * 18,
+        le_u32(ds_states.iter().flat_map(|s| s.proof.bits())),
     );
-
-    Ok(Bundle {
-        row: row.clone(),
-        spec,
-        frame,
-        lo,
-        orbit_len: points,
-        periodic: pair.periodic,
-        flush: pair.flush,
-        flush_hilo: hilo.flush,
-        bin: bin.bytes,
-        arrays: bin.arrays,
-        summary,
-    })
 }
 
 fn num(x: f64) -> String {
@@ -566,13 +772,13 @@ fn manifest(b: &Bundle, base: &str) -> String {
     format!(
         "{{\"format\":\"{FORMAT}\",\"id\":{},\"manifest\":\"{base}.manifest.json\",\"bin\":\"{base}.bin\",\"bin_bytes\":{},\
 \"width\":{:e},\"degree\":{},\"julia\":{},\"width_px\":{},\"height_px\":{},\"cap\":{},\"interior\":{},\
-\"orbit_len\":{},\"periodic\":{},\"flush\":{},\"flush_hilo\":{},\n\
+\"orbit_len\":{},\"periodic\":{},\"flush\":{},\"flush_hilo\":{},\"interior_policy\":\"{}\",\"slim\":{},\"ftz\":{},\n\
 \"spec\":{{\"re\":{},\"im\":{},\"w\":{:e},\"julia_re\":{},\"julia_im\":{},\"anchor\":\"{}\",\"link\":{}}},\n\
 \"frame\":{{\"width_px\":{},\"height_px\":{},\"offset_m\":[{:e},{:e}],\"spacing_m\":{:e},\"sc\":{},\"maxiter\":{},\"degree\":{},\"julia\":{},\"entry\":{},\"interior\":{},\"floor\":{},\"margins\":{}}},\n\
 \"frame_lo\":{{\"offset_lo\":[{:e},{:e}],\"spacing_lo\":{:e},\"pad\":{},\"margins\":{}}},\n\
 \"pixel_order\":\"row-major, index = row * width_px + col, row 0 at the top (dc's imaginary part largest)\",\n\
 \"status_codes\":{{\"running\":{RUNNING},\"escaped\":{ESCAPED},\"capped\":{CAPPED},\"interior\":{INTERIOR},\"gated\":{GATED}}},\n\
-\"expected\":\"f32_*: model::run_pixel on orbit_f32pair with frame; ds_*: model_ds::run_pixel_ds on orbit_hilo with frame and frame_lo; both unbounded budget, no skip table. f32_state and ds_state: PixelState::bits and DsPixelState::bits per pixel, 12 and 14 u32, the GPU structs' order. smooth = n + frac where status is escaped. f64_smooth: perturb's f64 kernel, NaN where it did not escape\",\n\
+\"expected\":\"f32_*: model::run_pixel on orbit_f32pair with frame; ds_*: model_ds::run_pixel_ds on orbit_hilo with frame and frame_lo; both unbounded budget, no skip table. f32_state and ds_state: PixelState::bits and DsPixelState::bits per pixel, 12 and 14 u32, the GPU structs' order; ds_proof: the double-single state's Proof::bits, 18 u32 a pixel. smooth = n + frac where status is escaped. f64_smooth: perturb's f64 kernel, NaN where it did not escape. A slim bundle carries frame, frame_lo, orbit_hilo, ds_state and ds_proof only. ftz: pixels whose double-single state moves (frac and frac alone counted apart) when subnormals are flushed, or null when not checked\",\n\
 \"arrays\":[\n{}\n],\n\
 {}}}\n",
         quote(&b.row.id),
@@ -588,6 +794,23 @@ fn manifest(b: &Bundle, base: &str) -> String {
         b.periodic,
         b.flush,
         b.flush_hilo,
+        if f.interior == 0 {
+            "off"
+        } else {
+            match f.interior {
+                x if x == GatedPolicy::Flag.code() => "flag",
+                x if x == GatedPolicy::Handoff.code() => "handoff",
+                _ => "cap",
+            }
+        },
+        b.slim,
+        match b.ftz {
+            Some(z) => format!(
+                "{{\"differ\":{},\"frac_differ\":{}}}",
+                z.differ, z.frac_differ
+            ),
+            None => "null".into(),
+        },
         quote(&b.spec.center_re),
         quote(&b.spec.center_im),
         b.spec.width,
@@ -661,15 +884,21 @@ fn check(bytes: &[u8], manifest: &str, samples: u32, threads: usize) -> Result<u
         },
     };
     let f = f32::from_bits;
-    let pair = orbit(
-        Encoding::F32Pair,
-        words(at("orbit_f32pair")?)
-            .as_chunks::<2>()
-            .0
-            .iter()
-            .map(|p| [f(p[0]), f(p[1]), 0.0, 0.0])
-            .collect(),
-    );
+    // A slim bundle has no `F32Pair` orbit and no `f32` kernel to hold.
+    let full = arrays.contains_key("orbit_f32pair");
+    let pair = if full {
+        Some(orbit(
+            Encoding::F32Pair,
+            words(at("orbit_f32pair")?)
+                .as_chunks::<2>()
+                .0
+                .iter()
+                .map(|p| [f(p[0]), f(p[1]), 0.0, 0.0])
+                .collect(),
+        ))
+    } else {
+        None
+    };
     let hilo = orbit(
         Encoding::HiLo,
         words(at("orbit_hilo")?)
@@ -681,19 +910,30 @@ fn check(bytes: &[u8], manifest: &str, samples: u32, threads: usize) -> Result<u
     );
 
     let expected = |name: &str| at(name).map(words);
-    let (f32_n, f32_frac, f32_status, f32_steps) = (
-        expected("f32_n")?,
-        expected("f32_frac")?,
-        expected("f32_status")?,
-        expected("f32_steps")?,
-    );
-    let (ds_n, ds_frac, ds_status, ds_steps) = (
-        expected("ds_n")?,
-        expected("ds_frac")?,
-        expected("ds_status")?,
-        expected("ds_steps")?,
-    );
-    let (f32_state, ds_state) = (expected("f32_state")?, expected("ds_state")?);
+    let ([f32_n, f32_frac, f32_status, f32_steps], [ds_n, ds_frac, ds_status, ds_steps], f32_state) =
+        if full {
+            (
+                ["f32_n", "f32_frac", "f32_status", "f32_steps"].map(expected),
+                ["ds_n", "ds_frac", "ds_status", "ds_steps"].map(expected),
+                expected("f32_state")?,
+            )
+        } else {
+            let none = || Ok(Vec::new());
+            (
+                [none(), none(), none(), none()],
+                [none(), none(), none(), none()],
+                Vec::new(),
+            )
+        };
+    let (f32_n, f32_frac, f32_status, f32_steps) = (f32_n?, f32_frac?, f32_status?, f32_steps?);
+    let (ds_n, ds_frac, ds_status, ds_steps) = (ds_n?, ds_frac?, ds_status?, ds_steps?);
+    let ds_state = expected("ds_state")?;
+    // Bundles written before the proof was exported have no `ds_proof`.
+    let ds_proof = if arrays.contains_key("ds_proof") {
+        Some(expected("ds_proof")?)
+    } else {
+        None
+    };
     let pixels = (frame.width_px * frame.height_px) as usize;
     let take = (samples as usize).min(pixels);
     if take == 0 {
@@ -704,18 +944,24 @@ fn check(bytes: &[u8], manifest: &str, samples: u32, threads: usize) -> Result<u
     let fails: Vec<String> = par_rows(take as u32, threads, |k| {
         let i = picks[k as usize];
         let (col, row) = ((i as u32) % frame.width_px, (i as u32) / frame.width_px);
-        let a = model::run_pixel(&frame, &pair, col, row, u32::MAX);
-        let b = model_ds::run_pixel_ds(&frame, &lo, &hilo, col, row, u32::MAX);
         let mut bad = Vec::new();
-        if [a.n, a.frac.to_bits(), a.status, a.steps]
-            != [f32_n[i], f32_frac[i], f32_status[i], f32_steps[i]]
-            || a.bits()[..] != f32_state[12 * i..12 * (i + 1)]
-        {
-            bad.push(format!("f32 pixel ({col}, {row}) differs"));
+        if let Some(pair) = &pair {
+            let a = model::run_pixel(&frame, pair, col, row, u32::MAX);
+            if [a.n, a.frac.to_bits(), a.status, a.steps]
+                != [f32_n[i], f32_frac[i], f32_status[i], f32_steps[i]]
+                || a.bits()[..] != f32_state[12 * i..12 * (i + 1)]
+            {
+                bad.push(format!("f32 pixel ({col}, {row}) differs"));
+            }
         }
-        if [b.n, b.frac.to_bits(), b.status, b.steps]
-            != [ds_n[i], ds_frac[i], ds_status[i], ds_steps[i]]
+        let b = model_ds::run_pixel_ds(&frame, &lo, &hilo, col, row, u32::MAX);
+        if (full
+            && [b.n, b.frac.to_bits(), b.status, b.steps]
+                != [ds_n[i], ds_frac[i], ds_status[i], ds_steps[i]])
             || b.bits()[..] != ds_state[14 * i..14 * (i + 1)]
+            || ds_proof
+                .as_ref()
+                .is_some_and(|p| b.proof.bits()[..] != p[18 * i..18 * (i + 1)])
         {
             bad.push(format!("ds pixel ({col}, {row}) differs"));
         }
@@ -810,13 +1056,81 @@ mod tests {
     }
 
     fn small(row: &str, res: [u32; 2], cap: u32) -> Bundle {
+        shaped(row, res, cap, false, FULL)
+    }
+
+    const FULL: Shape = Shape {
+        ftz: false,
+        slim: false,
+    };
+
+    fn shaped(row: &str, res: [u32; 2], cap: u32, interior: bool, shape: Shape) -> Bundle {
         let opts = Options {
             resolution: res,
             cap: Some(cap),
-            interior: false,
+            interior,
+            interior_policy: GatedPolicy::Flag,
             ..Options::default()
         };
-        build(&FrameSpec::from_row(row).unwrap(), &opts).unwrap()
+        build(&FrameSpec::from_row(row).unwrap(), &opts, shape).unwrap()
+    }
+
+    /// A slim bundle with the interior switch on carries the proof's words, re-runs from
+    /// its own bytes to every one of them, and a flipped proof bit is caught; the flushing
+    /// re-run finds nothing to move on a frame whose deltas stay far above `2^-126`.
+    #[test]
+    fn a_slim_bundle_holds_the_proof() {
+        let row =
+            r#"{"id":"p","re":"-0.1225611668766536","im":"0.7448617666197442","w":1e-9,"n":4000}"#;
+        let b = shaped(
+            row,
+            [12, 8],
+            4000,
+            true,
+            Shape {
+                ftz: true,
+                slim: true,
+            },
+        );
+        let text = manifest(&b, "p");
+        let arrays = arrays_of(&text).unwrap();
+        assert!(!arrays.contains_key("orbit_f32pair") && !arrays.contains_key("f32_state"));
+        assert_eq!(check(&b.bin, &text, 96, 4).unwrap(), 96);
+        let ftz = b.ftz.unwrap();
+        assert_eq!((ftz.differ, ftz.frac_differ), (0, 0));
+        let (offset, bytes) = arrays["ds_proof"];
+        assert_eq!(bytes, 96 * 18 * 4);
+        // Something was proved, so the proof words are not all idle.
+        let words = words(&b.bin[offset..offset + bytes]);
+        assert!(words.chunks(18).any(|p| p[17] != 0));
+        let mut bad = b.bin.clone();
+        bad[offset + 4 * 18 * 5] ^= 1;
+        assert!(check(&bad, &text, 96, 4).is_err());
+    }
+
+    /// The extra vectors are the model's own primitives on the 31 cases' inputs.
+    #[test]
+    fn extra_vectors_are_the_models() {
+        let cases = ds::self_test_vectors();
+        let extra = extra_vectors(&cases);
+        assert_eq!(extra.len(), 6 + 4 + 4);
+        for (op, input, output) in &extra {
+            let f = f32::from_bits;
+            let a = ds::from_hi_lo(f(input[0]), input.get(1).map_or(0.0, |&u| f(u)));
+            let got = match *op {
+                "two_sqr" => {
+                    let (p, e) = ds::two_sqr(f(input[0]));
+                    [p, e]
+                }
+                "ds_sqr" => [ds::sqr(a).hi, ds::sqr(a).lo],
+                "ds_mul_f32" => {
+                    let r = ds::mul_f32(a, f(input[2]));
+                    [r.hi, r.lo]
+                }
+                other => panic!("{other}"),
+            };
+            assert_eq!(got.map(f32::to_bits).to_vec(), *output, "{op}");
+        }
     }
 
     /// The uniforms are written field by field and land exactly where `#[repr(C)]` puts

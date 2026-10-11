@@ -50,6 +50,7 @@
 import * as fx from "./deep-fx.js";
 import * as deepLink from "./deep-link.js";
 import { BODY_TARGET, DeepRenderer, bodyShare, deepSpecOf } from "./deep-render.js";
+import { DeepGpu } from "./deep-gpu.js";
 import {
   HOLD_MS,
   SAVE_COUNT,
@@ -315,6 +316,16 @@ export function mount(host) {
 
   let renderer = null;
   let starting = null;
+  /** The page's GPU *(gpu_deep_ship_ckpt162)*: acquired and self-tested in the background
+   *  when the pool starts, and handed to the renderer, which asks it per field. `kernel` is
+   *  `?kernel=cpu|gpu`, a debugging override that `explorer.js` took off the address. */
+  let gpu = null;
+  /** A partial picture's shade in flight, so that the next is skipped rather than queued. */
+  let partialShading = false;
+  /** While a partial of the GPU's full stage is up, the picture it covered — the quarter
+   *  pass's — which is what a cancelled or failed stage puts back: a partial is not a
+   *  picture of anything, and must not outlive its stage. `null` otherwise. */
+  let underPartial = null;
 
   /** The view the picture on screen is of, once one has been drawn. */
   let drawn = null;
@@ -364,6 +375,8 @@ export function mount(host) {
    * stops answering the moment the frame or its cap moves.
    */
   let measure = null;
+  /** The same, for the last full stage the GPU drew. */
+  let measureGpu = null;
   /** The last pass's picture at the canvas's own size, once it has landed — what a download
    *  at that size saves instead of drawing it again — and how many samples a pixel it was
    *  drawn at, which is one: the Download row asks, because it may want more. Cleared by
@@ -499,6 +512,20 @@ export function mount(host) {
     canvas.height = image.height;
     canvas.getContext("2d").putImageData(image, 0, 0);
     stale = { canvas, view: of };
+    underPartial = null;
+  }
+
+  /** Take a partial down where its stage did not land: the picture it covered goes back up
+   *  as `stale`. Details still says that picture's stage, which is what it is. */
+  function dropPartial() {
+    if (underPartial === null) return;
+    // Only where the partial is still what is up: anything that has put a picture up since
+    // has said what it is.
+    const { under, shown } = underPartial;
+    underPartial = null;
+    if (stale !== shown) return;
+    stale = under;
+    if (owns) paint();
   }
 
   /**
@@ -563,6 +590,32 @@ export function mount(host) {
    * and read again after it — a tint made while the shade was running shades once more,
    * which is milliseconds against the field it saves.
    */
+  /**
+   * **The full stage's picture as the GPU's passes land** *(gpu_deep_ship_ckpt162)*: the
+   * samples finished so far, the quarter pass's in place of the rest, shaded at the level
+   * the quarter pass set (never derived, so the stretch does not jump) and put up. Nothing
+   * else moves: no hold, no cache, no finished picture, since this is not the frame yet. A
+   * shade still running when the next partial is due skips that one, and one landing after
+   * the stage has finished is dropped.
+   */
+  function showPartial(deep, partial, frame, generation) {
+    if (generation !== pass || partialShading) return;
+    partialShading = true;
+    deep
+      .shade({ ...partial, values: partial.values.slice() }, inColour(frame), {}, { derive: false })
+      .then((shaded) => {
+        if (shaded === null || generation !== pass || running?.stage !== "full") return;
+        const under = underPartial?.under ?? stale;
+        keep(shaded.image, frame);
+        underPartial = { under, shown: stale };
+        paint();
+      })
+      .catch(() => {})
+      .finally(() => {
+        partialShading = false;
+      });
+  }
+
   async function shadeNow(deep, field, frame, generation) {
     for (;;) {
       const inked = inColour(frame);
@@ -609,6 +662,7 @@ export function mount(host) {
     clearMinibrots();
     const which = entry.full ? "full pass" : "quarter pass";
     stat(`${which} ${entry.canvas.width}×${entry.canvas.height} · put back without drawing · cap ${count(view.maxiter)}${ceilingSaid(view)}`);
+    sayKernel(entry.full ? entry.field : null);
     host.showState("final");
     host.settle();
     syncControls();
@@ -680,10 +734,29 @@ export function mount(host) {
     // clears itself.
     starting ??= (async () => {
       activity("starting the deep renderer…");
+      // The GPU's self-test runs beside the pool's start and never ahead of it: nothing
+      // here waits on it, and a frame asks whether it passed only when it is ready to draw.
+      if (gpu === null) {
+        gpu = new DeepGpu({
+          kernel: host.kernel ?? null,
+          log: (event, detail) => log(event, detail),
+          // The kernels a frame most often wants, compiled once the self-test has passed so
+          // the first such frame does not pay for it: degree two, the switch on and off.
+          warm: [
+            { degree: 2, julia: false, interior: true },
+            { degree: 2, julia: false, interior: false },
+          ],
+        });
+        // A harness that asked for a kernel may reach the device; a reader never does.
+        if (host.kernel != null) globalThis.__deepGpu = gpu;
+      }
+      gpu.start();
       renderer = await DeepRenderer.start(
         new URL("./perturb.wasm", import.meta.url),
         host.shading(),
       );
+      renderer.gpu = gpu;
+      renderer.onGpu = (kernel, detail) => log(`field on the ${kernel}`, detail);
       return renderer;
     })().catch((error) => {
       starting = null;
@@ -705,6 +778,7 @@ export function mount(host) {
     renderer?.cancel();
     colouring.stop?.();
     colouring = {};
+    dropPartial();
     watch();
     syncControls();
   }
@@ -853,6 +927,8 @@ export function mount(host) {
   async function render(upto, { auto = false, probe = !auto, dive = false, onStage = null } = {}) {
     const generation = ++pass;
     bringing = null;
+    // A pass that supersedes one mid-stage takes its partial down, as `stop()` does.
+    dropPartial();
     const grid = host.grid();
     readLog();
     // **Before the await, not after it.** The pool takes a moment to start on the first
@@ -899,6 +975,9 @@ export function mount(host) {
       // Read off the quarter pass once it has landed; the quarter pass itself asks for the
       // switch, which is what makes its reading the plain loop's too.
       let interior = true;
+      // The quarter field, which a full stage on the GPU shows in place of the samples it
+      // has not finished yet.
+      let quarter = null;
       for (const stage of wanted) {
         const key = deepLink.fieldKey(target, stage.width, stage.height, stage.supersample);
         let field = fields.get(key);
@@ -913,9 +992,14 @@ export function mount(host) {
         activity(`${said_stage(stage)}…`, cached ? span.from + span.width : span.from);
         if (!cached) {
           const started = performance.now();
+          const full = stage.name === "full";
           field = await deep.field(target, stage.width, stage.height, {
             supersample: stage.supersample,
             interior: stage.name === "preview" ? true : interior,
+            // The full stage may go to the GPU, and shows its picture as passes land.
+            gpu: full,
+            preview: full ? quarter : null,
+            onPartial: full ? (partial) => showPartial(deep, partial, target, generation) : null,
             onProgress: (done, elapsed) => {
               if (generation !== pass) return;
               report(stage, done, elapsed);
@@ -930,9 +1014,13 @@ export function mount(host) {
           });
           if (field === null || generation !== pass) return;
           if (stage.name === "preview") quarterMs = performance.now() - started;
+          log("field landed", { stage: stage.name, kernel: field.kernel, handed: field.handed, ms: Math.round(field.elapsed) });
           remember(key, field);
         }
-        if (stage.name === "preview") interior = switchFor(field);
+        if (stage.name === "preview") {
+          interior = switchFor(field);
+          quarter = field;
+        }
         enterStage("coloring", { live: false });
         activity(`${said_stage(stage)} · coloring`, span.from + span.width);
         // A copy each time, because the shade takes the buffer and detaches it, and the one
@@ -954,12 +1042,22 @@ export function mount(host) {
         // `elapsed` is the cost it was measured at, which is still the cost of that
         // geometry at that cap; what makes a measurement stale is the frame moving, and
         // the key is what says so.
-        measure = {
+        //
+        // **Each kernel's stages are measured apart** *(gpu_deep_ship_ckpt162)*: a download
+        // that does not fit the GPU is drawn on the CPU, and scaling its estimate from a GPU
+        // stage would promise it several times too soon; one the GPU takes, scaled from the
+        // CPU's, was promised about sixteen times too late. `measure` is the CPU's (the
+        // quarter pass is always the CPU's, so every drawn frame has one) and `measureGpu`
+        // the GPU's full stage, which the Download row is given only for a picture the GPU
+        // would take (`measured(samples)`).
+        const cost = {
           frame: deepLink.fieldKey(target, 1, 1),
           samples: stage.width * stage.height * stage.supersample * stage.supersample,
           field: field.elapsed / 1000,
           shade: shaded.elapsed / 1000,
         };
+        if (field.kernel === "gpu") measureGpu = cost;
+        else measure = cost;
         // The picture a download at the canvas's own size can save instead of drawing it
         // again: the pass's last stage, and only where that stage is the canvas's own size
         // — a quarter-resolution preview is not a picture of this canvas.
@@ -981,6 +1079,7 @@ export function mount(host) {
       log("finished", { upto });
       host.showState("final");
     } catch (error) {
+      if (generation === pass) dropPartial();
       host.say(String(error.message ?? error));
       console.error("the deep render failed", { view: deepLink.emit(view) }, error);
       log("failed", { message: String(error.message ?? error) });
@@ -1126,6 +1225,8 @@ export function mount(host) {
       const field = await deep.field(target, width, height, {
         supersample,
         interior: switchFor(quarter),
+        // The GPU where the device can hold this size; the renderer keeps the rest.
+        gpu: true,
         onProgress: (done, elapsed) => {
           if (generation !== pass) return;
           report(file, done, elapsed);
@@ -1264,6 +1365,34 @@ export function mount(host) {
       ? `recolored in ${shaded.elapsed.toFixed(0)} ms`
       : `${(field.elapsed / 1000).toFixed(2)} s, shade ${shaded.elapsed.toFixed(0)} ms`;
     stat(`${which} ${size} · ${cost} · cap ${count(target.maxiter)}${ceilingSaid(target)}${cached ? "" : orbitSaid}`);
+    sayKernel(stage.name === "full" ? field : null);
+  }
+
+  /**
+   * Details' line saying which kernel drew the picture up *(gpu_deep_ship_ckpt162)*: one
+   * plain sentence for a full pass, and nothing for a quarter pass, which is always the
+   * CPU's and is not the frame. No reason is given for the CPU: that is the log's. The
+   * field carries `kernel`, so a picture off the cache says what drew it. `data-kernel` is
+   * for the harnesses.
+   */
+  function sayKernel(field) {
+    if (els.kernel == null) return;
+    if (field == null) {
+      els.kernel.textContent = "";
+      delete els.kernel.dataset.kernel;
+      return;
+    }
+    const kernel = field.kernel === "gpu" ? "gpu" : "cpu";
+    els.kernel.dataset.kernel = kernel;
+    if (kernel === "cpu") {
+      els.kernel.textContent = "Drawn on the CPU.";
+      return;
+    }
+    const handed = field.handed ?? 0;
+    els.kernel.textContent =
+      handed === 0
+        ? "Drawn on the GPU in double-single precision."
+        : `Drawn on the GPU in double-single precision; ${count(handed)} ${handed === 1 ? "pixel was" : "pixels were"} finished on the CPU.`;
   }
 
   /** *at the ceiling: x% undecided*, where the probe settled this frame at the ceiling. */
@@ -1276,6 +1405,8 @@ export function mount(host) {
   /** Details' first line. The Deep tab's own, since the shallow Details is not shown here. */
   function stat(text) {
     els.stats.textContent = text;
+    // A cleared stat line is a canvas with no picture, which no kernel drew.
+    if (text === "") sayKernel(null);
   }
 
   /**
@@ -1416,6 +1547,7 @@ export function mount(host) {
     if (running === null) {
       host.showState(current ? "final" : "stopped");
       stat(`${stage.width}×${stage.height} · recolored in ${shaded.elapsed.toFixed(0)} ms · cap ${count(drawn.maxiter)}${ceilingSaid(drawn)}`);
+      sayKernel(full ? field : null);
     }
     host.settle();
     // The frame is drawn now, so the button and the note say so.
@@ -2967,6 +3099,7 @@ export function mount(host) {
       const field = await deep.field(landed.frame, stage.width, stage.height, {
         supersample: 1,
         interior: stage.name === "preview" ? true : interior,
+        gpu: stage.name === "full",
         onProgress: (done, elapsed) => {
           if (generation === pass) report(stage, done, elapsed);
         },
@@ -4110,9 +4243,14 @@ export function mount(host) {
       renderer === null
         ? null
         : renderer.plan(deepSpecOf(view, width, height, { supersample })),
-    /** What a pass of *this* frame cost, or `null` where the last one was of another. */
-    measured: () =>
-      measure !== null && measure.frame === deepLink.fieldKey(view, 1, 1) ? measure : null,
+    /** What a pass of *this* frame cost, or `null` where the last one was of another. Given
+     *  the samples a download would draw, the GPU's own measurement where the GPU would
+     *  take that download and has drawn this frame. */
+    measured: (samples = null) => {
+      const frame = deepLink.fieldKey(view, 1, 1);
+      if (samples !== null && measureGpu?.frame === frame && gpu?.likely(samples)) return measureGpu;
+      return measure !== null && measure.frame === frame ? measure : null;
+    },
     /** The finished picture at the canvas's own size, once the last stage has landed. */
     shown: () => finished,
     /** How many samples a pixel, each way, that picture was drawn at — `0` where there is

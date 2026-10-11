@@ -510,7 +510,9 @@ export function install(context) {
       // bands it has finished and from nothing else. So the row says it has nothing to say
       // until a pass of this frame has been drawn — the quarter pass is enough — rather
       // than offering a number that would be wrong by a factor of a thousand.
-      const known = deep.measured();
+      // Asked with the samples, so that a picture the GPU would draw is priced off the
+      // GPU's own pass of this frame where there was one.
+      const known = deep.measured(samples);
       if (known === null) {
         refuse(
           "not priced yet",

@@ -69,6 +69,7 @@ const READ = `(() => {
   return {
     hash: h, size: c.width + "x" + c.height, blocks, dark: dark / (d.length / 4), spread,
     url: location.search.replace(/^\\?/, ""),
+    kernel: document.getElementById("deep-kernel")?.dataset.kernel ?? null,
     refused: !n.hidden && n.textContent.trim().length > 0 ? n.textContent.trim().slice(0, 200) : null,
   };
 })()`;
@@ -118,7 +119,10 @@ async function until(page, expression, within = 60000) {
 }
 
 async function load(page, query) {
-  await page.send("Page.navigate", { url: `http://localhost:${page.port}/explorer/?${query}` });
+  // `kernel=cpu` *(gpu_deep_ship_ckpt162)*: this harness proves the CPU kernel exactly, so
+  // the Deep tab draws there in both browsers. The page takes the key off the address at
+  // load, so the link read back after a step is the page's own and never carries it.
+  await page.send("Page.navigate", { url: `http://localhost:${page.port}/explorer/?${query}&kernel=cpu` });
   await sleep(150);
   await until(page, UP, 90000);
   // Copy link's clipboard, kept in the page where the harness can read it back.
@@ -472,6 +476,9 @@ async function step(driver, checker, tabName, name, act, within, structured) {
   const again = await rest(checker, within);
   if (again === null) return { ...row, verdict: "BUSY", error: "the fresh load never came to rest" };
   if (again.refused) return { ...row, verdict: "REFUSED", said: again.refused };
+  // What this proves is the CPU kernel exact, so a Deep frame the Details line says the GPU
+  // drew is the override not holding, and fails by name rather than passing as `close`.
+  if (after.kernel === "gpu" || again.kernel === "gpu") return { ...row, verdict: "GPU" };
   const found = compare(after, again);
   Object.assign(row, found, again.url === after.url ? {} : { freshUrl: again.url });
   row.verdict = found.exact ? "exact" : found.mad < MISS && found.worst < 8 * MISS ? "close" : "MISMATCH";

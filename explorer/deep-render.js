@@ -51,6 +51,15 @@ const OPENING_BAND_ROWS = 2;
 const RECUT_OVER = 1.5;
 
 /**
+ * The most samples a chunk of a sample list is cut to before the list has been measured
+ * *(gpu_deep_ship_ckpt162)*: `OPENING_BAND_ROWS`'s reasoning, for the samples a GPU pass
+ * hands back. Those are the frame's slowest by construction — each is still running at a
+ * step checkpoint — so a chunk of them costs far more than the frame's average sample, and
+ * the first chunk to report replaces this with a measurement of the list's own.
+ */
+const OPENING_SAMPLES = 64;
+
+/**
  * The cap policy's probe grid: how many of the frame's own sample cells one rung of the
  * escalation looks at.
  *
@@ -444,6 +453,11 @@ export class DeepRenderer {
     this.heard = performance.now();
     /** Called with every message a worker sends, for the tab's log. `null` is silence. */
     this.onMessage = null;
+    /** The page's GPU (`deep-gpu.js`'s `DeepGpu`), set by the tab; `null` draws every
+     *  field with the bands. */
+    this.gpu = null;
+    /** Called with which kernel a GPU-eligible field went to and why, for the tab's log. */
+    this.onGpu = null;
   }
 
   static async start(url, engineShading, wanted) {
@@ -1215,7 +1229,17 @@ export class DeepRenderer {
     view,
     width,
     height,
-    { supersample = 1, period = null, interior = true, onProgress, onOrbit, onStep } = {},
+    {
+      supersample = 1,
+      period = null,
+      interior = true,
+      gpu = false,
+      preview = null,
+      onPartial = null,
+      onProgress,
+      onOrbit,
+      onStep,
+    } = {},
   ) {
     this.cancel();
     const generation = this.generation;
@@ -1247,6 +1271,20 @@ export class DeepRenderer {
     const shape = this.plan(spec);
     if (!shape.ok) throw new Error(shape.why);
     if (!(await this.#feedAll(generation))) return null;
+
+    // **The GPU, where the caller allows it and the device will take the frame**
+    // *(gpu_deep_ship_ckpt162)*. It fills the same lanes and resolves the same object, so
+    // nothing past this call knows which kernel drew it; `undefined` is a frame it would
+    // not take, which the bands below then draw.
+    if (gpu && this.gpu != null) {
+      const drawn = await this.#gpuField(spec, shape, width, height, supersample, generation, {
+        preview,
+        onPartial,
+        onProgress,
+      });
+      if (drawn !== undefined) return drawn;
+      if (generation !== this.generation) return null;
+    }
 
     const sampleWidth = width * supersample;
     const values = new Float64Array(sampleWidth * height * supersample);
@@ -1340,10 +1378,194 @@ export class DeepRenderer {
         elapsed: performance.now() - job.started,
         ran: job.ran,
         saved: job.saved,
+        kernel: "cpu",
+        handed: 0,
       });
       return;
     }
     this.#dispatch(slot, job);
+  }
+
+  /**
+   * A field drawn on the GPU *(gpu_deep_ship_ckpt162)*: `deep-gpu.js`'s passes, then the
+   * samples it hands back finished here on the CPU by [`samples`], so every lane is either
+   * the GPU kernel's or exactly the CPU kernel's. Resolves the object the bands resolve,
+   * with `kernel: "gpu"` and `handed`, the samples the CPU finished; `null` where the
+   * generation moved; `undefined` where the GPU would not take this frame at all, or lost
+   * its device before reading anything back, so the caller draws it with the bands.
+   *
+   * `ran` and `saved` are `null`: the GPU's steps are not the CPU kernel's iterations,
+   * and the one reader of the pair, the interior switch, reads it off the quarter pass,
+   * which is always the CPU's.
+   */
+  async #gpuField(spec, shape, width, height, supersample, generation, { preview, onPartial, onProgress }) {
+    const gpu = this.gpu;
+    const orbit = this.orbit;
+    const samples = shape.sample_width * shape.sample_height;
+    const refused = await gpu.refuses({
+      samples,
+      degree: shape.degree,
+      interior: shape.interior === true,
+      orbitPoints: orbit === null ? 0 : new DataView(orbit.packed).getUint32(0, true),
+      // How long the CPU took over this frame's quarter pass, which is how long the frame
+      // may wait on a self-test still running.
+      quarterMs: preview?.elapsed ?? null,
+    });
+    if (generation !== this.generation) return null;
+    if (refused !== null || orbit === null) {
+      this.onGpu?.("cpu", { why: refused ?? "no orbit" });
+      return undefined;
+    }
+    const started = performance.now();
+    const values = new Float64Array(samples);
+    let shown = 0;
+    const live = () => generation === this.generation;
+    const said = (fraction) => {
+      // The bar never runs backward: a sample the GPU hands back was counted as done.
+      shown = Math.max(shown, fraction);
+      onProgress?.(shown, performance.now() - started, 0);
+    };
+    const drawn = await gpu.draw({
+      plan: shape,
+      orbit,
+      values,
+      preview,
+      live,
+      onPass: () => {
+        this.heard = performance.now();
+      },
+      onProgress: said,
+      onPartial:
+        onPartial === null
+          ? null
+          : () => onPartial({ values, width, height, supersample, elapsed: performance.now() - started }),
+    });
+    if (!live()) return null;
+    if (drawn.status === "cancelled") return null;
+    if (drawn.status === "unserved" || drawn.handed === null) {
+      this.onGpu?.("cpu", { why: drawn.why ?? drawn.status });
+      return undefined;
+    }
+    const handed = drawn.handed;
+    const settled = (samples - handed.length) / samples;
+    const tail = await this.samples(spec, handed, values, {
+      generation,
+      onProgress: (fraction) => said(settled + (1 - settled) * fraction),
+    });
+    if (tail === null || !live()) return null;
+    this.onGpu?.("gpu", { handed: handed.length, lost: drawn.status === "lost", ms: performance.now() - started });
+    return {
+      values,
+      width,
+      height,
+      supersample,
+      elapsed: performance.now() - started,
+      ran: null,
+      saved: null,
+      kernel: "gpu",
+      handed: handed.length,
+    };
+  }
+
+  /**
+   * Finish a list of samples of a field on the CPU, over the pool, and write each into
+   * `values` at its own index *(gpu_deep_ship_ckpt162)*.
+   *
+   * `spec` is the frame's spec exactly as [`field`] builds it for its bands (an object, or
+   * the JSON text of one); `indices` a `Uint32Array` of global sample indices,
+   * `row · sampleWidth + col`, in the supersampled grid; `values` the field's
+   * `Float64Array`, which every listed index of is overwritten and nothing else of is
+   * touched. Each value is bit for bit the one a band covering that sample computes
+   * (`compute_samples`), so a field finished this way is the CPU's field at every listed
+   * sample.
+   *
+   * **It does not cancel**, unlike [`field`]: it is the second half of a field already in
+   * progress, and runs under that field's `generation` (the current one by default).
+   * Resolves `{ count, elapsed, ran, saved }` — `ran` and `saved` summed over the list,
+   * `null` where a module older than the pair answered — or `null` where the generation
+   * moved on, as everything here does; rejects where the kernel refused the list.
+   * `onProgress(fraction, elapsedMs, samplesDone)` is called as chunks land.
+   */
+  async samples(spec, indices, values, { generation = this.generation, onProgress } = {}) {
+    if (generation !== this.generation) return null;
+    const count = indices.length;
+    if (count === 0) return { count: 0, elapsed: 0, ran: 0, saved: 0 };
+    if (this.job !== null) throw new Error("a deep sample list was asked for while a pass ran");
+    if (!(await this.#feedAll(generation))) return null;
+    // A cut to four chunks a worker, and never coarser than the opening cap: `recut` is the
+    // band cutter, and a range of list positions is a range like any other.
+    const opening = Math.min(OPENING_SAMPLES, Math.ceil(count / (4 * this.slots.length)));
+    const chunks = recut([[0, count]], Math.max(1, opening), 1);
+    return new Promise((resolve, reject) => {
+      this.job = {
+        kind: "samples",
+        generation,
+        spec: typeof spec === "string" ? spec : JSON.stringify(spec),
+        indices,
+        values,
+        count,
+        done: 0,
+        sampleCost: null,
+        onProgress,
+        resolve,
+        reject,
+        started: performance.now(),
+        ran: 0,
+        saved: 0,
+      };
+      this.queue = chunks;
+      for (const slot of this.slots) this.#dispatchSamples(slot, this.job);
+    });
+  }
+
+  /** Give this worker the next chunk of the sample list, if there is one and the job is
+   *  current: [`#dispatch`] for a list. */
+  #dispatchSamples(slot, job) {
+    if (job !== this.job || job.generation !== this.generation || this.queue.length === 0) return;
+    if (slot.busy !== null) return;
+    const [start, end] = this.queue.shift();
+    // A copy, so the caller's list is never detached by the transfer.
+    const list = job.indices.slice(start, end);
+    const at = performance.now();
+    this.#send(
+      slot,
+      { kind: "samples", spec: job.spec, indices: list.buffer },
+      { transfer: [list.buffer] },
+    ).then((reply) => this.#collectSamples(slot, reply, job, at, start, end));
+  }
+
+  #collectSamples(slot, reply, job, at, start, end) {
+    if (reply === null || job !== this.job || job.generation !== this.generation) return;
+    if (reply.refused) {
+      this.job = null;
+      this.queue = [];
+      job.reject(new Error("the kernel refused this list of samples"));
+      return;
+    }
+    const span = end - start;
+    // Re-cut what is queued toward `BAND_TARGET_MS` from this list's own cost a sample.
+    const cost = (performance.now() - at) / span;
+    job.sampleCost = job.sampleCost === null ? cost : (job.sampleCost + cost) / 2;
+    const target = BAND_TARGET_MS / job.sampleCost;
+    const widest = this.queue.reduce((most, [a, b]) => Math.max(most, b - a), 0);
+    if (target * RECUT_OVER < widest) this.queue = recut(this.queue, target, 1);
+    const out = new Float64Array(reply.values);
+    for (let k = 0; k < span; k++) job.values[job.indices[start + k]] = out[k];
+    job.done += span;
+    job.ran = reply.ran === null || job.ran === null ? null : job.ran + reply.ran;
+    job.saved = reply.saved === null || job.saved === null ? null : job.saved + reply.saved;
+    job.onProgress?.(job.done / job.count, performance.now() - job.started, job.done);
+    if (job.done >= job.count) {
+      this.job = null;
+      job.resolve({
+        count: job.count,
+        elapsed: performance.now() - job.started,
+        ran: job.ran,
+        saved: job.saved,
+      });
+      return;
+    }
+    this.#dispatchSamples(slot, job);
   }
 
   /**
