@@ -96,8 +96,13 @@ export const LAYOUT = [
  * The `params` uniform's 48 bytes: `budget` delta steps per pixel this pass, the orbit's
  * `periodic` flag and point count, the pixel `count`, the guard's knobs (1.0, 0.0, 0, 0,
  * written at run time so nothing folds), and the `HiLo` orbit's `flush` (`GpuOrbit::flush`:
- * 0 when narrowing flushed nothing, else the `f` with every point within `2^-f`).
+ * 0 when narrowing flushed nothing, else the `f` with every point within `2^-f`). `base`,
+ * the first invocation a pass dispatch covers, is written 0 here; a caller cutting a pass
+ * into dispatches copies each one's `budget` and `base` in at `PARAMS_BUDGET` and
+ * `PARAMS_BASE` before it.
  */
+export const PARAMS_BUDGET = 0;
+export const PARAMS_BASE = 36;
 export function paramsBytes({ budget, periodic, length, count, flush }) {
   const buffer = new ArrayBuffer(PARAMS_BYTES);
   new Uint32Array(buffer, 0, 4).set([budget >>> 0, periodic ? 1 : 0, length >>> 0, count >>> 0]);
@@ -543,8 +548,9 @@ struct FrameLo {
   margins: vec4<i32>,
 }
 
-// Per pass: the budget, the orbit's flag and length, the pixel count, the guard's knobs,
-// and the HiLo orbit's flush term (0 off).
+// Per dispatch: the budget, the orbit's flag and length, the pixel count, the guard's
+// knobs, the HiLo orbit's flush term (0 off), and base, the first invocation a pass
+// dispatch covers, so that one pass may be cut into dispatches over runs of workgroups.
 struct Params {
   budget: u32,
   periodic: u32,
@@ -555,7 +561,7 @@ struct Params {
   uzero: u32,
   flag: u32,
   flush: i32,
-  pad0: u32,
+  base: u32,
   pad1: u32,
   pad2: u32,
 }
@@ -1462,8 +1468,9 @@ fn pass_all(@builtin(global_invocation_id) gid: vec3<u32>,
             @builtin(local_invocation_index) lid: u32) {
   slot = lid;
   var still = false;
-  if (gid.x < params.count) {
-    still = run(gid.x, params.budget);
+  let i = gid.x + params.base;
+  if (i < params.count) {
+    still = run(i, params.budget);
   }
   if (still) {
     atomicAdd(&wg_running, 1u);
@@ -1484,14 +1491,17 @@ fn pass_all(@builtin(global_invocation_id) gid: vec3<u32>,
   }
 }
 
-// The pixels the last compact pass listed, dispatched indirectly.
+// The pixels the last compact pass listed, from base on: args sizes one indirect dispatch
+// of the whole list, and a caller that knows the list's length may instead cut it into
+// direct dispatches.
 @compute @workgroup_size(${workgroup})
 fn pass_list(@builtin(global_invocation_id) gid: vec3<u32>,
              @builtin(local_invocation_index) lid: u32) {
   slot = lid;
   var still = false;
-  if (gid.x < atomicLoad(&counters[1])) {
-    still = run(list[gid.x], params.budget);
+  let k = gid.x + params.base;
+  if (k < atomicLoad(&counters[1])) {
+    still = run(list[k], params.budget);
   }
   if (still) {
     atomicAdd(&wg_running, 1u);

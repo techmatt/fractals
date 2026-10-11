@@ -27,17 +27,27 @@
 // recorded as such.
 //
 //   node explorer/bench/deep-gpu-time.mjs [--limit=N] [--cold=N] [--port=8000] [--seed=162] [--forced]
-//                                         [--from=N] [--out=deep-gpu-time.json]
+//                                         [--from=N] [--out=deep-gpu-time.json] [--names=file.json]
 //
 // A GPU frame that loses its device, or finds the GPU off after an earlier loss, is kept as
 // `lostFirst` and drawn again in a fresh browser, which acquires a fresh adapter: a driver
 // reset is the machine's moment, and a run should say it happened rather than time the CPU
 // under the GPU's name for the rest of the sample. `--from` starts the sample part way, for
 // a run a reset cut short, and `--out` names the record so the two halves both survive.
+// `--names` keeps only the frames a JSON list names, in the sample's order, for a re-run of
+// a subset against an earlier record.
+//
+// Each GPU frame keeps the device's pass record off the log (`passes`: passes, dispatches,
+// the longest pass and dispatch by the device's timestamps, the longest pass by the wall),
+// and the run keeps how many display-driver resets Windows logged while it ran, where
+// PowerShell can say.
 //
 // `python -m builder serve` must be up and nothing else heavy may run: it is a timing. It
 // records `artifacts/explorer-bench/deep-gpu-time.json` after every frame, so a run cut
 // short keeps what it measured. No part of `builder check` or CI. About an hour.
+
+import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 
 import { open, sleep } from "./cdp.mjs";
 import { sample, shapeOf } from "./deep-gpu-frames.mjs";
@@ -56,6 +66,21 @@ const WITHIN = 1200000;
 const FORCED = process.argv.includes("--forced");
 const FROM = Number(option("from") ?? 0);
 const OUT = option("out") ?? "deep-gpu-time.json";
+const NAMES = option("names") ? new Set(JSON.parse(readFileSync(option("names"), "utf8"))) : null;
+
+/** Display-driver resets (System log, event 4101) Windows has logged since `since` (an ISO
+ *  time), or `null` off Windows. Counted from a time and never as a difference of totals:
+ *  the System log is circular, so an old event rolling off would cancel a new one. */
+function resets(since) {
+  if (process.platform !== "win32") return null;
+  try {
+    const command = `(Get-WinEvent -FilterHashtable @{LogName='System'; Id=4101; StartTime=[datetime]::Parse('${since}')} -ErrorAction SilentlyContinue | Measure-Object).Count`;
+    const said = execFileSync("powershell", ["-NoProfile", "-Command", command], { encoding: "utf8" });
+    return Number(said.trim());
+  } catch {
+    return null;
+  }
+}
 
 /** The first frame each browser draws, outside the sample: a fresh profile's first visit. */
 const PRIMER = "dv=3&x=-0.7436438870371587&y=0.131825904205312&w=1e-12&p=inferno&scale=absolute";
@@ -182,6 +207,7 @@ function summarize(log, t0) {
     gpuMs: onGpu ? Math.round(onGpu.detail?.ms ?? 0) : undefined,
     tailMs: onGpu?.detail?.tailMs != null ? Math.round(onGpu.detail.tailMs) : undefined,
     tailRan: onGpu?.detail?.tailRan ?? undefined,
+    passes: onGpu?.detail?.passes ?? undefined,
     lost: onGpu?.detail?.lost || undefined,
     quarterRan: quarter?.detail?.ran ?? undefined,
     ready: at("gpu ready")?.detail?.ms ?? undefined,
@@ -257,7 +283,9 @@ const browsers = {
   cpu: { port: base, query: "kernel=cpu&demo=1" },
   gpu: { port: base + 7, query: FORCED ? "kernel=gpu&demo=1" : "demo=1" },
 };
-const frames = sample({ seed: SEED }).slice(0, LIMIT);
+const frames = sample({ seed: SEED })
+  .filter((f) => NAMES === null || NAMES.has(f.name))
+  .slice(0, LIMIT);
 const out = { seed: SEED, forced: FORCED, from: FROM, window: [WIDTH, HEIGHT], started: new Date().toISOString(), frames: frames.length, rows: [], cold: [], first: {} };
 const save = () => record(OUT, out);
 
@@ -360,6 +388,8 @@ try {
   }
 } finally {
   out.finished = new Date().toISOString();
+  out.resets = resets(out.started);
+  if (out.resets != null) console.log(`display-driver resets during the run: ${out.resets}`);
   save();
   for (const b of Object.values(browsers)) {
     if (!b.page) continue;

@@ -1465,6 +1465,8 @@ export class DeepRenderer {
       ms: performance.now() - started,
       tailMs: tail.elapsed,
       tailRan: tail.ran,
+      // Passes and dispatches, and the longest of each on the device (`passStats`).
+      passes: drawn.passes ?? null,
     });
     return {
       values,

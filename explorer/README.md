@@ -206,7 +206,7 @@ deep-fx.test.mjs      13 tests: the Deep tab's arithmetic is exact where a doubl
 deep-link.test.mjs    45 tests: the deep contract, the shallow one held to not moving,
                       and the gallery register held to the deep one
 deep.test.mjs         30 tests: where the two modules meet, against both committed ones
-deep-gpu.test.mjs     23 tests: the GPU path's frame, orbit, passes, tail and cheap rules, and the key
+deep-gpu.test.mjs     26 tests: the GPU path's frame, orbit, passes and dispatches, tail and cheap rules, and the key
 hold.test.mjs         7 tests: a held move keeps the colour at the reference value
 fit.test.mjs          15 tests: a fit runs the palette its passes across Leveled's stretch
 dives.test.mjs        21 tests: the Dive block's chains, draws and results, and Random dives
@@ -3450,7 +3450,10 @@ frame went to the CPU is the tab's log (`explorer.deep-log`) and nowhere else.
 pool, `DeepGpu.start` asks for a high-performance adapter and runs a self-test on it: the
 exported double-single vectors bit for bit, then two small frames `deep-gpu-model` exported
 (`deep-gpu-selftest/`) word for word, `frac` apart, at two budget schedules each so that a
-resumed pass is tested too. Then a full stage goes to the GPU unless one of these sends it to
+resumed pass is tested too. The second schedule runs the way a frame does, compacting the
+list as it thins, and is cut finer than any frame: one workgroup a dispatch and three runs of
+steps a pass. So every dispatch's offset and the running count's reset are held to the model
+too. Then a full stage goes to the GPU unless one of these sends it to
 the CPU, checked in this order:
 
 - **`?kernel=cpu`**, the debugging override. `?kernel=gpu` is the other one: it lifts the
@@ -3475,6 +3478,10 @@ the CPU, checked in this order:
   landing, an off-screen one (Dive results, the detached Keep diving descent, and Save those
   minibrots), and a Download, which reads the screen's quarter pass of the frame where it is
   still held and scales it to the file's samples. A Download with none held goes to the GPU.
+  Both were exercised in a browser *(2026-10-11)*. Of 36 off-screen landings (8 from Save
+  those minibrots and 28 from a detached Keep diving), one stayed on the CPU as cheap and the
+  rest drew on the GPU. A cheap frame's download at 1072 × 576 stayed on the CPU as cheap at 1×, and went
+  to the GPU at 4×, where the scaled estimate is four times as large.
 - **Not ready**: no WebGPU, no adapter, a fallback adapter (a software rasterizer is not a GPU
   path), a failed self-test, or one still running. A frame waits on a test still running for
   eight quarter passes, half what the CPU would take over the stage, and never less than 3 s
@@ -3484,7 +3491,11 @@ the CPU, checked in this order:
   sample state (128 bytes a sample with the proof, 56 without), an orbit, or an output buffer
   past the adapter's limits. The Download row's estimate
   asks the same question (`likely`) and scales from the GPU's own stage only where the GPU
-  would take the download.
+  would take the download. One dimension holds 65,535 workgroups of 64, so a frame of more
+  than 4,194,240 samples is the CPU's. That includes the 1920 × 1080 download at its default
+  4×, which is 8.3 million samples: measured, it went to the CPU with this reason and an
+  estimate of about three minutes. At 1× a 1920 × 1088 file went to the GPU (4.6 s), as
+  did 1072 × 576 at 1× (1.7 s).
 
 The kernels a frame needs are compiled when its link lands, both settings of the interior
 switch side by side, beside the reference orbit and the quarter pass rather than after them
@@ -3503,11 +3514,58 @@ beside the pool for nothing (below); the next frame of that shape the GPU draws 
 compiled.
 
 **Passes are sized by time, and that never moves a pixel.** Each pass aims at about 100 ms
-(`PASS_TARGET_MS`), twenty times clear of Windows' two-second device timeout, growing at most
-fourfold a pass. A sample's whole progress lives in its state on the device, and the model
-guarantees that any sequence of budgets leaves the state one unbounded run would. Under a
-tenth of the frame still running, passes run a compacted list of the samples left. A partial
-picture is read back and shown at most every half second.
+of the device's own time (`PASS_TARGET_MS`), read off timestamp queries where the adapter
+has them and off the wall time to the read-back where not, and grows at most fourfold a
+pass. That sets how often the counts are read back, and so how soon a Cancel lands. A
+sample's whole progress lives in its state on the device, and the model guarantees that any
+sequence of budgets leaves the state one unbounded run would. Under a tenth of the frame
+still running, passes run a compacted list of the samples left, dispatched directly from its
+length (the indirect `args` entry point is kept for `kernel-check`). A partial picture is
+read back and shown at most every half second. One pass is in flight at a time, and the
+page's event loop runs between passes.
+
+**A pass is cut into dispatches of about 12 ms, each submitted on its own** *(resets
+hardening, 2026-10-11)*. A card like this one preempts compute only between dispatches
+(dxdiag: "Compute Preemption: Dispatch"), so every other context on it, the desktop
+compositor among them, waits out each dispatch whole, and a dispatch is also what Windows'
+device timeout counts. A second WebGPU device in the same browser, timing a one-workgroup
+dispatch every 16 ms, measured it. With one 100 ms dispatch a pass it waited 104 ms at the
+99th percentile, a hitch ten times a second. Cut into 8 ms dispatches inside one submission
+it still waited 80 to 110 ms, because the scheduler switched only between submissions.
+Submitted apart, it waited 27 ms (22 heavy frames, 17,949 waits). The cut is by steps: each
+dispatch runs every workgroup for a run of the pass's steps (`DISPATCH_TARGET_MS`,
+`dispatchPlan`). Cutting the frame's workgroups into runs instead cost 6 to 36% of GPU time
+where few samples were left running, since each run then held the card for a handful of busy
+workgroups. Cut by steps it costs nothing measurable: 257.1 s of GPU field against 258.0 s at
+one dispatch a pass over the same 22 frames. A dispatch is sized from the densest dispatch of
+the last pass. That is an estimate, and the one bound that holds whatever it says is a cap
+on work: never more than 2^25 sample-steps (`MAX_DISPATCH_WORK`), and 2^20 before anything
+is measured (`FIRST_DISPATCH_WORK`). A sample-step costs 0.09 to 0.14 ns at degree two and
+0.34 to 0.47 ns at degrees five and six on this card at full clock, and up to 10.6 ns in a
+frame's first pass after six seconds idle (`random-dives#758`; the clock is still climbing,
+and the figure is the dispatch's whole time over its work). At that cost the first-pass cap
+is 11 ms and the cap after it 0.36 s, so a dispatch the estimate misjudged still ends well
+inside Windows' default two-second timeout. A frame's first pass is also held to a pass's
+worth of dispatches (`firstDispatches`, nine), so the one pass nothing has measured is about
+100 ms too, and a Cancel lands on it as soon as on any other.
+
+The caps were 2^22 and 2^27, with the first pass taking all its 32 steps, until a review
+found the first pass the longest dispatch of every heavy frame. Over the 20 heaviest Phase 4
+frames and the reset-implicated ones (22 frames, 2,232 passes, 6 s idle before each), the
+longest dispatch of a pass was 11.8 ms at the median and 15.3 ms at the 99th percentile, and
+the 39.5 ms maximum was a first pass's. Passes were 107 ms at the 99th percentile and
+186 ms at most. Ten frames, the heaviest and the ones whose passes or dispatches ran long in
+the timing runs, were drawn again under the old caps and the new, 6 s idle before each, with
+traces kept. Every pass over 200 ms was a frame's first or second, both still at the idle
+clock's cost. The longest dispatch went from 15 to 53 ms a frame to 8.5 to 18.5 ms. Device
+time was 0.98 of the old at the median (0.73 to 1.01); the 1% lost is on the two degree-two
+frames, whose dispatches the lower cap now cuts to 3 to 5 ms.
+With the first pass held as well, six of them had passes of 115 ms at most but one of
+190 ms, a second pass held up by the 16-step floor (`MIN_BUDGET`) where a step over the
+whole frame still cost 12 ms. The 100 ms mid-frame dispatch the 40-frame run saw on
+`siegel-M 1e-6` did not come back in two runs of it (16.6 and 10.7 ms at most); its cause
+is unplaced. A frame's log now keeps any pass past twice either target, whole and with its
+index (`passStats`'s `over`), so the next one can be placed.
 
 **What it hands to the CPU, and why.** The CPU finishes three kinds of sample, each restarted
 from its first iteration on its own `f64` loop and its own proof (`compute_samples`), so a
@@ -3621,20 +3679,50 @@ degree above two has one to three busy Julia frames in the sample, so those colu
 0.90x to 1.01x; in all 406 s to 139 s, 2.92x. A cold load costs the CPU about 0.39 s more than
 a warm one and the GPU about 0.47 s.
 
-**Lost devices: the cause is not established, and the page survives them.** Windows' System
-log on this machine, kept from 2026-10-08, holds sixteen display driver resets (event 4101):
-none before this project's WebGPU work, two on 2026-10-10 while `deep-gpu-model` was run on
-the GPU, and fourteen on 2026-10-11, six of them while Phase 4 measured. They are correlated
-with this work. One of the six came while only a CPU browser was running and no WebGPU device
-was open, which shows a reset can come without one, and says nothing about the others. Two
-came just after a single GPU pass took 9.0 s and 9.7 s against its 100 ms target. One came
-under this run, on `random-dives#527`: its GPU passes ran 9.7 s where the whole field takes
-1.7 s on a good day, the device was lost, and the CPU finished all 536,500 unfinished samples,
-20.4 s against the CPU's own 8.9 s. The adapter was then gone for that browser (`DXGI_ERROR_DEVICE_REMOVED` on
-every request), so three failed acquisitions later the GPU was off, and every frame after it
-drew on the CPU at the CPU's own speed until the browser was restarted. The frames from
-`#527` on were measured again in a fresh browser, where `#527` drew in 3.0 s (3.22x); the
-numbers above are that run.
+**Display-driver resets on this machine are the card hanging, not long passes, and the page
+survives them.** Windows' System log here, kept from 2026-10-08, holds seventeen display-driver
+resets (event 4101). Each came 1 to 3 s after an nvlddmkm event 153 and left a kernel 141
+error report, every one in the same bucket. None came before this project's WebGPU
+work. Two came on 2026-10-10. Fourteen came on 2026-10-11, eight of them in 45 minutes while
+up to five GPU harnesses ran at once, and the seventeenth was reproduced on purpose with the
+card's telemetry recorded. In that one, the card ran these ~100 ms passes at 98% load, near
+its 175 W limit, until it simply stopped with a pass outstanding: load fell to 0%, power to
+idle, and the clock to 300 MHz. Windows reset it 8 s later; this machine's `TdrDelay` is 8 s,
+not the default 2. A dispatch running long would have held the card busy for those 8 s. Every
+pass the device timed across 18 frames was under 152 ms. The 9.0 s and 9.7 s "passes" in
+Phase 4's traces are resets' stalls and not passes. One reset came with no WebGPU device open
+at all. So the one reset with telemetry was a hang and not a long pass. The other sixteen are
+tied to it only by sharing its error bucket, and that bucket (kernel 141, a video engine
+timeout) is what a dispatch running past the timeout would leave too, so it does not tell
+the two apart; that they were hangs as well is likely and not shown. Whether the cause is the
+driver or a marginal card is not established, and finding out needs the clocks locked or the
+power limit lowered, which needs admin rights. What the page controls: no dispatch comes near the device timeout
+(above). A lost device sends the frame's unfinished samples to the CPU, and a later frame
+asks for a fresh device. After a reset, though, Chrome refused every new device on this
+machine (`DXGI_ERROR_DEVICE_REMOVED`) until the browser restarted, so in practice the rest of
+that session draws on the CPU at the CPU's speed. Phase 4's run lost its device this way on
+`random-dives#527`: the CPU finished 536,500 samples, 20.4 s against the CPU's own 8.9 s. The
+frames from `#527` on were measured again in a fresh browser, where `#527` drew in 3.0 s
+(3.22x); the numbers above are that run. **No reset has come since the passes were cut into
+dispatches**, in about 2.5 hours of single-agent GPU work (the 22-frame comparisons, a 40-frame
+timing run, and the whole 159-frame run again with its 26 cold loads), where the earlier
+single-agent work saw one or two an hour. Against that rate, none in 2.5 hours has odds of
+about one in forty. It is not evidence that cutting the passes is why. The hang seen in the
+repro came as the card fell from full load to none with work outstanding, and more, shorter
+submissions with gaps between them give it more such falls, not fewer. These runs also idled
+6 s between frames or alternated with the CPU browser, a different duty cycle from the runs
+that reset.
+
+**The whole run again, with the hardening** *(2026-10-11)*: 159 frames and 26 cold loads in
+56 minutes, with no reset and no lost device. The GPU's field time per frame was 0.994 times
+Phase 4's at the median. The GPU browser's total wait was 710 s against Phase 4's 730 s, and
+the CPU browser's was 1,705 s against 1,775 s, so the speedups read 1.71x at the median and
+2.40x in total, against 1.76x and 2.43x. The difference is on the CPU's side. Agreement was
+unchanged, with 157 matching and 2 acceptable. The longest dispatch in any frame was 63 ms
+(`random-dives#959`; two frames had one past 50 ms), and the longest pass was 360 ms, so a
+Cancel, which is read between passes, could wait about 0.37 s. That run was under the earlier
+caps (2^22 and 2^27, the first pass unheld) and kept no traces, so which passes those were
+is not known; the ten-frame rerun above places every long one it saw at a frame's start.
 
 **Caveats.** Headless Chrome on one machine at a pixel ratio of one; a GPU of another vendor,
 or the same one in a laptop, will land elsewhere, and the cheap and tail constants were fitted
@@ -3706,7 +3794,7 @@ deep-link.test.mjs 45 tests: the contract, the shallow one held to not moving, a
 deep.test.mjs      30 tests: where the two modules meet, against both committed ones —
                    and the cap policy's seam, which fails the same way the rest of
                    this file does, by drawing a plausible picture
-deep-gpu.test.mjs  23 tests: the GPU path's frame, orbit, passes, tail, cheap frames, health
+deep-gpu.test.mjs  26 tests: the GPU path's frame, orbit, passes, dispatches, tail, cheap frames, health
                    and key
 bench/julia.mjs    what a Julia frame costs against the Mandelbrot frame at the same c
 bench/deep-stall.mjs  a colour change reaches the canvas through every pass, cancel and
@@ -3724,7 +3812,9 @@ bench/deep-gpu-agree.mjs  the GPU kernel's picture against the CPU kernel's, fra
 bench/visible.mjs  that rule, on two canvases
 bench/deep-gpu-time.mjs  what a reader waits for, GPU against CPU, a whole frame at a time,
                    warm and cold, on the seeded sample of bench/deep-gpu-frames.mjs, which
-                   also holds deep-gpu-agree.mjs's named frames
+                   also holds deep-gpu-agree.mjs's named frames; each GPU frame keeps its
+                   longest pass and dispatch, and the run counts Windows' display-driver
+                   resets (`--names` keeps a listed subset)
 bench/deep-gpu-check.mjs  the shipped GPU kernel held to deep-gpu-model word for word on a
                    real adapter, by driving bench/gpu-probe/kernel-check.html and its .js
                    headless: the self-test, then any bundles under artifacts/deep-gpu-check/
@@ -7010,8 +7100,10 @@ nothing installed. `CLAUDE.md` and `.github/workflows/checks.yml` carry the comm
   `FrameLo` and HiLo orbit `deep-gpu.js` builds are byte for byte the ones
   `deep-gpu-model` exported for the tracked self-test frames, read off `perturb.wasm`'s own
   plan; a sample's `out` word becomes the CPU kernel's lane; passes stay in their bounds
-  and land on the step checkpoints where the tail rule is asked, and the rule hands over by
-  kernel, pool and the share of the cap still to run; a frame the quarter pass calls cheap,
+  and land on the step checkpoints where the tail rule is asked, and are cut into
+  dispatches that each stay inside the time and work limits and cover every workgroup
+  once a chunk; the tail rule hands over by kernel, pool and the share of the cap still to
+  run; a frame the quarter pass calls cheap,
   by its iterations a worker, stays on the CPU; a lost device is retried
   until the second loss, and an acquisition that failed for the moment until the third; a
   frame waits on a self-test still running for half the CPU's expected cost of it, within

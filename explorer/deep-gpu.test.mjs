@@ -82,6 +82,14 @@ test("the status codes, sizes and policy are the kernel module's own", () => {
   assert.equal(gpu.FRAME_LO_BYTES, W.FRAME_LO_BYTES);
   assert.equal(gpu.STATE_BYTES.proof, W.stateBytes(true));
   assert.equal(gpu.STATE_BYTES.plain, W.stateBytes(false));
+  // A dispatch's budget and base land where the kernel reads them, and `paramsBytes`
+  // writes the base 0.
+  assert.equal(gpu.PARAMS_BUDGET, W.PARAMS_BUDGET);
+  assert.equal(gpu.PARAMS_BASE, W.PARAMS_BASE);
+  const params = W.paramsBytes({ budget: 7, periodic: true, length: 9, count: 11, flush: 0 });
+  assert.equal(new DataView(params).getUint32(W.PARAMS_BUDGET, true), 7);
+  assert.equal(new DataView(params).getUint32(W.PARAMS_BASE, true), 0);
+  assert.match(W.kernelSource({ degree: 2, julia: false, interior: true, form: W.KERNEL_FORMS[0], workgroup: gpu.WORKGROUP, smooth: "builtin" }), /flush: i32,\n {2}base: u32,/);
   // The self-test frames run each schedule the page runs, and the bundles are slim and
   // provoke no flush: a device that flushes subnormals passes them for the right reason.
   assert.ok(selftest.budgets.length >= 2);
@@ -304,14 +312,111 @@ test("a budget stays in its bounds and never overflows the pass's step count", (
 });
 
 test("passes grow at most fourfold, shrink at once, and aim at the target", () => {
-  // 10 ms for 32 steps: the next pass wants 320, and may take 128.
-  assert.equal(gpu.nextBudget({ budget: 32, wallMs: 10, running: 1000 }), 128);
-  // 100 ms for 4096 steps is on target.
-  assert.equal(gpu.nextBudget({ budget: 4096, wallMs: 100, running: 1000 }), 4096);
-  // 400 ms for 4096 steps: a quarter, at once.
-  assert.equal(gpu.nextBudget({ budget: 4096, wallMs: 400, running: 1000 }), 1024);
+  const t = gpu.PASS_TARGET_MS;
+  // A tenth of the target for 32 steps: the next pass wants 320, and may take 128.
+  assert.equal(gpu.nextBudget({ budget: 32, ms: t / 10, running: 1000 }), 128);
+  // On target.
+  assert.equal(gpu.nextBudget({ budget: 4096, ms: t, running: 1000 }), 4096);
+  // Four times the target: a quarter, at once.
+  assert.equal(gpu.nextBudget({ budget: 4096, ms: 4 * t, running: 1000 }), 1024);
   // A pass too fast to measure grows by the factor and no more.
-  assert.equal(gpu.nextBudget({ budget: 100, wallMs: 0, running: 10 }), 400);
+  assert.equal(gpu.nextBudget({ budget: 100, ms: 0, running: 10 }), 400);
+  assert.equal(gpu.nextBudget({ budget: 4096, ms: 50, running: 1000, target: 25 }), 2048);
+});
+
+test("a pass is cut into dispatches each inside the limit, steps first", () => {
+  const limitOf = ({ cost, target = gpu.DISPATCH_TARGET_MS, maxWork = gpu.MAX_DISPATCH_WORK }) =>
+    Math.floor(Math.min(maxWork / gpu.WORKGROUP, cost > 0 ? target / cost : Infinity));
+  const cases = [];
+  for (const groups of [1, 3, 9, 100, 256, 1000, 9684, 32400, 65535]) {
+    for (const budget of [1, 16, 32, 333, 4096, 65536, 1 << 20]) {
+      for (const cost of [null, 1e-7, 1e-6, 1e-5, 1e-4, 1e-2, 1]) cases.push({ groups, budget, cost });
+    }
+  }
+  for (const c of cases) {
+    const plan = gpu.dispatchPlan(c);
+    const limit = Math.max(1, limitOf(c));
+    const list = gpu.dispatchesOf(plan, c.groups);
+    const what = JSON.stringify({ ...c, ...plan });
+    assert.ok(plan.budget >= 1 && plan.budget <= c.budget, what);
+    assert.equal(list.length, plan.slices * plan.chunks, what);
+    // Never more than a pass has room for, however slow the cost.
+    assert.ok(list.length <= gpu.MAX_DISPATCHES, what);
+    // Every dispatch inside the limit, unless one step over one workgroup is past it, or one
+    // step over every workgroup would need more slices than a pass has room for.
+    const widened = Math.ceil(c.groups / limit) > gpu.MAX_DISPATCHES;
+    for (const d of list) assert.ok(d.groups * d.budget <= limit || (d.budget === 1 && (d.groups === 1 || widened)), what);
+    // Every workgroup is covered once a chunk, and the chunks sum to the pass's steps.
+    const firsts = list.filter((d) => d.budget === list[0].budget && list.indexOf(d) < plan.slices);
+    assert.equal(firsts.reduce((sum, d) => sum + d.groups, 0), c.groups, what);
+    firsts.forEach((d, k) => assert.equal(d.base, k * plan.per * gpu.WORKGROUP, what));
+    let steps = 0;
+    for (let k = 0; k < list.length; k += plan.slices) steps += list[k].budget;
+    assert.equal(steps, plan.budget, what);
+    assert.ok(list.every((d, k) => d.last === k >= list.length - plan.slices), what);
+    // Workgroups are cut only where a single step over all of them is past the limit.
+    if (plan.slices > 1) assert.ok(c.groups > limit, what);
+  }
+  // Nothing measured: only the first pass's work cap bounds a dispatch. A frame's first
+  // pass over the working canvas (9,684 workgroups) is cut into runs of steps, every one
+  // over the whole frame and inside the cap.
+  const first = gpu.dispatchPlan({ budget: gpu.FIRST_BUDGET, groups: 9684, maxWork: gpu.FIRST_DISPATCH_WORK });
+  assert.deepEqual([first.budget, first.slices], [gpu.FIRST_BUDGET, 1]);
+  assert.equal(first.step, Math.floor(gpu.FIRST_DISPATCH_WORK / (gpu.WORKGROUP * 9684)));
+  assert.equal(first.chunks, Math.ceil(gpu.FIRST_BUDGET / first.step));
+  // And held to about a pass's worth of dispatches, the way a frame's first pass is run.
+  const sizing = { pass: gpu.PASS_TARGET_MS, dispatch: gpu.DISPATCH_TARGET_MS, most: gpu.MAX_DISPATCHES };
+  const firstMost = gpu.firstDispatches(sizing);
+  assert.equal(firstMost, Math.ceil(gpu.PASS_TARGET_MS / gpu.DISPATCH_TARGET_MS));
+  const held = gpu.dispatchPlan({ budget: gpu.FIRST_BUDGET, groups: 9684, maxWork: gpu.FIRST_DISPATCH_WORK, most: firstMost });
+  assert.ok(held.budget <= gpu.FIRST_BUDGET && held.slices * held.chunks <= firstMost, JSON.stringify(held));
+  assert.equal(gpu.firstDispatches({ pass: 100, dispatch: 1e9, most: 128 }), 1);
+  // A step over every workgroup past the limit: workgroups are cut, as few times as will do.
+  const wide = gpu.dispatchPlan({ budget: 8, groups: 9684, maxWork: 4096 * gpu.WORKGROUP });
+  assert.deepEqual([wide.slices, wide.per, wide.step, wide.chunks], [3, 3228, 1, 8]);
+  assert.throws(() => gpu.dispatchPlan({ budget: 32, groups: 10, most: NaN }), /no dispatch plan/);
+  // At the cost measured, a 100 ms pass is about 100 / DISPATCH_TARGET_MS dispatches.
+  const cost = 100 / (4096 * 9684);
+  const plan = gpu.dispatchPlan({ budget: 4096, groups: 9684, cost, maxWork: Infinity });
+  const fewest = Math.ceil(100 / gpu.DISPATCH_TARGET_MS);
+  assert.equal(plan.budget, 4096);
+  assert.ok(plan.slices * plan.chunks >= fewest && plan.slices * plan.chunks <= fewest + 2, JSON.stringify(plan));
+  // A thin list cannot be sliced: it is cut by steps.
+  const thin = gpu.dispatchPlan({ budget: 40000, groups: 20, cost: 100 / (40000 * 20), maxWork: Infinity });
+  assert.deepEqual([thin.slices, thin.budget], [1, 40000]);
+  assert.ok(thin.chunks >= fewest && thin.chunks <= fewest + 2);
+  // More than a submission holds: fewer steps.
+  const most = gpu.dispatchPlan({ budget: 1 << 20, groups: 9684, cost: 1e-5 });
+  assert.ok(most.budget < 1 << 20 && most.slices * most.chunks <= gpu.MAX_DISPATCHES);
+  // A cost no step fits: the widest frame in `MAX_DISPATCHES` slices of one step, not 5,462.
+  const slow = gpu.dispatchPlan({ budget: 32, groups: 65535, cost: 1 });
+  assert.deepEqual([slow.budget, slow.slices, slow.chunks], [1, gpu.MAX_DISPATCHES, 1]);
+  assert.equal(gpu.dispatchesOf(slow, 65535).reduce((sum, d) => sum + d.groups, 0), 65535);
+});
+
+test("the cost is the densest dispatch's, floored, or twice the average without timestamps", () => {
+  const dispatches = [
+    { groups: 100, budget: 10 },
+    { groups: 50, budget: 10 },
+  ];
+  assert.equal(gpu.dispatchCost({ dispatches, durations: [1, 1], wallMs: 9 }), 1 / 500);
+  assert.equal(gpu.dispatchCost({ dispatches, durations: [0, 0], wallMs: 9 }), gpu.TIMESTAMP_FLOOR_MS / 500);
+  assert.equal(gpu.dispatchCost({ dispatches, durations: null, wallMs: 3 }), 6 / 1500);
+});
+
+test("a frame's passes in brief", () => {
+  const record = { passes: 3, dispatches: 9, trace: [[32, "a", 10, 5, 1.5, 2, 1], [128, "a", 9, 40, 30.25, 4, 8.5], [512, "c", 2, 12, 9, 3, 4]] };
+  assert.deepEqual(gpu.passStats(record), { passes: 3, dispatches: 9, maxPassMs: 30.25, maxDispatchMs: 8.5, maxWallMs: 40, over: [] });
+  assert.deepEqual(gpu.passStats({ passes: 1, dispatches: 1, trace: [[32, "a", 0, 7, null, 1, null]] }), { passes: 1, dispatches: 1, maxPassMs: null, maxDispatchMs: null, maxWallMs: 7, over: [] });
+  // A pass past twice either target is kept whole, with its index: by its device time, its
+  // widest dispatch, or its wall time where it has no timestamps.
+  const t = gpu.PASS_TARGET_MS;
+  const d = gpu.DISPATCH_TARGET_MS;
+  const rows = [[32, "a", 10, 5, 1.5, 2, 1], [64, "a", 9, 2 * t + 9, 2 * t + 1, 9, 12], [64, "l", 8, 30, 25, 2, 2 * d + 1], [8, "a", 7, 2 * t + 1, null, 1, null]];
+  const over = gpu.passStats({ passes: 4, dispatches: 14, trace: rows }).over;
+  assert.deepEqual(over, [[1, ...rows[1]], [2, ...rows[2]], [3, ...rows[3]]]);
+  const many = Array.from({ length: 20 }, () => rows[1]);
+  assert.equal(gpu.passStats({ passes: 20, dispatches: 180, trace: many }).over.length, gpu.OVER_KEPT);
 });
 
 test("checkpoints are 1024 · 2^k and no pass steps over one", () => {

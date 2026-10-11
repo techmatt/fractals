@@ -22,10 +22,14 @@
 //
 // **Passes are sized by time, and that never moves a pixel.** All of a sample's progress
 // lives in its state on the device, and the model guarantees any sequence of budgets leaves
-// the state one unbounded run does, so a pass is sized to about `PASS_TARGET_MS` from the
-// last one's wall time, well clear of Windows' two-second device timeout, and the picture
-// is the same however the passes fell. What the CPU is handed is decided at step
-// checkpoints and never by the clock, so a machine draws the same picture every time.
+// the state one unbounded run does, so a pass is sized to about `PASS_TARGET_MS` of the
+// device's own time (its timestamps, where it has them; the wall time to the read-back
+// where not), and cut into dispatches of about `DISPATCH_TARGET_MS`, each its own
+// submission, so that the desktop and every other context on the card get it between them
+// and no dispatch comes near Windows' two-second device timeout. One pass is in flight at
+// a time, and the page's event loop runs between passes. The picture is the same however
+// the passes and dispatches fell. What the CPU is handed is decided at step checkpoints
+// and never by the clock, so a machine draws the same picture every time.
 //
 // The pure parts (the frame and orbit builders, the value a sample's `out` word means, the
 // budget and tail rules, the health policy, the `kernel` key) are exported and held by
@@ -48,15 +52,70 @@ export const HANDOFF = 3;
 export const FRAME_BYTES = 64;
 export const FRAME_LO_BYTES = 32;
 export const STATE_BYTES = { proof: 128, plain: 56 };
+/** Where a dispatch's `budget` and `base` sit in `Params` (`deep-gpu-wgsl.js`'s). */
+export const PARAMS_BUDGET = 0;
+export const PARAMS_BASE = 36;
 
 /** Threads per workgroup, and the most workgroups one dimension of a dispatch may take
  *  unless the adapter says otherwise. The kernel indexes samples along `x` alone. */
 export const WORKGROUP = 64;
 const DEFAULT_MAX_GROUPS = 65535;
 
-/** What one pass is sized to, in milliseconds: twenty times clear of the two-second
- *  timeout, and the latency of a Cancel, the same order as the CPU's bands. */
+/** What one pass is sized to, in milliseconds of the device's own time: how often the
+ *  counts are read back, and so the latency of a Cancel, the same order as the CPU's bands.
+ *  It is not what the desktop waits on; a dispatch is (`DISPATCH_TARGET_MS`). */
 export const PASS_TARGET_MS = 100;
+/**
+ * What one dispatch is sized to, in milliseconds *(gpu_deep_ship_ckpt162, resets)*. A GPU
+ * whose compute preempts only at dispatch boundaries (this box's RTX 2060 SUPER says so:
+ * "Compute Preemption: Dispatch") makes the desktop compositor, and every other context on
+ * the card, wait out each dispatch whole; a 100 ms dispatch is a visible hitch ten times a
+ * second, and a dispatch is also the unit Windows' device timeout counts. So a pass's steps
+ * are cut into runs (`chunks`), each dispatched over every workgroup and about this long at
+ * the cost the last pass measured, and **each submitted on its own**: with a second device
+ * timing a one-workgroup dispatch every 16 ms, 8 ms dispatches in one submission still kept
+ * it waiting 80 to 110 ms (the scheduler switched only between submissions), and submitted
+ * apart, under 30 ms. The read-back is still paid once a pass. Over six heavy frames, 12 ms
+ * dispatches took the other context's 99th-percentile wait from 105 ms to 28 ms for no
+ * measurable cost (88.7 s of field against 89.7 s).
+ *
+ * **Steps, not workgroups.** Cutting the frame's workgroups into runs instead cost 6 to 36
+ * percent: while few samples are still running they sit in a few runs, and each run's
+ * dispatch then holds the card for a handful of busy workgroups. A chunk over every
+ * workgroup keeps every running sample in flight, and costs only a read of each state.
+ * Workgroups are cut only where a single step over all of them is past the limit.
+ */
+export const DISPATCH_TARGET_MS = 12;
+/**
+ * The most sample-steps one dispatch may take however cheap the last pass measured: the
+ * one bound on a dispatch that holds whatever the estimate says, so that a clock the card
+ * drops between passes cannot stretch one far. On this box a sample-step costs 0.09 to
+ * 0.14 ns at degree two and 0.34 to 0.47 ns at degrees five and six at full clock, and
+ * up to 10.6 ns in a frame's first pass after six seconds idle (the dispatch's whole time
+ * over its sample-steps, so a fixed cost of starting counts as cost). The cap binds only on the cheap kernels, at about 3 to 5 ms of them at full clock,
+ * and the worst it allows here at the coldest cost measured is 0.36 s, or 0.57 s at an
+ * inferred 17 ns: clear of Windows' default two-second timeout, where 2^27 was not.
+ */
+export const MAX_DISPATCH_WORK = 1 << 25;
+/** The same, before anything has been measured (a frame's first pass, run at the clock an
+ *  idle card is still climbing from): 11 ms here at the coldest 10.6 ns a sample-step
+ *  measured, and under 2 s on a device about 180 times slower than that. */
+export const FIRST_DISPATCH_WORK = 1 << 20;
+/** The most dispatches one pass submits, which `Runner`'s slots and timestamps are sized
+ *  to; `dispatchPlan` never plans more. */
+export const MAX_DISPATCHES = 128;
+/**
+ * The most a frame's first pass submits: a pass's worth of dispatches at their target, so
+ * that the pass nothing has measured is about one pass long whatever the cost, and Cancel
+ * lands as soon on it as on any other. Without it the first pass took all `FIRST_BUDGET`
+ * steps at the cold clock, a dispatch a step at the first-pass cap: 160 to 330 ms on
+ * degree-four to -six frames here.
+ */
+export function firstDispatches(sizing) {
+  return Math.max(1, Math.min(sizing.most, MAX_DISPATCHES, Math.ceil(sizing.pass / sizing.dispatch)));
+}
+/** A dispatch's timestamp duration is read as at least this: Chrome quantizes them. */
+export const TIMESTAMP_FLOOR_MS = 0.1;
 /** Every frame's first pass, before it has been measured: small enough for a phone. */
 export const FIRST_BUDGET = 32;
 export const MIN_BUDGET = 16;
@@ -371,13 +430,95 @@ export function clampBudget(budget, running) {
 
 /**
  * The next pass's budget from the last one's: about `target` milliseconds at the cost a
- * budget step just measured, growing at most `GROWTH` times and shrinking at once. The
- * running set only shrinks, so the cost of a step only falls, and this errs safe.
+ * budget step just measured (`ms`, the device's own time where it has timestamps, else the
+ * wall time to the read-back), growing at most `GROWTH` times and shrinking at once.
  */
-export function nextBudget({ budget, wallMs, running, target = PASS_TARGET_MS }) {
-  const perStep = wallMs / Math.max(1, budget);
+export function nextBudget({ budget, ms, running, target = PASS_TARGET_MS }) {
+  const perStep = ms / Math.max(1, budget);
   const want = perStep > 0 ? target / perStep : budget * GROWTH;
   return clampBudget(Math.min(want, budget * GROWTH), running);
+}
+
+/**
+ * How one pass of `budget` steps over `groups` workgroups is cut into dispatches: `{budget,
+ * per, slices, step, chunks}`, `slices` runs of at most `per` workgroups each run `chunks`
+ * times at most `step` steps, every dispatch at most `limit` workgroup-steps. `limit` is
+ * `target` milliseconds at `cost` (milliseconds a workgroup-step, the densest dispatch
+ * last measured; `null` before any) and never more than `maxWork` sample-steps. Steps are
+ * cut, and workgroups only where one step over all of them is past the limit
+ * (`DISPATCH_TARGET_MS` says why). A pass that would need more than `most` dispatches
+ * takes fewer steps, so the budget comes back no larger than it went in; where even one
+ * step over every workgroup would need more than `most` slices, the slices widen past the
+ * limit to `most` of them, since a pass of more is one `Runner` has no room for (it takes
+ * over 23 µs a workgroup-step on the widest frame, 65,535 workgroups, near 800 times this
+ * card's degree-six cost at full clock). Counts and the cost only: no clock is read.
+ */
+export function dispatchPlan({ budget, groups, cost = null, target = DISPATCH_TARGET_MS, maxWork = MAX_DISPATCH_WORK, most = MAX_DISPATCHES }) {
+  const g = Math.max(1, groups);
+  const timed = cost > 0 ? target / cost : Infinity;
+  const limit = Math.max(1, Math.floor(Math.min(maxWork / WORKGROUP, timed)));
+  let b = Math.max(1, Math.floor(budget));
+  if (![g, limit, b, most].every((x) => x >= 1)) throw new Error(`no dispatch plan for ${JSON.stringify({ budget, groups, cost, target, maxWork, most })}`);
+  const per = Math.ceil(g / Math.min(Math.ceil(g / limit), most));
+  const slices = Math.ceil(g / per);
+  const step = Math.max(1, Math.floor(limit / per));
+  if (slices * Math.ceil(b / step) > most) b = Math.max(1, step * Math.floor(most / slices));
+  return { budget: b, per, slices, step: Math.min(b, step), chunks: Math.ceil(b / Math.min(b, step)) };
+}
+
+/**
+ * The cost a pass measured, for the next one's `dispatchPlan`: the densest dispatch's
+ * milliseconds a workgroup-step, from `durations` (one a dispatch, `null` without
+ * timestamps) over `dispatches` (`{groups, budget}` each); without timestamps, twice the
+ * pass's average from `wallMs`, since the work need not be spread evenly.
+ */
+export function dispatchCost({ dispatches, durations, wallMs }) {
+  if (durations != null) {
+    let worst = 0;
+    dispatches.forEach((d, k) => {
+      worst = Math.max(worst, Math.max(durations[k], TIMESTAMP_FLOOR_MS) / (d.groups * d.budget));
+    });
+    return worst;
+  }
+  const work = dispatches.reduce((sum, d) => sum + d.groups * d.budget, 0);
+  return work > 0 ? (2 * Math.max(wallMs, TIMESTAMP_FLOOR_MS)) / work : null;
+}
+
+/** A frame's passes in brief, off its record's `trace`, for the tab's log: passes and
+ *  dispatches, the longest pass and dispatch on the device (`null` without timestamps), and
+ *  the longest pass's wall time. `over` keeps the first `OVER_KEPT` passes that ran past
+ *  twice either target, each as its index and its `trace` row, so that an overshoot can be
+ *  placed (which pass, which mode, how many dispatches) without the whole trace. */
+export function passStats(record) {
+  let pass = null;
+  let dispatch = null;
+  let wall = 0;
+  const over = [];
+  record.trace.forEach((row, k) => {
+    wall = Math.max(wall, row[3]);
+    if (row[4] != null) pass = Math.max(pass ?? 0, row[4]);
+    if (row[6] != null) dispatch = Math.max(dispatch ?? 0, row[6]);
+    const long = (row[4] ?? row[3]) > 2 * PASS_TARGET_MS || (row[6] ?? 0) > 2 * DISPATCH_TARGET_MS;
+    if (long && over.length < OVER_KEPT) over.push([k, ...row]);
+  });
+  return { passes: record.passes, dispatches: record.dispatches, maxPassMs: pass, maxDispatchMs: dispatch, maxWallMs: wall, over };
+}
+
+/** How many overshooting passes `passStats` keeps a frame. */
+export const OVER_KEPT = 8;
+
+/** Back to the event loop between passes, past the microtask queue: a page's input and
+ *  paint run before the next submission. */
+export function yieldTask() {
+  if (typeof globalThis.scheduler?.yield === "function") return globalThis.scheduler.yield();
+  return new Promise((resolve) => {
+    const channel = new MessageChannel();
+    channel.port1.onmessage = () => {
+      channel.port1.close();
+      resolve();
+    };
+    channel.port2.postMessage(0);
+  });
 }
 
 /** Whether `spent` steps is a checkpoint, `CHECKPOINT · 2^k`. */
@@ -543,9 +684,27 @@ async function popBoth(device) {
   return validation ?? memory;
 }
 
+/**
+ * A pass's dispatches from its `dispatchPlan`, in the order they run: every slice at the
+ * first chunk's steps, then every slice at the next. `base` is the first invocation, so a
+ * slice covers samples (or list entries) `base` to `base + 64 · groups`.
+ */
+export function dispatchesOf(plan, groups) {
+  const out = [];
+  for (let c = 0, left = plan.budget; c < plan.chunks; c++) {
+    const budget = Math.min(plan.step, left);
+    left -= budget;
+    for (let s = 0; s < plan.slices; s++) {
+      const first = s * plan.per;
+      out.push({ base: first * WORKGROUP, groups: Math.min(plan.per, groups - first), budget, last: c === plan.chunks - 1 });
+    }
+  }
+  return out;
+}
+
 /** One frame's buffers on the device, for `count` samples, with the proof or without. */
 class Runner {
-  constructor(device, count, interior) {
+  constructor(device, count, interior, timed) {
     const usage = GPUBufferUsage;
     const make = (size, flags, label) => device.createBuffer({ size: Math.max(16, Math.ceil(size / 4) * 4), usage: flags, label });
     this.device = device;
@@ -559,16 +718,23 @@ class Runner {
     this.counters = make(16, usage.STORAGE | usage.COPY_SRC | usage.COPY_DST, "deep counters");
     this.list = make(4 * count, usage.STORAGE, "deep list");
     this.out = make(8 * count, usage.STORAGE | usage.COPY_SRC, "deep out");
-    this.indirect = make(16, usage.STORAGE | usage.INDIRECT, "deep indirect");
-    this.countsRead = make(16, usage.MAP_READ | usage.COPY_DST, "deep counts read");
+    // Each dispatch's `budget` and `base`, copied into `params` before it runs.
+    this.slots = make(8 * MAX_DISPATCHES, usage.COPY_SRC | usage.COPY_DST, "deep dispatch slots");
+    // The counters, then each dispatch's two timestamps.
+    this.read = make(16 + 16 * MAX_DISPATCHES, usage.MAP_READ | usage.COPY_DST, "deep pass read");
     this.outRead = make(8 * count, usage.MAP_READ | usage.COPY_DST, "deep out read");
+    this.queries = null;
+    if (timed) {
+      this.queries = device.createQuerySet({ type: "timestamp", count: 2 * MAX_DISPATCHES, label: "deep dispatch times" });
+      this.resolved = make(16 * MAX_DISPATCHES, usage.QUERY_RESOLVE | usage.COPY_SRC, "deep dispatch times resolved");
+    }
     this.groups = Math.ceil(count / WORKGROUP);
   }
 
   destroy() {
-    for (const b of [this.frame, this.frameLo, this.params, this.states, this.counters, this.list, this.out, this.indirect, this.countsRead, this.outRead]) {
+    for (const b of [this.frame, this.frameLo, this.params, this.states, this.counters, this.list, this.out, this.slots, this.read, this.outRead, this.queries, this.resolved]) {
       try {
-        b.destroy();
+        b?.destroy();
       } catch {
         // A lost device's buffers are gone already.
       }
@@ -578,7 +744,6 @@ class Runner {
   bind(layouts, orbit) {
     const buffers = [this.frame, this.frameLo, this.params, orbit, this.states, this.counters, this.list, this.out];
     this.group0 = this.device.createBindGroup({ layout: layouts[0], entries: buffers.map((buffer, binding) => ({ binding, resource: { buffer } })) });
-    this.group1 = this.device.createBindGroup({ layout: layouts[1], entries: [{ binding: 0, resource: { buffer: this.indirect } }] });
   }
 
   init(p) {
@@ -591,41 +756,85 @@ class Runner {
     this.device.queue.submit([encoder.finish()]);
   }
 
-  /** One pass of `budget` steps over every sample or the list; resolves the samples still
-   *  running after it and the steps it took. */
-  async pass(p, budget, mode, guard) {
+  /**
+   * One pass over every sample or the list, as `dispatches` (`dispatchesOf`), in one
+   * submission; resolves the samples still running after it, the steps it took, and each
+   * dispatch's device time in milliseconds (`durations`, `null` without timestamps or
+   * where they read as nonsense). One pass is in flight at a time: this awaits its own
+   * read-back before it returns.
+   */
+  async pass(p, dispatches, mode, guard, split = false) {
     const device = this.device;
-    device.queue.writeBuffer(this.params, 0, new Uint32Array([budget]));
-    const encoder = device.createCommandEncoder();
+    const n = dispatches.length;
+    // Past the slots and timestamps a pass has room for, the device would refuse the pass
+    // and it would read as a lost one; the frame is declined instead.
+    if (n < 1 || n > MAX_DISPATCHES) throw new Unserved(`a pass of ${n} dispatches`);
+    const slots = new Uint32Array(2 * n);
+    dispatches.forEach((d, k) => {
+      slots[2 * k] = d.budget;
+      slots[2 * k + 1] = d.base;
+    });
+    device.queue.writeBuffer(this.slots, 0, slots);
+    const buffers = [];
+    let encoder = device.createCommandEncoder();
     if (mode === "compact") {
       encoder.clearBuffer(this.counters, 4, 4);
       const c = encoder.beginComputePass();
       c.setBindGroup(0, this.group0);
-      c.setBindGroup(1, this.group1);
       c.setPipeline(p.compact);
       c.dispatchWorkgroups(this.groups);
-      c.setPipeline(p.args);
-      c.dispatchWorkgroups(1);
       c.end();
     }
-    encoder.clearBuffer(this.counters, 0, 4);
     encoder.clearBuffer(this.counters, 8, 4);
-    const pass = encoder.beginComputePass();
-    pass.setBindGroup(0, this.group0);
-    if (mode === "all") {
-      pass.setPipeline(p.all);
-      pass.dispatchWorkgroups(this.groups);
-    } else {
-      pass.setPipeline(p.list);
-      pass.dispatchWorkgroupsIndirect(this.indirect, 0);
+    let cleared = false;
+    dispatches.forEach((d, k) => {
+      // The running count is the last chunk's alone: every chunk's dispatches add to it.
+      if (d.last && !cleared) {
+        encoder.clearBuffer(this.counters, 0, 4);
+        cleared = true;
+      }
+      encoder.copyBufferToBuffer(this.slots, 8 * k, this.params, PARAMS_BUDGET, 4);
+      encoder.copyBufferToBuffer(this.slots, 8 * k + 4, this.params, PARAMS_BASE, 4);
+      const pass = encoder.beginComputePass(
+        this.queries === null ? {} : { timestampWrites: { querySet: this.queries, beginningOfPassWriteIndex: 2 * k, endOfPassWriteIndex: 2 * k + 1 } },
+      );
+      pass.setBindGroup(0, this.group0);
+      pass.setPipeline(mode === "all" ? p.all : p.list);
+      pass.dispatchWorkgroups(d.groups);
+      pass.end();
+      if (split && k < n - 1) {
+        buffers.push(encoder.finish());
+        encoder = device.createCommandEncoder();
+      }
+    });
+    encoder.copyBufferToBuffer(this.counters, 0, this.read, 0, 16);
+    if (this.queries !== null) {
+      encoder.resolveQuerySet(this.queries, 0, 2 * n, this.resolved, 0);
+      encoder.copyBufferToBuffer(this.resolved, 0, this.read, 16, 16 * n);
     }
-    pass.end();
-    encoder.copyBufferToBuffer(this.counters, 0, this.countsRead, 0, 16);
-    device.queue.submit([encoder.finish()]);
-    await guard(this.countsRead.mapAsync(GPUMapMode.READ));
-    const counts = new Uint32Array(this.countsRead.getMappedRange().slice(0));
-    this.countsRead.unmap();
-    return { running: counts[0], steps: counts[2] };
+    buffers.push(encoder.finish());
+    if (split) for (const buffer of buffers) device.queue.submit([buffer]);
+    else device.queue.submit(buffers);
+    const bytes = 16 + (this.queries === null ? 0 : 16 * n);
+    await guard(this.read.mapAsync(GPUMapMode.READ, 0, bytes));
+    const got = this.read.getMappedRange(0, bytes).slice(0);
+    this.read.unmap();
+    const counts = new Uint32Array(got, 0, 4);
+    let durations = null;
+    if (this.queries !== null) {
+      const stamps = new BigUint64Array(got, 16, 2 * n);
+      durations = [];
+      for (let k = 0; k < n; k++) {
+        const ms = Number(stamps[2 * k + 1] - stamps[2 * k]) / 1e6;
+        // A device may write zeros, or wrap: nonsense is no measurement at all.
+        if (!(stamps[2 * k + 1] >= stamps[2 * k]) || stamps[2 * k] === 0n || !(ms < 60000)) {
+          durations = null;
+          break;
+        }
+        durations.push(ms);
+      }
+    }
+    return { running: counts[0], steps: counts[2], durations };
   }
 
   /** `emit`, and the `out` words read back and handed to `read` while they are mapped. */
@@ -693,6 +902,21 @@ export class DeepGpu {
     this.last = null;
     /** `handsTail`'s `scale`, as an instance's so that a bench page can measure another. */
     this.tailScale = 1;
+    /** Whether the device writes timestamps. */
+    this.timed = false;
+    /** The pass and dispatch sizing, as an instance's so that a bench page can measure
+     *  another: `pass` and `dispatch` targets in milliseconds, `work` and `first` the most
+     *  sample-steps a dispatch takes once measured and before, `most` dispatches a pass,
+     *  and `split`, each dispatch its own submission (false puts a pass's dispatches in
+     *  one, which is what `DISPATCH_TARGET_MS` measured against). */
+    this.sizing = {
+      pass: PASS_TARGET_MS,
+      dispatch: DISPATCH_TARGET_MS,
+      work: MAX_DISPATCH_WORK,
+      first: FIRST_DISPATCH_WORK,
+      most: MAX_DISPATCHES,
+      split: true,
+    };
   }
 
   /** Acquire the device and test it, once, in the background; resolves whether it passed.
@@ -826,8 +1050,12 @@ export class DeepGpu {
     if (info.isFallbackAdapter === true || adapter.isFallbackAdapter === true) throw new Error("fallback-adapter");
     this.adapter = [info.vendor, info.architecture, info.description].filter(Boolean).join(" ");
     let device;
+    // Timestamps where the adapter has them: a pass is sized from the device's own time,
+    // and each dispatch from the densest one last measured (`dispatchCost`).
+    const timestamps = adapter.features?.has?.("timestamp-query") === true;
     try {
       device = await adapter.requestDevice({
+        requiredFeatures: timestamps ? ["timestamp-query"] : [],
         requiredLimits: {
           maxStorageBufferBindingSize: adapter.limits.maxStorageBufferBindingSize,
           maxBufferSize: adapter.limits.maxBufferSize,
@@ -839,6 +1067,7 @@ export class DeepGpu {
     }
     this.device = device;
     this.limits = device.limits;
+    this.timed = device.features.has("timestamp-query");
     this.fault = null;
     this.lostSignal = device.lost.then((lost) => {
       throw new GpuLost(`${lost.reason ?? "unknown"}: ${lost.message ?? ""}`);
@@ -901,18 +1130,18 @@ export class DeepGpu {
         const code = W.kernelSource({ degree, julia, interior, form: this.form, workgroup: WORKGROUP, smooth: "builtin" });
         const module = await compile(device, code, `deep d${degree}${julia ? " julia" : ""}${interior ? " interior" : ""}`);
         const plain = device.createPipelineLayout({ bindGroupLayouts: [this.layouts[0]] });
-        const both = device.createPipelineLayout({ bindGroupLayouts: this.layouts });
         const make = (entryPoint, layout) => device.createComputePipelineAsync({ layout, compute: { module, entryPoint } });
-        const [init, all, list, compact, args, emit] = await Promise.all([
+        // `args`, the list's indirect dispatch, is not built: a pass here knows the list's
+        // length and cuts it into direct dispatches (`dispatchPlan`).
+        const [init, all, list, compact, emit] = await Promise.all([
           make("init", plain),
           make("pass_all", plain),
           make("pass_list", plain),
           make("compact", plain),
-          make("args", both),
           make("emit", plain),
         ]);
         this.log("gpu kernel compiled", { degree, julia, interior, ms: Math.round(performance.now() - started) });
-        return { init, all, list, compact, args, emit };
+        return { init, all, list, compact, emit };
       })();
       // A module that will not compile is this kernel's and not the device's: its frames
       // are the CPU's, and the refusal is remembered for the session.
@@ -966,9 +1195,14 @@ export class DeepGpu {
         const Typed = { u8: Uint8Array, u32: Uint32Array, f32: Float32Array }[a.dtype];
         arrays[a.name] = new Typed(bin, a.offset, a.count);
       }
-      for (const [first, rest] of plan.budgets) {
-        const missed = await this.#frameTest(W, device, guard, manifest, arrays, first, rest);
-        if (missed !== null) throw new Error(`self-test: ${manifest.id} at ${first} then ${rest}: ${missed}`);
+      for (const [k, [first, rest]] of plan.budgets.entries()) {
+        // The first schedule as one dispatch a pass over every sample; every later one the
+        // way a frame runs, the list compacted as it thins, and cut as fine as it goes: a
+        // workgroup a dispatch and three chunks of steps a pass, so that every `base` and
+        // the running count's clearing are held to the model too.
+        const cut = k > 0;
+        const missed = await this.#frameTest(W, device, guard, manifest, arrays, first, rest, cut);
+        if (missed !== null) throw new Error(`self-test: ${manifest.id} at ${first} then ${rest}${cut ? " cut" : ""}: ${missed}`);
       }
     }
   }
@@ -1015,12 +1249,12 @@ export class DeepGpu {
 
   /** One tracked frame at one budget schedule; `null` where every word but `frac` is the
    *  model's, else what differed. */
-  async #frameTest(W, device, guard, manifest, arrays, first, rest) {
+  async #frameTest(W, device, guard, manifest, arrays, first, rest, cut) {
     const count = manifest.width_px * manifest.height_px;
     const interior = manifest.interior === true;
     const p = await this.#pipelines(W, device, manifest.degree, manifest.julia, interior);
     device.pushErrorScope("validation");
-    const runner = new Runner(device, count, interior);
+    const runner = new Runner(device, count, interior, this.timed);
     const orbit = device.createBuffer({ size: Math.max(16, arrays.orbit_hilo.byteLength), usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST });
     try {
       device.queue.writeBuffer(orbit, 0, arrays.orbit_hilo);
@@ -1031,9 +1265,25 @@ export class DeepGpu {
       runner.init(p);
       let running = count;
       let passes = 0;
+      let listed = null;
+      let listLen = 0;
       const limit = 4 * (manifest.cap + 8);
       while (running > 0 && passes < limit) {
-        ({ running } = await runner.pass(p, passes === 0 ? first : rest, "all", guard));
+        const budget = passes === 0 ? first : rest;
+        const mode = cut ? passMode(running, count, listed) : "all";
+        if (mode === "compact") {
+          listLen = running;
+          listed = 0;
+        } else if (mode === "list") listed += 1;
+        const groups = mode === "all" ? runner.groups : Math.ceil(listLen / WORKGROUP);
+        // Cut: a workgroup a dispatch and a third of the steps, finer than a frame is ever
+        // cut (`dispatchPlan` cuts workgroups only where it must), so every `base` is held.
+        // A larger fixture widens the slices so the pass stays within `MAX_DISPATCHES`.
+        const step = Math.ceil(budget / 3);
+        const chunks = Math.ceil(budget / step);
+        const per = Math.ceil(groups / Math.min(groups, Math.floor(MAX_DISPATCHES / chunks)));
+        const plan = cut ? { budget, per, slices: Math.ceil(groups / per), step, chunks } : { budget, per: groups, slices: 1, step: budget, chunks: 1 };
+        ({ running } = await runner.pass(p, dispatchesOf(plan, groups), mode, guard));
         passes += 1;
       }
       if (running > 0) return `${running} samples still running after ${passes} passes`;
@@ -1099,7 +1349,8 @@ export class DeepGpu {
     const started = performance.now();
     let final = null;
     // `trace` is a pass a row: its budget, its mode's initial, the samples running after it,
-    // and its wall time in milliseconds.
+    // its wall time in milliseconds (submission to read-back), its device time (the sum of
+    // its dispatches' timestamps, `null` without them), its dispatches, and the longest.
     const record = {
       count,
       degree: plan.degree,
@@ -1107,6 +1358,7 @@ export class DeepGpu {
       interior,
       maxiter: plan.maxiter,
       passes: 0,
+      dispatches: 0,
       spent: 0,
       compacts: 0,
       partials: 0,
@@ -1143,7 +1395,7 @@ export class DeepGpu {
         this.runner = null;
         device.pushErrorScope("out-of-memory");
         device.pushErrorScope("validation");
-        const runner = new Runner(device, count, interior);
+        const runner = new Runner(device, count, interior, this.timed);
         const invalid = await popBoth(device);
         if (invalid) {
           runner.destroy();
@@ -1160,26 +1412,52 @@ export class DeepGpu {
       runner.init(p);
 
       const fallback = previewOf(job.preview, plan.sample_width, plan.sample_height);
+      const sizing = this.sizing;
       let running = count;
       let budget = FIRST_BUDGET;
       let listed = null;
+      let listLen = 0;
+      // The densest dispatch's cost a workgroup-step, and the workgroups it was measured
+      // over: nothing is known before the first pass, which `FIRST_DISPATCH_WORK` bounds.
+      let cost = null;
+      let costGroups = null;
       let lastPartial = performance.now();
       let partialDone = 0;
       for (;;) {
         if (!job.live()) return { status: "cancelled" };
         const mode = passMode(running, count, listed);
-        const steps = landOn(record.spent, clampBudget(budget, running));
+        if (mode === "compact") listLen = running;
+        const groups = mode === "all" ? runner.groups : Math.ceil(listLen / WORKGROUP);
+        // A list is denser than the pass that measured the cost, by at most the share of
+        // its workgroups that survive the cut: the first pass over it assumes the worst.
+        const assumed = cost === null ? null : cost * Math.max(1, costGroups / groups);
+        const cut = dispatchPlan({
+          budget: landOn(record.spent, clampBudget(budget, running)),
+          groups,
+          cost: assumed,
+          target: sizing.dispatch,
+          maxWork: cost === null ? sizing.first : sizing.work,
+          most: cost === null ? firstDispatches(sizing) : Math.min(sizing.most, MAX_DISPATCHES),
+        });
+        const steps = cut.budget;
+        const dispatches = dispatchesOf(cut, groups);
         const at = performance.now();
-        const counted = await runner.pass(p, steps, mode, guard);
+        const counted = await runner.pass(p, dispatches, mode, guard, sizing.split === true);
         const wallMs = performance.now() - at;
+        const durations = counted.durations;
+        const gpuMs = durations === null ? null : durations.reduce((sum, ms) => sum + ms, 0);
+        const widest = durations === null ? null : Math.max(...durations);
         record.passes += 1;
         record.spent += steps;
-        record.trace.push([steps, mode[0], counted.running, Math.round(wallMs)]);
+        record.dispatches += dispatches.length;
+        record.trace.push([steps, mode[0], counted.running, Math.round(wallMs), gpuMs === null ? null : +gpuMs.toFixed(2), dispatches.length, widest === null ? null : +widest.toFixed(2)]);
         if (mode === "compact") {
           record.compacts += 1;
           listed = 0;
         } else if (mode === "list") listed += 1;
         running = counted.running;
+        cost = dispatchCost({ dispatches, durations, wallMs });
+        costGroups = groups;
         job.onPass?.();
         if (!job.live()) return { status: "cancelled" };
         job.onProgress?.((count - running) / count, performance.now() - started);
@@ -1189,7 +1467,7 @@ export class DeepGpu {
           record.tail = true;
           break;
         }
-        budget = nextBudget({ budget: steps, wallMs, running });
+        budget = nextBudget({ budget: steps, ms: gpuMs ?? wallMs, running, target: sizing.pass });
         const done = (count - running) / count;
         if (job.onPartial && performance.now() - lastPartial >= PARTIAL_MS && done - partialDone >= PARTIAL_GAIN) {
           // `final` is set only once a read-back has landed: a loss before any leaves it
@@ -1203,6 +1481,8 @@ export class DeepGpu {
           if (!job.live()) return { status: "cancelled" };
           job.onPartial();
         }
+        // The page's own work, and the compositor's turn on the device, before the next.
+        await yieldTask();
       }
       // **What a partial marked final stays final**: a sample's status only ever leaves
       // `RUNNING` once, so the last emit adds to the marks and never takes one back, and a
@@ -1214,7 +1494,7 @@ export class DeepGpu {
       const handed = unfinished(final);
       record.handed = handed.length;
       record.ms = performance.now() - started;
-      return { status: "done", handed };
+      return { status: "done", handed, passes: passStats(record) };
     } catch (error) {
       if (error instanceof Unserved) {
         this.log("gpu declined the frame", { why: error.message });
@@ -1223,7 +1503,7 @@ export class DeepGpu {
       // Anything else under a frame is the device's: count it as a loss and finish on the
       // CPU, from what the last read-back had settled.
       this.#drop(error instanceof GpuLost ? error.message : `the frame threw: ${error?.message ?? error}`);
-      return { status: "lost", handed: final === null ? null : unfinished(final) };
+      return { status: "lost", handed: final === null ? null : unfinished(final), passes: passStats(record) };
     }
   }
 
