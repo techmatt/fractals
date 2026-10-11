@@ -40,6 +40,9 @@ tests/agreement.rs  the model against perturb on frames the site draws
 tests/bla.rs        the skip: switch-off identity, passes, its runs, its guards, its price
 tests/ds.rs         double-single: passes, agreement against f32, survivors, the skip in DS
 tests/interior.rs   the gate and the proof: no escaping sample painted interior, both kernels
+tests/deep_interior.rs  the proof inside a deep minibrot: the measured flush (each
+                    encoding's own), the closure, the anchor it is handed, a stored zero
+                    in the careful step, the minibrot's edge
 ```
 
 ## The arithmetic rules
@@ -674,10 +677,90 @@ moved floor on the Mandelbrot ones; so the residue is `f64`'s own, not the kerne
   `f32` with the skip needs 1.4e4 and is exact), and on the copy cusps and the Feigenbaum
   point it sits at 16% to 80% over 0.1, beside a moved `f64` floor of 4% to 75%. The
   corpus slice's skip in double-single skips nothing.
-- **The interior proof never closes on the D frames** (a degree-3 minibrot interior at
-  1e-60 to 1e-100): every sample runs to the cap, `perturb` proves them in 622 steps. It
-  does close at 4.1e-22 (`dive-sheet:u0772`, 536 of 649). Not diagnosed; the cap fallback
-  paints them right and costs the steps.
+- **The interior proof closes on the D frames now** (a degree-3 minibrot interior at
+  1e-60 to 1e-100), at `perturb`'s 622 steps, where it ran every sample to the cap; the
+  next section has the cause and the numbers.
+
+### Deep interior
+
+The D frames sit on a degree-3 nucleus of period 311, and the reference passes within
+`2^-268.1` of zero at every return (`2^-321.7` at 1e-80 and 1e-100, the same nucleus to
+more places). Narrowing stores those points as zero, and the proof's flush term was then a
+constant `2^-125` across the frame: added to every starting radius, to the point margin
+at every containment test and to every rebase jump. The discs it needed sit at `2^-155`
+(1e-60), `2^-222` and `2^-288`, so the test could not pass however far a disc contracted,
+and after one period the carried radius was already `2^-27` to `2^-28` under its rung.
+`perturb` has no such term, because its `f64` reference holds `2^-322`. Nothing else in
+the proof's differences from `kernel.rs` (`GROW`, power-of-two rungs, the `f32` `Mag`) was
+in the way: with the term off, every sample closed at 622.
+
+Four changes, all in WGSL's terms:
+
+- **The flush term is measured** (`src/orbit.rs`). A flushed component's error is exactly
+  the `f64` stored as zero, so narrowing records the largest exponent among them and
+  `flush = -(e + 2)` (at least 125), which covers the pair's `√2`. It stays one `i32`
+  uniform; the proof's arithmetic is unchanged. 267 at 1e-60, 320 deeper, 139 for the
+  same nucleus framed at 3e-23, 125 only where a component just under `2^-126` flushed.
+- **A stored zero is read in the delta's units** (`model::reads_scaled`, in both kernels'
+  reconstruct and rebase test): `s != 0 && (ez == -127 || ez <= REBASE_GATE + s)`. With
+  the gate alone a zero `Z` takes the unscaled branch once `s < -187`, `d · 2^s`
+  underflows, and the proof is handed `ẑ = 0` for an iterate of `2^-219`: covered by
+  `2^-125`, not by `2^-320`. With the measured term and without this, the D frames still
+  "prove", by comparing 0 with 0; `tests/deep_interior.rs`'s anchor test fails that way.
+- **A stored zero is no size in the careful step either** (`model::careful_unit`, in both
+  kernels): the step's unit is `δ`'s where `ez = -127`, not `2^-127`. Read as a size it
+  put a deep `δ` far below the unit, `t^(D-1)` underflowed (`ed` below about `-190` at
+  degree 3, `-253` at degree 2), and the step returned `0` for a true `≈ δ^D`. On a
+  Mandelbrot plane `κ_add·|dc|` covers that; on a Julia plane only the flush term did, by
+  accident under `2^-125`. Measured on the D nucleus's Julia plane at 1e-80: `2^-267` went
+  to `0`, under-covered by `2^14`; it now goes to `2^-802`. No verdict moved (the discs
+  there are `2^-220` against a `2^-655` error), and the change is bit for bit nothing
+  wherever `ed >= -127`. A cube below `2^-100000` (`NO_EXPONENT`) is still zero, an
+  absolute defect far under the `2^-flush` every containment test adds.
+- **Each encoding carries its own flush.** Narrowing differs, so `HiLo` can flush a `lo`
+  under a point `F32Pair` keeps normal: the nucleus to 48 places at `1e-44` measures `OFF`
+  in the pair and 127 in `HiLo`. A bundle's manifest carries both, `flush` (the pair's)
+  and `flush_hilo`, and export's read-back (`--verify`) builds each orbit with its own; a bundle written
+  before the split has `flush` alone and reads it for both.
+
+Measured against `perturb` (32x18, cap 20,000; the skip with the double-single table at
+`EPSILON_DS_DEFAULT`):
+
+| frame | flush | before: proved / capped | after: proved, steps a sample | `perturb` |
+|---|---|---|---|---|
+| D-1e-60 | 125 → 267 | 0 / 576 | 576, 622 (321 with the skip) | 576 at 622 |
+| D-1e-80 | 125 → 320 | 0 / 576 | 576, 622 (321) | 576 at 622 |
+| D-1e-100 | 125 → 320 | 0 / 576 | 576, 622 (321) | 576 at 622 |
+| `dive-sheet:u0772` (4.1e-22) | off | 4 / 8 | unchanged | 4 / 8 |
+
+The same in all three kernels (`f32` on `F32Pair`, double-single, double-single with the
+skip). No sample is newly interior where `perturb` escapes: the nucleus at 3e-23, where
+the boundary crosses the frame beside an orbit that flushes, agrees with `perturb` on all
+1,296 samples at 48x27 (14 escapes) in every kernel, and fourteen corpus frames (A-, B- and
+C-1e-60, `random-dives#5`, `#360`, `#383`, `#501`, `tangle-1e-54`, `dive-sheet:u0022` and
+`u0496`, `julia-i-origin-1e-45`, `deep-gallery#33`, `nucleus-3116-periodic`, and
+misiurewicz #5) keep status, steps and smooth count bit for bit, interior on, in every
+kernel. Interior off, the D frames' fields do not move either.
+
+**Where this stops.** The term is one number for the frame, so a reference that skims
+`2^-126` at an unrelated step pays `2^-125` everywhere again, and any disc smaller than
+that waits for the cap (or, under `--interior-policy handoff`, goes back to the CPU as
+`GATED`). None of the D, A, B or C frames does. The fix for that would be an `i32`
+exponent per point beside the `vec4`, read only where `Z` is rescaled into the delta's
+units, so that nothing flushes; it touches the per-pixel path and waits for a frame that
+needs it.
+
+**The WGSL port** (`explorer/bench/gpu-probe/kernel-wgsl.js`) has not followed, and
+nothing in WGSL has yet run a flush above 125. The port has no proof, so it reads no
+flush at all: neither manifest field reaches it, and the proof's flush arithmetic
+(`Mag::pow2(-flush)`, `scale(p, FLUSH_STEP - flush)`, plain `i32` exponents up to 1021)
+is expressible there and untested on a GPU. A port of the proof reads its own orbit's
+field, `flush` beside `F32Pair` and `flush_hilo` beside `HiLo`. The kernels themselves
+want two edits for the probe to keep agreeing with the model bit for bit on a frame like
+the D frames: the four gate tests (reconstruct and rebase, in each kernel) want the same
+`ez == -127 ||` as `reads_scaled`, and the two careful steps want `careful_unit`'s
+`select(max(ez, ed), ed, ez == -127)`. Until then the probe disagrees with the model
+wherever a stored zero meets `s < -187`, or a careful step at one meets `ed < -127`.
 
 ### On a GPU (`explorer/bench/gpu-probe/`)
 

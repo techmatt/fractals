@@ -24,8 +24,17 @@
 //! That flush is an **absolute** error, up to `2^-126` a component, which no relative
 //! bound on the stored point covers: below about `2^-101` (`HiLo`'s `lo`) or `2^-126`
 //! (`hi`) the stored point can be off by more than its own size. [`GpuOrbit::flush`] says
-//! whether it happened anywhere in the orbit, and the interior proof adds the term where
-//! it did ([`crate::proof`]).
+//! whether it happened anywhere in the orbit and bounds how much it left, and the
+//! interior proof adds the term where it did ([`crate::proof`]).
+//!
+//! **The bound is measured, not assumed.** A flushed component's error is exactly the
+//! `f64` that was stored as zero, so narrowing knows it; `flush` is the largest of them,
+//! rounded up to a power of two with room for the pair. `2^-125`, the bound that holds
+//! for any flush, is what this comes to only when a component just under `2^-126` was
+//! flushed. The points that flush are, overwhelmingly, a minibrot's near-zero returns,
+//! `|Z|` about `2^-268` at a period-311 nucleus framed at `1e-60` and `2^-322` deeper,
+//! which are also where the proof anchors; a frame-wide `2^-125` against discs of
+//! `2^-155` and below closed nothing on such a frame (README, *Deep interior*).
 //!
 //! Layout per point: `F32Pair` is `[re, im]`; `HiLo` is `[re_hi, im_hi, re_lo, im_lo]`,
 //! one `vec4<f32>` with the two `hi` first, so that a shader reading only `.xy` reads
@@ -90,26 +99,50 @@ pub struct GpuOrbit {
     pub points: Vec<[f32; 4]>,
     /// `Z[len] = Z[0]`: the index wraps instead of the delta rebasing at the end.
     pub periodic: bool,
-    /// [`FLUSH`] when narrowing flushed a nonzero component (a `hi`, or under `HiLo` a
-    /// `lo`) to zero anywhere in the orbit, so that a stored point may be off by up to
-    /// `2^-FLUSH` beyond its relative rounding; [`crate::proof::OFF`] when nothing was. A
-    /// uniform beside `periodic`, read by the interior proof ([`crate::proof::Iterate`]).
+    /// Where narrowing flushed a nonzero component (a `hi`, or under `HiLo` a `lo`) to
+    /// zero anywhere in the orbit, the `f` for which every stored point is within `2^-f`
+    /// of the orbit beyond its relative rounding ([`flush_bound`]), at least [`FLUSH`];
+    /// [`crate::proof::OFF`] when nothing was. A uniform beside `periodic`, read by the
+    /// interior proof ([`crate::proof::Iterate`]).
     pub flush: i32,
 }
 
-/// The absolute error a flush can leave in one stored point, as `2^-FLUSH`: under
-/// `2^-126` a component, so under `2^-125.5` for the pair, by either encoding.
+/// The absolute error any flush can leave in one stored point, as `2^-FLUSH`: under
+/// `2^-126` a component, so under `2^-125.5` for the pair, by either encoding. The
+/// smallest value [`flush_bound`] returns, and what it returns for a component flushed
+/// from just under `2^-126`.
 pub const FLUSH: i32 = 125;
+
+/// The binary exponent of a nonzero finite `|x|`, so that `|x|` lies in `[2^e, 2^(e+1))`
+/// for a normal `x`; an `f64` subnormal gives `-1023`, above which it lies too. CPU-side
+/// setup, read off the bits so that nothing rests on `log2`'s rounding.
+fn exponent_f64(x: f64) -> i32 {
+    ((x.to_bits() >> 52) & 0x7ff) as i32 - 1023
+}
+
+/// `2^-flush_bound(e)` bounds a point's absolute flush error when every flushed component
+/// is below `2^(e+1)`: the pair's error is at most `√2 · 2^(e+1) < 2^(e+2)`. Never below
+/// [`FLUSH`], and never [`crate::proof::OFF`], since a flushed component is under
+/// `2^-126` and so `e <= -127`.
+pub fn flush_bound(e: i32) -> i32 {
+    let f = -(e + 2);
+    if f < FLUSH { FLUSH } else { f }
+}
 
 impl GpuOrbit {
     /// Narrows `perturb`'s orbit. This is CPU-side setup and the one place the orbit's
     /// `f64` is read.
     pub fn from_reference(reference: &Reference, encoding: Encoding) -> GpuOrbit {
-        let mut flushed = false;
-        // `x` narrowed, noting a nonzero `x` stored as zero.
+        // The largest exponent of a nonzero `x` stored as zero, which is exactly the error
+        // that left in its component: under `HiLo` a flushed `hi` flushes its `lo`, which
+        // is the same `x`, and a flushed `lo` is `re - re_hi` exactly (below).
+        let mut worst: Option<i32> = None;
         let mut keep = |x: f64| {
             let y = narrow(x);
-            flushed |= x != 0.0 && y == 0.0;
+            if x != 0.0 && y == 0.0 {
+                let e = exponent_f64(x);
+                worst = Some(worst.map_or(e, |w| w.max(e)));
+            }
             y
         };
         let points = reference
@@ -135,7 +168,7 @@ impl GpuOrbit {
             encoding,
             points,
             periodic: reference.periodic,
-            flush: if flushed { FLUSH } else { crate::proof::OFF },
+            flush: worst.map_or(crate::proof::OFF, flush_bound),
         }
     }
 

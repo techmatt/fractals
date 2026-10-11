@@ -330,7 +330,11 @@ struct Bundle {
     lo: FrameLo,
     orbit_len: usize,
     periodic: bool,
+    /// Each encoding's own measured flush ([`GpuOrbit::flush`]): narrowing differs, so
+    /// `HiLo` can flush a component (a `lo` residue, or a point `F32Pair` keeps) the pair
+    /// does not, and the two values need not agree. A kernel reads its own orbit's.
     flush: i32,
+    flush_hilo: i32,
     bin: Vec<u8>,
     arrays: Vec<Array>,
     /// What the manifest says about the run, as JSON members (no braces).
@@ -516,6 +520,7 @@ fn build(row: &FrameSpec, opts: &Options) -> Result<Bundle, String> {
         orbit_len: points,
         periodic: pair.periodic,
         flush: pair.flush,
+        flush_hilo: hilo.flush,
         bin: bin.bytes,
         arrays: bin.arrays,
         summary,
@@ -561,7 +566,7 @@ fn manifest(b: &Bundle, base: &str) -> String {
     format!(
         "{{\"format\":\"{FORMAT}\",\"id\":{},\"manifest\":\"{base}.manifest.json\",\"bin\":\"{base}.bin\",\"bin_bytes\":{},\
 \"width\":{:e},\"degree\":{},\"julia\":{},\"width_px\":{},\"height_px\":{},\"cap\":{},\"interior\":{},\
-\"orbit_len\":{},\"periodic\":{},\"flush\":{},\n\
+\"orbit_len\":{},\"periodic\":{},\"flush\":{},\"flush_hilo\":{},\n\
 \"spec\":{{\"re\":{},\"im\":{},\"w\":{:e},\"julia_re\":{},\"julia_im\":{},\"anchor\":\"{}\",\"link\":{}}},\n\
 \"frame\":{{\"width_px\":{},\"height_px\":{},\"offset_m\":[{:e},{:e}],\"spacing_m\":{:e},\"sc\":{},\"maxiter\":{},\"degree\":{},\"julia\":{},\"entry\":{},\"interior\":{},\"floor\":{},\"margins\":{}}},\n\
 \"frame_lo\":{{\"offset_lo\":[{:e},{:e}],\"spacing_lo\":{:e},\"pad\":{},\"margins\":{}}},\n\
@@ -582,6 +587,7 @@ fn manifest(b: &Bundle, base: &str) -> String {
         b.orbit_len,
         b.periodic,
         b.flush,
+        b.flush_hilo,
         quote(&b.spec.center_re),
         quote(&b.spec.center_im),
         b.spec.width,
@@ -627,6 +633,14 @@ fn check(bytes: &[u8], manifest: &str, samples: u32, threads: usize) -> Result<u
         Some(json::Value::Num(n)) => n.parse::<i32>().map_err(|e| e.to_string())?,
         _ => return Err("manifest has no flush".into()),
     };
+    // `flush` is the `F32Pair` orbit's and `flush_hilo` the `HiLo` orbit's. A bundle written
+    // before the two were split carries only `flush`, which then stands for both, as it did
+    // when that bundle was checked.
+    let flush_hilo = match json::get(&top, "flush_hilo") {
+        Some(json::Value::Num(n)) => n.parse::<i32>().map_err(|e| e.to_string())?,
+        None => flush,
+        _ => return Err("manifest's flush_hilo is not a number".into()),
+    };
     let at = |name: &str| -> Result<&[u8], String> {
         let &(offset, len) = arrays
             .get(name)
@@ -641,7 +655,10 @@ fn check(bytes: &[u8], manifest: &str, samples: u32, threads: usize) -> Result<u
         encoding,
         points,
         periodic,
-        flush,
+        flush: match encoding {
+            Encoding::F32Pair => flush,
+            Encoding::HiLo => flush_hilo,
+        },
     };
     let f = f32::from_bits;
     let pair = orbit(

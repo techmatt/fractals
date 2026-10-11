@@ -197,6 +197,33 @@ pub(crate) const UNSCALE_AT: i32 = -60;
 pub(crate) const DRIFT: i32 = 32;
 /// In the scaled regime, `|Z|` at or above `2^(REBASE_GATE + 1 + s)` cannot rebase.
 pub(crate) const REBASE_GATE: i32 = 60;
+
+/// Whether `z` is formed in the delta's units, `Z · 2^-s + d`, at a reference point whose
+/// larger stored component has exponent `ez` ([`exponent_of_max`]): in the scaled regime,
+/// where `|Z|` is not `2^61` or more above `|δ|`, **or where `Z` is stored as zero**. A
+/// zero has `ez = -127`, which the gate alone passes only while `s >= -187`; below that,
+/// forming `Z + d · 2^s` unscaled underflowed `δ` to zero and the iterate the interior
+/// proof was handed was `0`, not `δ`. That was covered while a flushed orbit carried a
+/// frame-wide `2^-125`; once the flush term is measured ([`crate::orbit::flush_bound`]),
+/// at a minibrot's `2^-322` return, it is not, so the zero takes the scaled path, which
+/// keeps `δ` exactly. The rebase test reads the same predicate. WGSL: `s != 0 && (ez ==
+/// -127 || ez <= REBASE_GATE + s)`.
+#[inline(always)]
+pub(crate) fn reads_scaled(ez: i32, s: i32) -> bool {
+    s != 0 && (ez == -127 || ez <= REBASE_GATE + s)
+}
+/// The careful step's unit `2^v`: the larger of `Z`'s exponent `ez` and `δ`'s `ed`,
+/// **except that a `Z` stored as zero (`ez = -127`) is not a size** and the unit is `δ`'s.
+/// Read as `2^-127` it put a deep `δ` far below the unit, so that `t^(D-1)` underflowed
+/// (`ed` below about `-190` at degree 3, `-253` at degree 2) and the step returned `0` for
+/// a true `≈ δ^D`. On a Mandelbrot plane `κ_add·|dc|` covered that; on a Julia plane only
+/// the flush term did, by accident under a frame-wide `2^-125` and not once it is measured.
+/// It is the reconstruct's hole ([`reads_scaled`]) at the careful step. Bit for bit the
+/// same wherever `ed >= -127`. WGSL: `select(max(ez, ed), ed, ez == -127)`.
+#[inline(always)]
+pub(crate) fn careful_unit(ez: i32, ed: i32) -> i32 {
+    if ez == -127 || ed > ez { ed } else { ez }
+}
 /// An unscaled `z` below `2^-62` rebases as `z · 2^REBASE_LIFT`, with `s = -REBASE_LIFT`.
 pub(crate) const REBASE_LIFT: i32 = 64;
 
@@ -708,7 +735,7 @@ fn careful_step<const D: usize, const JULIA: bool, const HILO: bool>(
     let dm1 = (D - 1) as i32;
     let ez = exponent_of_max(p[0], p[1]);
     let ed = s + exponent_of_max(d[0], d[1]);
-    let v = if ez > ed { ez } else { ed };
+    let v = careful_unit(ez, ed);
     let zv = [
         ldexp_exact(p[0], -v),
         ldexp_exact(p[1], -v),
@@ -890,7 +917,7 @@ fn run<const D: usize, const JULIA: bool, const HILO: bool, const BLA: bool>(
         // in the scaled regime, `z` is formed in the delta's units first, so that a `z`
         // below `f32`'s normal range keeps its size for the interior switch.
         let p = &points[m as usize];
-        let (z, zv, ze) = if s != 0 && exponent_of_max(p[0], p[1]) <= REBASE_GATE + s {
+        let (z, zv, ze) = if reads_scaled(exponent_of_max(p[0], p[1]), s) {
             let zs = add_reference::<HILO>(
                 &[
                     ldexp_exact(p[0], -s),
@@ -993,7 +1020,7 @@ fn run<const D: usize, const JULIA: bool, const HILO: bool, const BLA: bool>(
         } else {
             // Scaled: compare `z · 2^-s` with `d`. With `|Z| >= 2^(61+s)`, `|Z| > 2|δ|`
             // and the answer is no; that integer gate also keeps `Z · 2^-s` finite.
-            if exponent_of(max_abs(p[0], p[1])) <= REBASE_GATE + s {
+            if reads_scaled(exponent_of(max_abs(p[0], p[1])), s) {
                 let zs = add_reference::<HILO>(
                     &[
                         ldexp_exact(p[0], -s),

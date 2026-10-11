@@ -148,16 +148,28 @@
 //!   `κ_pt = 2(2u + u_Z)`. Read at the anchor (the disc about the centre holds `w_s`
 //!   only after its radius takes the difference), at the test, and at a rebase, where
 //!   `δ := ẑ` moves `w` by that much.
-//! - **The flush**, `2^-FLUSH = 2^-125` absolute ([`crate::orbit::FLUSH`]). `u_Z` is a
-//!   relative bound, and the buffer breaks it where `orbit::narrow` stored a component
-//!   (or `HiLo`'s `lo`) below `f32`'s normal range as zero: there `|Ẑ − Z|` may reach
-//!   `2^-126` a component, more than `|Z|` itself, and at exactly the low-`|z|` steps the
-//!   proof anchors on. Where the orbit flushed anything ([`crate::orbit::GpuOrbit::flush`],
-//!   carried in [`Iterate::flush`]) the point margin gains `2^-125` and the step's defect
-//!   `2D(D−1)·M^(D−2)·|δ_j|·2^-125` (`2^6` covers `2D(D−1)` to degree 6). The term is
-//!   frame-wide rather than per point, because a stored zero cannot say whether it was
-//!   flushed; where nothing was, it is off and nothing moves. It costs only discs whose
-//!   radii are within a few powers of two of `2^-125`.
+//! - **The flush**, `2^-flush` absolute ([`crate::orbit::GpuOrbit::flush`], carried in
+//!   [`Iterate::flush`]). `u_Z` is a relative bound, and the buffer breaks it where
+//!   `orbit::narrow` stored a component (or `HiLo`'s `lo`) below `f32`'s normal range as
+//!   zero: there `|Ẑ − Z|` may reach `2^-126` a component, more than `|Z|` itself, and at
+//!   exactly the low-`|z|` steps the proof anchors on. Where the orbit flushed anything the
+//!   point margin gains `2^-flush` and the step's defect `2D(D−1)·M^(D−2)·|δ_j|·2^-flush`
+//!   (`2^6` covers `2D(D−1)` to degree 6). The term is frame-wide rather than per point,
+//!   because a stored zero cannot say whether it was flushed; where nothing was, it is off
+//!   and nothing moves. **`flush` is measured**: the largest flushed component, which is
+//!   exactly the error it left, rounded up to a power of two with the pair's `√2`
+//!   ([`crate::orbit::flush_bound`]); `2^-125` ([`crate::orbit::FLUSH`]) is that bound at
+//!   its loosest. It was the constant `2^-125` until a deep minibrot showed what that
+//!   costs: the flushed points are the nucleus's returns, `2^-268` and `2^-322` on the D
+//!   frames, and a `2^-125` margin beside discs of `2^-155` to `2^-290` closed none of
+//!   them, where the measured one closes every sample at `perturb`'s 622 steps. The
+//!   measured term covers a stored zero only if the kernel reads the iterate there as
+//!   `Z · 2^-s + d` (`model::reads_scaled`): formed unscaled with `s` below `-187`, `δ`
+//!   underflowed and `ẑ` was `0`, an error of `|δ|` that `2^-125` had covered by accident.
+//!   It costs only discs whose radii are within a few powers of two of the measured term,
+//!   so a frame whose reference skims `2^-126` at some unrelated step still pays `2^-125`
+//!   everywhere; carrying an exponent per point would remove that (README, *Deep
+//!   interior*).
 //! - **The radius recurrence's own rounding**, [`GROW`]: `(|w| + ρ)^D − |w|^D` is formed in
 //!   units where the larger of the two is in `[1, 2)`, as `ρ · g` with `g = Σ_{j=1..D}
 //!   C(D,j)·|w|^(D−j)·ρ^(j−1)`, a sum of positive terms, at most `3D − 1 ≤ 17` roundings:

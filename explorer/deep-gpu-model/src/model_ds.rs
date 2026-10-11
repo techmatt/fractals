@@ -115,8 +115,8 @@ use crate::ds::{self, Cds, Ds};
 use crate::frame::{Frame, FrameLo};
 use crate::model::{
     BAILOUT_SQ, BlaStats, CAPPED, DC_HEADROOM, DELTA_FLOOR, DRIFT, ESCAPE_BIG, ESCAPED, FLAG,
-    GATED, HANDOFF, INTERIOR, NO_EXPONENT, REBASE_GATE, REBASE_LIFT, RUNNING, SCALE_FLOOR,
-    UNSCALE_AT, binomial, derivative_step, reaches, smooth_fraction,
+    GATED, HANDOFF, INTERIOR, NO_EXPONENT, REBASE_LIFT, RUNNING, SCALE_FLOOR, UNSCALE_AT, binomial,
+    careful_unit, derivative_step, reaches, reads_scaled, smooth_fraction,
 };
 use crate::orbit::{Encoding, GpuOrbit};
 use crate::proof::{self, Iterate, Proof};
@@ -491,7 +491,7 @@ fn careful_step<const D: usize, const JULIA: bool>(
     let dm1 = (D - 1) as i32;
     let ez = exponent_of_max(z[0].hi, z[1].hi);
     let ed = s + exponent_of_max(d[0].hi, d[1].hi);
-    let v = if ez > ed { ez } else { ed };
+    let v = careful_unit(ez, ed);
     let f = factor::<D>(&ldexp_c(z, -v), ldexp_c(d, s - v));
     let ef = exponent_of_max(f[0].hi, f[1].hi);
     let g = ds::c_mul(ldexp_c(f, -ef), d);
@@ -652,7 +652,7 @@ fn run<const D: usize, const JULIA: bool, const BLA: bool>(
         // ---- reconstruct and escape: `z = zv · 2^ze`, the pair; the tests read `hi`.
         let p = &points[m as usize];
         let zr = reference(p);
-        let (z, zv, ze) = if s != 0 && exponent_of_max(p[0], p[1]) <= REBASE_GATE + s {
+        let (z, zv, ze) = if reads_scaled(exponent_of_max(p[0], p[1]), s) {
             let zs = ds::c_add(ldexp_c(zr, -s), d);
             (ldexp_c(zs, s), zs, s)
         } else {
@@ -733,7 +733,7 @@ fn run<const D: usize, const JULIA: bool, const BLA: bool>(
                     rebase_to = Some((zs, -REBASE_LIFT));
                 }
             }
-        } else if exponent_of(max_abs(p[0], p[1])) <= REBASE_GATE + s {
+        } else if reads_scaled(exponent_of(max_abs(p[0], p[1])), s) {
             let zs = ds::c_add(ldexp_c(zr, -s), d);
             let zs_hi = hi(zs);
             let zs_norm_sq = zs_hi[0] * zs_hi[0] + zs_hi[1] * zs_hi[1];
