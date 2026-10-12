@@ -228,6 +228,42 @@ fn reference(p: &[f32; 4]) -> Cds {
     [ds::from_hi_lo(p[0], p[2]), ds::from_hi_lo(p[1], p[3])]
 }
 
+/// Point `m` kept exactly, `(Z · 2^-e, e)`, where narrowing flushed some of it and the
+/// orbit keeps its flushed points ([`GpuOrbit::exact`]); `None` for every other point.
+#[inline(always)]
+fn exact_point(orbit: &GpuOrbit, m: u32) -> Option<(Cds, i32)> {
+    match orbit.exact.get(m as usize) {
+        Some(&(p, e)) if e != 0 => Some((reference(&p), e)),
+        _ => None,
+    }
+}
+
+/// `z = Z + δ` where the scaled regime forms it, as `(zv, ze)` with `z = zv · 2^ze`.
+///
+/// - **In the delta's units** (`ze = s`), `Z · 2^-s + d`, as the regime always has: off the
+///   stored point, or off the exact point where there is one and it fits those units (its
+///   `2^(e+x)` at most `2^(REBASE_GATE + 1 + s)`, the regime's own bound), so that a
+///   flushed near-zero return is its true size there.
+/// - **In the exact point's own units** (`ze = e`), `Z · 2^-e + d · 2^(s-e)`, where the
+///   exact point is too large for the delta's units: a flushed return far above `δ`, which
+///   the stored point would hand the proof as `δ` alone. That `z` is `Z` to the pair's
+///   precision, so at every return of a superattracting cycle the proof is anchored where
+///   the iterate is, and not at a `δ` that shrinks each period and re-anchors it forever.
+///
+/// Neither is off the orbit by a flush: an iterate formed here owes the proof no flush
+/// term ([`crate::proof::Iterate`]).
+#[inline(always)]
+fn scaled_z(zr: Cds, exact: Option<(Cds, i32)>, d: Cds, s: i32) -> (Cds, i32) {
+    if let Some((zx, e)) = exact {
+        let x = exponent_of_max(zx[0].hi, zx[1].hi);
+        if x == -127 || e + x <= crate::model::REBASE_GATE + s {
+            return (ds::c_add(ldexp_c(zx, e - s), d), s);
+        }
+        return (ds::c_add(zx, ldexp_c(d, s - e)), e);
+    }
+    (ds::c_add(ldexp_c(zr, -s), d), s)
+}
+
 /// The state a pixel starts in.
 pub fn init_ds(frame: &Frame, lo: &FrameLo, col: u32, row: u32) -> DsPixelState {
     let (d, s, m) = if frame.julia != 0 {
@@ -482,6 +518,7 @@ const fn quick_size<const D: usize>() -> f32 {
 #[inline(never)]
 fn careful_step<const D: usize, const JULIA: bool>(
     z: Cds,
+    ze: i32,
     d: Cds,
     s: i32,
     dc: Cds,
@@ -489,10 +526,15 @@ fn careful_step<const D: usize, const JULIA: bool>(
     sc: i32,
 ) -> (Cds, i32) {
     let dm1 = (D - 1) as i32;
-    let ez = exponent_of_max(z[0].hi, z[1].hi);
+    // `Z = z · 2^ze`: `ze` is 0 for a stored point and the exact point's exponent for one
+    // narrowing flushed (`exact_point`), which this step then takes at its true size.
+    let ez = match exponent_of_max(z[0].hi, z[1].hi) {
+        -127 => -127,
+        x => x + ze,
+    };
     let ed = s + exponent_of_max(d[0].hi, d[1].hi);
     let v = careful_unit(ez, ed);
-    let f = factor::<D>(&ldexp_c(z, -v), ldexp_c(d, s - v));
+    let f = factor::<D>(&ldexp_c(z, ze - v), ldexp_c(d, s - v));
     let ef = exponent_of_max(f[0].hi, f[1].hi);
     let g = ds::c_mul(ldexp_c(f, -ef), d);
     let ge = dm1 * v + ef + s;
@@ -629,7 +671,10 @@ fn run<const D: usize, const JULIA: bool, const BLA: bool>(
             if gate && reaches(hi(product), PRODUCT_SIZE_DS) {
                 d = next;
             } else {
-                let (nd, ns) = careful_step::<D, JULIA>(zr, d, s, dc, dc_e, sc);
+                let (nd, ns) = match exact_point(orbit, m) {
+                    Some((zx, e)) => careful_step::<D, JULIA>(zx, e, d, s, dc, dc_e, sc),
+                    None => careful_step::<D, JULIA>(zr, 0, d, s, dc, dc_e, sc),
+                };
                 d = nd;
                 if ns != s {
                     s = ns;
@@ -652,13 +697,17 @@ fn run<const D: usize, const JULIA: bool, const BLA: bool>(
         // ---- reconstruct and escape: `z = zv · 2^ze`, the pair; the tests read `hi`.
         let p = &points[m as usize];
         let zr = reference(p);
-        let (z, zv, ze) = if reads_scaled(exponent_of_max(p[0], p[1]), s) {
-            let zs = ds::c_add(ldexp_c(zr, -s), d);
-            (ldexp_c(zs, s), zs, s)
+        let exact = exact_point(orbit, m);
+        // Whether the iterate was formed from a stored point that had flushed: only then is
+        // it off the orbit by the flush, and only then does the proof add the term.
+        let (z, zv, ze, flushed) = if reads_scaled(exponent_of_max(p[0], p[1]), s) {
+            let (zs, ze) = scaled_z(zr, exact, d, s);
+            (ldexp_c(zs, ze), zs, ze, false)
         } else {
             let z = ds::c_add(zr, ldexp_c(d, s));
-            (z, z, 0)
+            (z, z, 0, exact.is_some())
         };
+        let flush = if flushed { orbit.flush } else { proof::OFF };
         let z_hi = hi(z);
         let big = reaches(z_hi, ESCAPE_BIG);
         let z_norm_sq = if big {
@@ -674,7 +723,7 @@ fn run<const D: usize, const JULIA: bool, const BLA: bool>(
 
         // ---- interior switch: the gate on the high parts, the proof on the pair.
         if track_interior {
-            let it = Iterate::pair(hi(zv), [zv[0].lo, zv[1].lo], ze).read_from(orbit.flush);
+            let it = Iterate::pair(hi(zv), [zv[0].lo, zv[1].lo], ze).read_from(flush);
             if proof.phase == proof::IDLE {
                 let nonzero = if let (true, Some(h), Some(t)) = (BLA, hit, table) {
                     let x = &t.interior[h.index as usize];
@@ -722,6 +771,9 @@ fn run<const D: usize, const JULIA: bool, const BLA: bool>(
         }
         let exhausted = !periodic && m >= last;
         let mut rebase_to: Option<(Cds, i32)> = None;
+        // As for the iterate: whether the rebased delta came off a stored point that had
+        // flushed (the scaled one may come off the exact point instead).
+        let mut rebase_flushed = exact.is_some();
         let d_hi = hi(d);
         if s == 0 {
             let delta_norm_sq = d_hi[0] * d_hi[0] + d_hi[1] * d_hi[1];
@@ -734,12 +786,19 @@ fn run<const D: usize, const JULIA: bool, const BLA: bool>(
                 }
             }
         } else if reads_scaled(exponent_of(max_abs(p[0], p[1])), s) {
-            let zs = ds::c_add(ldexp_c(zr, -s), d);
-            let zs_hi = hi(zs);
-            let zs_norm_sq = zs_hi[0] * zs_hi[0] + zs_hi[1] * zs_hi[1];
-            let delta_norm_sq = d_hi[0] * d_hi[0] + d_hi[1] * d_hi[1];
-            if zs_norm_sq < delta_norm_sq || exhausted {
-                rebase_to = Some((zs, s));
+            let (zs, ze) = scaled_z(zr, exact, d, s);
+            rebase_flushed = false;
+            if ze == s {
+                let zs_hi = hi(zs);
+                let zs_norm_sq = zs_hi[0] * zs_hi[0] + zs_hi[1] * zs_hi[1];
+                let delta_norm_sq = d_hi[0] * d_hi[0] + d_hi[1] * d_hi[1];
+                if zs_norm_sq < delta_norm_sq || exhausted {
+                    rebase_to = Some((zs, s));
+                }
+            } else if exhausted {
+                // `z` in the exact point's units is far above `δ`: it rebases only where the
+                // reference has run out.
+                rebase_to = Some((zs, ze));
             }
         } else if exhausted {
             rebase_to = Some((z, 0));
@@ -753,7 +812,14 @@ fn run<const D: usize, const JULIA: bool, const BLA: bool>(
             }
             m = 0;
             rebases += 1;
-            proof.rebased(margins, orbit.flush);
+            proof.rebased(
+                margins,
+                if rebase_flushed {
+                    orbit.flush
+                } else {
+                    proof::OFF
+                },
+            );
         }
     }
 

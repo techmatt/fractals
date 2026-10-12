@@ -25,6 +25,9 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::Instant;
 
+use deep_gpu_model::bla::{
+    self, BlaEntry, BlaInterior, BlaLo, BlaOptions, GpuTable, LEVEL_LIMIT, Search, TableHeader,
+};
 use deep_gpu_model::compare::{self, FrameSpec, Options, agree, par_rows, run_f64, safe_name};
 use deep_gpu_model::frame::{Frame, FrameLo, GatedPolicy};
 use deep_gpu_model::model::{self, CAPPED, ESCAPED, GATED, INTERIOR, PixelState, RUNNING};
@@ -52,6 +55,10 @@ export: the GPU bench page's inputs, out of the model.
                            the manifest how many pixels that moves (default off)
   --slim on|off            write only frame, frame_lo, orbit_hilo, ds_state and ds_proof
                            (default off): a self-test bundle
+  --bla on|off             run the double-single kernel with its skip table, built at
+                           EPSILON_DS_DEFAULT, and write the table as the page binds it
+                           (bla_header, bla_runs); the f32 kernel stays without one
+                           (default off)
   --extra-vectors on|off   with --vectors, also the primitives the 31 cases leave out
                            (two_sqr, ds_sqr, ds_mul_f32), derived from their inputs
   --threads N              worker threads (default: all)
@@ -162,6 +169,7 @@ fn run() -> Result<(), String> {
     let shape = Shape {
         ftz: switch("ftz-check")?,
         slim: switch("slim")?,
+        bla: switch("bla")?,
     };
 
     let mut rows: Vec<FrameSpec> = Vec::new();
@@ -417,6 +425,8 @@ struct Bundle {
     /// The flushing re-run, when asked for.
     ftz: Option<Ftz>,
     slim: bool,
+    /// The skip table's levels and live runs, where the bundle has one.
+    bla: Option<(u32, usize)>,
 }
 
 /// What a bundle holds beyond the default, from the command line.
@@ -426,6 +436,8 @@ struct Shape {
     ftz: bool,
     /// Only what a GPU self-test reads.
     slim: bool,
+    /// The double-single kernel with its skip table.
+    bla: bool,
 }
 
 /// How far flushing subnormals moves the double-single kernel on a frame: pixels whose
@@ -474,6 +486,21 @@ fn build(row: &FrameSpec, opts: &Options, shape: Shape) -> Result<Bundle, String
     // the two orbits are one length, and with the switch off the policy is never read.
     let frame = Frame::from_spec(&spec, pair.len())?.with_policy(opts.interior_policy);
     let lo = FrameLo::from_spec(&spec, &frame)?;
+    let table = shape.bla.then(|| {
+        GpuTable::build(
+            &reference,
+            &frame,
+            &BlaOptions {
+                epsilon: bla::EPSILON_DS_DEFAULT,
+                ..BlaOptions::default()
+            },
+        )
+    });
+    // The double-single kernel, with the table where there is one.
+    let ds_run = |col: u32, row: u32| match &table {
+        Some(t) => model_ds::run_pixel_ds_bla(&frame, &lo, &hilo, t, col, row, u32::MAX).0,
+        None => model_ds::run_pixel_ds(&frame, &lo, &hilo, col, row, u32::MAX),
+    };
 
     let t = Instant::now();
     let f64_field = run_f64(&spec, &reference, opts.threads);
@@ -487,19 +514,13 @@ fn build(row: &FrameSpec, opts: &Options, shape: Shape) -> Result<Bundle, String
     let f32_s = t.elapsed().as_secs_f64();
     let t = Instant::now();
     let ds_states: Vec<DsPixelState> = par_rows(frame.height_px, opts.threads, |row| {
-        (0..frame.width_px)
-            .map(|col| model_ds::run_pixel_ds(&frame, &lo, &hilo, col, row, u32::MAX))
-            .collect()
+        (0..frame.width_px).map(|col| ds_run(col, row)).collect()
     });
     let ds_s = t.elapsed().as_secs_f64();
     let mut flushed_states: Vec<DsPixelState> = Vec::new();
     let ftz = if shape.ftz {
         let flushed: Vec<DsPixelState> = par_rows(frame.height_px, opts.threads, |row| {
-            with_flush(|| {
-                (0..frame.width_px)
-                    .map(|col| model_ds::run_pixel_ds(&frame, &lo, &hilo, col, row, u32::MAX))
-                    .collect()
-            })
+            with_flush(|| (0..frame.width_px).map(|col| ds_run(col, row)).collect())
         });
         let mut f = Ftz {
             differ: 0,
@@ -523,6 +544,22 @@ fn build(row: &FrameSpec, opts: &Options, shape: Shape) -> Result<Bundle, String
     let mut bin = Bin::default();
     bin.push("frame", "u8", 64, frame_bytes(&frame));
     bin.push("frame_lo", "u8", 32, frame_lo_bytes(&lo));
+    if let Some(t) = &table {
+        bin.push("bla_header", "u8", bla::HEADER_BYTES, header_bytes(t));
+        bin.push("bla_runs", "u8", t.entries.len() * RUN_BYTES, runs_bytes(t));
+        // The `f64` orbit the table was built from, so that the page's own build
+        // (`explorer/deep-gpu-bla.js`) can be held to this one byte for byte.
+        bin.push(
+            "orbit_f64",
+            "f64",
+            reference.points.len() * 2,
+            reference
+                .points
+                .iter()
+                .flat_map(|p| p.iter().flat_map(|x| x.to_le_bytes()))
+                .collect(),
+        );
+    }
     if shape.slim {
         bin.push(
             "orbit_hilo",
@@ -530,6 +567,7 @@ fn build(row: &FrameSpec, opts: &Options, shape: Shape) -> Result<Bundle, String
             points * 4,
             le_f32(hilo.points.iter().flat_map(|p| *p)),
         );
+        push_exact(&mut bin, &hilo);
         bin.push(
             "ds_state",
             "u32",
@@ -623,7 +661,96 @@ fn build(row: &FrameSpec, opts: &Options, shape: Shape) -> Result<Bundle, String
         summary,
         ftz,
         slim: shape.slim,
+        bla: table.as_ref().map(|t| (t.header.levels, t.valid)),
     })
+}
+
+/// Bytes of one exact point as the page binds it: the `vec4<f32>`, its exponent, and
+/// three words of padding to the struct's 32 (`explorer/deep-gpu-wgsl.js`'s `Exact`).
+const EXACT_BYTES: usize = 32;
+
+/// The `HiLo` orbit's exact points ([`GpuOrbit::exact`]), where it keeps any.
+fn push_exact(bin: &mut Bin, hilo: &GpuOrbit) {
+    if hilo.exact.is_empty() {
+        return;
+    }
+    let mut b = Vec::with_capacity(hilo.exact.len() * EXACT_BYTES);
+    for (v, e) in &hilo.exact {
+        b.extend(le_f32(*v));
+        b.extend(le_u32([*e as u32, 0, 0, 0]));
+    }
+    bin.push("orbit_exact", "u8", hilo.exact.len() * EXACT_BYTES, b);
+}
+
+/// Bytes of one run as the page binds it: `BlaEntry`, `BlaLo` and `BlaInterior` side by side
+/// (`explorer/deep-gpu-wgsl.js`'s `BlaRun`, `explorer/deep-gpu-bla.js`'s build).
+const RUN_BYTES: usize = 64;
+
+/// [`TableHeader`] as the 528 bytes of the page's uniform.
+fn header_bytes(t: &GpuTable) -> Vec<u8> {
+    let h = &t.header;
+    let mut b = le_u32([h.min_level, h.levels, h.mask, h.periodic]);
+    for level in &h.level {
+        b.extend(le_u32(*level));
+    }
+    b
+}
+
+/// Every run, [`RUN_BYTES`] each.
+fn runs_bytes(t: &GpuTable) -> Vec<u8> {
+    let mut b = Vec::with_capacity(t.entries.len() * RUN_BYTES);
+    for ((e, l), x) in t.entries.iter().zip(&t.lo).zip(&t.interior) {
+        b.extend(le_f32([e.a[0], e.a[1], e.b[0], e.b[1]]));
+        b.extend(le_u32([e.a_e as u32, e.b_e as u32]));
+        b.extend(le_f32([e.r2_m]));
+        b.extend(le_u32([e.r2_e as u32]));
+        b.extend(le_f32([l.a_lo[0], l.a_lo[1], l.b_lo[0], l.b_lo[1]]));
+        b.extend(le_f32([x.deriv_m]));
+        b.extend(le_u32([x.deriv_e as u32]));
+        b.extend(le_f32([x.dmin_m]));
+        b.extend(le_u32([x.dmin_e as u32]));
+    }
+    b
+}
+
+/// [`header_bytes`] and [`runs_bytes`] read back into a table the model runs.
+fn table_from(header: &[u8], runs: &[u8]) -> GpuTable {
+    let w = words(header);
+    let f = f32::from_bits;
+    let mut level = [[0u32; 4]; LEVEL_LIMIT as usize + 1];
+    for (i, l) in level.iter_mut().enumerate() {
+        l.copy_from_slice(&w[4 + 4 * i..8 + 4 * i]);
+    }
+    let mut t = GpuTable::empty(w[3] != 0);
+    t.header = TableHeader {
+        min_level: w[0],
+        levels: w[1],
+        mask: w[2],
+        periodic: w[3],
+        level,
+    };
+    t.search = Search::BottomUp;
+    for r in words(runs).chunks_exact(RUN_BYTES / 4) {
+        t.entries.push(BlaEntry {
+            a: [f(r[0]), f(r[1])],
+            b: [f(r[2]), f(r[3])],
+            a_e: r[4] as i32,
+            b_e: r[5] as i32,
+            r2_m: f(r[6]),
+            r2_e: r[7] as i32,
+        });
+        t.lo.push(BlaLo {
+            a_lo: [f(r[8]), f(r[9])],
+            b_lo: [f(r[10]), f(r[11])],
+        });
+        t.interior.push(BlaInterior {
+            deriv_m: f(r[12]),
+            deriv_e: r[13] as i32,
+            dmin_m: f(r[14]),
+            dmin_e: r[15] as i32,
+        });
+    }
+    t
 }
 
 /// Every array a full bundle carries after the two uniforms.
@@ -649,6 +776,7 @@ fn push_full(
         points * 4,
         le_f32(hilo.points.iter().flat_map(|p| *p)),
     );
+    push_exact(bin, hilo);
     bin.push(
         "f32_n",
         "u32",
@@ -772,13 +900,13 @@ fn manifest(b: &Bundle, base: &str) -> String {
     format!(
         "{{\"format\":\"{FORMAT}\",\"id\":{},\"manifest\":\"{base}.manifest.json\",\"bin\":\"{base}.bin\",\"bin_bytes\":{},\
 \"width\":{:e},\"degree\":{},\"julia\":{},\"width_px\":{},\"height_px\":{},\"cap\":{},\"interior\":{},\
-\"orbit_len\":{},\"periodic\":{},\"flush\":{},\"flush_hilo\":{},\"interior_policy\":\"{}\",\"slim\":{},\"ftz\":{},\n\
+\"orbit_len\":{},\"periodic\":{},\"flush\":{},\"flush_hilo\":{},\"interior_policy\":\"{}\",\"slim\":{},\"ftz\":{},\"bla\":{},\n\
 \"spec\":{{\"re\":{},\"im\":{},\"w\":{:e},\"julia_re\":{},\"julia_im\":{},\"anchor\":\"{}\",\"link\":{}}},\n\
 \"frame\":{{\"width_px\":{},\"height_px\":{},\"offset_m\":[{:e},{:e}],\"spacing_m\":{:e},\"sc\":{},\"maxiter\":{},\"degree\":{},\"julia\":{},\"entry\":{},\"interior\":{},\"floor\":{},\"margins\":{}}},\n\
 \"frame_lo\":{{\"offset_lo\":[{:e},{:e}],\"spacing_lo\":{:e},\"pad\":{},\"margins\":{}}},\n\
 \"pixel_order\":\"row-major, index = row * width_px + col, row 0 at the top (dc's imaginary part largest)\",\n\
 \"status_codes\":{{\"running\":{RUNNING},\"escaped\":{ESCAPED},\"capped\":{CAPPED},\"interior\":{INTERIOR},\"gated\":{GATED}}},\n\
-\"expected\":\"f32_*: model::run_pixel on orbit_f32pair with frame; ds_*: model_ds::run_pixel_ds on orbit_hilo with frame and frame_lo; both unbounded budget, no skip table. f32_state and ds_state: PixelState::bits and DsPixelState::bits per pixel, 12 and 14 u32, the GPU structs' order; ds_proof: the double-single state's Proof::bits, 18 u32 a pixel. smooth = n + frac where status is escaped. f64_smooth: perturb's f64 kernel, NaN where it did not escape. A slim bundle carries frame, frame_lo, orbit_hilo, ds_state and ds_proof only. ftz: pixels whose double-single state moves (frac and frac alone counted apart) when subnormals are flushed, or null when not checked\",\n\
+\"expected\":\"f32_*: model::run_pixel on orbit_f32pair with frame; ds_*: model_ds::run_pixel_ds on orbit_hilo with frame and frame_lo; both unbounded budget, no skip table. f32_state and ds_state: PixelState::bits and DsPixelState::bits per pixel, 12 and 14 u32, the GPU structs' order; ds_proof: the double-single state's Proof::bits, 18 u32 a pixel. smooth = n + frac where status is escaped. f64_smooth: perturb's f64 kernel, NaN where it did not escape. A slim bundle carries frame, frame_lo, orbit_hilo, ds_state and ds_proof only. bla: where not null, ds_* is model_ds::run_pixel_ds_bla with the table bla_header and bla_runs hold (bla.rs at EPSILON_DS_DEFAULT, 64 bytes a run: BlaEntry, BlaLo, BlaInterior). ftz: pixels whose double-single state moves (frac and frac alone counted apart) when subnormals are flushed, or null when not checked\",\n\
 \"arrays\":[\n{}\n],\n\
 {}}}\n",
         quote(&b.row.id),
@@ -809,6 +937,10 @@ fn manifest(b: &Bundle, base: &str) -> String {
                 "{{\"differ\":{},\"frac_differ\":{}}}",
                 z.differ, z.frac_differ
             ),
+            None => "null".into(),
+        },
+        match b.bla {
+            Some((levels, valid)) => format!("{{\"levels\":{levels},\"valid\":{valid}}}"),
             None => "null".into(),
         },
         quote(&b.spec.center_re),
@@ -882,6 +1014,7 @@ fn check(bytes: &[u8], manifest: &str, samples: u32, threads: usize) -> Result<u
             Encoding::F32Pair => flush,
             Encoding::HiLo => flush_hilo,
         },
+        exact: Vec::new(),
     };
     let f = f32::from_bits;
     // A slim bundle has no `F32Pair` orbit and no `f32` kernel to hold.
@@ -899,7 +1032,7 @@ fn check(bytes: &[u8], manifest: &str, samples: u32, threads: usize) -> Result<u
     } else {
         None
     };
-    let hilo = orbit(
+    let mut hilo = orbit(
         Encoding::HiLo,
         words(at("orbit_hilo")?)
             .as_chunks::<4>()
@@ -908,6 +1041,14 @@ fn check(bytes: &[u8], manifest: &str, samples: u32, threads: usize) -> Result<u
             .map(|p| p.map(f))
             .collect(),
     );
+    if arrays.contains_key("orbit_exact") {
+        hilo.exact = words(at("orbit_exact")?)
+            .as_chunks::<8>()
+            .0
+            .iter()
+            .map(|w| ([f(w[0]), f(w[1]), f(w[2]), f(w[3])], w[4] as i32))
+            .collect();
+    }
 
     let expected = |name: &str| at(name).map(words);
     let ([f32_n, f32_frac, f32_status, f32_steps], [ds_n, ds_frac, ds_status, ds_steps], f32_state) =
@@ -934,6 +1075,11 @@ fn check(bytes: &[u8], manifest: &str, samples: u32, threads: usize) -> Result<u
     } else {
         None
     };
+    let table = if arrays.contains_key("bla_header") {
+        Some(table_from(at("bla_header")?, at("bla_runs")?))
+    } else {
+        None
+    };
     let pixels = (frame.width_px * frame.height_px) as usize;
     let take = (samples as usize).min(pixels);
     if take == 0 {
@@ -954,7 +1100,10 @@ fn check(bytes: &[u8], manifest: &str, samples: u32, threads: usize) -> Result<u
                 bad.push(format!("f32 pixel ({col}, {row}) differs"));
             }
         }
-        let b = model_ds::run_pixel_ds(&frame, &lo, &hilo, col, row, u32::MAX);
+        let b = match &table {
+            Some(t) => model_ds::run_pixel_ds_bla(&frame, &lo, &hilo, t, col, row, u32::MAX).0,
+            None => model_ds::run_pixel_ds(&frame, &lo, &hilo, col, row, u32::MAX),
+        };
         if (full
             && [b.n, b.frac.to_bits(), b.status, b.steps]
                 != [ds_n[i], ds_frac[i], ds_status[i], ds_steps[i]])
@@ -1062,6 +1211,7 @@ mod tests {
     const FULL: Shape = Shape {
         ftz: false,
         slim: false,
+        bla: false,
     };
 
     fn shaped(row: &str, res: [u32; 2], cap: u32, interior: bool, shape: Shape) -> Bundle {
@@ -1090,6 +1240,7 @@ mod tests {
             Shape {
                 ftz: true,
                 slim: true,
+                bla: false,
             },
         );
         let text = manifest(&b, "p");
@@ -1106,6 +1257,54 @@ mod tests {
         let mut bad = b.bin.clone();
         bad[offset + 4 * 18 * 5] ^= 1;
         assert!(check(&bad, &text, 96, 4).is_err());
+    }
+
+    /// A bundle with its skip table runs the double-single kernel with it, re-runs from its
+    /// own bytes to every pixel, and a flipped bit in a run is caught; the table read back
+    /// is the one built.
+    #[test]
+    fn a_bla_bundle_reproduces_every_pixel() {
+        let row = r#"{"id":"b","re":"-0.745","im":"0.15","w":1e-30,"n":3000}"#;
+        let opts = Options {
+            resolution: [24, 14],
+            cap: Some(3000),
+            ..Options::default()
+        };
+        let b = build(
+            &FrameSpec::from_row(row).unwrap(),
+            &opts,
+            Shape {
+                ftz: false,
+                slim: true,
+                bla: true,
+            },
+        )
+        .unwrap();
+        let (levels, valid) = b.bla.unwrap();
+        assert!(levels > 0 && valid > 0);
+        let text = manifest(&b, "b");
+        assert_eq!(check(&b.bin, &text, 24 * 14, 4).unwrap(), 24 * 14);
+        let arrays = arrays_of(&text).unwrap();
+        let (offset, bytes) = arrays["bla_runs"];
+        let (h, hb) = arrays["bla_header"];
+        let back = table_from(&b.bin[h..h + hb], &b.bin[offset..offset + bytes]);
+        assert_eq!(runs_bytes(&back), b.bin[offset..offset + bytes].to_vec());
+        assert_eq!(header_bytes(&back), b.bin[h..h + hb].to_vec());
+        // The skip ran: a skipping pixel takes fewer delta steps than iterations.
+        let states = words(&b.bin[arrays["ds_state"].0..][..arrays["ds_state"].1]);
+        assert!(states.chunks(14).any(|w| w[12] < w[6]));
+        // A bit flipped in the last place of a run's `A` is caught, on whichever run a
+        // pixel takes.
+        let mut caught = false;
+        for k in 0..bytes / RUN_BYTES {
+            let mut bad = b.bin.clone();
+            bad[offset + RUN_BYTES * k] ^= 0x01;
+            if check(&bad, &text, 24 * 14, 4).is_err() {
+                caught = true;
+                break;
+            }
+        }
+        assert!(caught);
     }
 
     /// The extra vectors are the model's own primitives on the 31 cases' inputs.

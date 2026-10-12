@@ -103,8 +103,18 @@ pub struct GpuOrbit {
     /// zero anywhere in the orbit, the `f` for which every stored point is within `2^-f`
     /// of the orbit beyond its relative rounding ([`flush_bound`]), at least [`FLUSH`];
     /// [`crate::proof::OFF`] when nothing was. A uniform beside `periodic`, read by the
-    /// interior proof ([`crate::proof::Iterate`]).
+    /// interior proof ([`crate::proof::Iterate`]) for an iterate formed from a flushed
+    /// point.
     pub flush: i32,
+    /// **The flushed points kept exactly** *(gpu_deep_depth_ckpt163)*: under `HiLo`, where
+    /// anything flushed, one entry a point. A point narrowing flushed nothing of is `(its
+    /// stored point, 0)`; one it flushed is the point times `2^-e`, `e` its larger
+    /// component's exponent, narrowed the same way and so (all but a component far below
+    /// the other) flushed nowhere, with `e`. The loop reads it only where it forms `Z` in
+    /// the delta's units (`model_ds.rs`), so that a minibrot's near-zero returns, `2^-322`
+    /// at a period-311 nucleus framed at `1e-110`, are no longer zero there and the proof
+    /// carries no flush term for them. Empty where nothing flushed, and for `F32Pair`.
+    pub exact: Vec<([f32; 4], i32)>,
 }
 
 /// The absolute error any flush can leave in one stored point, as `2^-FLUSH`: under
@@ -137,38 +147,73 @@ impl GpuOrbit {
         // that left in its component: under `HiLo` a flushed `hi` flushes its `lo`, which
         // is the same `x`, and a flushed `lo` is `re - re_hi` exactly (below).
         let mut worst: Option<i32> = None;
-        let mut keep = |x: f64| {
+        let mut flushed: Vec<bool> = Vec::with_capacity(reference.points.len());
+        let mut keep = |x: f64, any: &mut bool| {
             let y = narrow(x);
             if x != 0.0 && y == 0.0 {
                 let e = exponent_f64(x);
                 worst = Some(worst.map_or(e, |w| w.max(e)));
+                *any = true;
             }
             y
         };
-        let points = reference
+        let points: Vec<[f32; 4]> = reference
             .points
             .iter()
             .map(|&[re, im]| {
-                let re_hi = keep(re);
-                let im_hi = keep(im);
-                match encoding {
+                let mut any = false;
+                let re_hi = keep(re, &mut any);
+                let im_hi = keep(im, &mut any);
+                let point = match encoding {
                     Encoding::F32Pair => [re_hi, im_hi, 0.0, 0.0],
                     Encoding::HiLo => {
                         // `re - re_hi` is exact in f64: `re_hi` is within half an f32
                         // ulp of `re`, so the difference lies on `re`'s own ulp grid
                         // with at most 29 significant bits. It then rounds once to f32.
-                        let re_lo = keep(re - re_hi as f64);
-                        let im_lo = keep(im - im_hi as f64);
+                        let re_lo = keep(re - re_hi as f64, &mut any);
+                        let im_lo = keep(im - im_hi as f64, &mut any);
                         [re_hi, im_hi, re_lo, im_lo]
                     }
-                }
+                };
+                flushed.push(any);
+                point
             })
             .collect();
+        let exact = if encoding == Encoding::HiLo && worst.is_some() {
+            reference
+                .points
+                .iter()
+                .zip(&points)
+                .zip(&flushed)
+                .map(|((&[re, im], &stored), &any)| {
+                    if !any {
+                        return (stored, 0);
+                    }
+                    let e = exponent_f64(re.abs().max(im.abs()));
+                    let unit = f64::from_bits(((1023 - e) as u64) << 52);
+                    let (re, im) = (re * unit, im * unit);
+                    let re_hi = narrow(re);
+                    let im_hi = narrow(im);
+                    (
+                        [
+                            re_hi,
+                            im_hi,
+                            narrow(re - re_hi as f64),
+                            narrow(im - im_hi as f64),
+                        ],
+                        e,
+                    )
+                })
+                .collect()
+        } else {
+            Vec::new()
+        };
         GpuOrbit {
             encoding,
             points,
             periodic: reference.periodic,
             flush: worst.map_or(crate::proof::OFF, flush_bound),
+            exact,
         }
     }
 

@@ -163,10 +163,13 @@ fn each_encoding_measures_its_own_flush() {
 /// `2^-322` every period); read as `2^-127`, `t^2` underflowed and a step from `2^-267`
 /// returned exactly `0` for a true `≈ 2^-802`, a defect no Julia term covers once the
 /// flush is measured. Every step at a stored zero from a nonzero `δ` leaves it nonzero
-/// (and cubed, to within a bit), in both kernels, and the sample is still interior, down
+/// (and cubed, to within a bit, in the `f32` kernel), and the sample is still interior, down
 /// to where the cube leaves the state's exponent range: a step whose result is below
 /// `2^-100000` (`model.rs`'s `NO_EXPONENT`) is zero by design, an absolute defect far
-/// under the `2^-flush` the proof adds at every containment test.
+/// under the `2^-flush` the proof adds at every containment test. The double-single kernel
+/// takes a flushed point at its true size there *(gpu_deep_depth_ckpt163)*
+/// ([`GpuOrbit::exact`]), so its step is `F(Z, δ)·δ`: the cube where `δ` is the larger,
+/// `3Z²δ` where `Z` is.
 #[test]
 fn a_stored_zero_is_no_size_in_the_careful_step() {
     const CUBE_FLOOR: f32 = -33_000.0;
@@ -205,6 +208,11 @@ fn a_stored_zero_is_no_size_in_the_careful_step() {
     let mut sd = model_ds::init_ds(&s.frame, &s.lo, col, row);
     while sd.status == RUNNING {
         let p = s.hilo.points[sd.m as usize];
+        // The point's true size, where the orbit keeps it exactly.
+        let z = match s.hilo.exact.get(sd.m as usize) {
+            Some(&(v, e)) if e != 0 => Some(v[0].abs().max(v[1].abs()).log2() + e as f32),
+            _ => None,
+        };
         let before = size(sd.d_hi[0].abs().max(sd.d_hi[1].abs()), sd.s);
         model_ds::pass_ds(&mut sd, &s.frame, &s.lo, &s.hilo, col, row, 1);
         if let (true, Some(b)) = (
@@ -213,7 +221,13 @@ fn a_stored_zero_is_no_size_in_the_careful_step() {
         ) {
             let a = size(sd.d_hi[0].abs().max(sd.d_hi[1].abs()), sd.s);
             let a = a.unwrap_or_else(|| panic!("ds: 2^{b} -> 0 at a stored zero, n {}", sd.n));
-            assert!((a - 3.0 * b).abs() < 2.0, "ds: 2^{b} -> 2^{a}");
+            // F = 3Z² + 3Zδ + δ²: the largest term, within its factor of three.
+            let three = 3f32.log2();
+            let want = match z {
+                Some(z) => b + (2.0 * z + three).max(z + b + three).max(2.0 * b),
+                None => 3.0 * b,
+            };
+            assert!((a - want).abs() < 2.0, "ds: 2^{b} -> 2^{a}, not 2^{want}");
             checked += 1;
         }
     }
@@ -266,6 +280,55 @@ fn a_deep_minibrot_interior_closes() {
         let fields = model_fields(&s);
         for (k, field) in fields.iter().enumerate() {
             for (i, (&(status, n), &(rs, rn))) in field.iter().zip(&reference).enumerate() {
+                assert_eq!(rs, INTERIOR, "{id} sample {i}: perturb says {rs}");
+                assert_eq!(
+                    status, INTERIOR,
+                    "{id} {} sample {i}: {status} at {n}",
+                    KERNELS[k]
+                );
+                assert_eq!(n, rn, "{id} {} sample {i}", KERNELS[k]);
+            }
+        }
+    }
+}
+
+/// **Past `1e-100` the flushed returns are read exactly** *(gpu_deep_depth_ckpt163)*. At
+/// `1e-110` and `1e-112` the discs the proof needs fall below the frame-wide `2^-320`, and
+/// every kernel gated most samples there (1,346 of 2,304 at `1e-110` at 64 × 36, every one
+/// at `1e-112`). The double-single kernel now forms `Z` at its true size wherever it
+/// rescales it into the delta's units ([`GpuOrbit::exact`]), and an iterate formed that way
+/// owes the proof no flush term: it closes every sample where `perturb` does, at `perturb`'s
+/// step, with the skip table and without. The exact points are the orbit, to the pair's
+/// precision at their own size. The `f32` kernel keeps no exact points and is not asked.
+#[test]
+fn past_1e_100_the_flushed_returns_are_read_exactly() {
+    for (id, w) in [("D-1e-110", "1e-110"), ("D-1e-112", "1e-112")] {
+        let s = setup(&row(id, w, 5000), [8, 5], 5000);
+        assert_eq!(s.hilo.flush, 320, "{id}");
+        assert!(s.pair.exact.is_empty(), "{id}: f32pair keeps none");
+        let mut kept = 0;
+        for (m, (&(v, e), z)) in s.hilo.exact.iter().zip(&s.orbit.points).enumerate() {
+            let unit = 2f64.powi(e);
+            let got = [
+                (v[0] as f64 + v[2] as f64) * unit,
+                (v[1] as f64 + v[3] as f64) * unit,
+            ];
+            let size = z[0].hypot(z[1]);
+            let off = (got[0] - z[0]).hypot(got[1] - z[1]);
+            assert!(
+                off <= 2f64.powi(-46) * size,
+                "{id} point {m}: {off:e} off {size:e}"
+            );
+            if e != 0 {
+                kept += 1;
+                assert!(size < 2f64.powi(-100), "{id} point {m} is {size:e}");
+            }
+        }
+        assert!(kept >= 2, "{id} kept {kept} points");
+        let reference = reference_field(&s);
+        let fields = model_fields(&s);
+        for k in 1..3 {
+            for (i, (&(status, n), &(rs, rn))) in fields[k].iter().zip(&reference).enumerate() {
                 assert_eq!(rs, INTERIOR, "{id} sample {i}: perturb says {rs}");
                 assert_eq!(
                     status, INTERIOR,

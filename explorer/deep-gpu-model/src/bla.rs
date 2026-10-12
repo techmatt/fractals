@@ -382,7 +382,7 @@ pub fn dc_bound(frame: &Frame) -> f64 {
         (frame.width_px - 1, frame.height_px - 1),
     ] {
         let m = frame.dc_mantissa(col, row);
-        big = big.max((m[0] as f64).hypot(m[1] as f64));
+        big = big.max(hypot64(m[0] as f64, m[1] as f64));
     }
     big * unit * (1.0 + 1.0 / 1_048_576.0)
 }
@@ -408,6 +408,22 @@ fn exp64(x: f64) -> i32 {
         return exp64(x * scale64(1.0, 200)) - 200;
     }
     field - 1023
+}
+
+/// `sqrt(x² + y²)`, scaled by the larger component's exponent so that it neither
+/// overflows nor underflows. Not `f64::hypot`, which is the platform's `libm` and need not
+/// round alike on two machines, or alike with a browser's `Math.hypot`: every operation here
+/// is IEEE's, so the page's port of the build (`explorer/deep-gpu-bla.js`) makes the same
+/// table bit for bit *(gpu_deep_depth_ckpt163)*.
+pub fn hypot64(x: f64, y: f64) -> f64 {
+    let big = x.abs().max(y.abs());
+    if big == 0.0 || !big.is_finite() {
+        return big;
+    }
+    let e = exp64(big);
+    let a = scale64(x, -e);
+    let b = scale64(y, -e);
+    scale64((a * a + b * b).sqrt(), e)
 }
 
 /// A positive quantity as a mantissa in `[1, 2)` and an exponent; zero is `(0, 0)`.
@@ -489,8 +505,8 @@ fn merge(x: &Build, y: &Build, dcmax: f64) -> Build {
     let a = cmul64(y.a, x.a);
     let ab = cmul64(y.a, x.b);
     let b = [ab[0] + y.b[0], ab[1] + y.b[1]];
-    let a_x = x.a[0].hypot(x.a[1]);
-    let b_x = x.b[0].hypot(x.b[1]);
+    let a_x = hypot64(x.a[0], x.a[1]);
+    let b_x = hypot64(x.b[0], x.b[1]);
     let reach = y.r - b_x * dcmax;
     let second = if a_x > 0.0 {
         (reach / a_x).max(0.0)
@@ -525,7 +541,7 @@ fn leaf(points: &[[f64; 2]], s: usize, next: usize, degree: u32, julia: bool, ep
         pw = cmul64(pw, z);
     }
     let a = [d * pw[0], d * pw[1]];
-    let mut r = eps * z[0].hypot(z[1]) / (d - 1.0);
+    let mut r = eps * hypot64(z[0], z[1]) / (d - 1.0);
     let guard = (1.0 + eps) * (1.0 + eps);
     if guard * (zn[0] * zn[0] + zn[1] * zn[1]) > BAILOUT * BAILOUT {
         r = 0.0;

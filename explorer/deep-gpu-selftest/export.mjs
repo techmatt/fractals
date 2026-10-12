@@ -37,6 +37,16 @@ const FRAMES = [
   { id: "selftest-d3-nucleus-edge", res: "32x18", policy: "flag" },
   // A Julia plane's start (`init` from dc, the entry), degree 2, every sample proved.
   { id: "selftest-d2-julia-rabbit", res: "16x9", policy: "cap" },
+  // The skip table *(gpu_deep_depth_ckpt163)*: each run by the model with the table at
+  // `EPSILON_DS_DEFAULT`, which the bundle carries as the page binds it, with the `f64`
+  // orbit it was built from so that `deep-gpu.test.mjs` holds the page's own build to it.
+  // Escapes on both planes, and the proof armed and carrying beside the skip.
+  { id: "selftest-d2-skip", res: "16x9", policy: "flag", bla: true },
+  { id: "selftest-d2-julia-skip", res: "16x9", policy: "flag", bla: true },
+  { id: "selftest-d2-seahorse-skip", res: "16x9", policy: "flag", bla: true },
+  // The exact points: a minibrot interior whose reference flushes at every return, proved
+  // only where `Z` is read at its true size in the delta's units, under the page's policy.
+  { id: "selftest-d3-deep-interior", res: "16x9", policy: "handoff" },
 ];
 
 /** Budgets a self-test runs every frame at: the first pass, then every later one. */
@@ -67,6 +77,7 @@ for (const f of FRAMES) {
       "--interior-policy", f.policy,
       "--slim", "on",
       "--ftz-check", "on",
+      ...(f.bla ? ["--bla", "on"] : []),
       "--verify", "100000",
       "--out", rel(here),
     ]),
@@ -86,7 +97,8 @@ for (const f of FRAMES) {
   if (manifest.ftz === null || manifest.ftz.differ !== 0 || manifest.ftz.frac_differ !== 0) {
     throw new Error(`${f.id}: flushing subnormals moves it (${JSON.stringify(manifest.ftz)}); choose another frame`);
   }
-  frames.push({ id: f.id, manifest: entry.manifest, bin: entry.bin, classes: manifest.ds.classes, flush_hilo: manifest.flush_hilo });
+  if (f.bla && !(manifest.bla?.valid > 0)) throw new Error(`${f.id}: its skip table has no live run; choose another frame`);
+  frames.push({ id: f.id, manifest: entry.manifest, bin: entry.bin, classes: manifest.ds.classes, flush_hilo: manifest.flush_hilo, ...(f.bla ? { bla: manifest.bla } : {}) });
 }
 const vectors = JSON.parse(readFileSync(join(here, "vectors.json"), "utf8"));
 writeFileSync(

@@ -1,0 +1,16 @@
+{"format":"deep-gpu-model/gpu-probe-bundle/2","id":"selftest-d3-deep-interior","manifest":"selftest-d3-deep-interior.manifest.json","bin":"selftest-d3-deep-interior.bin","bin_bytes":114576,"width":1e-110,"degree":3,"julia":false,"width_px":16,"height_px":9,"cap":2000,"interior":true,"orbit_len":2001,"periodic":false,"flush":320,"flush_hilo":320,"interior_policy":"handoff","slim":true,"ftz":{"differ":0,"frac_differ":0},"bla":null,
+"spec":{"re":"0.1910258774893687636653877341274335024092451852712527787373444953080999108165070735350743200670512192979234202411","im":"0.7697886011067241138026380754819675260484313308802967905631746244826988315742777985064207673891411360184969591657","w":1e-110,"julia_re":null,"julia_im":null,"anchor":"parameter","link":null},
+"frame":{"width_px":16,"height_px":9,"offset_m":[0e0,0e0],"spacing_m":9.39417e-2,"sc":-366,"maxiter":2000,"degree":3,"julia":0,"entry":0,"interior":3,"floor":-64,"margins":{"spacing":4,"point":21,"step":17,"add":22}},
+"frame_lo":{"offset_lo":[0e0,0e0],"spacing_lo":-1.2780552e-10,"pad":0,"margins":{"spacing":8,"point":41,"step":37,"add":42}},
+"pixel_order":"row-major, index = row * width_px + col, row 0 at the top (dc's imaginary part largest)",
+"status_codes":{"running":0,"escaped":1,"capped":2,"interior":3,"gated":4},
+"expected":"f32_*: model::run_pixel on orbit_f32pair with frame; ds_*: model_ds::run_pixel_ds on orbit_hilo with frame and frame_lo; both unbounded budget, no skip table. f32_state and ds_state: PixelState::bits and DsPixelState::bits per pixel, 12 and 14 u32, the GPU structs' order; ds_proof: the double-single state's Proof::bits, 18 u32 a pixel. smooth = n + frac where status is escaped. f64_smooth: perturb's f64 kernel, NaN where it did not escape. A slim bundle carries frame, frame_lo, orbit_hilo, ds_state and ds_proof only. bla: where not null, ds_* is model_ds::run_pixel_ds_bla with the table bla_header and bla_runs hold (bla.rs at EPSILON_DS_DEFAULT, 64 bytes a run: BlaEntry, BlaLo, BlaInterior). ftz: pixels whose double-single state moves (frac and frac alone counted apart) when subnormals are flushed, or null when not checked",
+"arrays":[
+  {"name":"frame","dtype":"u8","count":64,"offset":0,"bytes":64},
+  {"name":"frame_lo","dtype":"u8","count":32,"offset":64,"bytes":32},
+  {"name":"orbit_hilo","dtype":"f32","count":8004,"offset":96,"bytes":32016},
+  {"name":"orbit_exact","dtype":"u8","count":64032,"offset":32112,"bytes":64032},
+  {"name":"ds_state","dtype":"u32","count":2016,"offset":96144,"bytes":8064},
+  {"name":"ds_proof","dtype":"u32","count":2592,"offset":104208,"bytes":10368}
+],
+"f64":{"escaped":0,"mean_iterations":622.0},"f32":{"classes":{"running":0,"escaped":0,"capped":86,"interior":58,"gated":0},"mean_steps":1445.0,"vs_f64":{"both_escaped":0,"class_changes":0,"p50":0,"p99":0,"max":0,"over_0.1":0.00000,"over_1":0.00000}},"ds":{"classes":{"running":0,"escaped":0,"capped":0,"interior":144,"gated":0},"mean_steps":622.0,"vs_f64":{"both_escaped":0,"class_changes":0,"p50":0,"p99":0,"max":0,"over_0.1":0.00000,"over_1":0.00000}}}

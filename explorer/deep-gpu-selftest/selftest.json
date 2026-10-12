@@ -40,12 +40,80 @@
     "gated": 0
    },
    "flush_hilo": 0
+  },
+  {
+   "id": "selftest-d2-skip",
+   "manifest": "selftest-d2-skip.manifest.json",
+   "bin": "selftest-d2-skip.bin",
+   "classes": {
+    "running": 0,
+    "escaped": 144,
+    "capped": 0,
+    "interior": 0,
+    "gated": 0
+   },
+   "flush_hilo": 0,
+   "bla": {
+    "levels": 3,
+    "valid": 7
+   }
+  },
+  {
+   "id": "selftest-d2-julia-skip",
+   "manifest": "selftest-d2-julia-skip.manifest.json",
+   "bin": "selftest-d2-julia-skip.bin",
+   "classes": {
+    "running": 0,
+    "escaped": 144,
+    "capped": 0,
+    "interior": 0,
+    "gated": 0
+   },
+   "flush_hilo": 0,
+   "bla": {
+    "levels": 3,
+    "valid": 8
+   }
+  },
+  {
+   "id": "selftest-d2-seahorse-skip",
+   "manifest": "selftest-d2-seahorse-skip.manifest.json",
+   "bin": "selftest-d2-seahorse-skip.bin",
+   "classes": {
+    "running": 0,
+    "escaped": 0,
+    "capped": 0,
+    "interior": 0,
+    "gated": 144
+   },
+   "flush_hilo": 127,
+   "bla": {
+    "levels": 8,
+    "valid": 485
+   }
+  },
+  {
+   "id": "selftest-d3-deep-interior",
+   "manifest": "selftest-d3-deep-interior.manifest.json",
+   "bin": "selftest-d3-deep-interior.bin",
+   "classes": {
+    "running": 0,
+    "escaped": 0,
+    "capped": 0,
+    "interior": 144,
+    "gated": 0
+   },
+   "flush_hilo": 320
   }
  ],
  "commands": [
   "cargo build --release --bin export (in explorer/deep-gpu-model)",
   "export --vectors ../deep-gpu-selftest/vectors.json --extra-vectors on",
   "export --frames ../deep-gpu-selftest/frames.jsonl --ids selftest-d3-nucleus-edge --res 32x18 --interior on --interior-policy flag --slim on --ftz-check on --verify 100000 --out ../deep-gpu-selftest",
-  "export --frames ../deep-gpu-selftest/frames.jsonl --ids selftest-d2-julia-rabbit --res 16x9 --interior on --interior-policy cap --slim on --ftz-check on --verify 100000 --out ../deep-gpu-selftest"
+  "export --frames ../deep-gpu-selftest/frames.jsonl --ids selftest-d2-julia-rabbit --res 16x9 --interior on --interior-policy cap --slim on --ftz-check on --verify 100000 --out ../deep-gpu-selftest",
+  "export --frames ../deep-gpu-selftest/frames.jsonl --ids selftest-d2-skip --res 16x9 --interior on --interior-policy flag --slim on --ftz-check on --bla on --verify 100000 --out ../deep-gpu-selftest",
+  "export --frames ../deep-gpu-selftest/frames.jsonl --ids selftest-d2-julia-skip --res 16x9 --interior on --interior-policy flag --slim on --ftz-check on --bla on --verify 100000 --out ../deep-gpu-selftest",
+  "export --frames ../deep-gpu-selftest/frames.jsonl --ids selftest-d2-seahorse-skip --res 16x9 --interior on --interior-policy flag --slim on --ftz-check on --bla on --verify 100000 --out ../deep-gpu-selftest",
+  "export --frames ../deep-gpu-selftest/frames.jsonl --ids selftest-d3-deep-interior --res 16x9 --interior on --interior-policy handoff --slim on --ftz-check on --verify 100000 --out ../deep-gpu-selftest"
  ]
 }

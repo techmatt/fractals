@@ -1,6 +1,10 @@
 // The Deep tab's per-pixel loop in WGSL: `explorer/deep-gpu-model`'s double-single kernel
-// (`model_ds.rs`, on the `HiLo` orbit) with its interior gate and proof (`proof.rs`),
-// ported line for line, one module per degree and plane. No skip table.
+// (`model_ds.rs`, on the `HiLo` orbit) with its interior gate and proof (`proof.rs`), its
+// skip table (`bla.rs`, built by `deep-gpu-bla.js`) and its exact orbit points
+// (`orbit.rs`), ported line for line, one module per degree and plane *(the table and the
+// exact points: gpu_deep_depth_ckpt163)*. A frame without a table binds one of no levels,
+// and one whose orbit flushed nothing never reads an exact point, and each is then the
+// kernel without them bit for bit.
 //
 // Every order of operations, constant, regime switch, integer exponent test and proof
 // margin is the model's, and the model's helpers are written out the way `wgsl.rs` says
@@ -88,6 +92,9 @@ export const LAYOUT = [
     { binding: 5, visibility: 4, buffer: { type: "storage" } }, // counters, 4 u32
     { binding: 6, visibility: 4, buffer: { type: "storage" } }, // list, 4 a pixel
     { binding: 7, visibility: 4, buffer: { type: "storage" } }, // out, 8 a pixel
+    { binding: 8, visibility: 4, buffer: { type: "uniform" } }, // bla_header, BLA_HEADER_BYTES
+    { binding: 9, visibility: 4, buffer: { type: "read-only-storage" } }, // bla_runs, BLA_RUN_BYTES a run
+    { binding: 10, visibility: 4, buffer: { type: "read-only-storage" } }, // orbit_exact, EXACT_BYTES a point
   ],
   [{ binding: 0, visibility: 4, buffer: { type: "storage" } }], // indirect, 16 bytes
 ];
@@ -598,6 +605,7 @@ export function kernelSource({ degree, julia, interior, form = "plain", workgrou
     dsOpsSource(guard, "params") +
     smoothSource(smooth, degree) +
     pixelOffsetSource() +
+    blaSource({ julia }) +
     (interior ? proofSource({ degree }) : "") +
     dsKernelSource({ degree, julia, interior }) +
     entrySource({ workgroup, emit: true })
@@ -659,6 +667,149 @@ fn reads_scaled(ez: i32, s: i32) -> bool {
 // as zero is no size.
 fn careful_unit(ez: i32, ed: i32) -> i32 {
   return select(max(ez, ed), ed, ez == -127);
+}
+`;
+}
+
+/** Bytes of the skip table's header uniform and of one run in its storage buffer. */
+export const BLA_HEADER_BYTES = 528;
+export const BLA_RUN_BYTES = 64;
+/** Bytes of one exact orbit point: its `vec4<f32>`, its exponent, and padding. */
+export const EXACT_BYTES = 32;
+
+/**
+ * `bla.rs`'s lookup and `apply_ds` *(gpu_deep_depth_ckpt163)*: the skip table the host
+ * builds (`deep-gpu-bla.js`), read bottom-up as the model's default `Search` does, behind
+ * the model's gate (each level's largest radius, which the header carries, is asked before
+ * any of the level's entries is read). Measured in the Deep tab, a table whose runs are all
+ * dead cost the anchor frame 7% and `random-dives#337` 22% of the device's time in the one
+ * read a lookup makes without the gate; the gate reads none. One run is `bla.rs`'s three records side by side in 64 bytes (`BlaEntry`, then
+ * `BlaLo`, then `BlaInterior`), so that the kernel binds one buffer for the table and not
+ * three. A frame without a table binds a header of no levels, which finds no run, and is
+ * then the kernel without the skip bit for bit (`tests/bla.rs` holds the model to that).
+ */
+function blaSource({ julia }) {
+  return /* wgsl */ `
+// ---- bla.rs: the skip table, its lookup and its step.
+
+struct BlaHeader {
+  min_level: u32,
+  levels: u32,
+  mask: u32,
+  periodic: u32,
+  // Per stored level: its offset in bla_runs, its count, and its largest radius squared.
+  level: array<vec4<u32>, 32>,
+}
+
+struct BlaRun {
+  a: vec2<f32>,
+  b: vec2<f32>,
+  a_e: i32,
+  b_e: i32,
+  r2_m: f32,
+  r2_e: i32,
+  a_lo: vec2<f32>,
+  b_lo: vec2<f32>,
+  deriv_m: f32,
+  deriv_e: i32,
+  dmin_m: f32,
+  dmin_e: i32,
+}
+
+@group(0) @binding(8) var<uniform> bla_header: BlaHeader;
+@group(0) @binding(9) var<storage, read> bla_runs: array<BlaRun>;
+
+// bla.rs's below: |delta|^2 < r2_m 2^r2_e for delta = d 2^s, exponent first.
+fn bla_below(r2_m: f32, r2_e: i32, d: vec2<f32>, s: i32) -> bool {
+  if (r2_m == 0.0f) {
+    return false;
+  }
+  let dn = G(G(d.x * d.x) + G(d.y * d.y));
+  let ed = exponent_of(dn);
+  if (ed == -127) {
+    return true;
+  }
+  let md = ldexp_exact(dn, -ed);
+  let e = ed + 2 * s;
+  return e < r2_e || (e == r2_e && md < r2_m);
+}
+
+// bla.rs's lookup_hinted under Search::BottomUp, with the gate: the longest run a pixel at
+// orbit index m may take, as (index, length), or length 0. guard asks the interior floor too.
+fn bla_lookup(m: u32, d: vec2<f32>, s: i32, left: u32, guard: bool, dzm: f32, dze: i32) -> vec2<u32> {
+  let levels = bla_header.levels;
+  if (m == 0u || levels == 0u) {
+    return vec2<u32>(0u, 0u);
+  }
+  let ix = m - 1u;
+  if ((ix & bla_header.mask) != 0u) {
+    return vec2<u32>(0u, 0u);
+  }
+  let aligned = countTrailingZeros(ix);
+  var cands = 0u;
+  loop {
+    if (cands >= levels) {
+      break;
+    }
+    let k = bla_header.min_level + cands;
+    let lv = bla_header.level[cands];
+    if (k > aligned || (1u << k) >= left || (ix >> k) >= lv.y) {
+      break;
+    }
+    // bla.rs's gate: a level whose largest radius does not admit the pixel holds no entry
+    // that can, and the largest radius only falls with the level, so nothing above it is
+    // read either. It changes the entries read and never the run found.
+    if (!bla_below(bitcast<f32>(lv.z), bitcast<i32>(lv.w), d, s)) {
+      break;
+    }
+    cands += 1u;
+  }
+  var found = vec2<u32>(0u, 0u);
+  for (var i = 0u; i < cands; i++) {
+    let k = bla_header.min_level + i;
+    let index = bla_header.level[i].x + (ix >> k);
+    let run = bla_runs[index];
+    if (!bla_below(run.r2_m, run.r2_e, d, s)) {
+      break;
+    }
+    if (guard) {
+      if (run.dmin_m == 0.0f) {
+        break;
+      }
+      let q = G(dzm * run.dmin_m);
+      if (dze + run.dmin_e + exponent_of(q) < frame.floor) {
+        break;
+      }
+    }
+    found = vec2<u32>(index, 1u << k);
+  }
+  return found;
+}
+
+// bla.rs's apply_ds: delta' = A delta + B dc, both products as pairs at their own
+// exponents, summed at the larger, then settled into the state's form.
+fn bla_apply(index: u32, d: Cds, s: i32, dc: Cds, sc: i32) -> DeltaDs {
+  let run = bla_runs[index];
+  let a = Cds(vec2<f32>(run.a.x, run.a_lo.x), vec2<f32>(run.a.y, run.a_lo.y));
+  let t1 = c_mul(a, d);
+  let e1 = run.a_e + s;
+  var x1 = NO_EXPONENT;
+  let x1e = exponent_of_max(t1.re.x, t1.im.x);
+  if (x1e != -127) {
+    x1 = e1 + x1e;
+  }
+${julia ? `  let t2 = ZERO;
+  let e2 = 0;
+  let x2 = NO_EXPONENT;` : `  let b = Cds(vec2<f32>(run.b.x, run.b_lo.x), vec2<f32>(run.b.y, run.b_lo.y));
+  let t2 = c_mul(b, dc);
+  let e2 = run.b_e + sc;
+  var x2 = NO_EXPONENT;
+  let x2e = exponent_of_max(t2.re.x, t2.im.x);
+  if (x2e != -127) {
+    x2 = e2 + x2e;
+  }`}
+  let at = select(x2, x1, x1 > x2);
+  return settle(c_add(ldexp_c(t1, e1 - at), ldexp_c(t2, e2 - at)), at);
 }
 `;
 }
@@ -1082,7 +1233,7 @@ function dsKernelSource({ degree, julia, interior }) {
     lines.push(`  return p;`);
     factor = lines.join("\n");
   }
-  const I = (text) => (interior ? text : "");
+  const I = (text, otherwise = "") => (interior ? text : otherwise);
   return /* wgsl */ `
 // ---- model_ds.rs, the double-single kernel on the HiLo orbit (${julia ? "Julia" : "parameter plane"}).
 
@@ -1135,6 +1286,49 @@ fn ldexp_c(v: Cds, e: i32) -> Cds {
 // Z[m] as a pair, out of the vec4 point [re_hi, im_hi, re_lo, im_lo].
 fn reference(p: vec4<f32>) -> Cds {
   return Cds(vec2<f32>(p.x, p.z), vec2<f32>(p.y, p.w));
+}
+
+// orbit.rs's exact points (gpu_deep_depth_ckpt163): where narrowing flushed some of a point,
+// the point times 2^-e, with e; (the stored point, 0) for every other. Bound only where the
+// orbit flushed anything (params.flush), and never read otherwise.
+struct Exact {
+  v: vec4<f32>,
+  e: i32,
+  pad0: i32,
+  pad1: i32,
+  pad2: i32,
+}
+
+@group(0) @binding(10) var<storage, read> orbit_exact: array<Exact>;
+
+// The exponent point m is kept at exactly, 0 where it is the stored point.
+fn exact_e(m: u32) -> i32 {
+  if (params.flush == 0) {
+    return 0;
+  }
+  return orbit_exact[m].e;
+}
+
+// z = zv 2^ze where the scaled regime forms it.
+struct Scaled {
+  zv: Cds,
+  ze: i32,
+}
+
+// model_ds.rs's scaled_z: z = Z + delta in the delta's units (ze = s), off the stored point
+// or off the exact point where point m has one that fits them; or, where the exact point is
+// too large for those units, in its own (ze = e), so that a flushed return far above delta
+// is handed to the proof as Z and not as delta alone. Neither owes the proof a flush term.
+fn scaled_z(zr: Cds, e: i32, m: u32, d: Cds, s: i32) -> Scaled {
+  if (e != 0) {
+    let zx = reference(orbit_exact[m].v);
+    let x = exponent_of_max(zx.re.x, zx.im.x);
+    if (x == -127 || e + x <= REBASE_GATE + s) {
+      return Scaled(c_add(ldexp_c(zx, e - s), d), s);
+    }
+    return Scaled(c_add(zx, ldexp_c(d, s - e)), e);
+  }
+  return Scaled(c_add(ldexp_c(zr, -s), d), s);
 }
 
 fn dc_ds(col: u32, row: u32) -> Cds {
@@ -1195,11 +1389,15 @@ fn factor(z: Cds, t: Cds) -> Cds {
 ${factor}
 }
 
-fn careful_step(z: Cds, d: Cds, s: i32, dc: Cds, dc_e: i32, sc: i32) -> DeltaDs {
-  let ez = exponent_of_max(z.re.x, z.im.x);
+fn careful_step(z: Cds, ze: i32, d: Cds, s: i32, dc: Cds, dc_e: i32, sc: i32) -> DeltaDs {
+  // Z = z 2^ze: ze is 0 for a stored point and the exact point's exponent for a flushed one.
+  var ez = exponent_of_max(z.re.x, z.im.x);
+  if (ez != -127) {
+    ez = ez + ze;
+  }
   let ed = s + exponent_of_max(d.re.x, d.im.x);
   let v = careful_unit(ez, ed);
-  let f = factor(ldexp_c(z, -v), ldexp_c(d, s - v));
+  let f = factor(ldexp_c(z, ze - v), ldexp_c(d, s - v));
   let ef = exponent_of_max(f.re.x, f.im.x);
   let g = c_mul(ldexp_c(f, -ef), d);
   let ge = DM1 * v + ef + s;
@@ -1285,8 +1483,33 @@ ${julia ? "" : `  let dce = exponent_of(max_abs(dc.re.x, dc.im.x));
     if (taken >= budget) {
       break;
     }
-    // ---- step: d' = F(Z[m], delta) * d (+ dc), in the delta's units.
+    // ---- the skip (bla.rs), looked up on the high parts and applied to the pair; not
+    // while the proof carries discs. A run is one delta step against the budget.
     let s0 = s;
+    var hit = vec2<u32>(0u, 0u);${I(`
+    if (proof.phase != CARRYING) {
+      hit = bla_lookup(m, hi(d), s, maxiter - n, track_interior && proof.phase == IDLE, dzm, dze);
+    }`, `
+    hit = bla_lookup(m, hi(d), s, maxiter - n, false, 0.0f, 0);`)}
+    if (hit.y != 0u) {
+      let r = bla_apply(hit.x, d, s, dc, sc);
+      d = r.d;
+      if (r.s != s) {
+        s = r.s;
+        scale = scale_of(dc, sc, s);
+      }
+      taken += 1u;
+      steps += 1u;
+      if (s0 != 0) {
+        scaled += 1u;
+      }
+      m += hit.y;
+      n += hit.y;
+      if (periodic && m >= length) {
+        m = 0u;
+      }
+    } else {
+    // ---- step: d' = F(Z[m], delta) * d (+ dc), in the delta's units.
     let p = orbit[m];
     let zr = reference(p);
     var gate: bool;
@@ -1305,7 +1528,12 @@ ${julia ? "    let next = product;" : "    let next = c_add(product, scale.dc);"
     if (gate && reaches(hi(product), PRODUCT_SIZE_DS)) {
       d = next;
     } else {
-      let r = careful_step(zr, d, s, dc, dc_e, sc);
+      var zc = zr;
+      let zce = exact_e(m);
+      if (zce != 0) {
+        zc = reference(orbit_exact[m].v);
+      }
+      let r = careful_step(zc, zce, d, s, dc, dc_e, sc);
       d = r.d;
       if (r.s != s) {
         s = r.s;
@@ -1322,18 +1550,24 @@ ${julia ? "    let next = product;" : "    let next = c_add(product, scale.dc);"
     if (periodic && m >= length) {
       m = 0u;
     }
+    }
 
     // ---- reconstruct and escape: z = zv 2^ze, the pair; the tests read its high parts.
     let q = orbit[m];
     let zq = reference(q);
+    let qe = exact_e(m);
     var z: Cds;
     var zv: Cds;
     var ze: i32;
+    // Whether the iterate came off a stored point that had flushed: only then is it off the
+    // orbit by the flush, and only then does the proof add the term.
+    var flushed = qe != 0;
     if (reads_scaled(exponent_of_max(q.x, q.y), s)) {
-      let zs = c_add(ldexp_c(zq, -s), d);
-      z = ldexp_c(zs, s);
-      zv = zs;
-      ze = s;
+      let sz = scaled_z(zq, qe, m, d, s);
+      flushed = false;
+      z = ldexp_c(sz.zv, sz.ze);
+      zv = sz.zv;
+      ze = sz.ze;
     } else {
       z = c_add(zq, ldexp_c(d, s));
       zv = z;
@@ -1353,13 +1587,29 @@ ${julia ? "    let next = product;" : "    let next = c_add(product, scale.dc);"
 ${I(`
     // ---- interior switch: the gate on the high parts, the proof on the pair.
     if (track_interior) {
-      let it = Iterate(hi(zv), lo(zv), ze, flush);
+      let it = Iterate(hi(zv), lo(zv), ze, select(OFF, flush, flushed));
       if (proof.phase == IDLE) {
+        if (hit.y != 0u) {
+          let x = bla_runs[hit.x];
+          let product = G(dzm * x.deriv_m);
+          let e = exponent_of(product);
+          dzm = ldexp_exact(product, -e);
+          dze += x.deriv_e + e;
+        }
         let dz = derivative_step(dzm, dze, hi(zv), ze, z_norm_sq);
         dzm = dz.m;
         dze = dz.e;
         if (!dz.nonzero || dze < frame.floor) {
           proof = proof_arm(it, hi(d), s, n);
+        }
+      } else if (hit.y != 0u) {
+        // proof.rs's break_disc, then rearm_if_lower: no disc is carried across a run.
+        if (proof.phase == CARRYING) {
+          proof.phase = WAITING;
+        }
+        let mv = mag_of(it.v, it.e);
+        if (proof_lower(&proof, mv)) {
+          proof_anchor(&proof, it, mv, mag_of(hi(d), s), n);
         }
       } else if (proof_advance(&proof, it, hi(d), s, n)) {
         status = INTERIOR;
@@ -1391,6 +1641,7 @@ ${I(`
     var rebase = false;
     var rd = ZERO;
     var rs = 0;
+    var rebase_flushed = qe != 0;
     let d_hi = hi(d);
     if (s == 0) {
       let delta_norm_sq = d_hi.x * d_hi.x + d_hi.y * d_hi.y;
@@ -1405,14 +1656,24 @@ ${I(`
         }
       }
     } else if (reads_scaled(exponent_of(max_abs(q.x, q.y)), s)) {
-      let zs = c_add(ldexp_c(zq, -s), d);
-      let zs_hi = hi(zs);
-      let zs_norm_sq = zs_hi.x * zs_hi.x + zs_hi.y * zs_hi.y;
-      let delta_norm_sq = d_hi.x * d_hi.x + d_hi.y * d_hi.y;
-      if (zs_norm_sq < delta_norm_sq || exhausted) {
+      let sz = scaled_z(zq, qe, m, d, s);
+      rebase_flushed = false;
+      if (sz.ze == s) {
+        let zs = sz.zv;
+        let zs_hi = hi(zs);
+        let zs_norm_sq = zs_hi.x * zs_hi.x + zs_hi.y * zs_hi.y;
+        let delta_norm_sq = d_hi.x * d_hi.x + d_hi.y * d_hi.y;
+        if (zs_norm_sq < delta_norm_sq || exhausted) {
+          rebase = true;
+          rd = zs;
+          rs = s;
+        }
+      } else if (exhausted) {
+        // z in the exact point's units is far above delta: it rebases only where the
+        // reference has run out.
         rebase = true;
-        rd = zs;
-        rs = s;
+        rd = sz.zv;
+        rs = sz.ze;
       }
     } else if (exhausted) {
       rebase = true;
@@ -1428,7 +1689,7 @@ ${I(`
       }
       m = 0u;
       rebases += 1u;${I(`
-      proof_rebased(&proof, flush);`)}
+      proof_rebased(&proof, select(OFF, flush, rebase_flushed));`)}
     }
   }
 

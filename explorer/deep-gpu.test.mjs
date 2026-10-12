@@ -14,6 +14,7 @@ import { existsSync, readFileSync } from "node:fs";
 
 import * as gpu from "./deep-gpu.js";
 import * as W from "./deep-gpu-wgsl.js";
+import * as B from "./deep-gpu-bla.js";
 import * as deepLink from "./deep-link.js";
 import * as link from "./permalink.js";
 import { load as loadPerturb } from "./bench/perturb.mjs";
@@ -30,7 +31,7 @@ const rows = readFileSync(new URL("frames.jsonl", SELFTEST), "utf8")
   .filter((line) => line.trim() !== "")
   .map((line) => JSON.parse(line));
 
-const TYPED = { u8: Uint8Array, u32: Uint32Array, f32: Float32Array };
+const TYPED = { u8: Uint8Array, u32: Uint32Array, f32: Float32Array, f64: Float64Array };
 
 function bundle(id) {
   const entry = selftest.frames.find((f) => f.id === id);
@@ -227,7 +228,13 @@ test("the HiLo orbit of perturb's reference is the bundle's, bit for bit, with i
     assert.equal(hilo.periodic, b.manifest.periodic);
     assert.equal(hilo.flush, b.manifest.flush_hilo);
     assert.deepEqual(new Uint32Array(hilo.points.buffer), new Uint32Array(b.arrays.orbit_hilo.slice().buffer), `${f.id}: orbit`);
+    // The exact points *(gpu_deep_depth_ckpt163)*: kept where anything flushed, byte for
+    // byte the model's, and absent where nothing did.
+    if (b.arrays.orbit_exact === undefined) assert.equal(hilo.exact, null, `${f.id}: no exact points`);
+    else assert.ok(Buffer.from(hilo.exact).equals(Buffer.from(b.arrays.orbit_exact.slice().buffer)), `${f.id}: exact points`);
   }
+  assert.equal(gpu.EXACT_BYTES, W.EXACT_BYTES);
+  assert.ok(selftest.frames.some((f) => bundle(f.id).arrays.orbit_exact !== undefined), "a self-test frame reads exact points");
 });
 
 test("an off-centre reference and a Julia anchor give the model's offset split", { skip }, () => {
@@ -717,6 +724,57 @@ test("every self-test vector is what the double-single arithmetic gives", () => 
   // And the cases pack the way the self-test module reads them.
   const packed = W.selfTestCases(cases);
   assert.equal(packed.length, cases.length * W.SELFTEST_STRIDE);
+});
+
+// ---- The skip table *(gpu_deep_depth_ckpt163)* --------------------------------------------
+
+test("the skip table is the model's, byte for byte, from the same f64 orbit", () => {
+  const frames = selftest.frames.filter((f) => f.bla);
+  assert.ok(frames.length > 0, "the self-test holds a frame drawn with a skip table");
+  for (const entry of frames) {
+    const { manifest, arrays } = bundle(entry.id);
+    const f = new DataView(arrays.frame.buffer, arrays.frame.byteOffset, W.FRAME_BYTES);
+    const dcmax = manifest.julia
+      ? 0
+      : B.dcBound({
+          sampleWidth: manifest.width_px,
+          sampleHeight: manifest.height_px,
+          offsetM: [f.getFloat32(8, true), f.getFloat32(12, true)],
+          spacingM: f.getFloat32(16, true),
+          sc: f.getInt32(20, true),
+        });
+    const built = B.buildTable({
+      points: arrays.orbit_f64,
+      count: arrays.orbit_f64.length / 2,
+      periodic: manifest.periodic,
+      degree: manifest.degree,
+      julia: manifest.julia,
+      dcmax,
+    });
+    assert.equal(built.levels, manifest.bla.levels, entry.id);
+    assert.equal(built.valid, manifest.bla.valid, entry.id);
+    const bytes = (a) => Buffer.from(a.buffer ?? a, a.byteOffset ?? 0, a.byteLength);
+    assert.ok(bytes(built.header).equals(bytes(arrays.bla_header)), `${entry.id}: the header`);
+    assert.ok(bytes(built.runs).equals(bytes(arrays.bla_runs)), `${entry.id}: the runs`);
+  }
+  assert.equal(B.HEADER_BYTES, W.BLA_HEADER_BYTES);
+  assert.equal(B.RUN_BYTES, W.BLA_RUN_BYTES);
+});
+
+test("a table too short to hold a run is a header of no levels, which finds nothing", () => {
+  const points = new Float64Array([0, 0, 0.1, 0.2, 0.3, 0.1, 0.2, 0.2]);
+  const t = B.buildTable({ points, count: 4, periodic: false, degree: 2, julia: false, dcmax: 0 });
+  assert.equal(t.levels, 0);
+  assert.equal(new DataView(t.header).getUint32(4, true), 0);
+  assert.equal(t.runs.byteLength, B.RUN_BYTES);
+});
+
+test("hypot64 is a scaled square root, exact where the sum is", () => {
+  assert.equal(B.hypot64(3, 4), 5);
+  assert.equal(B.hypot64(3 * 2 ** -1000, 4 * 2 ** -1000), 5 * 2 ** -1000);
+  assert.equal(B.hypot64(3 * 2 ** 1000, 4 * 2 ** 1000), 5 * 2 ** 1000);
+  assert.equal(B.hypot64(0, 0), 0);
+  assert.equal(B.hypot64(-(2 ** -1074), 0), 2 ** -1074);
 });
 
 // ---- The kernel key ---------------------------------------------------------------------

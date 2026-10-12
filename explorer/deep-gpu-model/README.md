@@ -133,8 +133,13 @@ WGSL can express:
 ## Iteration skipping
 
 A switch, off by default: `model::pass` is the model without it, and `model::pass_bla`
-takes a `bla::GpuTable`. **The shipped kernel has no skip table**, and nothing here
-changes that; `perturb` removed its own (`5fa1515a`, `b84e7e5d`, `394056b2`) because it
+takes a `bla::GpuTable`. **The shipped kernel has had the double-single path's table since
+gpu_deep_depth_ckpt163** (Matt reopened BLA for the GPU path alone at ckpt 163): its WGSL
+port is `explorer/deep-gpu-wgsl.js`'s `bla_lookup` and `bla_apply`, with the gate below, and
+the page builds the table as `explorer/deep-gpu-bla.js`, held byte for byte to the tables
+`export --bla on` writes; `hypot` in the build is `bla::hypot64`, a scaled square root, so
+that a platform's `libm` and a browser's `Math.hypot` cannot round a radius apart. The CPU
+kernel, `perturb`, stays without one; `perturb` removed its own (`5fa1515a`, `b84e7e5d`, `394056b2`) because it
 moved the picture at every tolerance it paid at, which an `f64` kernel holding itself to
 "draws what the engine draws" could not accept. On this path `f32` already moves the
 picture by its own rounding, so the bar is the model with the switch on agreeing with
@@ -809,6 +814,40 @@ that waits for the cap (or, under `--interior-policy handoff`, goes back to the 
 exponent per point beside the `vec4`, read only where `Z` is rescaled into the delta's
 units, so that nothing flushes; it touches the per-pixel path and waits for a frame that
 needs it.
+
+**The frame that needs it came, and so did the fix** *(gpu_deep_depth_ckpt163)*. The same
+nucleus framed at `1e-110` and `1e-112` (the link's deepest) needs discs below the
+`2^-320` term: at 64 × 36 the double-single kernel gated 1,346 of its 2,304 samples at
+`1e-110` and every one at `1e-112`, and the Deep tab, which hands a gated sample back,
+drew `D-1e-110` at 0.30 times the CPU's speed. `GpuOrbit::exact` now keeps, under `HiLo`
+and only where anything flushed, every point narrowing flushed some of at its own scale:
+the point times `2^-e`, `e` its larger component's exponent, narrowed the same way, with
+`e`; every other point is its stored self with 0. The stored orbit is unchanged, so every
+read that took it before takes it now. Three reads take the exact point instead:
+
+- **the careful step**, which forms `F(Z, δ)` in the unit `2^v` and now takes `Z` there
+  at its true size (`careful_step`'s `ze`);
+- **the scaled reconstruction and rebase**, which form `z` in the delta's units where the
+  exact point fits them (`2^(e+x)` at most `2^(REBASE_GATE + 1 + s)`), and in the exact
+  point's own units where it does not (`scaled_z`): a return at `2^-322` with `δ` at
+  `2^-753` is handed to the proof as `Z`, where the stored zero handed it `δ` alone, and a
+  superattracting cycle's `δ` shrinks every period, so the proof re-anchored lower at every
+  return and never closed (`tests/deep_interior.rs`, the Julia-origin case, found that way
+  on the first try).
+
+An iterate formed off the exact point is off the orbit by nothing but the pair's rounding,
+so the proof's flush term is charged only to an iterate, a step and a rebase formed off a
+stored point that flushed (`Iterate::read_from` and `Proof::rebased` take `OFF` otherwise);
+the term itself is measured as before. On the D frames every sample now closes at 622 at
+`1e-110` and `1e-112`, as `perturb` does, with the skip table and without
+(`tests/deep_interior.rs`, `past_1e_100_the_flushed_returns_are_read_exactly`). The three shallower D frames stay
+solid interior at 160 × 90, and `Dedge-3e-23`, where the boundary crosses a flushing orbit,
+escapes exactly the 165 samples `perturb` escapes, with no class changed: nothing is newly
+called interior. The `f32`
+kernel has no exact points and is unchanged. The page builds the same points
+(`explorer/deep-gpu.js`'s `hiLoOrbit`, held to the model's bundles byte for byte), binds them
+only where its orbit flushed, and the self-test holds the kernel to the model on the
+nucleus at `1e-110` with an ordinary reference (`selftest-d3-deep-interior`).
 
 **The WGSL ports have followed** *(gpu_deep_ship_ckpt162, Phase 3)*. The shipped kernel,
 `explorer/deep-gpu-wgsl.js`, carries both edits — the four gate tests read

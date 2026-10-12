@@ -38,6 +38,10 @@
 // reset is the machine's moment, and a run should say it happened rather than time the CPU
 // under the GPU's name for the rest of the sample. `--from` starts the sample part way, for
 // a run a reset cut short, and `--out` names the record so the two halves both survive.
+// `--ladder` draws `deep-gpu-frames.mjs`'s depth ladder instead of the sample, with no cold
+// loads, and keeps each GPU frame's whole pass trace *(gpu_deep_depth_ckpt163)*;
+// `--with-forced` adds a third browser under `kernel=gpu` that lands only the frames the
+// ticked one drew on the CPU, so what the device would do with them is measured too.
 // `--names` keeps only the frames a JSON list names, in the sample's order, for a re-run of
 // a subset against an earlier record.
 //

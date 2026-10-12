@@ -1,0 +1,18 @@
+{"format":"deep-gpu-model/gpu-probe-bundle/2","id":"selftest-d2-skip","manifest":"selftest-d2-skip.manifest.json","bin":"selftest-d2-skip.bin","bin_bytes":22704,"width":1e-30,"degree":2,"julia":false,"width_px":16,"height_px":9,"cap":2000,"interior":true,"orbit_len":98,"periodic":false,"flush":0,"flush_hilo":0,"interior_policy":"flag","slim":true,"ftz":{"differ":0,"frac_differ":0},"bla":{"levels":3,"valid":7},
+"spec":{"re":"-0.22815549365396181921457201409912600673739835","im":"1.11514250803993735974576463631501406818877809","w":1e-30,"julia_re":null,"julia_im":null,"anchor":"parameter","link":null},
+"frame":{"width_px":16,"height_px":9,"offset_m":[0e0,0e0],"spacing_m":7.922816e-2,"sc":-100,"maxiter":2000,"degree":2,"julia":0,"entry":0,"interior":2,"floor":-64,"margins":{"spacing":4,"point":21,"step":18,"add":22}},
+"frame_lo":{"offset_lo":[0e0,0e0],"spacing_lo":-2.5123859e-10,"pad":0,"margins":{"spacing":8,"point":41,"step":38,"add":42}},
+"pixel_order":"row-major, index = row * width_px + col, row 0 at the top (dc's imaginary part largest)",
+"status_codes":{"running":0,"escaped":1,"capped":2,"interior":3,"gated":4},
+"expected":"f32_*: model::run_pixel on orbit_f32pair with frame; ds_*: model_ds::run_pixel_ds on orbit_hilo with frame and frame_lo; both unbounded budget, no skip table. f32_state and ds_state: PixelState::bits and DsPixelState::bits per pixel, 12 and 14 u32, the GPU structs' order; ds_proof: the double-single state's Proof::bits, 18 u32 a pixel. smooth = n + frac where status is escaped. f64_smooth: perturb's f64 kernel, NaN where it did not escape. A slim bundle carries frame, frame_lo, orbit_hilo, ds_state and ds_proof only. bla: where not null, ds_* is model_ds::run_pixel_ds_bla with the table bla_header and bla_runs hold (bla.rs at EPSILON_DS_DEFAULT, 64 bytes a run: BlaEntry, BlaLo, BlaInterior). ftz: pixels whose double-single state moves (frac and frac alone counted apart) when subnormals are flushed, or null when not checked",
+"arrays":[
+  {"name":"frame","dtype":"u8","count":64,"offset":0,"bytes":64},
+  {"name":"frame_lo","dtype":"u8","count":32,"offset":64,"bytes":32},
+  {"name":"bla_header","dtype":"u8","count":528,"offset":96,"bytes":528},
+  {"name":"bla_runs","dtype":"u8","count":512,"offset":624,"bytes":512},
+  {"name":"orbit_f64","dtype":"f64","count":196,"offset":1136,"bytes":1568},
+  {"name":"orbit_hilo","dtype":"f32","count":392,"offset":2704,"bytes":1568},
+  {"name":"ds_state","dtype":"u32","count":2016,"offset":4272,"bytes":8064},
+  {"name":"ds_proof","dtype":"u32","count":2592,"offset":12336,"bytes":10368}
+],
+"f64":{"escaped":144,"mean_iterations":69.2},"f32":{"classes":{"running":0,"escaped":144,"capped":0,"interior":0,"gated":0},"mean_steps":69.2,"vs_f64":{"both_escaped":144,"class_changes":0,"p50":0.0000012591754057211801,"p99":0.00012292355920351383,"max":0.00022644727977194634,"over_0.1":0.00000,"over_1":0.00000}},"ds":{"classes":{"running":0,"escaped":144,"capped":0,"interior":0,"gated":0},"mean_steps":38.2,"vs_f64":{"both_escaped":144,"class_changes":0,"p50":0.00000003814857052475418,"p99":0.0000001361299837299157,"max":0.00000015168140521382156,"over_0.1":0.00000,"over_1":0.00000}}}

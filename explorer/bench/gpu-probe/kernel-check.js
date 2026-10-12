@@ -23,7 +23,10 @@
 // `form=<guard>`, `wg=64`, `vectors=0`, `selftest=0`, `bundles=0`.
 
 import {
+  BLA_HEADER_BYTES,
+  BLA_RUN_BYTES,
   ESCAPED,
+  EXACT_BYTES,
   FORMS,
   LAYOUT,
   OUT_NONE,
@@ -205,6 +208,12 @@ class Runner {
     this.frame = upload(bundle.arrays.frame, usage.UNIFORM);
     this.frameLo = upload(bundle.arrays.frame_lo, usage.UNIFORM);
     this.orbit = upload(bundle.arrays.orbit_hilo, usage.STORAGE);
+    // The skip table where the bundle was exported with one (`export --bla on`), else the
+    // empty one, which finds no run.
+    this.blaHeader = upload(bundle.arrays.bla_header ?? new Uint8Array(BLA_HEADER_BYTES), usage.UNIFORM);
+    this.blaRuns = upload(bundle.arrays.bla_runs ?? new Uint8Array(BLA_RUN_BYTES), usage.STORAGE);
+    // The orbit's exact points where it flushed (`orbit.rs`), else a dummy never read.
+    this.exact = upload(bundle.arrays.orbit_exact ?? new Uint8Array(EXACT_BYTES), usage.STORAGE);
     this.params = device.createBuffer({ size: PARAMS_BYTES, usage: usage.UNIFORM | usage.COPY_DST });
     this.states = device.createBuffer({ size: this.count * stateBytes(this.interior), usage: usage.STORAGE | usage.COPY_SRC });
     this.counters = device.createBuffer({ size: 16, usage: usage.STORAGE | usage.COPY_SRC | usage.COPY_DST });
@@ -217,13 +226,13 @@ class Runner {
     this.layouts = LAYOUT.map((entries) => device.createBindGroupLayout({ entries }));
     this.group0 = device.createBindGroup({
       layout: this.layouts[0],
-      entries: [this.frame, this.frameLo, this.params, this.orbit, this.states, this.counters, this.list, this.out].map((buffer, binding) => ({ binding, resource: { buffer } })),
+      entries: [this.frame, this.frameLo, this.params, this.orbit, this.states, this.counters, this.list, this.out, this.blaHeader, this.blaRuns, this.exact].map((buffer, binding) => ({ binding, resource: { buffer } })),
     });
     this.group1 = device.createBindGroup({ layout: this.layouts[1], entries: [{ binding: 0, resource: { buffer: this.indirect } }] });
   }
 
   destroy() {
-    for (const b of [this.frame, this.frameLo, this.orbit, this.params, this.states, this.counters, this.list, this.out, this.indirect, this.budgets, this.counts, this.countsRead]) b.destroy();
+    for (const b of [this.frame, this.frameLo, this.orbit, this.blaHeader, this.blaRuns, this.exact, this.params, this.states, this.counters, this.list, this.out, this.indirect, this.budgets, this.counts, this.countsRead]) b.destroy();
   }
 
   async pipelines() {
@@ -381,7 +390,10 @@ function judge(bundle, run, interior) {
     r.identical += differ.length === 0;
     let butFrac = differ.filter((n) => n !== "frac");
     // A pixel the model's flushing run (`export --ftz-check`) moves, held to that run instead:
-    // the GPU flushes subnormals and the model keeps them.
+    // the GPU flushes subnormals and the model keeps them. Its status, n and steps are then
+    // that run's too: a flushed low half can move a skip, and with it the steps a pixel took
+    // to the same count *(gpu_deep_depth_ckpt163)*.
+    let flushedRun = false;
     if (butFrac.length > 0 && ftzState !== undefined) {
       let flushed = true;
       for (let k = 0; k < stride && flushed; k++) {
@@ -391,11 +403,13 @@ function judge(bundle, run, interior) {
       if (flushed) {
         r.as_flushed++;
         butFrac = [];
+        flushedRun = true;
       }
     }
     r.identical_but_frac += butFrac.length === 0;
     r.frac_only += differ.length === 1 && differ[0] === "frac";
-    const sns = ["status", "n", "steps"].every((n) => words[base + at[n]] === state[i * 14 + at[n]]);
+    const held = flushedRun ? ftzState : state;
+    const sns = ["status", "n", "steps"].every((n) => words[base + at[n]] === held[i * 14 + at[n]]);
     r.status_n_steps += sns;
     const status = words[base + at.status];
     r.classes[classNames[Math.min(status, 4)]]++;

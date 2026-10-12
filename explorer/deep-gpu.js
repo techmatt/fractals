@@ -16,7 +16,9 @@
 // sample, the smooth count where it escaped and `NaN` where it did not, so nothing
 // downstream of `DeepRenderer.field` knows which kernel drew it. The kernel is
 // `deep-gpu-wgsl.js`, the model's double-single loop with its interior proof
-// (`deep-gpu-model`), run under the `handoff` policy: a sample the proof gives up on ends
+// (`deep-gpu-model`), its skip table where the frame's has a live run (`deep-gpu-bla.js`,
+// *gpu_deep_depth_ckpt163*) and its exact orbit points where the orbit flushed (`hiLoOrbit`),
+// run under the `handoff` policy: a sample the proof gives up on ends
 // `GATED` and is finished by the CPU kernel, which restarts it from the first iteration
 // with its own `f64` loop and its own proof (`compute_samples`). So is every sample still
 // running when the frame's tail is thin enough at a step checkpoint (`handsTail`), and so
@@ -329,6 +331,12 @@ const FLUSH = 125;
  * pairs from byte 16) as the device holds it: `orbit.rs`'s `GpuOrbit` under `HiLo`, one
  * `[re_hi, im_hi, re_lo, im_lo]` a point, a subnormal component stored as a signed zero,
  * and `flush`, the bound on what that flushing left (0 where nothing flushed).
+ *
+ * Where anything flushed, `exact` too *(gpu_deep_depth_ckpt163)*: `orbit.rs`'s exact points,
+ * `EXACT_BYTES` a point as the kernel binds them, a point narrowing flushed some of kept as
+ * the point times `2^-e` (`e` its larger component's exponent) with `e`, and every other as
+ * stored with 0. The kernel reads them where it forms `Z` in the delta's units, so that a
+ * minibrot's near-zero returns are their true size there; `null` where nothing flushed.
  */
 export function hiLoOrbit(packed) {
   const buffer = packed instanceof ArrayBuffer ? packed : packed.buffer.slice(packed.byteOffset, packed.byteOffset + packed.byteLength);
@@ -337,16 +345,19 @@ export function hiLoOrbit(packed) {
   const flags = head.getUint32(4, true);
   const pairs = new Float64Array(buffer, 16, 2 * count);
   const points = new Float32Array(4 * count);
+  const flushed = new Uint8Array(count);
   let worst = null;
+  let k = 0;
   const keep = (x) => {
     const y = narrow(x);
     if (x !== 0 && y === 0) {
       const e = exponentBits(x);
       worst = worst === null ? e : Math.max(worst, e);
+      flushed[k] = 1;
     }
     return y;
   };
-  for (let k = 0; k < count; k++) {
+  for (k = 0; k < count; k++) {
     const re = pairs[2 * k];
     const im = pairs[2 * k + 1];
     const reHi = keep(re);
@@ -357,13 +368,43 @@ export function hiLoOrbit(packed) {
     points[4 * k + 2] = keep(re - reHi);
     points[4 * k + 3] = keep(im - imHi);
   }
+  let exact = null;
+  if (worst !== null) {
+    exact = new ArrayBuffer(EXACT_BYTES * count);
+    const values = new Float32Array(exact);
+    const exponents = new Int32Array(exact);
+    const words = EXACT_BYTES / 4;
+    for (let j = 0; j < count; j++) {
+      const at = words * j;
+      if (flushed[j] === 0) {
+        values.set(points.subarray(4 * j, 4 * j + 4), at);
+        continue;
+      }
+      const re = pairs[2 * j];
+      const im = pairs[2 * j + 1];
+      const e = exponentBits(Math.max(Math.abs(re), Math.abs(im)));
+      const sr = re * pow2(-e);
+      const si = im * pow2(-e);
+      const hr = narrow(sr);
+      const hi = narrow(si);
+      values[at] = hr;
+      values[at + 1] = hi;
+      values[at + 2] = narrow(sr - hr);
+      values[at + 3] = narrow(si - hi);
+      exponents[at + 4] = e;
+    }
+  }
   return {
     points,
     count,
     periodic: (flags & 2) !== 0,
     flush: worst === null ? 0 : Math.max(FLUSH, -(worst + 2)),
+    exact,
   };
 }
+
+/** Bytes of one exact orbit point, `deep-gpu-wgsl.js`'s `EXACT_BYTES`. */
+export const EXACT_BYTES = 32;
 
 // ---- What a sample's `out` word means -------------------------------------------------
 
@@ -704,6 +745,14 @@ const wgsl = () =>
     throw new Unavailable(`the kernel module: ${error?.message ?? error}`);
   }));
 
+let blaModule = null;
+// The skip table's builder, fetched with the kernel module and forgotten where refused.
+const blaBuilder = () =>
+  (blaModule ??= import("./deep-gpu-bla.js").catch((error) => {
+    blaModule = null;
+    throw new Unavailable(`the skip table's builder: ${error?.message ?? error}`);
+  }));
+
 const SELFTEST = new URL("./deep-gpu-selftest/", import.meta.url);
 
 /** Compile one module, refusing on any error the compiler reports. */
@@ -718,6 +767,21 @@ async function compile(device, code, label) {
   const errors = info.messages.filter((m) => m.type === "error");
   if (errors.length > 0) throw new Error(`${label}: ${errors[0].lineNum}:${errors[0].linePos} ${errors[0].message}`);
   return module;
+}
+
+/** The orbit points a skip table is first built over: where they hold no live run, the
+ *  frame's table is not built at all. About 20 ms of build. */
+export const TABLE_PROBE = 65536;
+
+/** A skip table's header uniform and runs buffer, written from `header` and `runs`. */
+function tableBuffers(device, header, runs, label) {
+  const made = {
+    header: device.createBuffer({ size: header.byteLength, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST, label: `${label} header` }),
+    runs: device.createBuffer({ size: Math.max(64, runs.byteLength), usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST, label: `${label} runs` }),
+  };
+  device.queue.writeBuffer(made.header, 0, header);
+  device.queue.writeBuffer(made.runs, 0, runs);
+  return made;
 }
 
 /** Pop a validation scope and the out-of-memory scope under it; the first error of the
@@ -795,8 +859,8 @@ class Runner {
     }
   }
 
-  bind(layouts, orbit) {
-    const buffers = [this.frame, this.frameLo, this.params, orbit, this.states, this.counters, this.list, this.out];
+  bind(layouts, orbit, table, exact) {
+    const buffers = [this.frame, this.frameLo, this.params, orbit, this.states, this.counters, this.list, this.out, table.header, table.runs, exact];
     this.group0 = this.device.createBindGroup({ layout: layouts[0], entries: buffers.map((buffer, binding) => ({ binding, resource: { buffer } })) });
   }
 
@@ -953,6 +1017,17 @@ export class DeepGpu {
     this.pipelines = new Map();
     this.orbit = null;
     this.runner = null;
+    /** The skip table on the device, `{key, header, runs, levels, valid}`, kept while frames
+     *  keep its orbit and shape; `empty` is the one with no levels, which finds no run. */
+    this.table = null;
+    this.empty = null;
+    /** The skip table's builder off the page's thread: `undefined` until first asked for,
+     *  `null` where no worker can be had. */
+    this.tableWorker = undefined;
+    /** Whether a frame is drawn with its skip table *(gpu_deep_depth_ckpt163)*: false binds
+     *  the empty one, the kernel without the skip bit for bit. An instance's, so that a
+     *  bench page can measure both. */
+    this.skip = true;
     this.idle = Promise.resolve();
     this.lostSignal = null;
     this.fault = null;
@@ -1206,6 +1281,11 @@ export class DeepGpu {
     this.pipelines = new Map();
     this.orbit = null;
     this.runner = null;
+    this.table = null;
+    this.empty = tableBuffers(device, new ArrayBuffer(W.BLA_HEADER_BYTES), new ArrayBuffer(W.BLA_RUN_BYTES), "deep empty table");
+    // An orbit that flushed nothing binds this in its exact points' place; the kernel never
+    // reads it (`exact_e`).
+    this.noExact = device.createBuffer({ size: W.EXACT_BYTES, usage: GPUBufferUsage.STORAGE, label: "deep no exact points" });
     await this.#selfTest(W, device);
   }
 
@@ -1223,6 +1303,9 @@ export class DeepGpu {
     this.device = null;
     this.runner = null;
     this.orbit = null;
+    this.table = null;
+    this.empty = null;
+    this.noExact = null;
     this.pipelines = new Map();
     try {
       device?.destroy();
@@ -1325,7 +1408,7 @@ export class DeepGpu {
       if (bin.byteLength !== manifest.bin_bytes) throw new Error(`self-test: ${entry.bin} is ${bin.byteLength} bytes`);
       const arrays = {};
       for (const a of manifest.arrays) {
-        const Typed = { u8: Uint8Array, u32: Uint32Array, f32: Float32Array }[a.dtype];
+        const Typed = { u8: Uint8Array, u32: Uint32Array, f32: Float32Array, f64: Float64Array }[a.dtype];
         arrays[a.name] = new Typed(bin, a.offset, a.count);
       }
       for (const [k, [first, rest]] of plan.budgets.entries()) {
@@ -1389,12 +1472,20 @@ export class DeepGpu {
     device.pushErrorScope("validation");
     const runner = new Runner(device, count, interior, this.timed);
     const orbit = device.createBuffer({ size: Math.max(16, arrays.orbit_hilo.byteLength), usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST });
+    // A bundle with a skip table is held to the model with it, and every other with none.
+    const table = arrays.bla_header ? tableBuffers(device, arrays.bla_header, arrays.bla_runs, "deep self-test table") : null;
+    // And its exact points, where its orbit flushed (`orbit.rs`'s, as the page builds them).
+    let exact = null;
+    if (arrays.orbit_exact) {
+      exact = device.createBuffer({ size: arrays.orbit_exact.byteLength, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST, label: "deep self-test exact" });
+      device.queue.writeBuffer(exact, 0, arrays.orbit_exact);
+    }
     try {
       device.queue.writeBuffer(orbit, 0, arrays.orbit_hilo);
       device.queue.writeBuffer(runner.frame, 0, arrays.frame);
       device.queue.writeBuffer(runner.frameLo, 0, arrays.frame_lo);
       device.queue.writeBuffer(runner.params, 0, W.paramsBytes({ budget: 0, periodic: manifest.periodic, length: manifest.orbit_len, count, flush: manifest.flush_hilo ?? 0 }));
-      runner.bind(this.layouts, orbit);
+      runner.bind(this.layouts, orbit, table ?? this.empty, exact ?? this.noExact);
       runner.init(p);
       let running = count;
       let passes = 0;
@@ -1438,6 +1529,9 @@ export class DeepGpu {
     } finally {
       runner.destroy();
       orbit.destroy();
+      table?.header.destroy();
+      table?.runs.destroy();
+      exact?.destroy();
     }
   }
 
@@ -1476,6 +1570,93 @@ export class DeepGpu {
       return await this.#draw(job);
     } finally {
       release();
+    }
+  }
+
+  /**
+   * The skip table for a frame *(gpu_deep_depth_ckpt163)*: built from the pool's `f64` orbit
+   * as `deep-gpu-model` builds it (`deep-gpu-bla.js`), merged against the frame's own `|dc|`
+   * bound, and kept on the device while frames keep the orbit, the plane and that bound, so
+   * a recolor or a download of the same view builds nothing.
+   */
+  async #tableFor(device, held, plan, frame) {
+    const f = new DataView(frame);
+    const shape = {
+      sampleWidth: plan.sample_width,
+      sampleHeight: plan.sample_height,
+      offsetM: [f.getFloat32(8, true), f.getFloat32(12, true)],
+      spacingM: f.getFloat32(16, true),
+      sc: f.getInt32(20, true),
+    };
+    const B = await blaBuilder();
+    const dcmax = plan.julia ? 0 : B.dcBound(shape);
+    const key = `${held.stamp}|${plan.degree}|${plan.julia ? 1 : 0}|${dcmax}`;
+    if (this.table?.key === key) return this.table.dead ? this.empty : this.table;
+    this.table?.header?.destroy();
+    this.table?.runs?.destroy();
+    this.table = null;
+    const started = performance.now();
+    const buffer = held.packed instanceof ArrayBuffer ? held.packed : held.packed.buffer.slice(held.packed.byteOffset, held.packed.byteOffset + held.packed.byteLength);
+    const head = new DataView(buffer);
+    const count = head.getUint32(0, true);
+    const points = new Float64Array(buffer, 16, 2 * count);
+    const args = { count, periodic: (head.getUint32(4, true) & 2) !== 0, degree: plan.degree, julia: Boolean(plan.julia), dcmax };
+    // **A table with no live run is never built** *(gpu_deep_depth_ckpt163)*: its lookups
+    // would find nothing, and on a long orbit the build alone is most of a second
+    // (`random-dives#337`, 1.9 million points, none live). Whether any run lives depends on
+    // `dcmax` against the orbit's own sizes, which the start of a long orbit already shows,
+    // so a table over its first `TABLE_PROBE` points is built first and a dead one ends it.
+    // Which way a frame goes is decided by its orbit and frame alone, never by the clock.
+    const dead = (why) => {
+      this.table = { key, dead: true };
+      this.log("gpu table skipped", { ms: Math.round(performance.now() - started), points: count, why });
+      return this.empty;
+    };
+    if (count > TABLE_PROBE) {
+      const probe = B.buildTable({ ...args, points: points.subarray(0, 2 * TABLE_PROBE), count: TABLE_PROBE, periodic: false });
+      if (probe.valid === 0) return dead(`no live run in its first ${TABLE_PROBE} points`);
+    }
+    const built = await this.#build(B, { ...args, points });
+    const ms = performance.now() - started;
+    if (built.levels === 0 || built.valid === 0) return dead(built.levels === 0 ? "too short" : "no live run");
+    device.pushErrorScope("out-of-memory");
+    device.pushErrorScope("validation");
+    const made = tableBuffers(device, built.header, built.runs, "deep table");
+    const invalid = await popBoth(device);
+    if (invalid) {
+      made.header.destroy();
+      made.runs.destroy();
+      throw new Unserved(`the skip table: ${invalid.message}`);
+    }
+    this.table = { ...made, key, levels: built.levels, valid: built.valid, ms: Math.round(ms) };
+    this.log("gpu table built", { ms: Math.round(ms), points: count, levels: built.levels, runs: built.runs.byteLength / 64, valid: built.valid });
+    return this.table;
+  }
+
+  /** `buildTable` off the page's thread, in a module worker of `deep-gpu-bla.js`, and on it
+   *  where there is no worker to be had. One build at a time: frames draw one at a time. */
+  async #build(B, args) {
+    if (this.tableWorker === undefined) {
+      try {
+        this.tableWorker = typeof Worker === "function" ? new Worker(new URL("./deep-gpu-bla.js", import.meta.url), { type: "module", name: "deep skip table" }) : null;
+      } catch {
+        this.tableWorker = null;
+      }
+    }
+    const worker = this.tableWorker;
+    if (worker === null) return B.buildTable(args);
+    const points = args.points.slice();
+    try {
+      return await new Promise((resolve, reject) => {
+        worker.onmessage = (event) => resolve(event.data);
+        worker.onerror = (event) => reject(new Error(event.message ?? "the worker failed"));
+        worker.postMessage({ ...args, points }, [points.buffer]);
+      });
+    } catch {
+      // A worker that will not run is the page's thread's work instead, from then on.
+      worker.terminate();
+      this.tableWorker = null;
+      return B.buildTable(args);
     }
   }
 
@@ -1563,6 +1744,7 @@ export class DeepGpu {
       // The orbit, kept on the device for as long as the pool holds it.
       if (this.orbit === null || this.orbit.stamp !== job.orbit.stamp) {
         this.orbit?.buffer.destroy();
+        this.orbit?.exact?.destroy();
         this.orbit = null;
         const hilo = hiLoOrbit(job.orbit.packed);
         device.pushErrorScope("out-of-memory");
@@ -1574,7 +1756,20 @@ export class DeepGpu {
           throw new Unserved(`orbit: ${invalid.message}`);
         }
         device.queue.writeBuffer(buffer, 0, hilo.points);
-        this.orbit = { stamp: job.orbit.stamp, buffer, count: hilo.count, periodic: hilo.periodic, flush: hilo.flush };
+        let exact = null;
+        if (hilo.exact !== null) {
+          device.pushErrorScope("out-of-memory");
+          device.pushErrorScope("validation");
+          exact = device.createBuffer({ size: hilo.exact.byteLength, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST, label: "deep orbit exact" });
+          const invalid = await popBoth(device);
+          if (invalid) {
+            exact.destroy();
+            buffer.destroy();
+            throw new Unserved(`orbit's exact points: ${invalid.message}`);
+          }
+          device.queue.writeBuffer(exact, 0, hilo.exact);
+        }
+        this.orbit = { stamp: job.orbit.stamp, buffer, exact, count: hilo.count, periodic: hilo.periodic, flush: hilo.flush };
       }
       const orbit = this.orbit;
 
@@ -1597,7 +1792,10 @@ export class DeepGpu {
       const { frame, frameLo } = frameBuffers(plan, orbit.count, HANDOFF);
       device.queue.writeBuffer(runner.frame, 0, frame);
       device.queue.writeBuffer(runner.frameLo, 0, frameLo);
-      runner.bind(this.layouts, orbit.buffer);
+      const table = this.skip ? await this.#tableFor(device, job.orbit, plan, frame) : this.empty;
+      if (!job.live()) return { status: "cancelled" };
+      record.table = table === this.empty ? null : { levels: table.levels, valid: table.valid, ms: table.ms };
+      runner.bind(this.layouts, orbit.buffer, table, orbit.exact ?? this.noExact);
 
       const fallback = previewOf(job.preview, width, height);
       // A partial of a frame in strips shows the quarter field where no strip has run yet.
