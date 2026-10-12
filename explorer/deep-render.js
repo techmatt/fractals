@@ -1405,6 +1405,7 @@ export class DeepRenderer {
     const workers = this.slots.length;
     const refused = await gpu.refuses({
       samples,
+      sampleWidth: shape.sample_width,
       degree: shape.degree,
       interior: shape.interior === true,
       orbitPoints: orbit === null ? 0 : new DataView(orbit.packed).getUint32(0, true),
@@ -1425,46 +1426,87 @@ export class DeepRenderer {
     const values = new Float64Array(samples);
     let shown = 0;
     const live = () => generation === this.generation;
-    const said = (fraction) => {
-      // The bar never runs backward: a sample the GPU hands back was counted as done.
-      shown = Math.max(shown, fraction);
+    // What the device finished, and what the CPU finished of what it was handed: the bar is
+    // their sum, and never runs backward.
+    let onDevice = 0;
+    const tail = { lists: 0, total: 0, done: 0, part: 0, ms: 0, ran: 0, failed: null, chain: Promise.resolve(true) };
+    const said = () => {
+      shown = Math.max(shown, Math.min(1, onDevice + (tail.done + tail.part) / samples));
       onProgress?.(shown, performance.now() - started, 0);
     };
+    // **A strip's tail is finished while the next strip runs** *(gpu_optin_downloads_ckpt162)*:
+    // the pool is idle while the device draws, so each list the GPU hands over goes to it at
+    // once, one list after another (`samples` takes one at a time).
+    const take = (indices) => {
+      if (indices.length === 0) return;
+      tail.lists += 1;
+      tail.total += indices.length;
+      tail.chain = tail.chain.then(async (going) => {
+        if (!going || !live()) return false;
+        const got = await this.samples(spec, indices, values, {
+          generation,
+          onProgress: (fraction) => {
+            tail.part = fraction * indices.length;
+            said();
+          },
+        });
+        if (got === null) return false;
+        tail.done += indices.length;
+        tail.part = 0;
+        tail.ms += got.elapsed;
+        tail.ran = got.ran === null || tail.ran === null ? null : tail.ran + got.ran;
+        said();
+        return true;
+      });
+      // A list the kernel refused stops the device at its next check (`going`, below)
+      // rather than one whole GPU run later, and is thrown once the draw has returned.
+      tail.chain.catch((error) => {
+        tail.failed ??= error;
+      });
+    };
+    const going = () => live() && tail.failed === null;
     const drawn = await gpu.draw({
       plan: shape,
       orbit,
       values,
       preview,
       workers,
-      live,
+      live: going,
       onPass: () => {
         this.heard = performance.now();
       },
-      onProgress: said,
+      onProgress: (fraction) => {
+        onDevice = fraction;
+        said();
+      },
+      onHanded: take,
       onPartial:
         onPartial === null
           ? null
           : () => onPartial({ values, width, height, supersample, elapsed: performance.now() - started }),
     });
+    if (tail.failed !== null) throw tail.failed;
     if (!live()) return null;
     if (drawn.status === "cancelled") return null;
     if (drawn.status === "unserved" || drawn.handed === null) {
       this.onGpu?.("cpu", { why: drawn.why ?? drawn.status });
       return undefined;
     }
-    const handed = drawn.handed;
-    const settled = (samples - handed.length) / samples;
-    const tail = await this.samples(spec, handed, values, {
-      generation,
-      onProgress: (fraction) => said(settled + (1 - settled) * fraction),
-    });
-    if (tail === null || !live()) return null;
+    take(drawn.handed);
+    // What the device settled is everything the CPU was not given: after a lost device the
+    // last pass's count overstates it, and the bar would run past the end.
+    onDevice = (samples - tail.total) / samples;
+    const finished = await tail.chain;
+    if (!finished || !live()) return null;
     this.onGpu?.("gpu", {
-      handed: handed.length,
+      handed: tail.total,
       lost: drawn.status === "lost",
       ms: performance.now() - started,
-      tailMs: tail.elapsed,
+      // The CPU's time over the handed samples, summed over the lists; with strips, most
+      // of it ran beside the device's.
+      tailMs: tail.ms,
       tailRan: tail.ran,
+      strips: gpu.last?.strips ?? 1,
       // Passes and dispatches, and the longest of each on the device (`passStats`).
       passes: drawn.passes ?? null,
     });
@@ -1477,7 +1519,7 @@ export class DeepRenderer {
       ran: null,
       saved: null,
       kernel: "gpu",
-      handed: handed.length,
+      handed: tail.total,
     };
   }
 

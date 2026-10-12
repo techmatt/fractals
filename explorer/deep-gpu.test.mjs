@@ -1,8 +1,9 @@
 // The Deep tab's GPU path, held where a GPU is not needed *(gpu_deep_ship_ckpt162)*: the
 // frame and orbit the page builds for the device against the tracked self-test bundles
 // `deep-gpu-model` exported, the meaning of a sample's `out` word, the pass-sizing and
-// tail rules, the health policy and the reader's opt-in, the self-test vectors against a
-// JavaScript reference of the same arithmetic, and the `kernel` key that never reaches a link. What needs a device
+// tail rules, the strips a frame too big for the device is cut into, the health policy and
+// the reader's opt-in, the self-test vectors against a JavaScript reference of the same
+// arithmetic, and the `kernel` key that never reaches a link. What needs a device
 // is held by `bench/gpu-probe/kernel-check.html` and the tab's own self-test.
 //
 // node --test explorer/deep-gpu.test.mjs
@@ -89,7 +90,17 @@ test("the status codes, sizes and policy are the kernel module's own", () => {
   const params = W.paramsBytes({ budget: 7, periodic: true, length: 9, count: 11, flush: 0 });
   assert.equal(new DataView(params).getUint32(W.PARAMS_BUDGET, true), 7);
   assert.equal(new DataView(params).getUint32(W.PARAMS_BASE, true), 0);
-  assert.match(W.kernelSource({ degree: 2, julia: false, interior: true, form: W.KERNEL_FORMS[0], workgroup: gpu.WORKGROUP, smooth: "builtin" }), /flush: i32,\n {2}base: u32,/);
+  // A strip's first row lands after the base, and is 0 for a frame drawn whole, so the
+  // self-test's frames run exactly the kernel they always did.
+  assert.equal(new DataView(params).getUint32(W.PARAMS_ROW0, true), 0);
+  assert.equal(new DataView(W.paramsBytes({ budget: 1, periodic: false, length: 2, count: 3, flush: 0, row0: 4097 })).getUint32(W.PARAMS_ROW0, true), 4097);
+  for (const julia of [false, true]) {
+    const source = W.kernelSource({ degree: 2, julia, interior: true, form: W.KERNEL_FORMS[0], workgroup: gpu.WORKGROUP, smooth: "builtin" });
+    assert.match(source, /flush: i32,\n {2}base: u32,\n {2}row0: u32,/);
+    // Every row a sample's `dc` is formed from is its strip's plus `row0`.
+    assert.equal((source.match(/let row = i \/ frame\.width_px \+ params\.row0;/g) ?? []).length, julia ? 2 : 1);
+    assert.doesNotMatch(source, /let row = i \/ frame\.width_px;/);
+  }
   // The self-test frames run each schedule the page runs, and the bundles are slim and
   // provoke no flush: a device that flushes subnormals passes them for the right reason.
   assert.ok(selftest.budgets.length >= 2);
@@ -474,12 +485,54 @@ test("a frame the device cannot hold is the CPU's", () => {
   const hd = 1920 * 1080;
   assert.equal(gpu.fits({ samples: hd, degree: 2, interior: true, orbitPoints: 1e6, limits }), null);
   assert.equal(gpu.fits({ samples: hd, degree: 7, interior: true, orbitPoints: 10, limits }), "degree");
-  assert.equal(gpu.fits({ samples: 3840 * 2160, degree: 2, interior: false, orbitPoints: 10, limits }), "dispatch");
+  // Past one dispatch, or one binding, is drawn in strips now *(gpu_optin_downloads_ckpt162)*.
+  assert.equal(gpu.fits({ samples: 3840 * 2160, sampleWidth: 3840, degree: 2, interior: false, orbitPoints: 10, limits }), null);
+  assert.equal(gpu.fits({ samples: 7680 * 4320, sampleWidth: 7680, degree: 2, interior: true, orbitPoints: 10, limits }), null);
   const small = { maxStorageBufferBindingSize: 128 << 20, maxBufferSize: 256 << 20, maxComputeWorkgroupsPerDimension: 65535 };
-  // 2.07 M samples of 128-byte state is 265 MB: past a 128 MB binding.
-  assert.equal(gpu.fits({ samples: hd, degree: 2, interior: true, orbitPoints: 10, limits: small }), "state");
+  // 2.07 M samples of 128-byte state is 265 MB, past a 128 MB binding: two strips.
+  assert.equal(gpu.fits({ samples: hd, sampleWidth: 1920, degree: 2, interior: true, orbitPoints: 10, limits: small }), null);
   assert.equal(gpu.fits({ samples: hd, degree: 2, interior: false, orbitPoints: 10, limits: small }), null);
+  // Only a row wider than a strip can hold is refused.
+  const tiny = { maxStorageBufferBindingSize: 1 << 20, maxBufferSize: 1 << 20, maxComputeWorkgroupsPerDimension: 65535 };
+  assert.equal(gpu.fits({ samples: 32768 * 4, sampleWidth: 32768, degree: 2, interior: true, orbitPoints: 10, limits: tiny }), "row");
+  // And the Download row's estimate, which knows no width, assumes the widest row.
+  assert.equal(gpu.fits({ samples: 60e6, degree: 2, interior: true, orbitPoints: 0, limits }), null);
   assert.equal(gpu.fits({ samples: 1000, degree: 2, interior: false, orbitPoints: 1e7, limits: small }), "orbit");
+});
+
+test("a frame is cut into even strips of whole rows that the device holds", () => {
+  const limits = { maxStorageBufferBindingSize: 2 ** 31 - 4, maxBufferSize: 2 ** 32, maxComputeWorkgroupsPerDimension: 65535 };
+  const most = 65535 * gpu.WORKGROUP;
+  // A frame the device holds whole is one strip, the frame it always drew.
+  assert.equal(gpu.stripRows({ sampleWidth: 2152, sampleHeight: 1152, interior: true, limits }), 1152);
+  assert.equal(gpu.stripRows({ sampleWidth: 2048, sampleHeight: 2047, interior: true, limits }), 2047);
+  // 2048 x 2048 is 64 samples past one dispatch: two strips of 1024.
+  assert.equal(gpu.stripRows({ sampleWidth: 2048, sampleHeight: 2048, interior: true, limits }), 1024);
+  // The default download, 1920 x 1080 at 4x: 8.3 M samples, two strips of 1080 rows.
+  assert.equal(gpu.stripRows({ sampleWidth: 3840, sampleHeight: 2160, interior: true, limits }), 1080);
+  for (const [w, h] of [
+    [3840, 2160],
+    [7680, 4320],
+    [10240, 5760],
+    [15360, 8640],
+    [32768, 1832],
+    [4097, 4099],
+  ]) {
+    for (const interior of [true, false]) {
+      const rows = gpu.stripRows({ sampleWidth: w, sampleHeight: h, interior, limits });
+      const strips = Math.ceil(h / rows);
+      assert.ok(rows * w <= most, `${w}x${h}: a strip fits one dispatch`);
+      assert.ok(rows * w * gpu.STATE_BYTES[interior ? "proof" : "plain"] <= limits.maxStorageBufferBindingSize);
+      // Even: the last strip is never more than one row a strip short of the rest.
+      assert.ok(h - (strips - 1) * rows >= rows - strips, `${w}x${h}: the last strip is no sliver`);
+      // And no more strips than the limits force.
+      assert.equal(strips, Math.ceil(h / Math.floor(Math.min(most, Math.floor(limits.maxStorageBufferBindingSize / gpu.STATE_BYTES[interior ? "proof" : "plain"])) / w)));
+    }
+  }
+  // The state binding binds first where it is the smaller.
+  const small = { maxStorageBufferBindingSize: 128 << 20, maxBufferSize: 256 << 20, maxComputeWorkgroupsPerDimension: 65535 };
+  assert.equal(gpu.stripRows({ sampleWidth: 1920, sampleHeight: 1080, interior: true, limits: small }), 540);
+  assert.equal(gpu.stripRows({ sampleWidth: 1 << 21, sampleHeight: 4, interior: true, limits: small }), 0);
 });
 
 test("the GPU is the reader's to turn on, and off touches no WebGPU", async () => {

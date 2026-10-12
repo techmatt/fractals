@@ -576,22 +576,46 @@ export function passMode(running, count, listed) {
 }
 
 /**
- * Whether the device can hold this frame at all, or the reason it cannot: a degree the
- * kernel does not draw, a dispatch past one dimension's workgroups, or a buffer past the
- * adapter's limits. Such a frame is the CPU's, whatever else is true.
+ * How many sample rows a strip of this frame is *(gpu_optin_downloads_ckpt162)*, or 0 where
+ * not even one row fits. A strip is the most whole rows the device holds at once: one
+ * dispatch dimension's workgroups for `init`, `compact` and `emit`, which cover every sample
+ * of a strip in one dispatch, and a state and an `out` buffer inside the adapter's binding
+ * and buffer limits. The strips are then evened out, so the last is not a sliver. A frame
+ * the device holds whole is one strip, exactly the frame it always drew.
  */
-export function fits({ samples, degree, interior, orbitPoints, limits }) {
+export function stripRows({ sampleWidth, sampleHeight, interior, limits }) {
+  const bytes = Math.min(limits.maxStorageBufferBindingSize, limits.maxBufferSize);
+  const most = Math.min(
+    (limits.maxComputeWorkgroupsPerDimension ?? DEFAULT_MAX_GROUPS) * WORKGROUP,
+    Math.floor(bytes / (interior ? STATE_BYTES.proof : STATE_BYTES.plain)),
+    Math.floor(bytes / 8),
+  );
+  const rows = Math.floor(most / sampleWidth);
+  if (!(rows >= 1)) return 0;
+  return Math.ceil(sampleHeight / Math.ceil(sampleHeight / rows));
+}
+
+/**
+ * Whether the device can draw this frame at all, or the reason it cannot: a degree the
+ * kernel does not draw, an orbit past the adapter's limits, or a single row too wide for
+ * a strip (`stripRows`). Such a frame is the CPU's, whatever else is true. A frame past one
+ * dispatch is no longer one of them: it is drawn a strip at a time. `sampleWidth` is the
+ * frame's row; where it is not given, a frame of `samples` is taken as rows of at most the
+ * widest a download can ask for.
+ */
+export function fits({ samples, degree, interior, orbitPoints, limits, sampleWidth = Math.min(samples, WIDEST_ROW) }) {
   if (!(degree >= 2 && degree <= 6)) return "degree";
-  const groups = Math.ceil(samples / WORKGROUP);
-  if (groups > (limits.maxComputeWorkgroupsPerDimension ?? DEFAULT_MAX_GROUPS)) return "dispatch";
-  const state = samples * (interior ? STATE_BYTES.proof : STATE_BYTES.plain);
   const binding = limits.maxStorageBufferBindingSize;
   const buffer = limits.maxBufferSize;
-  if (state > binding || state > buffer) return "state";
   if (16 * orbitPoints > binding || 16 * orbitPoints > buffer) return "orbit";
-  if (8 * samples > binding || 8 * samples > buffer) return "out";
+  const sampleHeight = Math.ceil(samples / Math.max(1, sampleWidth));
+  if (stripRows({ sampleWidth, sampleHeight, interior, limits }) === 0) return "row";
   return null;
 }
+
+/** The widest sample row a frame can have: an 8192-pixel download at 16× (`download.js`'s
+ *  `MAX_SIDE` and its widest supersample). */
+export const WIDEST_ROW = 8192 * 4;
 
 /**
  * The GPU's standing for the session. `untested` until a self-test runs, `ready` once one
@@ -721,6 +745,8 @@ class Runner {
     const usage = GPUBufferUsage;
     const make = (size, flags, label) => device.createBuffer({ size: Math.max(16, Math.ceil(size / 4) * 4), usage: flags, label });
     this.device = device;
+    /** The samples its buffers hold, and the most a strip drawn on them may be. */
+    this.capacity = count;
     this.count = count;
     this.interior = interior;
     this.stateBytes = interior ? STATE_BYTES.proof : STATE_BYTES.plain;
@@ -741,6 +767,13 @@ class Runner {
       this.queries = device.createQuerySet({ type: "timestamp", count: 2 * MAX_DISPATCHES, label: "deep dispatch times" });
       this.resolved = make(16 * MAX_DISPATCHES, usage.QUERY_RESOLVE | usage.COPY_SRC, "deep dispatch times resolved");
     }
+    this.groups = Math.ceil(count / WORKGROUP);
+  }
+
+  /** Draw the next strip, of `count` samples, on these buffers. */
+  use(count) {
+    if (count > this.capacity) throw new Unserved(`a strip of ${count} samples on buffers for ${this.capacity}`);
+    this.count = count;
     this.groups = Math.ceil(count / WORKGROUP);
   }
 
@@ -1091,13 +1124,13 @@ export class DeepGpu {
    *  `quarterMs`, what the frame's quarter pass took on the CPU, sets how long it may wait
    *  on a self-test still running (`readyWait`); `iterations`, the CPU's estimate of the
    *  stage from that pass, keeps a cheap one on the CPU (`cheap`) without waiting at all. */
-  async refuses({ samples, degree, interior, orbitPoints, quarterMs = null, iterations = null, workers = TAIL_WORKERS }) {
+  async refuses({ samples, sampleWidth = null, degree, interior, orbitPoints, quarterMs = null, iterations = null, workers = TAIL_WORKERS }) {
     if (this.kernel === "cpu") return "asked for the CPU";
     if (this.off) return "not chosen";
     if (this.kernel !== "gpu" && samples < GPU_MIN_SAMPLES) return "small";
     if (this.kernel !== "gpu" && cheap({ iterations, workers })) return "cheap";
     if (!(await this.ready(this.kernel === "gpu" ? FORCED_WAIT_MS : readyWait(quarterMs)))) return `not ready (${this.health.status}${this.health.why ? `: ${this.health.why}` : ""})`;
-    return fits({ samples, degree, interior, orbitPoints, limits: this.limits });
+    return fits({ samples, degree, interior, orbitPoints, limits: this.limits, ...(sampleWidth == null ? {} : { sampleWidth }) });
   }
 
   /** Whether a frame of `samples` would go to the GPU as things stand — ready, not small,
@@ -1416,6 +1449,14 @@ export class DeepGpu {
    * `{status: "cancelled"}`; `{status: "lost", handed}` after a lost device, `handed` every
    * sample not finished by the last read-back, or `null` where nothing was read back; or
    * `{status: "unserved", why}` where the device would not take the frame at all.
+   *
+   * **A frame past what the device holds at once is drawn a strip of whole rows at a time**
+   * *(gpu_optin_downloads_ckpt162)*, each strip by exactly the rules a frame always was
+   * (its own budgets from `FIRST_BUDGET`, its own first-dispatch caps, its own tail at its
+   * own step checkpoints) on one set of buffers, one strip after another. Where the job
+   * has `onHanded(indices)`, each strip's tail is handed over the moment that strip ends, so
+   * the CPU finishes it while the next strip runs, and `handed` is only what was not; a
+   * lost device or a refusal after the first strip hands the rest of the frame over too.
    */
   async draw(job) {
     const prior = this.idle;
@@ -1438,10 +1479,24 @@ export class DeepGpu {
     if (device === null || !this.health.usable) return { status: "unserved", why: "no device" };
     const guard = this.#guard(device);
     const { plan, values } = job;
-    const count = plan.sample_width * plan.sample_height;
+    const width = plan.sample_width;
+    const height = plan.sample_height;
+    const count = width * height;
     const interior = plan.interior === true;
+    const rows = stripRows({ sampleWidth: width, sampleHeight: height, interior, limits: this.limits });
+    if (rows === 0) return { status: "unserved", why: "a row past the device's limits" };
+    const strips = Math.ceil(height / rows);
     const started = performance.now();
+    // Every sample's mark once it holds its last value, a strip's a view of it; `null`
+    // until a read-back has landed, so that a loss before any sends the frame to the bands.
     let final = null;
+    // The strip running, whether any of it has been read back, and how many samples of the
+    // strips before it the device finished, for the progress line.
+    let strip = 0;
+    let stripRead = false;
+    let doneBefore = 0;
+    let streamed = 0;
+    const handedAll = [];
     // `trace` is a pass a row: its budget, its mode's initial, the samples running after it,
     // its wall time in milliseconds (submission to read-back), its device time (the sum of
     // its dispatches' timestamps, `null` without them), its dispatches, and the longest.
@@ -1451,6 +1506,8 @@ export class DeepGpu {
       julia: Boolean(plan.julia),
       interior,
       maxiter: plan.maxiter,
+      strips,
+      rows,
       passes: 0,
       dispatches: 0,
       spent: 0,
@@ -1461,6 +1518,35 @@ export class DeepGpu {
       trace: [],
     };
     this.last = record;
+    /** Indices `from` up to `to`, as a list the CPU can finish. */
+    const span = (from, to) => {
+      const list = new Uint32Array(to - from);
+      for (let k = 0; k < list.length; k++) list[k] = from + k;
+      return list;
+    };
+    /** A strip's unfinished samples, as frame indices. */
+    const unfinishedAt = (marks, offset) => {
+      const list = unfinished(marks);
+      for (let k = 0; k < list.length; k++) list[k] += offset;
+      return list;
+    };
+    const hand = (list) => {
+      record.handed += list.length;
+      if (list.length === 0) return;
+      if (job.onHanded) {
+        streamed += list.length;
+        job.onHanded(list);
+      } else handedAll.push(list);
+    };
+    const joined = (lists) => {
+      const all = new Uint32Array(lists.reduce((sum, list) => sum + list.length, 0));
+      let at = 0;
+      for (const list of lists) {
+        all.set(list, at);
+        at += list.length;
+      }
+      return all;
+    };
     try {
       const p = await this.#pipelines(W, device, plan.degree, plan.julia, interior);
       if (!job.live()) return { status: "cancelled" };
@@ -1483,17 +1569,18 @@ export class DeepGpu {
       }
       const orbit = this.orbit;
 
-      // The frame's buffers, kept while frames keep their size.
-      if (this.runner === null || this.runner.count !== count || this.runner.interior !== interior) {
+      // The buffers, for a strip's samples, kept while frames keep their strip's size.
+      const capacity = rows * width;
+      if (this.runner === null || this.runner.capacity !== capacity || this.runner.interior !== interior) {
         this.runner?.destroy();
         this.runner = null;
         device.pushErrorScope("out-of-memory");
         device.pushErrorScope("validation");
-        const runner = new Runner(device, count, interior, this.timed);
+        const runner = new Runner(device, capacity, interior, this.timed);
         const invalid = await popBoth(device);
         if (invalid) {
           runner.destroy();
-          throw new Unserved(`buffers for ${count} samples: ${invalid.message}`);
+          throw new Unserved(`buffers for ${capacity} samples: ${invalid.message}`);
         }
         this.runner = runner;
       }
@@ -1501,103 +1588,133 @@ export class DeepGpu {
       const { frame, frameLo } = frameBuffers(plan, orbit.count, HANDOFF);
       device.queue.writeBuffer(runner.frame, 0, frame);
       device.queue.writeBuffer(runner.frameLo, 0, frameLo);
-      device.queue.writeBuffer(runner.params, 0, W.paramsBytes({ budget: 0, periodic: orbit.periodic, length: orbit.count, count, flush: orbit.flush }));
       runner.bind(this.layouts, orbit.buffer);
-      runner.init(p);
 
-      const fallback = previewOf(job.preview, plan.sample_width, plan.sample_height);
+      const fallback = previewOf(job.preview, width, height);
+      // A partial of a frame in strips shows the quarter field where no strip has run yet.
+      if (strips > 1 && job.onPartial && fallback !== null) for (let i = 0; i < count; i++) values[i] = fallback(i);
       const sizing = this.sizing;
-      let running = count;
-      let budget = FIRST_BUDGET;
-      let listed = null;
-      let listLen = 0;
-      // The densest dispatch's cost a workgroup-step, and the workgroups it was measured
-      // over: nothing is known before the first pass, which `FIRST_DISPATCH_WORK` bounds.
-      let cost = null;
-      let costGroups = null;
+      const workers = job.workers ?? TAIL_WORKERS;
       let lastPartial = performance.now();
       let partialDone = 0;
-      for (;;) {
-        if (!job.live()) return { status: "cancelled" };
-        const mode = passMode(running, count, listed);
-        if (mode === "compact") listLen = running;
-        const groups = mode === "all" ? runner.groups : Math.ceil(listLen / WORKGROUP);
-        // A list is denser than the pass that measured the cost, by at most the share of
-        // its workgroups that survive the cut: the first pass over it assumes the worst.
-        const assumed = cost === null ? null : cost * Math.max(1, costGroups / groups);
-        const cut = dispatchPlan({
-          budget: landOn(record.spent, clampBudget(budget, running)),
-          groups,
-          cost: assumed,
-          target: sizing.dispatch,
-          maxWork: cost === null ? sizing.first : sizing.work,
-          most: cost === null ? firstDispatches(sizing) : Math.min(sizing.most, MAX_DISPATCHES),
-        });
-        const steps = cut.budget;
-        const dispatches = dispatchesOf(cut, groups);
-        const at = performance.now();
-        const counted = await runner.pass(p, dispatches, mode, guard, sizing.split === true);
-        const wallMs = performance.now() - at;
-        const durations = counted.durations;
-        const gpuMs = durations === null ? null : durations.reduce((sum, ms) => sum + ms, 0);
-        const widest = durations === null ? null : Math.max(...durations);
-        record.passes += 1;
-        record.spent += steps;
-        record.dispatches += dispatches.length;
-        record.trace.push([steps, mode[0], counted.running, Math.round(wallMs), gpuMs === null ? null : +gpuMs.toFixed(2), dispatches.length, widest === null ? null : +widest.toFixed(2)]);
-        if (mode === "compact") {
-          record.compacts += 1;
-          listed = 0;
-        } else if (mode === "list") listed += 1;
-        running = counted.running;
-        cost = dispatchCost({ dispatches, durations, wallMs });
-        costGroups = groups;
-        job.onPass?.();
-        if (!job.live()) return { status: "cancelled" };
-        job.onProgress?.((count - running) / count, performance.now() - started);
-        if (running === 0) break;
-        const workers = job.workers ?? TAIL_WORKERS;
-        if (handsTail({ spent: record.spent, running, maxiter: plan.maxiter, interior, workers, scale: this.tailScale })) {
-          record.tail = true;
-          break;
-        }
-        budget = nextBudget({ budget: steps, ms: gpuMs ?? wallMs, running, target: sizing.pass });
-        const done = (count - running) / count;
-        if (job.onPartial && performance.now() - lastPartial >= PARTIAL_MS && done - partialDone >= PARTIAL_GAIN) {
-          // `final` is set only once a read-back has landed: a loss before any leaves it
-          // `null`, which sends the whole frame to the bands.
-          const settled = final ?? new Uint8Array(count);
-          await runner.emit(p, guard, (words) => fillValues(words, values, { final: settled, fallback }));
-          final = settled;
-          lastPartial = performance.now();
-          partialDone = done;
-          record.partials += 1;
+      for (strip = 0; strip < strips; strip++) {
+        const row0 = strip * rows;
+        const offset = row0 * width;
+        const n = Math.min(rows, height - row0) * width;
+        const view = values.subarray(offset, offset + n);
+        const stripFallback = fallback === null ? null : (i) => fallback(i + offset);
+        stripRead = false;
+        runner.use(n);
+        device.queue.writeBuffer(runner.params, 0, W.paramsBytes({ budget: 0, periodic: orbit.periodic, length: orbit.count, count: n, flush: orbit.flush, row0 }));
+        runner.init(p);
+        let running = n;
+        let spent = 0;
+        let budget = FIRST_BUDGET;
+        let listed = null;
+        let listLen = 0;
+        // The densest dispatch's cost a workgroup-step, and the workgroups it was measured
+        // over: nothing is known before a strip's first pass, which `FIRST_DISPATCH_WORK`
+        // bounds.
+        let cost = null;
+        let costGroups = null;
+        for (;;) {
           if (!job.live()) return { status: "cancelled" };
-          job.onPartial();
+          const mode = passMode(running, n, listed);
+          if (mode === "compact") listLen = running;
+          const groups = mode === "all" ? runner.groups : Math.ceil(listLen / WORKGROUP);
+          // A list is denser than the pass that measured the cost, by at most the share of
+          // its workgroups that survive the cut: the first pass over it assumes the worst.
+          const assumed = cost === null ? null : cost * Math.max(1, costGroups / groups);
+          const cut = dispatchPlan({
+            budget: landOn(spent, clampBudget(budget, running)),
+            groups,
+            cost: assumed,
+            target: sizing.dispatch,
+            maxWork: cost === null ? sizing.first : sizing.work,
+            most: cost === null ? firstDispatches(sizing) : Math.min(sizing.most, MAX_DISPATCHES),
+          });
+          const steps = cut.budget;
+          const dispatches = dispatchesOf(cut, groups);
+          const at = performance.now();
+          const counted = await runner.pass(p, dispatches, mode, guard, sizing.split === true);
+          const wallMs = performance.now() - at;
+          const durations = counted.durations;
+          const gpuMs = durations === null ? null : durations.reduce((sum, ms) => sum + ms, 0);
+          const widest = durations === null ? null : Math.max(...durations);
+          record.passes += 1;
+          spent += steps;
+          record.spent += steps;
+          record.dispatches += dispatches.length;
+          record.trace.push([steps, mode[0], counted.running, Math.round(wallMs), gpuMs === null ? null : +gpuMs.toFixed(2), dispatches.length, widest === null ? null : +widest.toFixed(2)]);
+          if (mode === "compact") {
+            record.compacts += 1;
+            listed = 0;
+          } else if (mode === "list") listed += 1;
+          running = counted.running;
+          cost = dispatchCost({ dispatches, durations, wallMs });
+          costGroups = groups;
+          job.onPass?.();
+          if (!job.live()) return { status: "cancelled" };
+          job.onProgress?.((doneBefore + n - running) / count, performance.now() - started);
+          if (running === 0) break;
+          if (handsTail({ spent, running, maxiter: plan.maxiter, interior, workers, scale: this.tailScale })) {
+            record.tail = true;
+            break;
+          }
+          budget = nextBudget({ budget: steps, ms: gpuMs ?? wallMs, running, target: sizing.pass });
+          const done = (doneBefore + n - running) / count;
+          if (job.onPartial && performance.now() - lastPartial >= PARTIAL_MS && done - partialDone >= PARTIAL_GAIN) {
+            const settled = final ?? new Uint8Array(count);
+            await runner.emit(p, guard, (words) => fillValues(words, view, { final: settled.subarray(offset, offset + n), fallback: stripFallback }));
+            final = settled;
+            stripRead = true;
+            lastPartial = performance.now();
+            partialDone = done;
+            record.partials += 1;
+            if (!job.live()) return { status: "cancelled" };
+            job.onPartial();
+          }
+          // The page's own work, and the compositor's turn on the device, before the next.
+          await yieldTask();
         }
-        // The page's own work, and the compositor's turn on the device, before the next.
-        await yieldTask();
+        // **What a partial marked final stays final**: a sample's status only ever leaves
+        // `RUNNING` once, so the last emit adds to the marks and never takes one back, and a
+        // device lost under it keeps the earlier read-back's (`final` is assigned only after
+        // the read has run).
+        const settled = final ?? new Uint8Array(count);
+        const marks = settled.subarray(offset, offset + n);
+        await runner.emit(p, guard, (words) => fillValues(words, view, { final: marks }));
+        final = settled;
+        stripRead = true;
+        const handed = unfinishedAt(marks, offset);
+        doneBefore += n - handed.length;
+        hand(handed);
       }
-      // **What a partial marked final stays final**: a sample's status only ever leaves
-      // `RUNNING` once, so the last emit adds to the marks and never takes one back, and a
-      // device lost under it keeps the earlier read-back's (`final` is assigned only after
-      // the read has run).
-      const settled = final ?? new Uint8Array(count);
-      await runner.emit(p, guard, (words) => fillValues(words, values, { final: settled }));
-      final = settled;
-      const handed = unfinished(final);
-      record.handed = handed.length;
       record.ms = performance.now() - started;
-      return { status: "done", handed, passes: passStats(record) };
+      return { status: "done", handed: joined(handedAll), passes: passStats(record) };
     } catch (error) {
-      if (error instanceof Unserved) {
-        this.log("gpu declined the frame", { why: error.message });
-        return { status: "unserved", why: error.message };
+      const refused = error instanceof Unserved;
+      // A refusal or a loss in the first strip with nothing handed over yet is what it was
+      // before strips: a refusal sends the frame to the bands, and a loss finishes it on the
+      // CPU from what the last read-back settled, or sends it to the bands where none had.
+      if (refused) this.log("gpu declined the frame", { why: error.message, strip });
+      else this.#drop(error instanceof GpuLost ? error.message : `the frame threw: ${error?.message ?? error}`);
+      if (strip === 0 && streamed === 0 && (refused || final === null)) {
+        return refused ? { status: "unserved", why: error.message } : { status: "lost", handed: null, passes: passStats(record) };
       }
-      // Anything else under a frame is the device's: count it as a loss and finish on the
-      // CPU, from what the last read-back had settled.
-      this.#drop(error instanceof GpuLost ? error.message : `the frame threw: ${error?.message ?? error}`);
-      return { status: "lost", handed: final === null ? null : unfinished(final), passes: passStats(record) };
+      // Past that, the strips already ended stay the GPU's, and everything else is the CPU's:
+      // the unfinished samples of the strip that was running, then every later strip.
+      const offset = Math.min(strip, strips) * rows * width;
+      const rest = [...handedAll];
+      if (offset < count) {
+        const n = Math.min(rows * width, count - offset);
+        rest.push(stripRead ? unfinishedAt(final.subarray(offset, offset + n), offset) : span(offset, offset + n));
+        if (offset + n < count) rest.push(span(offset + n, count));
+      }
+      const handed = joined(rest);
+      // `hand` counted the lists already kept; only what the catch added is new.
+      record.handed += handed.length - handedAll.reduce((sum, list) => sum + list.length, 0);
+      return { status: refused ? "done" : "lost", handed, passes: passStats(record) };
     }
   }
 

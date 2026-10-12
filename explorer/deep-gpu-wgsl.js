@@ -99,16 +99,21 @@ export const LAYOUT = [
  * 0 when narrowing flushed nothing, else the `f` with every point within `2^-f`). `base`,
  * the first invocation a pass dispatch covers, is written 0 here; a caller cutting a pass
  * into dispatches copies each one's `budget` and `base` in at `PARAMS_BUDGET` and
- * `PARAMS_BASE` before it.
+ * `PARAMS_BASE` before it. `row0` is the frame row a strip's sample 0 sits on
+ * *(gpu_optin_downloads_ckpt162)*: a frame too big for one dispatch is drawn a strip of
+ * whole rows at a time, `count` that strip's samples, and a sample's row is its own index's
+ * plus `row0`, so its `dc` is the one the whole frame's sample would have, bit for bit.
  */
 export const PARAMS_BUDGET = 0;
 export const PARAMS_BASE = 36;
-export function paramsBytes({ budget, periodic, length, count, flush }) {
+export const PARAMS_ROW0 = 40;
+export function paramsBytes({ budget, periodic, length, count, flush, row0 = 0 }) {
   const buffer = new ArrayBuffer(PARAMS_BYTES);
   new Uint32Array(buffer, 0, 4).set([budget >>> 0, periodic ? 1 : 0, length >>> 0, count >>> 0]);
   new Float32Array(buffer, 16, 2).set([1.0, 0.0]);
   new Uint32Array(buffer, 24, 2).set([0, 0]);
   new Int32Array(buffer, 32, 1).set([flush | 0]);
+  new Uint32Array(buffer, PARAMS_ROW0, 1).set([row0 >>> 0]);
   return buffer;
 }
 
@@ -562,7 +567,7 @@ struct Params {
   flag: u32,
   flush: i32,
   base: u32,
-  pad1: u32,
+  row0: u32,
   pad2: u32,
 }
 `;
@@ -1219,7 +1224,7 @@ fn init_state(i: u32) -> PixelState {
   st.s = 0;
   st.m = 0u;
 ${julia ? `  let col = i % frame.width_px;
-  let row = i / frame.width_px;
+  let row = i / frame.width_px + params.row0;
   let start = settle(dc_ds(col, row), frame.sc);
   st.d_hi = hi(start.d);
   st.d_lo = lo(start.d);
@@ -1245,7 +1250,7 @@ fn run(i: u32, budget: u32) -> bool {
     return false;
   }
   let col = i % frame.width_px;
-  let row = i / frame.width_px;
+  let row = i / frame.width_px + params.row0;
   let periodic = params.periodic != 0u;
   let length = params.length;
   let last = length - 1u;

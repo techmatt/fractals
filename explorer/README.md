@@ -206,7 +206,7 @@ deep-fx.test.mjs      13 tests: the Deep tab's arithmetic is exact where a doubl
 deep-link.test.mjs    45 tests: the deep contract, the shallow one held to not moving,
                       and the gallery register held to the deep one
 deep.test.mjs         30 tests: where the two modules meet, against both committed ones
-deep-gpu.test.mjs     28 tests: the GPU path's frame, orbit, passes and dispatches, tail and cheap rules, the box, and the key
+deep-gpu.test.mjs     29 tests: the GPU path's frame, orbit, passes and dispatches, tail and cheap rules, strips, the box, and the key
 hold.test.mjs         7 tests: a held move keeps the colour at the reference value
 fit.test.mjs          15 tests: a fit runs the palette its passes across Leveled's stretch
 dives.test.mjs        21 tests: the Dive block's chains, draws and results, and Random dives
@@ -3528,15 +3528,51 @@ the CPU, checked in this order:
   eight quarter passes, half what the CPU would take over the stage, and never less than 3 s
   or more than 30 s (`readyWait`). A failed self-test is final for the page load, and the box
   says so; no adapter or a refused device is asked again by later frames, up to three times.
-- **Does not fit**: a degree past six, a dispatch past one dimension's workgroups, or a
-  sample state (128 bytes a sample with the proof, 56 without), an orbit, or an output buffer
-  past the adapter's limits. The Download row's estimate
-  asks the same question (`likely`) and scales from the GPU's own stage only where the GPU
-  would take the download. One dimension holds 65,535 workgroups of 64, so a frame of more
-  than 4,194,240 samples is the CPU's. That includes the 1920 × 1080 download at its default
-  4×, which is 8.3 million samples: measured, it went to the CPU with this reason and an
-  estimate of about three minutes. At 1× a 1920 × 1088 file went to the GPU (4.6 s), as
-  did 1072 × 576 at 1× (1.7 s).
+- **Does not fit**: a degree past six, an orbit past the adapter's limits, or a single row
+  of samples whose state (128 bytes a sample with the proof, 56 without) or output does not
+  fit one binding. Anything bigger than that is cut into strips (below) rather than refused,
+  and what an adapter cannot serve goes to the CPU without a word on the page. The Download
+  row's estimate asks the same question (`likely`) and scales from the GPU's own stage only
+  where the GPU would take the download.
+
+**A big frame is drawn in strips of whole rows** *(downloads on the GPU, 2026-10-11)*. One
+dispatch dimension holds 65,535 workgroups of 64, 4,194,240 samples, so a 1920 × 1080
+download at its default 4× (8.3 million samples) used to be the CPU's. `stripRows` takes as
+many whole rows as fit that and the state and output bindings, then evens the strips out:
+that download is two strips of 540 rows, 3840 × 2160 at 4× is eight. Each strip writes its
+first row into the parameters (`row0`, byte 40) and the kernel adds it to the row it works
+out from the sample's index, so every sample's offset is computed exactly as in a frame drawn
+whole; the anchor frame drawn in seven strips is pixel-identical to it drawn in one. Each
+strip runs the unchanged pass loop of the hardening below, with its own budgets, work caps,
+and tail: the samples a strip hands the CPU are finished by the workers while the next strip
+runs on the device, and the bar counts both. A device lost part way through hands the CPU
+the strip it was on and the strips after it, and keeps the ones already finished.
+
+Measured through the real Download row (`bench/deep-gpu-downloads.mjs`, 2026-10-11), the
+GPU's file against the CPU's (field and coloring, press to file):
+
+| Frame | Size | GPU | CPU | Strips | Visible |
+|---|---|---|---|---|---|
+| anchor 2e-11 | 1920 × 1080, 1× | 10.1 s | 43.6 s | 1 | 0.66% |
+| anchor 2e-11 | 1920 × 1080, 4× | 43.8 s | 177.8 s | 2 | 0.32% |
+| anchor 2e-11 | 2560 × 1440, 4× | 82.3 s | 315.8 s | 4 | 0.32% |
+| random-dives#337 | 1920 × 1080, 4× | 46.4 s | 128.7 s | 2 | 0.31% |
+| A-1e-60 | 1920 × 1080, 4× | 91.9 s | 416.1 s | 2 | 0.24% |
+| D-1e-80 | 1920 × 1080, 4× | 6.0 s | 15.5 s | 2 | 0% |
+| go:julia3-end | 1920 × 1080, 4× | 23.9 s | 133.0 s | 2 | 1.47% |
+
+Every frame is a match under the criterion `deep-gpu-check` uses but julia3-end, at 1.47%
+acceptable. The anchor on the GPU alone
+took 183 s at 1920 × 1080 16× (8 strips), 21 s and 350 s at 2560 × 1440 1× and 16× (1 and
+15), and 50 s and 219 s at 3840 × 2160 1× and 4× (2 and 8). 3840 × 2160 at 16× is past
+`MAX_SAMPLES` and offered by neither kernel. A download cancelled at 30% stopped, and the
+next drew on the GPU; a device destroyed at 70% of a two-strip download handed the CPU the
+second strip whole and the file still landed, a match to the CPU's own. Windows logged no
+display-driver reset (Event 4101) across the run. Every frame's passes stayed inside twice
+the targets but D-1e-80's, whose early passes over a whole strip ran 200 to 313 ms in 13
+dispatches of up to 25.8 ms: inside the work caps, but past twice both targets. It does the
+same drawn as one strip at 1×, so it is the estimate of that frame's dispatch cost running
+short and not the strips; its cause is not yet placed.
 
 The kernels a frame needs are compiled when its link lands, both settings of the interior
 switch side by side, beside the reference orbit and the quarter pass rather than after them
@@ -3844,7 +3880,7 @@ deep-link.test.mjs 45 tests: the contract, the shallow one held to not moving, a
 deep.test.mjs      30 tests: where the two modules meet, against both committed ones —
                    and the cap policy's seam, which fails the same way the rest of
                    this file does, by drawing a plausible picture
-deep-gpu.test.mjs  28 tests: the GPU path's frame, orbit, passes, dispatches, tail, cheap frames, health,
+deep-gpu.test.mjs  29 tests: the GPU path's frame, orbit, passes, dispatches, tail, cheap frames, strips, health,
                    the box (off touches no WebGPU, unticking counts no loss), and key
 bench/julia.mjs    what a Julia frame costs against the Mandelbrot frame at the same c
 bench/deep-stall.mjs  a colour change reaches the canvas through every pass, cancel and
@@ -3865,6 +3901,11 @@ bench/deep-gpu-time.mjs  what a reader waits for, GPU against CPU, a whole frame
                    also holds deep-gpu-agree.mjs's named frames; each GPU frame keeps its
                    longest pass and dispatch, and the run counts Windows' display-driver
                    resets (`--names` keeps a listed subset)
+bench/deep-gpu-downloads.mjs  Deep downloads through the real Download row, GPU against
+                   CPU: which kernel drew each file, in how many strips, the wall time,
+                   the bar never running backward, the two PNGs by the visible rule, and
+                   4101 resets placed under the case that was running; `--cancel` and
+                   `--lose` cut a long GPU download and lose the device part way through one
 bench/deep-gpu-check.mjs  the shipped GPU kernel held to deep-gpu-model word for word on a
                    real adapter, by driving bench/gpu-probe/kernel-check.html and its .js
                    headless: the self-test, then any bundles under artifacts/deep-gpu-check/
@@ -7154,7 +7195,10 @@ nothing installed. `CLAUDE.md` and `.github/workflows/checks.yml` carry the comm
   dispatches that each stay inside the time and work limits and cover every workgroup
   once a chunk; the tail rule hands over by kernel, pool and the share of the cap still to
   run; a frame the quarter pass calls cheap,
-  by its iterations a worker, stays on the CPU; a lost device is retried
+  by its iterations a worker, stays on the CPU; a frame too big for the device at once is
+  cut into even strips of whole rows inside one dispatch and the binding limits, a frame
+  it holds whole is one strip, only a row too wide for a strip is refused, and every row a
+  sample's `dc` is formed from in the generated kernel is its strip's plus `row0`; a lost device is retried
   until the second loss, and an acquisition that failed for the moment until the third; a
   frame waits on a self-test still running for half the CPU's expected cost of it, within
   bounds; every self-test vector is what a JavaScript reference of the same
