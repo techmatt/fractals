@@ -1,0 +1,142 @@
+d2 tangle 1e-22 off	lanes=e8a2d8357d98d30f ran=12049859 saved=0 outcomes=cfbb42a880e01652
+d2 tangle 1e-22 on	lanes=e8a2d8357d98d30f ran=12049859 saved=0 outcomes=fb0973c7bb8a2cac
+d2 tangle 1e-28 off	lanes=319b2352ded24299 ran=14803024 saved=0 outcomes=812e847e11a5a3fd
+d2 tangle 1e-28 on	lanes=319b2352ded24299 ran=14803024 saved=0 outcomes=6ca55674ee0bd78a
+d2 tangle 1e-40 off	lanes=3a8ee9cf75532cfe ran=21600603 saved=0 outcomes=609af22f26dbeb30
+d2 tangle 1e-40 on	lanes=3a8ee9cf75532cfe ran=21600603 saved=0 outcomes=3d3a927fef5e9dd6
+d2 pinch 1e-28 off	lanes=b1357472b9202832 ran=14722751 saved=0 outcomes=53089c8b9d4590c9
+d2 pinch 1e-28 on	lanes=b1357472b9202832 ran=14722751 saved=0 outcomes=93b733f207eb89ef
+d2 tangle 1e-54 off	lanes=4a681a727fbaa8e1 ran=29084170 saved=0 outcomes=bd7299ce26597955
+d2 tangle 1e-54 on	lanes=4a681a727fbaa8e1 ran=29084170 saved=0 outcomes=0e66be0627a1efc9
+d2 body 1e-22 off	lanes=37e6fade387e85be ran=46990391 saved=0 outcomes=7d83a9a27c471c0f
+d2 body 1e-22 on	lanes=37e6fade387e85be ran=46990391 saved=0 outcomes=78307a0efa8517c3
+d2 body 1e-28 off	lanes=fef238dbcc9381de ran=61011543 saved=0 outcomes=9282c40a3cd366a8
+d2 body 1e-28 on	lanes=fef238dbcc9381de ran=61011543 saved=0 outcomes=8cea247c21e9deb6
+d3 tangle 1e-22 off	lanes=09c307780f6f1fc4 ran=11380120 saved=0 outcomes=88eb5e938aba8839
+d3 tangle 1e-22 on	lanes=09c307780f6f1fc4 ran=11380120 saved=0 outcomes=924d97a9d589c221
+d3 tangle 1e-28 off	lanes=7dab71da7ae849b6 ran=15081268 saved=0 outcomes=cbd09e5891148fe3
+d3 tangle 1e-28 on	lanes=7dab71da7ae849b6 ran=15081268 saved=0 outcomes=850cca1dc6532ea7
+d3 tangle 1e-40 off	lanes=e53ec48f0d6a96d3 ran=21036671 saved=0 outcomes=b7493e3aa5a906da
+d3 tangle 1e-40 on	lanes=e53ec48f0d6a96d3 ran=21036671 saved=0 outcomes=18c564c86023d544
+d3 pinch 1e-28 off	lanes=e4e3c4a4deaa4739 ran=15296141 saved=0 outcomes=3b063710e612bdfb
+d3 pinch 1e-28 on	lanes=e4e3c4a4deaa4739 ran=15296141 saved=0 outcomes=a7f49f82bb55d028
+d3 tangle 1e-54 off	lanes=447e0c40ed97d2b1 ran=29189480 saved=0 outcomes=7af1848d3e09e117
+d3 tangle 1e-54 on	lanes=447e0c40ed97d2b1 ran=29189480 saved=0 outcomes=f5ec73bda8239f15
+d3 body 1e-22 off	lanes=6996bb8f538379e8 ran=39222496 saved=0 outcomes=bde9df854207c6d5
+d3 body 1e-22 on	lanes=6996bb8f538379e8 ran=39222496 saved=0 outcomes=8764cee8ef3fca3b
+d3 body 1e-28 off	lanes=251b47081a5aca7c ran=55780933 saved=0 outcomes=96a15f6b77472ec9
+d3 body 1e-28 on	lanes=251b47081a5aca7c ran=55780933 saved=0 outcomes=7da96ae6f1588a04
+d4 tangle 1e-22 off	lanes=830976930fba22a7 ran=11742069 saved=0 outcomes=92ebe73b0b27778d
+d4 tangle 1e-22 on	lanes=830976930fba22a7 ran=11742069 saved=0 outcomes=5de9c2727190bef4
+d4 tangle 1e-28 off	lanes=34add126c42366ee ran=14849195 saved=0 outcomes=f7d99c19c8542caf
+d4 tangle 1e-28 on	lanes=34add126c42366ee ran=14849195 saved=0 outcomes=9aaef6d05afba418
+d4 tangle 1e-40 off	lanes=89c475f9264adb67 ran=20697879 saved=0 outcomes=1aa1569656132c9e
+d4 tangle 1e-40 on	lanes=89c475f9264adb67 ran=20697879 saved=0 outcomes=4036606647ead5b1
+d4 pinch 1e-28 off	lanes=45ffa709998884e9 ran=14434699 saved=0 outcomes=fd18c0d87d336362
+d4 pinch 1e-28 on	lanes=45ffa709998884e9 ran=14434699 saved=0 outcomes=108d0c6ba174ea6c
+d4 tangle 1e-54 off	lanes=9ba506b59e0feaf6 ran=29034357 saved=0 outcomes=721ba0eb626cb968
+d4 tangle 1e-54 on	lanes=9ba506b59e0feaf6 ran=29034357 saved=0 outcomes=2c5675546be84bfe
+d4 body 1e-22 off	lanes=81d9d9731159f17a ran=24911952 saved=0 outcomes=68c898a690ab3486
+d4 body 1e-22 on	lanes=81d9d9731159f17a ran=24911952 saved=0 outcomes=253798a63892fdda
+d4 body 1e-28 off	lanes=4cb3868247308676 ran=32093563 saved=0 outcomes=0b26c42600ee46a6
+d4 body 1e-28 on	lanes=4cb3868247308676 ran=32093563 saved=0 outcomes=7cd6ee85e9a1872e
+d5 tangle 1e-22 off	lanes=613dd1a4f6f1f089 ran=9413255 saved=0 outcomes=1de6de36a7d2a5a0
+d5 tangle 1e-22 on	lanes=613dd1a4f6f1f089 ran=9413255 saved=0 outcomes=67cd7d1b3c90a3df
+d5 tangle 1e-28 off	lanes=26595e0658125a15 ran=13579209 saved=0 outcomes=13bc0d45e32b49f4
+d5 tangle 1e-28 on	lanes=26595e0658125a15 ran=13579209 saved=0 outcomes=113b77856c96a577
+d5 tangle 1e-40 off	lanes=1f49ed104f1e684b ran=20137033 saved=0 outcomes=755d970e9be34bb7
+d5 tangle 1e-40 on	lanes=1f49ed104f1e684b ran=20137033 saved=0 outcomes=563070ce97af95f1
+d5 pinch 1e-28 off	lanes=80b846e7e02a4657 ran=15639889 saved=0 outcomes=ff1ed7decab46f94
+d5 pinch 1e-28 on	lanes=80b846e7e02a4657 ran=15639889 saved=0 outcomes=6901bf5e499c96ec
+d5 tangle 1e-54 off	lanes=ab6dbc35cba8d8dd ran=28641165 saved=0 outcomes=0e9dfed27193f7ca
+d5 tangle 1e-54 on	lanes=ab6dbc35cba8d8dd ran=28641165 saved=0 outcomes=ec62d95bc676e53d
+d5 body 1e-22 off	lanes=7835bb63ea5c75af ran=41395492 saved=0 outcomes=6384964c3d876f4d
+d5 body 1e-22 on	lanes=7835bb63ea5c75af ran=41395492 saved=0 outcomes=cdcdf3dd1b133ff9
+d5 body 1e-28 off	lanes=0787339a19b61771 ran=49699825 saved=0 outcomes=cefb84b1c37c7189
+d5 body 1e-28 on	lanes=0787339a19b61771 ran=49699825 saved=0 outcomes=d941ee6530dbf136
+d6 tangle 1e-22 off	lanes=3042b2656c4d1434 ran=11309166 saved=0 outcomes=0c3312900581d995
+d6 tangle 1e-22 on	lanes=3042b2656c4d1434 ran=11309166 saved=0 outcomes=663a24616efb4623
+d6 tangle 1e-28 off	lanes=3af060deac2d0d8f ran=14856559 saved=0 outcomes=7f5cab9a3eb8721d
+d6 tangle 1e-28 on	lanes=3af060deac2d0d8f ran=14856559 saved=0 outcomes=5abb196d53de3fc4
+d6 tangle 1e-40 off	lanes=74631e21e09fc1e0 ran=21194911 saved=0 outcomes=8c5737233184e854
+d6 tangle 1e-40 on	lanes=74631e21e09fc1e0 ran=21194911 saved=0 outcomes=799247df54c4981d
+d6 pinch 1e-28 off	lanes=2a490bbeb8d9bc95 ran=13849103 saved=0 outcomes=ed109ffc7289268a
+d6 pinch 1e-28 on	lanes=2a490bbeb8d9bc95 ran=13849103 saved=0 outcomes=50640c08da5ba459
+d6 tangle 1e-54 off	lanes=856ef464f8146d3e ran=28594656 saved=0 outcomes=41537611fbb757c5
+d6 tangle 1e-54 on	lanes=856ef464f8146d3e ran=28594656 saved=0 outcomes=9aa54e53a5844091
+d6 body 1e-22 off	lanes=2d3add5d91784efc ran=45256457 saved=0 outcomes=b8dc2d2af780dd9b
+d6 body 1e-22 on	lanes=2d3add5d91784efc ran=45256457 saved=0 outcomes=f0ac3fa24d26159a
+d6 body 1e-28 off	lanes=74aba57545a7d787 ran=56628293 saved=0 outcomes=e053af9d714871b3
+d6 body 1e-28 on	lanes=74aba57545a7d787 ran=56628293 saved=0 outcomes=5d9c17fcc44a0ec9
+d2 anchor 2e-11 off	lanes=0625557b9b20d132 ran=4239975 saved=0 outcomes=70bcb2eb70a4f21c
+d2 anchor 2e-11 on	lanes=0625557b9b20d132 ran=4197100 saved=42875 outcomes=ef3a208e6f559f77
+d2 anchor 1e-22 off	lanes=018134bd0f1afcd0 ran=12636000 saved=0 outcomes=9deb12d7158b14bb
+d2 anchor 1e-22 on	lanes=018134bd0f1afcd0 ran=766260 saved=11869740 outcomes=d8137f421132595f
+d2 misiurewicz 1e-22 off	lanes=ce56fe5ab3c09564 ran=102678 saved=0 outcomes=cc5035e6d8733f24
+d2 misiurewicz 1e-22 on	lanes=ce56fe5ab3c09564 ran=102678 saved=0 outcomes=6abcc6bfd94126ab
+d2 home 3 off	lanes=10040197eedce1a9 ran=148985 saved=0 outcomes=02e5cde0aadd71b1
+d2 home 3 on	lanes=10040197eedce1a9 ran=17643 saved=131342 outcomes=d61be5f741c34c09
+d2 seahorse 1e-6 off	lanes=097dc0b5463a7888 ran=23088 saved=0 outcomes=84e49c1e0af1506f
+d2 seahorse 1e-6 on	lanes=097dc0b5463a7888 ran=23088 saved=0 outcomes=536f923c0e8af4ee
+d2 julia anchor 2e-9 off	lanes=0402c1dd3134d972 ran=1721571 saved=0 outcomes=a5308ceb4a26f08b
+d2 julia anchor 2e-9 on	lanes=0402c1dd3134d972 ran=1679089 saved=42482 outcomes=293a06ae420ad66a
+d3 island 3 bodies off	lanes=372f13dc2f1d6d27 ran=2093229 saved=0 outcomes=a0cd8fbc565b98a5
+d3 island 3 bodies on	lanes=372f13dc2f1d6d27 ran=192150 saved=1901079 outcomes=bae3bc942b0b2a4f
+d3 island 1e-22 off	lanes=018134bd0f1afcd0 ran=12636000 saved=0 outcomes=155d0828cde0fb52
+d3 island 1e-22 on	lanes=018134bd0f1afcd0 ran=3240 saved=12632760 outcomes=ad321c68103e3a28
+d3 misiurewicz 1e-22 off	lanes=99626335d8185117 ran=5003 saved=0 outcomes=48b8ecb955060e9c
+d3 misiurewicz 1e-22 on	lanes=99626335d8185117 ran=5003 saved=0 outcomes=401186b864f82e1c
+d3 home 3 off	lanes=56343858c774ebd0 ran=140632 saved=0 outcomes=d79d5b9fe24bc454
+d3 home 3 on	lanes=56343858c774ebd0 ran=14214 saved=126418 outcomes=125ec09109834dda
+d3 julia island 2e-9 off	lanes=87d002be42032114 ran=43613 saved=0 outcomes=62e80d05aac78c41
+d3 julia island 2e-9 on	lanes=87d002be42032114 ran=3058 saved=40555 outcomes=d637139f885a1719
+d3 julia island origin 2e-6 off	lanes=0107ab4427d58773 ran=30361 saved=0 outcomes=e425357b4efa198d
+d3 julia island origin 2e-6 on	lanes=0107ab4427d58773 ran=1789 saved=28572 outcomes=2f93c07ca64106fc
+d4 island 3 bodies off	lanes=e1031872c797ac07 ran=2523026 saved=0 outcomes=e4746f4fc07381b4
+d4 island 3 bodies on	lanes=e1031872c797ac07 ran=61184 saved=2461842 outcomes=d9213f59cf5271a8
+d4 island 1e-22 off	lanes=018134bd0f1afcd0 ran=12636000 saved=0 outcomes=2f9a30df9b94f7ac
+d4 island 1e-22 on	lanes=018134bd0f1afcd0 ran=3510 saved=12632490 outcomes=45a32f8cf6adb7c8
+d4 misiurewicz 1e-22 off	lanes=27a323ea1e38a6ed ran=4718 saved=0 outcomes=5c97fc7524da6a24
+d4 misiurewicz 1e-22 on	lanes=27a323ea1e38a6ed ran=4718 saved=0 outcomes=03c22d8839dc72a9
+d4 home 3 off	lanes=e5eb7270ea48a99b ran=204522 saved=0 outcomes=1c9d63f6ef09cb22
+d4 home 3 on	lanes=e5eb7270ea48a99b ran=10950 saved=193572 outcomes=683f5cb0d2300235
+d4 julia island 2e-9 off	lanes=7f1bceb9c4d12a35 ran=43064 saved=0 outcomes=1f4a8d2999779a94
+d4 julia island 2e-9 on	lanes=7f1bceb9c4d12a35 ran=2511 saved=40553 outcomes=945692235993b7da
+d4 julia island origin 2e-6 off	lanes=549e4485abd49b5a ran=30253 saved=0 outcomes=ac563dcf6b579dcf
+d4 julia island origin 2e-6 on	lanes=549e4485abd49b5a ran=30253 saved=0 outcomes=adc0a379a71191b0
+d5 island 3 bodies off	lanes=ac42be4ed8c6d7d6 ran=2346581 saved=0 outcomes=ae94741a4d8bc703
+d5 island 3 bodies on	lanes=ac42be4ed8c6d7d6 ran=136097 saved=2210484 outcomes=b548c8eaef96977e
+d5 island 1e-22 off	lanes=018134bd0f1afcd0 ran=12636000 saved=0 outcomes=953c80c1727ee394
+d5 island 1e-22 on	lanes=018134bd0f1afcd0 ran=3510 saved=12632490 outcomes=a1570e5d64e7bfbb
+d5 misiurewicz 1e-22 off	lanes=fa1d4c2b73ebc290 ran=4582 saved=0 outcomes=d9de6dd6ec768205
+d5 misiurewicz 1e-22 on	lanes=fa1d4c2b73ebc290 ran=4582 saved=0 outcomes=612026b7bad26506
+d5 home 3 off	lanes=13d9ed6574fdb719 ran=181028 saved=0 outcomes=b56927f940e8bd85
+d5 home 3 on	lanes=13d9ed6574fdb719 ran=2934 saved=178094 outcomes=efd0a201937a6f21
+d5 julia island 2e-9 off	lanes=fb6f03553a4e8c30 ran=42840 saved=0 outcomes=b331d4358a1fd987
+d5 julia island 2e-9 on	lanes=fb6f03553a4e8c30 ran=2287 saved=40553 outcomes=d4e47503dc1d97f0
+d5 julia island origin 2e-6 off	lanes=f609651453ba78fa ran=30191 saved=0 outcomes=a74895a5493af5af
+d5 julia island origin 2e-6 on	lanes=f609651453ba78fa ran=1610 saved=28581 outcomes=261ae8f01187cf81
+d6 island 3 bodies off	lanes=47470c19682439aa ran=2445385 saved=0 outcomes=1c5c0fa1933791d8
+d6 island 3 bodies on	lanes=47470c19682439aa ran=62880 saved=2382505 outcomes=7ae1ee95db970358
+d6 island 1e-22 off	lanes=018134bd0f1afcd0 ran=12636000 saved=0 outcomes=c025ce41db77d444
+d6 island 1e-22 on	lanes=018134bd0f1afcd0 ran=3510 saved=12632490 outcomes=f7ba217c35b1b1d5
+d6 misiurewicz 1e-22 off	lanes=13931cd1fc57bbdd ran=4615 saved=0 outcomes=a9b45b3a157036f8
+d6 misiurewicz 1e-22 on	lanes=13931cd1fc57bbdd ran=4615 saved=0 outcomes=ba0248a012da20be
+d6 home 3 off	lanes=e49ff5485dea9fe9 ran=208410 saved=0 outcomes=82d1cfad7974e04f
+d6 home 3 on	lanes=e49ff5485dea9fe9 ran=7974 saved=200436 outcomes=2e4360a50e656c2a
+d6 julia island 2e-9 off	lanes=6061cb2f891fd9a5 ran=42672 saved=0 outcomes=8646f620c5636aaa
+d6 julia island 2e-9 on	lanes=6061cb2f891fd9a5 ran=2119 saved=40553 outcomes=9059387357dc9c54
+d6 julia island origin 2e-6 off	lanes=ca1f3f2e344d5bfb ran=30219 saved=0 outcomes=37c819bce495f1ad
+d6 julia island origin 2e-6 on	lanes=ca1f3f2e344d5bfb ran=1638 saved=28581 outcomes=16875eb3382ffef7
+d2 periodic anchor 2e-11 off	lanes=0625557b9b20d132 ran=4239975 saved=0 outcomes=70bcb2eb70a4f21c
+d2 periodic anchor 2e-11 on	lanes=0625557b9b20d132 ran=4197100 saved=42875 outcomes=fcf89c8a3b16df00
+d2 periodic anchor 1e-13 off	lanes=018134bd0f1afcd0 ran=8100000 saved=0 outcomes=98355adc98c82aef
+d2 periodic anchor 1e-13 on	lanes=018134bd0f1afcd0 ran=2389596 saved=5710404 outcomes=036b98b07b9960b0
+d2 julia origin 2e-3 off	lanes=b2f9bae743def028 ran=709932 saved=0 outcomes=085440d8c4e95076
+d2 julia origin 2e-3 on	lanes=b2f9bae743def028 ran=698948 saved=10984 outcomes=ef89bf9297c118b5
+d2 cusp off	lanes=53104d9b3c7694b6 ran=5000010 saved=0 outcomes=0a302ea80e968296
+d2 cusp on	lanes=53104d9b3c7694b6 ran=5000010 saved=0 outcomes=f7905903b406f66a
+d2 implosion off	lanes=ec726d2dd21e0386 ran=10000008 saved=0 outcomes=8a446559dc5a9213
+d2 implosion on	lanes=ec726d2dd21e0386 ran=10000008 saved=0 outcomes=7c4e45d412f0b713
+d4 cusp off	lanes=427cd78b56ccb7cd ran=3240276 saved=0 outcomes=50495938faf77a7e
+d4 cusp on	lanes=427cd78b56ccb7cd ran=3240276 saved=0 outcomes=b37f43d3e39f5efa

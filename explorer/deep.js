@@ -49,7 +49,14 @@
 
 import * as fx from "./deep-fx.js";
 import * as deepLink from "./deep-link.js";
-import { BODY_TARGET, DeepRenderer, bodyShare, deepSpecOf, switchFor } from "./deep-render.js";
+import {
+  BODY_TARGET,
+  DeepRenderer,
+  bodyShare,
+  deepSpecOf,
+  perturbModuleUrl,
+  switchFor,
+} from "./deep-render.js";
 import { DeepGpu, GPU_MIN_SAMPLES, cheap } from "./deep-gpu.js";
 import {
   HOLD_MS,
@@ -736,10 +743,7 @@ export function mount(host) {
       // of it: nothing here waits on it, and a frame asks whether it passed only when it is
       // ready to draw. Where it is not, `start` touches nothing.
       gpu.start();
-      renderer = await DeepRenderer.start(
-        new URL("./perturb.wasm", import.meta.url),
-        host.shading(),
-      );
+      renderer = await DeepRenderer.start(perturbModuleUrl(), host.shading());
       renderer.gpu = gpu;
       renderer.onGpu = (kernel, detail) => log(`field on the ${kernel}`, detail);
       return renderer;

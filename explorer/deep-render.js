@@ -2012,11 +2012,42 @@ export class DeepRenderer {
  *  have anything to report. */
 const PLANNER_IMPORTS = { env: { progress() {} } };
 
-/** `perturb.wasm`, compiled once a page: the pool and New coloring's rule share the fetch.
- *  A failure is forgotten, so a later press asks again. */
+/** The smallest module that holds a wasm SIMD instruction: one function returning
+ *  `i8x16.splat(0)`. An engine that validates it runs `perturb.wasm`. */
+const SIMD_PROBE = new Uint8Array([
+  0, 97, 115, 109, 1, 0, 0, 0, // "\0asm", version 1
+  1, 5, 1, 96, 0, 1, 123, // types: () -> v128
+  3, 2, 1, 0, // functions: one, of type 0
+  10, 8, 1, 6, 0, 65, 0, 253, 15, 11, // code: i32.const 0, i8x16.splat, end
+]);
+
+/** Whether this engine runs wasm SIMD, asked once. */
+let simd = null;
+export function simdSupported() {
+  simd ??= (() => {
+    try {
+      return WebAssembly.validate(SIMD_PROBE);
+    } catch {
+      return false;
+    }
+  })();
+  return simd;
+}
+
+/** **Which perturbation module this engine fetches** *(deep_wait_ckpt163)*.
+ *  `perturb.wasm` draws two samples a vector with wasm SIMD, and an engine without SIMD
+ *  refuses the whole module, so where the probe does not validate (Safari 15.4 to 16.3)
+ *  the page fetches `perturb-scalar.wasm`, the same crate built without it: slower, and the
+ *  same bits (`bench/perturb-parity.mjs`). `simd` is there to force the fallback. */
+export function perturbModuleUrl(simd = simdSupported()) {
+  return new URL(simd ? "./perturb.wasm" : "./perturb-scalar.wasm", import.meta.url);
+}
+
+/** The perturbation module, compiled once a page: the pool and New coloring's rule share
+ *  the fetch. A failure is forgotten, so a later press asks again. */
 let compiling = null;
 
-function compiled(url = new URL("./perturb.wasm", import.meta.url)) {
+function compiled(url = perturbModuleUrl()) {
   compiling ??= (async () => {
     const response = await fetch(url);
     if (!response.ok) throw new Error(`${url}: ${response.status} ${response.statusText}`);

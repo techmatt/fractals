@@ -33,9 +33,11 @@ import {
   deepSpecOf,
   orbitFor,
   orbitKey,
+  perturbModuleUrl,
   quarterIndices,
   sameOrbit,
   seeds,
+  simdSupported,
   switchFor,
 } from "./deep-render.js";
 import * as deep from "./deep-link.js";
@@ -151,6 +153,35 @@ test("one orbit draws every band of its frame", { skip }, () => {
     perturb.band(spec, first, 3, 9),
     perturb.band(spec, second, 3, 9),
   );
+});
+
+const SCALAR = perturbModuleUrl(false);
+const skipScalar = skip || (!existsSync(SCALAR) && "explorer/perturb-scalar.wasm is not built");
+
+test("an engine without wasm SIMD is handed the scalar module, and it draws the same bits", { skip: skipScalar }, async () => {
+  // Node runs wasm SIMD, so the probe has to validate here and name the SIMD module.
+  assert.equal(simdSupported(), true, "the SIMD probe did not validate");
+  assert.ok(perturbModuleUrl().pathname.endsWith("/perturb.wasm"));
+  assert.ok(SCALAR.pathname.endsWith("/perturb-scalar.wasm"));
+  // The fallback forced: the module an engine without SIMD fetches, against the one this
+  // engine fetches, on frames with the switch on and off, at two degrees and on a Julia set.
+  const scalar = await loadPerturb(SCALAR);
+  const frames = [
+    { ...ANCHOR, schema: 1, resolution: [15, 9], maxiter: 6000, interior: true },
+    { ...SHALLOW, schema: 1, resolution: [15, 9], maxiter: 3000, interior: false },
+    { ...SHALLOW, schema: 1, resolution: [15, 9], maxiter: 3000, interior: true, degree: 3 },
+    {
+      center_re: "0", center_im: "0", width: 3, julia_re: ANCHOR.center_re,
+      julia_im: ANCHOR.center_im, schema: 1, resolution: [15, 9], maxiter: 3000, interior: true,
+    },
+  ];
+  for (const spec of frames) {
+    const ours = perturb.frame(spec);
+    const counters = [perturb.wasm.band_ran(), perturb.wasm.band_saved()];
+    const theirs = scalar.frame(spec);
+    assert.deepEqual(theirs, ours, `${JSON.stringify(spec)}: the scalar module drew other bits`);
+    assert.deepEqual([scalar.wasm.band_ran(), scalar.wasm.band_saved()], counters);
+  }
 });
 
 test("a named reference draws the same picture as the centre it is at", { skip }, () => {

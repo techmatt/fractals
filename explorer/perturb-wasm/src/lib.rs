@@ -50,6 +50,8 @@ pub mod dive;
 pub mod fx;
 pub mod json;
 pub mod kernel;
+#[cfg(all(target_arch = "wasm32", target_feature = "simd128"))]
+mod lanes;
 pub mod nuclei;
 pub mod policy;
 pub mod progress;
@@ -570,17 +572,59 @@ fn fill<const D: usize, const JULIA: bool>(
     bytes: &mut Vec<u8>,
 ) {
     let width = spec.sample_width();
-    let (mut ran, mut saved) = (0u64, 0u64);
-    for row in first..last {
-        for col in 0..width {
-            let (re, im) = spec.dc(offset, col, row);
-            let outcome = kernel.sample_with::<D, JULIA>(re, im);
-            ran += outcome.iterations as u64;
-            if outcome.detected_interior {
-                saved += spec.maxiter().saturating_sub(outcome.iterations) as u64;
+    #[cfg(all(target_arch = "wasm32", target_feature = "simd128"))]
+    {
+        let inputs: Vec<(f64, f64)> = (first..last)
+            .flat_map(|row| (0..width).map(move |col| (col, row)))
+            .map(|(col, row)| spec.dc(offset, col, row))
+            .collect();
+        paired::<D, JULIA>(spec, kernel, &inputs, bytes);
+    }
+    #[cfg(not(all(target_arch = "wasm32", target_feature = "simd128")))]
+    {
+        let (mut ran, mut saved) = (0u64, 0u64);
+        for row in first..last {
+            for col in 0..width {
+                let (re, im) = spec.dc(offset, col, row);
+                let outcome = kernel.sample_with::<D, JULIA>(re, im);
+                ran += outcome.iterations as u64;
+                if outcome.detected_interior {
+                    saved += spec.maxiter().saturating_sub(outcome.iterations) as u64;
+                }
+                bytes.extend_from_slice(&outcome.smooth.to_le_bytes());
             }
-            bytes.extend_from_slice(&outcome.smooth.to_le_bytes());
         }
+        BAND_RAN.store(ran, Ordering::Relaxed);
+        BAND_SAVED.store(saved, Ordering::Relaxed);
+    }
+}
+
+/// The samples at `inputs` (each its `dc`, or a Julia frame's starting delta), drawn two
+/// to a vector by [`lanes::fill`], appended to `bytes` in list order, with the band's
+/// two counters set — what [`fill`] and [`fill_listed`] do one sample at a time in the
+/// scalar module and on native. The same outcome per sample bit for bit; see
+/// `src/lanes.rs`.
+#[cfg(all(target_arch = "wasm32", target_feature = "simd128"))]
+fn paired<const D: usize, const JULIA: bool>(
+    spec: &Spec,
+    kernel: &Kernel,
+    inputs: &[(f64, f64)],
+    bytes: &mut Vec<u8>,
+) {
+    let blank = kernel::interior_outcome(0, 0, false, false, 1.0, 0);
+    let mut outcomes = vec![blank; inputs.len()];
+    if kernel.interior {
+        lanes::fill::<D, JULIA, true>(kernel, inputs, &mut outcomes);
+    } else {
+        lanes::fill::<D, JULIA, false>(kernel, inputs, &mut outcomes);
+    }
+    let (mut ran, mut saved) = (0u64, 0u64);
+    for outcome in &outcomes {
+        ran += outcome.iterations as u64;
+        if outcome.detected_interior {
+            saved += spec.maxiter().saturating_sub(outcome.iterations) as u64;
+        }
+        bytes.extend_from_slice(&outcome.smooth.to_le_bytes());
     }
     BAND_RAN.store(ran, Ordering::Relaxed);
     BAND_SAVED.store(saved, Ordering::Relaxed);
@@ -866,19 +910,30 @@ fn fill_listed<const D: usize, const JULIA: bool>(
     bytes: &mut Vec<u8>,
 ) {
     let width = spec.sample_width();
-    let (mut ran, mut saved) = (0u64, 0u64);
-    for &index in indices {
-        let (col, row) = (index % width, index / width);
-        let (re, im) = spec.dc(offset, col, row);
-        let outcome = kernel.sample_with::<D, JULIA>(re, im);
-        ran += outcome.iterations as u64;
-        if outcome.detected_interior {
-            saved += spec.maxiter().saturating_sub(outcome.iterations) as u64;
-        }
-        bytes.extend_from_slice(&outcome.smooth.to_le_bytes());
+    #[cfg(all(target_arch = "wasm32", target_feature = "simd128"))]
+    {
+        let inputs: Vec<(f64, f64)> = indices
+            .iter()
+            .map(|&index| spec.dc(offset, index % width, index / width))
+            .collect();
+        paired::<D, JULIA>(spec, kernel, &inputs, bytes);
     }
-    BAND_RAN.store(ran, Ordering::Relaxed);
-    BAND_SAVED.store(saved, Ordering::Relaxed);
+    #[cfg(not(all(target_arch = "wasm32", target_feature = "simd128")))]
+    {
+        let (mut ran, mut saved) = (0u64, 0u64);
+        for &index in indices {
+            let (col, row) = (index % width, index / width);
+            let (re, im) = spec.dc(offset, col, row);
+            let outcome = kernel.sample_with::<D, JULIA>(re, im);
+            ran += outcome.iterations as u64;
+            if outcome.detected_interior {
+                saved += spec.maxiter().saturating_sub(outcome.iterations) as u64;
+            }
+            bytes.extend_from_slice(&outcome.smooth.to_le_bytes());
+        }
+        BAND_RAN.store(ran, Ordering::Relaxed);
+        BAND_SAVED.store(saved, Ordering::Relaxed);
+    }
 }
 
 /// [`compute_listed`] across the boundary: `count` little-endian `u32` sample indices at

@@ -1,9 +1,19 @@
 {
-  "built": "2026-10-10",
+  "built": "2026-10-12",
   "crate": "explorer/perturb-wasm",
   "dependencies": [],
-  "gzip_bytes": 137705,
-  "raw_bytes": 384997,
+  "modules": {
+    "perturb-scalar.wasm": {
+      "gzip_bytes": 163699,
+      "raw_bytes": 462581,
+      "rustflags": ""
+    },
+    "perturb.wasm": {
+      "gzip_bytes": 182887,
+      "raw_bytes": 587831,
+      "rustflags": "-C target-feature=+simd128"
+    }
+  },
   "rustc": "1.96.0 (ac68faa20 2026-05-25)",
-  "schema": 1
+  "schema": 2
 }

@@ -151,8 +151,9 @@ def _parser() -> argparse.ArgumentParser:
         "--perturb",
         action="store_true",
         help=(
-            "rebuild explorer/perturb.wasm — the Deep tab's perturbation kernel — and its "
-            "manifest, and nothing else; needs cargo but no sibling checkout"
+            "rebuild explorer/perturb.wasm and perturb-scalar.wasm — the Deep tab's "
+            "perturbation kernel, with wasm SIMD and without — and their manifest, and nothing "
+            "else; needs cargo but no sibling checkout"
         ),
     )
     baked.add_argument(
@@ -888,12 +889,14 @@ def _do_explorer(options: argparse.Namespace) -> int:
         # Its own branch and not a stage of the bake: this module has no palettes, no
         # catalog and no sibling checkout in it, so folding it into the bare command would
         # make every palette edit rebuild a second crate for nothing.
-        path, raw_bytes, gzip_bytes = explorer_module.build_perturb()
-        print(
-            f"wrote {path.relative_to(SITE_ROOT).as_posix()}  {raw_bytes:,} bytes, "
-            f"{gzip_bytes:,} gzipped"
-        )
-        path = explorer_module.write_perturb_manifest(raw_bytes, gzip_bytes)
+        built = explorer_module.build_perturb()
+        for path, raw_bytes, gzip_bytes, flags in built:
+            note = f"  ({' '.join(flags)})" if flags else ""
+            print(
+                f"wrote {path.relative_to(SITE_ROOT).as_posix()}  {raw_bytes:,} bytes, "
+                f"{gzip_bytes:,} gzipped{note}"
+            )
+        path = explorer_module.write_perturb_manifest(built)
         print(f"wrote {path.relative_to(SITE_ROOT).as_posix()}")
         return 0
     if options.random:

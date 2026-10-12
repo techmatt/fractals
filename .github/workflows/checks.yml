@@ -120,9 +120,16 @@ jobs:
       - name: build engine-wasm
         working-directory: fractal-website/explorer/engine-wasm
         run: cargo build --release --target wasm32-unknown-unknown
+      # Twice, as `python -m builder explorer --perturb` builds it: perturb-scalar.wasm
+      # plain, perturb.wasm with wasm SIMD in a target directory of its own.
       - name: build perturb-wasm
         working-directory: fractal-website/explorer/perturb-wasm
         run: cargo build --release --target wasm32-unknown-unknown
+      - name: build perturb-wasm with SIMD
+        working-directory: fractal-website/explorer/perturb-wasm
+        run: cargo build --release --target wasm32-unknown-unknown --target-dir target/simd128
+        env:
+          RUSTFLAGS: -C target-feature=+simd128
       - name: build the native Deep gallery maker
         working-directory: fractal-website/builder/deep-gallery-native
         run: cargo build --release
@@ -138,7 +145,8 @@ jobs:
           out="$RUNNER_TEMP/wasm-hashes-${{ matrix.os }}.txt"
           for pair in \
             "engine.wasm explorer/engine.wasm explorer/engine-wasm/target/wasm32-unknown-unknown/release/explorer_engine_wasm.wasm" \
-            "perturb.wasm explorer/perturb.wasm explorer/perturb-wasm/target/wasm32-unknown-unknown/release/perturb.wasm"; do
+            "perturb.wasm explorer/perturb.wasm explorer/perturb-wasm/target/simd128/wasm32-unknown-unknown/release/perturb.wasm" \
+            "perturb-scalar.wasm explorer/perturb-scalar.wasm explorer/perturb-wasm/target/wasm32-unknown-unknown/release/perturb.wasm"; do
             set -- $pair
             node -e '
               const fs = require("fs"), crypto = require("crypto");

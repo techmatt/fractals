@@ -10,7 +10,7 @@
 //! worker, so an orbit computed inside one would be computed some fifty times a
 //! frame.
 
-use crate::fx::{Fx, MAX_LIMBS};
+use crate::fx::{Fx, Limbs, MAX_LIMBS, STRAIGHT, mul_split, sqr_split};
 use crate::progress;
 
 /// Escape radius, and it is the engine's: `iterate::BAILOUT`.
@@ -108,6 +108,34 @@ impl Reference {
     }
 }
 
+//// Dispatch to a loop specialized at the limb count, where there is one.
+///
+/// **Up to [`STRAIGHT`] limbs the orbit runs in [`Limbs`]**, with every trip
+/// count a constant and the iterate made a magnitude once a step rather than once
+/// a product; past it, in [`Fx`]. The two are the same arithmetic bit for bit —
+/// `tests/orbit_parity.rs` holds every limb count to the orbit as it was — and
+/// the split is a size decision: a specialized loop is a kilobyte or two of module
+/// a limb count, and past [`STRAIGHT`] the multiplies are most of a step anyway.
+macro_rules! by_limbs {
+    ($n:expr, $f:ident($($arg:expr),*), $wide:expr) => {
+        match $n {
+            2 => $f::<2>($($arg),*),
+            3 => $f::<3>($($arg),*),
+            4 => $f::<4>($($arg),*),
+            5 => $f::<5>($($arg),*),
+            6 => $f::<6>($($arg),*),
+            7 => $f::<7>($($arg),*),
+            8 => $f::<8>($($arg),*),
+            9 => $f::<9>($($arg),*),
+            10 => $f::<10>($($arg),*),
+            _ => $wide,
+        }
+    };
+}
+
+// The arms above are written out to `STRAIGHT`, and have to move with it.
+const _: () = assert!(STRAIGHT == 10);
+
 /// Iterate `Z' = Z² + C` from `Z[0] = 0` in fixed point, storing every step.
 ///
 /// **The bailout check comes before the precision, not after it.** Three of the
@@ -129,14 +157,57 @@ pub fn orbit(c_re: &Fx, c_im: &Fx, maxiter: u32, period: Option<u32>) -> Referen
         Some(p) => p.max(1),
         None => maxiter,
     };
-    let bailout_sq = BAILOUT * BAILOUT;
+    let (points, escaped) = by_limbs!(
+        n,
+        quadratic(c_re, c_im, limit),
+        quadratic_fx(c_re, c_im, limit)
+    );
+    finished(points, escaped, period, n)
+}
 
+/// The quadratic orbit's loop at `N` limbs — `x² − y² + c_re`, `2xy + c_im` —
+/// in [`Limbs`]. Each of `x` and `y` is made a magnitude once a step and read by
+/// two of the three products.
+fn quadratic<const N: usize>(c_re: &Fx, c_im: &Fx, limit: u32) -> (Vec<[f64; 2]>, bool) {
+    let bailout_sq = BAILOUT * BAILOUT;
+    let (cr, ci) = (Limbs::<N>::of(c_re), Limbs::<N>::of(c_im));
+    let mut x = Limbs::<N>::ZERO;
+    let mut y = Limbs::<N>::ZERO;
+    let mut points = Vec::with_capacity(limit as usize + 1);
+    points.push([0.0, 0.0]);
+
+    for step in 0..limit {
+        if step & (progress::EVERY - 1) == 0 {
+            progress::report(step, limit);
+        }
+        let (sx, sy) = (x.split(), y.split());
+        let x2 = sqr_split::<N>(&sx);
+        let y2 = sqr_split::<N>(&sy);
+        let xy = mul_split::<N>(&sx, &sy);
+        let next_x = x2.sub(&y2).add(&cr);
+        y = xy.shl1().add(&ci);
+        x = next_x;
+
+        let (fx, fy) = (x.to_f64(), y.to_f64());
+        points.push([fx, fy]);
+        if fx * fx + fy * fy > bailout_sq {
+            // Escaped: keep the escaping step and stop. Anything past it is
+            // outside the disc the delta recurrence is linearised in.
+            return (points, true);
+        }
+    }
+    (points, false)
+}
+
+/// [`quadratic`] in [`Fx`], for the limb counts past [`STRAIGHT`].
+fn quadratic_fx(c_re: &Fx, c_im: &Fx, limit: u32) -> (Vec<[f64; 2]>, bool) {
+    let n = c_re.n;
+    let bailout_sq = BAILOUT * BAILOUT;
     let mut x = Fx::zero(n);
     let mut y = Fx::zero(n);
     let mut points = Vec::with_capacity(limit as usize + 1);
     points.push([0.0, 0.0]);
 
-    let mut escaped = false;
     for step in 0..limit {
         if step & (progress::EVERY - 1) == 0 {
             progress::report(step, limit);
@@ -151,13 +222,15 @@ pub fn orbit(c_re: &Fx, c_im: &Fx, maxiter: u32, period: Option<u32>) -> Referen
         let (fx, fy) = (x.to_f64(), y.to_f64());
         points.push([fx, fy]);
         if fx * fx + fy * fy > bailout_sq {
-            // Escaped: keep the escaping step and stop. Anything past it is
-            // outside the disc the delta recurrence is linearised in.
-            escaped = true;
-            break;
+            return (points, true);
         }
     }
+    (points, false)
+}
 
+/// The stored orbit, cut to one period where one was named and reached.
+fn finished(points: Vec<[f64; 2]>, escaped: bool, period: Option<u32>, n: usize) -> Reference {
+    let mut points = points;
     match period {
         Some(_) if !escaped => {
             // `Z[p]` is the residual, and the stored orbit is `Z[0..p)`.
@@ -195,9 +268,9 @@ pub fn orbit(c_re: &Fx, c_im: &Fx, maxiter: u32, period: Option<u32>) -> Referen
 /// `audit_deep_families_ckpt140` held the same tail against a fixed-point oracle at
 /// every degree and it agreed to 7e-15.
 ///
-/// `z^d` in fixed point is `d − 1` complex multiplies of the iterate by itself, four
-/// `Fx` multiplies each. That is 26 ms of orbit at degree two and 140 at six, native,
-/// against a frame of seconds.
+/// `z^d` in fixed point is `d − 1` complex multiplies of the iterate by itself,
+/// the first of them two squares and one product and every later one four
+/// products.
 pub fn orbit_of(degree: u32, c_re: &Fx, c_im: &Fx, maxiter: u32, period: Option<u32>) -> Reference {
     if degree == 2 {
         return orbit(c_re, c_im, maxiter, period);
@@ -207,69 +280,112 @@ pub fn orbit_of(degree: u32, c_re: &Fx, c_im: &Fx, maxiter: u32, period: Option<
         Some(p) => p.max(1),
         None => maxiter,
     };
+    let (points, escaped) = by_limbs!(
+        n,
+        general(degree, c_re, c_im, limit),
+        general_fx(degree, c_re, c_im, limit)
+    );
+    finished(points, escaped, period, n)
+}
+
+/// [`orbit_of`]'s loop at `N` limbs, in [`Limbs`].
+fn general<const N: usize>(degree: u32, c_re: &Fx, c_im: &Fx, limit: u32) -> (Vec<[f64; 2]>, bool) {
+    let (cr, ci) = (Limbs::<N>::of(c_re), Limbs::<N>::of(c_im));
+    let mut z = (Limbs::<N>::ZERO, Limbs::<N>::ZERO);
+    let step = |z: &mut (Limbs<N>, Limbs<N>)| {
+        let (re, im) = cpow_limbs::<N>(&z.0, &z.1, degree);
+        *z = (re.add(&cr), im.add(&ci));
+        [z.0.to_f64(), z.1.to_f64()]
+    };
+    general_loop(degree, c_re, c_im, limit, &mut z, step)
+}
+
+/// [`general`] in [`Fx`], for the limb counts past [`STRAIGHT`].
+fn general_fx(degree: u32, c_re: &Fx, c_im: &Fx, limit: u32) -> (Vec<[f64; 2]>, bool) {
+    let n = c_re.n;
+    let mut z = (Fx::zero(n), Fx::zero(n));
+    let step = |z: &mut (Fx, Fx)| {
+        let (re, im) = cpow_fx(&z.0, &z.1, degree);
+        *z = (re.add(c_re), im.add(c_im));
+        [z.0.to_f64(), z.1.to_f64()]
+    };
+    general_loop(degree, c_re, c_im, limit, &mut z, step)
+}
+
+/// The loop both of those run: the fixed-point step until the iterate is large
+/// enough to leave for `f64`, and the `f64` tail after it.
+#[inline(always)]
+fn general_loop<Z>(
+    degree: u32,
+    c_re: &Fx,
+    c_im: &Fx,
+    limit: u32,
+    z: &mut Z,
+    mut step: impl FnMut(&mut Z) -> [f64; 2],
+) -> (Vec<[f64; 2]>, bool) {
     let bailout_sq = BAILOUT * BAILOUT;
     let c = [c_re.to_f64(), c_im.to_f64()];
-
-    let mut x = Fx::zero(n);
-    let mut y = Fx::zero(n);
     // `Some` once the orbit has left for `f64`, and never `None` again.
     let mut tail: Option<[f64; 2]> = None;
     let mut points = Vec::with_capacity(limit as usize + 1);
     points.push([0.0, 0.0]);
 
-    let mut escaped = false;
-    for step in 0..limit {
-        if step & (progress::EVERY - 1) == 0 {
-            progress::report(step, limit);
+    for index in 0..limit {
+        if index & (progress::EVERY - 1) == 0 {
+            progress::report(index, limit);
         }
         let point = match tail {
-            Some(z) => {
-                let w = cpow_f64(z, degree);
+            Some(w) => {
+                let w = cpow_f64(w, degree);
                 [w[0] + c[0], w[1] + c[1]]
             }
-            None => {
-                let (re, im) = cpow_fx(&x, &y, degree);
-                x = re.add(c_re);
-                y = im.add(c_im);
-                [x.to_f64(), y.to_f64()]
-            }
+            None => step(z),
         };
         points.push(point);
         let norm = point[0] * point[0] + point[1] * point[1];
         if norm > bailout_sq {
-            escaped = true;
-            break;
+            return (points, true);
         }
         if tail.is_some() || norm >= 64.0 {
             tail = Some(point);
         }
     }
+    (points, false)
+}
 
-    match period {
-        Some(_) if !escaped => {
-            let [last_re, last_im] = points.pop().unwrap();
-            Reference {
-                points,
-                escaped,
-                periodic: true,
-                period_residual: (last_re * last_re + last_im * last_im).sqrt(),
-                limbs: n,
-            }
-        }
-        _ => Reference {
-            points,
-            escaped,
-            periodic: false,
-            period_residual: f64::NAN,
-            limbs: n,
-        },
+/// [`cpow_fx`] in [`Limbs`], bit for bit: the iterate is made a magnitude once
+/// and read by every pass, and each pass's `re` and `im` once for the two
+/// products each takes part in.
+#[inline(always)]
+fn cpow_limbs<const N: usize>(x: &Limbs<N>, y: &Limbs<N>, degree: u32) -> (Limbs<N>, Limbs<N>) {
+    if degree < 2 {
+        return (*x, *y);
     }
+    let (sx, sy) = (x.split(), y.split());
+    let xy = mul_split::<N>(&sx, &sy);
+    let mut re = sqr_split::<N>(&sx).sub(&sqr_split::<N>(&sy));
+    let mut im = xy.add(&xy);
+    for _ in 2..degree {
+        let (sre, sim) = (re.split(), im.split());
+        let next_re = mul_split::<N>(&sre, &sx).sub(&mul_split::<N>(&sim, &sy));
+        let next_im = mul_split::<N>(&sre, &sy).add(&mul_split::<N>(&sim, &sx));
+        re = next_re;
+        im = next_im;
+    }
+    (re, im)
 }
 
 /// `(x + iy)^d` in fixed point, by repeated multiplication.
 pub fn cpow_fx(x: &Fx, y: &Fx, degree: u32) -> (Fx, Fx) {
-    let (mut re, mut im) = (*x, *y);
-    for _ in 1..degree {
+    if degree < 2 {
+        return (*x, *y);
+    }
+    // The first pass multiplies the iterate by itself: `x·x − y·y` and `x·y + y·x`,
+    // where `y·x` is `x·y` to the bit — the exact product is the same and so is
+    // its sign — so it is formed once, and the two squares by [`Fx::sqr`].
+    let xy = x.mul(y);
+    let (mut re, mut im) = (x.sqr().sub(&y.sqr()), xy.add(&xy));
+    for _ in 2..degree {
         let next_re = re.mul(x).sub(&im.mul(y));
         let next_im = re.mul(y).add(&im.mul(x));
         re = next_re;

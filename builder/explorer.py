@@ -148,7 +148,15 @@ CRATE_DIR = EXPLORER_DIR / "engine-wasm"
 #: no dependencies at all, not even the engine, so `--perturb` runs on a bare clone with a
 #: Rust toolchain and nothing else; `build_wasm` above refuses early without the checkout
 #: because the engine crate is a path dependency of the other one.
+#:
+#: **Two modules from the one crate** *(deep_wait_ckpt163)*. `perturb.wasm` is built with
+#: wasm SIMD and draws two samples a vector (`perturb-wasm/src/lanes.rs`);
+#: `perturb-scalar.wasm` is the same crate without it, the scalar loop, for an engine that
+#: cannot validate SIMD (Safari 15.4 to 16.3). The page probes once and fetches one
+#: (`deep-render.js`, `perturbModule`); both draw the same bits, which
+#: `explorer/bench/perturb-parity.mjs` holds.
 PERTURB_MODULE = EXPLORER_DIR / "perturb.wasm"
+PERTURB_SCALAR_MODULE = EXPLORER_DIR / "perturb-scalar.wasm"
 PERTURB_MANIFEST = EXPLORER_DIR / "perturb.manifest.json"
 PERTURB_CRATE_DIR = EXPLORER_DIR / "perturb-wasm"
 
@@ -259,6 +267,18 @@ FINE_BAR = 0.030242
 WASM_TARGET = "wasm32-unknown-unknown"
 WASM_ARTIFACT = ("target", WASM_TARGET, "release", "explorer_engine_wasm.wasm")
 PERTURB_ARTIFACT = ("target", WASM_TARGET, "release", "perturb.wasm")
+
+#: Each perturbation module: where it is committed, the cargo target directory it is built
+#: in (its own, so the two flag sets never invalidate each other's build), and the rustflags
+#: it is built with. The scalar one keeps cargo's default directory, which is where CI's
+#: plain `cargo build` leaves the module it compares with it.
+PERTURB_BUILDS = (
+    (PERTURB_MODULE, "target/simd128", ("-C", "target-feature=+simd128")),
+    (PERTURB_SCALAR_MODULE, "target", ()),
+)
+
+#: The perturbation manifest's schema: 2 since it records two modules.
+PERTURB_SCHEMA = 2
 
 #: The manifest's schema, in the same spirit as every JSONL record here.
 SCHEMA = 1
@@ -1483,8 +1503,13 @@ def write_manifest(raw_bytes: int, gzip_bytes: int) -> Path:
     return MANIFEST
 
 
-def build_perturb() -> tuple[Path, int, int]:
-    """Compile the perturbation kernel for wasm and copy it in beside the page.
+def build_perturb() -> list[tuple[Path, int, int, tuple[str, ...]]]:
+    """Compile the perturbation kernel for wasm, twice, and copy both in beside the page.
+
+    `perturb.wasm` with SIMD and `perturb-scalar.wasm` without (see `PERTURB_BUILDS`), each
+    as `(path, raw bytes, gzip bytes, rustflags)`. The rustflags are the build's own and
+    replace any the shell carried, for `remapped_env`'s reason: a module whose bytes depend
+    on what somebody had exported is a module nobody can rebuild.
 
     No `wallpapers_root()` here, deliberately: this crate depends on nothing — not the
     engine, not even as a dev-dependency — so it builds on a clone with a Rust toolchain
@@ -1493,38 +1518,55 @@ def build_perturb() -> tuple[Path, int, int]:
     """
     if not PERTURB_CRATE_DIR.is_dir():
         raise ExplorerError(f"no crate at {PERTURB_CRATE_DIR}")
-    finished = subprocess.run(
-        ["cargo", "build", "--target", WASM_TARGET, "--release"],
-        cwd=PERTURB_CRATE_DIR,
-        capture_output=True,
-        text=True,
-    )
-    if finished.returncode != 0:
-        raise ExplorerError(f"cargo build failed:\n{finished.stderr.strip()}")
-    built = PERTURB_CRATE_DIR.joinpath(*PERTURB_ARTIFACT)
-    if not built.is_file():
-        raise ExplorerError(f"cargo reported success and left no module at {built}")
-    shutil.copyfile(built, PERTURB_MODULE)
-    raw = PERTURB_MODULE.read_bytes()
-    return PERTURB_MODULE, len(raw), len(gzip.compress(raw, 9))
+    built_modules = []
+    for module, target_dir, flags in PERTURB_BUILDS:
+        env = {
+            key: value
+            for key, value in os.environ.items()
+            if key not in ("RUSTFLAGS", "CARGO_ENCODED_RUSTFLAGS")
+        }
+        if flags:
+            env["CARGO_ENCODED_RUSTFLAGS"] = "\x1f".join(flags)
+        finished = subprocess.run(
+            ["cargo", "build", "--target", WASM_TARGET, "--release", "--target-dir", target_dir],
+            cwd=PERTURB_CRATE_DIR,
+            capture_output=True,
+            text=True,
+            env=env,
+        )
+        if finished.returncode != 0:
+            raise ExplorerError(f"cargo build failed:\n{finished.stderr.strip()}")
+        built = PERTURB_CRATE_DIR.joinpath(target_dir, *PERTURB_ARTIFACT[1:])
+        if not built.is_file():
+            raise ExplorerError(f"cargo reported success and left no module at {built}")
+        shutil.copyfile(built, module)
+        raw = module.read_bytes()
+        built_modules.append((module, len(raw), len(gzip.compress(raw, 9)), flags))
+    return built_modules
 
 
-def write_perturb_manifest(raw_bytes: int, gzip_bytes: int) -> Path:
-    """Record what the committed perturbation module was built from, and with what.
+def write_perturb_manifest(built: list[tuple[Path, int, int, tuple[str, ...]]]) -> Path:
+    """Record what the committed perturbation modules were built from, and with what.
 
-    The same shape as `engine.manifest.json` and two fields lighter: this crate has no
-    `engine_version` and no `engine_changes`, because it does not link the engine and has
-    never needed a change in it. Saying so with the fields absent rather than empty is the
-    honest spelling — an empty `engine_changes` would read as a list somebody forgot to
-    fill in.
+    The same shape as `engine.manifest.json` less two fields, with each module's sizes and
+    rustflags under `modules`: this crate has no `engine_version` and no `engine_changes`,
+    because it does not link the engine and has never needed a change in it. Saying so with
+    the fields absent rather than empty is the honest spelling — an empty `engine_changes`
+    would read as a list somebody forgot to fill in.
     """
     manifest = {
-        "schema": SCHEMA,
+        "schema": PERTURB_SCHEMA,
         "built": date.today().isoformat(),
         "crate": PERTURB_CRATE_DIR.relative_to(SITE_ROOT).as_posix(),
         "dependencies": [],
-        "gzip_bytes": gzip_bytes,
-        "raw_bytes": raw_bytes,
+        "modules": {
+            module.name: {
+                "gzip_bytes": gzip_bytes,
+                "raw_bytes": raw_bytes,
+                "rustflags": " ".join(flags),
+            }
+            for module, raw_bytes, gzip_bytes, flags in built
+        },
         "rustc": _rustc_version(),
     }
     PERTURB_MANIFEST.write_text(

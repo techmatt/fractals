@@ -227,8 +227,9 @@ catalog.js            generated: the offered modes, their curves, the anchors' c
 links.jsonl           generated: every figure and tile, as a link here or a reason not
 engine.wasm           generated: the engine, compiled
 engine.manifest.json  generated: what engine.wasm was built from
-perturb.wasm          generated: the perturbation kernel, compiled
-perturb.manifest.json generated: what perturb.wasm was built from
+perturb.wasm          generated: the perturbation kernel, compiled with wasm SIMD
+perturb-scalar.wasm   generated: the same without SIMD, for an engine that has none
+perturb.manifest.json generated: what the two were built from
 engine-wasm/          the crate that produces engine.wasm
 perturb-wasm/         the crate that produces perturb.wasm — see The Deep tab
 deep-gpu-model/       a native model of the Deep tab's GPU kernel, measured against
@@ -4084,15 +4085,23 @@ bench/deep-gpu-downloads.mjs  Deep downloads through the real Download row, GPU 
 bench/deep-gpu-check.mjs  the shipped GPU kernel held to deep-gpu-model word for word on a
                    real adapter, by driving bench/gpu-probe/kernel-check.html and its .js
                    headless: the self-test, then any bundles under artifacts/deep-gpu-check/
-perturb.wasm       generated: the perturbation kernel, compiled
-perturb.manifest.json  generated: what perturb.wasm was built from
+perturb.wasm       generated: the perturbation kernel, compiled with wasm SIMD
+perturb-scalar.wasm  generated: the same without SIMD, for an engine that has none
+perturb.manifest.json  generated: what the two were built from
 perturb-wasm/      the crate that produces it
 deep-gpu-model/    perturb's kernel restated for a GPU, measured against it; it builds no
                    module, and deep-gpu-wgsl.js is its port line for line — its README
 ```
 
-`python -m builder explorer --perturb` rebuilds the module and its manifest and nothing
-else. It needs `cargo` and the `wasm32-unknown-unknown` target and **no sibling checkout** —
+`python -m builder explorer --perturb` rebuilds the two modules and their manifest and
+nothing else: `perturb.wasm` with `-C target-feature=+simd128`, which draws two samples a
+vector (`perturb-wasm/src/lanes.rs`), and `perturb-scalar.wasm` without it, the scalar
+loop. The page fetches one, chosen once by a `WebAssembly.validate` probe holding one SIMD
+instruction (`deep-render.js`, `perturbModuleUrl`), so Safari 15.4 to 16.3 still has a
+Deep tab; the two draw the same bits, which `bench/perturb-parity.mjs` holds over the
+142 specs of `perturb-wasm/tests/parity-specs.jsonl` and `deep.test.mjs` on four frames.
+Build it on the toolchain the manifest names (`RUSTUP_TOOLCHAIN=1.96.0`), or the bytes
+move for no reason in the source. It needs `cargo` and the `wasm32-unknown-unknown` target and **no sibling checkout** —
 the crate has no dependencies at all, which is what makes that true and is why it is its own
 branch rather than a stage of the bake. The manifest has no `engine_version` and no
 `engine_changes`, with the fields absent rather than empty: this crate does not link the

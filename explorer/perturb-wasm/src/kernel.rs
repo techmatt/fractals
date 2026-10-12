@@ -75,8 +75,8 @@ use crate::reference::{BAILOUT, Reference};
 /// **Swept, not guessed.** See the crate README for the table.
 pub const INTERIOR_EXPONENT: i32 = -64;
 
-const TWO64: f64 = 18446744073709551616.0;
-const TWO64_INV: f64 = 1.0 / TWO64;
+pub(crate) const TWO64: f64 = 18446744073709551616.0;
+pub(crate) const TWO64_INV: f64 = 1.0 / TWO64;
 
 /// What one sample came to.
 #[derive(Clone, Copy, Debug)]
@@ -508,7 +508,7 @@ impl<'a> Kernel<'a> {
     /// first is measured into its shape, and this one is cold.
     #[cold]
     #[inline(never)]
-    fn prove<const D: usize, const JULIA: bool>(&self, handoff: Handoff) -> Outcome {
+    pub(crate) fn prove<const D: usize, const JULIA: bool>(&self, handoff: Handoff) -> Outcome {
         let points = &self.reference.points[..];
         let periodic = self.reference.periodic;
         let maxiter = self.maxiter;
@@ -593,16 +593,25 @@ impl<'a> Kernel<'a> {
                     }
                 }
 
-                let next_magnitude = z_norm_sq.sqrt();
-                if n - anchored <= budget && ladder.step::<D>(magnitude, z_re, z_im, next_magnitude)
-                {
-                    return interior_outcome(n, rebases, true, degenerate, derivative, exponent);
+                // `|z|` is read only while a disc is being carried: past the budget
+                // it is not taken at all, and a re-anchor hands over the same root
+                // of the same number in `Ladder::at`. Parabolic samples spend
+                // millions of steps past the budget, and the root was their price.
+                let carried = n - anchored <= budget;
+                if carried {
+                    let next_magnitude = z_norm_sq.sqrt();
+                    if ladder.step::<D>(magnitude, z_re, z_im, next_magnitude) {
+                        return interior_outcome(
+                            n, rebases, true, degenerate, derivative, exponent,
+                        );
+                    }
+                    magnitude = next_magnitude;
                 }
                 if z_norm_sq < ladder.anchor_norm_sq {
                     ladder = Ladder::at(z_re, z_im, z_norm_sq);
                     anchored = n;
+                    magnitude = ladder.anchor_magnitude;
                 }
-                magnitude = next_magnitude;
             }
             resumed = false;
 
@@ -751,7 +760,7 @@ pub const DEGREES: core::ops::RangeInclusive<u32> = 2..=6;
 ///
 /// At `D = 2` this is `2Z + δ`, spelled `Z + Z + δ` as it always was.
 #[inline(always)]
-fn factor<const D: usize>(zr: f64, zi: f64, dr: f64, di: f64) -> (f64, f64) {
+pub(crate) fn factor<const D: usize>(zr: f64, zi: f64, dr: f64, di: f64) -> (f64, f64) {
     if D == 2 {
         return (zr + zr + dr, zi + zi + di);
     }
@@ -780,7 +789,7 @@ fn factor<const D: usize>(zr: f64, zi: f64, dr: f64, di: f64) -> (f64, f64) {
 
 /// `C(d, k)` for `k = 0..=d`, as the `f64` the step multiplies by. Exact: the
 /// largest is `C(6, 3) = 20`.
-const fn binomial(d: usize) -> [f64; 7] {
+pub(crate) const fn binomial(d: usize) -> [f64; 7] {
     let mut out = [0.0f64; 7];
     let mut k = 0;
     while k <= d {
@@ -812,7 +821,7 @@ fn slope_sq<const D: usize>(z_norm_sq: f64) -> f64 {
 /// Neither end is reachable from the one call site; the saturation is there so
 /// the function is total.
 #[inline(always)]
-fn pow2_at_most(k: i32) -> f64 {
+pub(crate) fn pow2_at_most(k: i32) -> f64 {
     if k > 1023 {
         f64::INFINITY
     } else if k >= -1022 {
@@ -822,20 +831,57 @@ fn pow2_at_most(k: i32) -> f64 {
     }
 }
 
+/// The least mantissa at exponent `e` that the switch can step past doing nothing:
+/// at or above one, so no renormalisation, and at or above `2^(floor − e)` where the
+/// gate is armed, so the gate is false. What [`crate::lanes`] holds a lane's
+/// mantissa to; the scalar loop makes the two tests themselves.
+#[cfg(all(target_arch = "wasm32", target_feature = "simd128"))]
+#[inline(always)]
+pub(crate) fn gate_floor(exponent: i32, floor: i32) -> f64 {
+    if exponent <= floor + 64 {
+        pow2_at_most(floor - exponent).max(1.0)
+    } else {
+        1.0
+    }
+}
+
+/// The switch's renormalisation and gate, exactly as [`Kernel::run`] makes them on a
+/// mantissa that has just taken its step's slope: the new pair, and whether the gate
+/// fired. [`crate::lanes`]'s exact step, written once.
+#[cfg(all(target_arch = "wasm32", target_feature = "simd128"))]
+#[inline(always)]
+pub(crate) fn renormalise(mut derivative: f64, mut exponent: i32, floor: i32) -> (f64, i32, bool) {
+    if derivative >= TWO64 {
+        derivative *= TWO64_INV;
+        exponent += 64;
+    } else {
+        while derivative < 1.0 {
+            if derivative == 0.0 {
+                break;
+            }
+            derivative *= TWO64;
+            exponent -= 64;
+        }
+    }
+    let gated = derivative == 0.0
+        || (exponent <= floor + 64 && derivative < pow2_at_most(floor - exponent));
+    (derivative, exponent, gated)
+}
+
 /// Everything [`Kernel::run`]'s loop carries, at the point in its body where the
 /// gate fired, so [`Kernel::prove`] can carry on from exactly there.
-struct Handoff {
-    delta: [f64; 2],
-    z: [f64; 2],
-    z_norm_sq: f64,
-    m: usize,
-    n: u32,
-    rebases: u32,
-    degenerate: bool,
-    derivative: f64,
-    exponent: i32,
-    dc: [f64; 2],
-    offset_is_zero: bool,
+pub(crate) struct Handoff {
+    pub(crate) delta: [f64; 2],
+    pub(crate) z: [f64; 2],
+    pub(crate) z_norm_sq: f64,
+    pub(crate) m: usize,
+    pub(crate) n: u32,
+    pub(crate) rebases: u32,
+    pub(crate) degenerate: bool,
+    pub(crate) derivative: f64,
+    pub(crate) exponent: i32,
+    pub(crate) dc: [f64; 2],
+    pub(crate) offset_is_zero: bool,
 }
 
 /// How many radii [`Ladder`] carries about one anchor.
@@ -940,7 +986,7 @@ impl Ladder {
     }
 }
 
-fn interior_outcome(
+pub(crate) fn interior_outcome(
     n: u32,
     rebases: u32,
     detected: bool,
