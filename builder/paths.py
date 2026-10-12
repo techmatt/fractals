@@ -21,8 +21,12 @@ PROSE_REGISTRY = ARTICLE_DIR / "prose.jsonl"
 GALLERY_METADATA_NAME = "gallery.jsonl"
 THUMBS_DIR_NAME = "thumbs"
 
-# Trees that are not part of the served site and are never walked by the checks.
-UNSERVED_DIRS = frozenset({".git", ".github", ".ruff_cache", ".venv", "artifacts", "scratch"})
+# Trees that are not part of the served site and are never walked by the checks. `.claude`
+# holds an agent session's worktrees, whole checkouts of this repository whose pages are
+# somebody else's copy of the site rather than the site.
+UNSERVED_DIRS = frozenset(
+    {".claude", ".git", ".github", ".ruff_cache", ".venv", "artifacts", "scratch"}
+)
 
 
 def carrier_path(page: str) -> Path:
