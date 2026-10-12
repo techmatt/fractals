@@ -3572,7 +3572,20 @@ display-driver reset (Event 4101) across the run. Every frame's passes stayed in
 the targets but D-1e-80's, whose early passes over a whole strip ran 200 to 313 ms in 13
 dispatches of up to 25.8 ms: inside the work caps, but past twice both targets. It does the
 same drawn as one strip at 1×, so it is the estimate of that frame's dispatch cost running
-short and not the strips; its cause is not yet placed.
+short and not the strips.
+
+**Placed** *(gpu_deep_depth_ckpt163)*: it is the interior proof arming. Every sample of a D
+frame (stage 2's period-311 nucleus, solid interior) takes the proof's gate at step 311,
+one period, where the running `|dz|²` first falls under the frame's floor
+(`deep-gpu-model`'s export puts every anchor of `D-1e-80` there and every close at 622), and
+from that step on each step also carries the proof's discs. A dispatch is sized from the
+last pass's densest cost, and the pass that crosses step 311 was measured before it: at
+screen size `D-1e-80`'s fifth pass covers steps 125 to 445 in six dispatches, sized at
+0.197 ms a step from the pass before, and its widest ran 27.7 ms, 0.52 ms a step. The
+six together came to 103 ms, which is about three and a half dispatches at the old cost
+before step 311 and two and a half at 2.6 times it after. Every D frame from 1e-60 to 1e-110
+does the same (20.8 to 27.9 ms, 2.6 to 2.9 times), and no exterior frame on the depth
+ladder (`bench/deep-gpu-frames.mjs`'s `LADDER`) has a step whose cost jumps.
 
 The kernels a frame needs are compiled when its link lands, both settings of the interior
 switch side by side, beside the reference orbit and the quarter pass rather than after them
@@ -3642,7 +3655,8 @@ With the first pass held as well, six of them had passes of 115 ms at most but o
 whole frame still cost 12 ms. The 100 ms mid-frame dispatch the 40-frame run saw on
 `siegel-M 1e-6` did not come back in two runs of it (16.6 and 10.7 ms at most); its cause
 is unplaced. A frame's log now keeps any pass past twice either target, whole and with its
-index (`passStats`'s `over`), so the next one can be placed.
+index (`passStats`'s `over`), so the next one can be placed. The D frames' 26 ms were
+placed that way (above, *A big frame is drawn in strips*).
 
 **What it hands to the CPU, and why.** The CPU finishes three kinds of sample, each restarted
 from its first iteration on its own `f64` loop and its own proof (`compute_samples`), so a
@@ -3821,6 +3835,33 @@ CPU where none drawn on the GPU now is.
 ```
 PORT=8000 node explorer/bench/deep-gpu-time.mjs   # about an hour; nothing else heavy beside it
 ```
+
+**The depth ladder** *(gpu_deep_depth_ckpt163)*. "No structured frame past 1e-80 draws on
+the GPU" was the sample's and not the kernel's: the 159 frames' only structure past 1e-80 was
+Misiurewicz frames, which are cheap. `bench/deep-gpu-frames.mjs`'s `LADDER` is 31 frames
+from 1e-60 to the link's 1e-112: the busy views A (Multibrot 5), B (Mandelbrot) and C (B's
+Julia twin) continued past Phase 4's 1e-100 by the loop that made them, to 1e-110 and 1e-112;
+Misiurewicz frames of degrees two, three and five at 1e-110; stage 2's minibrot interior D at
+1e-110; and four long orbits. `deep-gpu-time.mjs --ladder --with-forced` lands each in a CPU
+browser and a ticked one, and in a third under `kernel=gpu` wherever the ticked one drew on
+the CPU, and keeps every pass's trace. Measured before the skip table below
+(`artifacts/explorer-bench/depth-ladder-before.json`, 2026-10-12, no display-driver reset):
+
+- **Every busy frame to 1e-112 draws on the GPU**, 4.07x to 4.41x: A 63 s to 15.5 s at 1e-80
+  and 104 s to 24.6 s at 1e-112, B 233 s to 53.8 s at 1e-112, C 213 s to 47.1 s at 1e-110.
+  Agreement is 0.03% to 0.29% visible. Before the GPU's field starts, the reference orbit and
+  the CPU's quarter pass take 7.6 s of A-1e-112's 24.6 s and 21.9 s of B-1e-112's 53.8 s.
+- **The Misiurewicz frames are cheap at every depth** (0.3 to 0.5 s whole on the CPU) and stay
+  there as cheap; forced to the GPU they are 0.23x to 0.92x as fast, so the rule is right.
+- **Interior frames stop at 1e-110.** D-1e-60 to D-1e-100 draw on the GPU at 1.3x to 1.5x.
+  D-1e-110 draws 6.3 s against the CPU's 1.9 s: the proof gates 370,954 of its 619,776
+  samples, and the CPU restarts them at 60 M iterations a second where a whole field runs at
+  400 M, the setup of 622-iteration samples, one at a time. The model gates it too (1,346 of
+  2,304 samples at 64 × 36, every one at 1e-112): the frame-wide flush term is 2^-320, from
+  the reference's returns within 2^-322 of zero, and below 1e-100 the discs the proof needs
+  are smaller than that (`deep-gpu-model/README.md`, *Where this stops*).
+- **The long orbits** draw at 1.87x (`random-dives#337`, its tail 2.0 s of 4.4 s) to 3.63x
+  (`go:favicon-end`).
 
 ### What is not here
 

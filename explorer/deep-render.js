@@ -1507,6 +1507,8 @@ export class DeepRenderer {
       tailMs: tail.ms,
       tailRan: tail.ran,
       strips: gpu.last?.strips ?? 1,
+      // Of `handed`, the samples the interior proof gave up on; the rest are the tail's.
+      gated: gpu.last?.gated ?? null,
       // Passes and dispatches, and the longest of each on the device (`passStats`).
       passes: drawn.passes ?? null,
     });

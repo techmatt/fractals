@@ -54,7 +54,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
 import { open, sleep } from "./cdp.mjs";
-import { sample, shapeOf } from "./deep-gpu-frames.mjs";
+import { LADDER, sample, shapeOf } from "./deep-gpu-frames.mjs";
 import { record } from "./output.mjs";
 import { verdictOf, visible } from "./visible.mjs";
 
@@ -63,7 +63,8 @@ const PORT = option("port") ?? process.env.PORT ?? "8000";
 const ORIGIN = `http://localhost:${PORT}/explorer/`;
 const SEED = Number(option("seed") ?? 162);
 const LIMIT = Number(option("limit") ?? Infinity);
-const COLD = Number(option("cold") ?? 24);
+const LADDERED = process.argv.includes("--ladder");
+const COLD = LADDERED ? 0 : Number(option("cold") ?? 24);
 const WIDTH = 1920;
 const HEIGHT = 1055;
 const WITHIN = 1200000;
@@ -71,6 +72,9 @@ const FORCED = process.argv.includes("--forced");
 const FROM = Number(option("from") ?? 0);
 const OUT = option("out") ?? "deep-gpu-time.json";
 const NAMES = option("names") ? new Set(JSON.parse(readFileSync(option("names"), "utf8"))) : null;
+// A third browser under `kernel=gpu`, which lands only the frames the reader's rule sent to
+// the CPU: what the device does with a frame its gates kept from it.
+const WITH_FORCED = process.argv.includes("--with-forced");
 
 /** Display-driver resets (System log, event 4101) Windows has logged since `since` (an ISO
  *  time), or `null` off Windows. Counted from a time and never as a difference of totals:
@@ -164,8 +168,9 @@ const LAST = `(() => {
     why: g.health?.why ?? null,
     last: l === null ? null : {
       count: l.count, passes: l.passes, spent: l.spent, compacts: l.compacts, partials: l.partials,
-      handed: l.handed, tail: l.tail, ms: l.ms ?? null,
+      handed: l.handed, gated: l.gated ?? null, table: l.table ?? null, tail: l.tail, ms: l.ms ?? null, maxiter: l.maxiter, strips: l.strips,
       passMs: l.trace.reduce((sum, row) => sum + row[3], 0),
+      ...(${LADDERED} ? { trace: l.trace } : {}),
     },
   };
 })()`;
@@ -294,8 +299,9 @@ const base = 9500 + Math.floor(Math.random() * 380);
 const browsers = {
   cpu: { port: base, query: "kernel=cpu&demo=1" },
   gpu: { port: base + 7, query: FORCED ? "kernel=gpu&demo=1" : "demo=1" },
+  ...(WITH_FORCED ? { forced: { port: base + 14, query: "kernel=gpu&demo=1" } } : {}),
 };
-const frames = sample({ seed: SEED })
+const frames = (LADDERED ? Object.entries(LADDER).map(([name, link]) => ({ name, link, source: "ladder" })) : sample({ seed: SEED }))
   .filter((f) => NAMES === null || NAMES.has(f.name))
   .slice(0, LIMIT);
 const out = { seed: SEED, forced: FORCED, from: FROM, window: [WIDTH, HEIGHT], started: new Date().toISOString(), frames: frames.length, rows: [], cold: [], first: {} };
@@ -307,11 +313,11 @@ async function start(kernel) {
   b.page = await open({ port: b.port, width: WIDTH, height: HEIGHT });
   await b.page.send("Page.addScriptToEvaluateOnNewDocument", { source: INSTRUMENT });
   // The GPU browser opts in; under `--forced` its `kernel=gpu` beats the box anyway.
-  if (kernel === "gpu") await b.page.send("Page.addScriptToEvaluateOnNewDocument", { source: TICKED });
+  if (kernel !== "cpu") await b.page.send("Page.addScriptToEvaluateOnNewDocument", { source: TICKED });
   const first = await navigate(b.page, `${PRIMER}&panel=deep&${b.query}`);
   await rest(b.page);
   // The self-test's background compiles (degree two, the switch on and off) land here.
-  await sleep(kernel === "gpu" ? 6000 : 1000);
+  await sleep(kernel === "cpu" ? 1000 : 6000);
   return first;
 }
 
@@ -326,6 +332,7 @@ async function reopen(kernel) {
 try {
   out.first.cpu = await start("cpu");
   out.first.gpu = await start("gpu");
+  if (WITH_FORCED) out.first.forced = await start("forced");
   const g = browsers.gpu.page;
   out.adapter = await g.evaluate(`(async () => {
     const a = await navigator.gpu?.requestAdapter();
@@ -366,6 +373,18 @@ try {
       row.verdict = verdictOf(row.visible);
     } else row.verdict = "BUSY";
     if (cpu?.wallMs && gpu?.wallMs) row.speedup = +(cpu.wallMs / gpu.wallMs).toFixed(3);
+    if (WITH_FORCED && gpu !== null && gpu.kernel !== "gpu") {
+      const forced = await land(browsers.forced.page, frame.link);
+      const forcedLast = forced === null ? null : await browsers.forced.page.evaluate(LAST);
+      const forcedRest = forced === null ? false : await rest(browsers.forced.page);
+      const forcedPicture = forcedRest ? await picture(browsers.forced.page) : null;
+      row.forced = forced === null ? null : { ...forced, device: forcedLast?.last ?? null };
+      if (cpuPicture && forcedPicture) row.forced.visible = visible(cpuPicture, forcedPicture).visible;
+      if (cpu?.wallMs && forced?.wallMs) row.forced.speedup = +(cpu.wallMs / forced.wallMs).toFixed(3);
+      console.log(`   forced: ${forced?.wallMs ?? "-"} ms on ${forced?.kernel ?? "-"} (${forced?.handed ?? "-"} px handed, ${forcedLast?.last?.gated ?? "-"} gated)` +
+        (row.forced.visible !== undefined ? ` · ${(100 * row.forced.visible).toFixed(2)}%` : "") + (row.forced.speedup ? ` · ${row.forced.speedup}x` : ""));
+      if (forced === null || !forcedRest) await reopen("forced");
+    }
     out.rows.push(row);
     save();
     const pct = (x) => `${(100 * x).toFixed(2)}%`;
@@ -385,7 +404,7 @@ try {
   // Cold: every k-th frame of the sample, plus the long tail and the Julia video's end.
   const step = Math.max(1, Math.floor(frames.length / COLD));
   const cold = frames.filter((f, i) => i % step === 0 || f.name === "random-dives#337" || f.name === "go:julia3-end");
-  for (const frame of cold.slice(0, COLD + 2)) {
+  for (const frame of COLD > 0 ? cold.slice(0, COLD + 2) : []) {
     const row = { ...frame, ...shapeOf(frame.link) };
     row.cpu = await navigate(browsers.cpu.page, `${frame.link}&panel=deep&kernel=cpu`);
     await rest(browsers.cpu.page);

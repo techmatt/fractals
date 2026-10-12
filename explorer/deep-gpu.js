@@ -397,6 +397,14 @@ export function fillValues(words, values, { final = null, fallback = null } = {}
   return done;
 }
 
+/** How many samples of an `out` read-back the interior proof gave up on (`GATED`): of what a
+ *  frame hands the CPU, the share its proof sent rather than its tail. */
+export function gatedIn(words) {
+  let count = 0;
+  for (let i = 0; i < words.length; i += 2) count += words[i] === OUT_NONE && words[i + 1] === GATED;
+  return count;
+}
+
 /** The samples the CPU is to finish: every one not marked in `final`. */
 export function unfinished(final) {
   let count = 0;
@@ -1514,6 +1522,7 @@ export class DeepGpu {
       compacts: 0,
       partials: 0,
       handed: 0,
+      gated: 0,
       tail: false,
       trace: [],
     };
@@ -1683,7 +1692,10 @@ export class DeepGpu {
         // the read has run).
         const settled = final ?? new Uint8Array(count);
         const marks = settled.subarray(offset, offset + n);
-        await runner.emit(p, guard, (words) => fillValues(words, view, { final: marks }));
+        await runner.emit(p, guard, (words) => {
+          fillValues(words, view, { final: marks });
+          record.gated += gatedIn(words);
+        });
         final = settled;
         stripRead = true;
         const handed = unfinishedAt(marks, offset);
