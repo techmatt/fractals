@@ -1027,6 +1027,11 @@ export function mount(host) {
             kernel: field.kernel,
             handed: field.handed,
             ran: field.ran,
+            saved: field.saved,
+            census:
+              field.census == null
+                ? null
+                : { ran: field.census.ran, saved: field.census.saved, count: field.census.count },
             ms: Math.round(field.elapsed),
             wholeMs: Math.round(performance.now() - started),
             orbitMs: timing.orbitMs == null ? null : Math.round(timing.orbitMs),

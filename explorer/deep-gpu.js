@@ -1773,6 +1773,8 @@ export class DeepGpu {
       handed: 0,
       gated: 0,
       tail: false,
+      // How long the frame waited for its kernel to compile, from the moment it asked.
+      compileWaitMs: null,
       trace: [],
     };
     this.last = record;
@@ -1806,7 +1808,9 @@ export class DeepGpu {
       return all;
     };
     try {
+      const asked = performance.now();
       const p = await this.#pipelines(W, device, plan.degree, plan.julia, interior);
+      record.compileWaitMs = Math.round(performance.now() - asked);
       if (!job.live()) return { status: "cancelled" };
 
       // The orbit, kept on the device for as long as the pool holds it.

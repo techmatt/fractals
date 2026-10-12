@@ -84,6 +84,13 @@ const LIST_FLOOR = 1024;
  */
 export const SWITCH_PRICE = 1.4;
 
+/** A switch a bench page forces, through `globalThis.__deepForceSwitch` (`true` or `false`),
+ *  so that one frame can be timed both ways *(deep_holes_ckpt163)*; `null` everywhere else. */
+function forcedSwitch() {
+  const forced = globalThis.__deepForceSwitch;
+  return forced === true || forced === false ? forced : null;
+}
+
 /**
  * Whether a pass should run with the interior switch on, read off samples of the same
  * frame drawn with it on.
@@ -97,6 +104,8 @@ export const SWITCH_PRICE = 1.4;
  * the counts it reads are the frame's own.)
  */
 export function switchFor(drawn) {
+  const forced = forcedSwitch();
+  if (forced !== null) return forced;
   if (drawn?.ran == null || drawn.saved == null || drawn.ran <= 0) return true;
   return drawn.ran + drawn.saved >= SWITCH_PRICE * drawn.ran;
 }
@@ -1522,7 +1531,8 @@ export class DeepRenderer {
         : (first.ran * total * QUARTER_STRIDE * QUARTER_STRIDE) / census.length;
     const cheapLine = CHEAP_ITERATIONS_PER_WORKER * this.slots.length;
     const quarterSwitch =
-      frame === null || frame < SWITCH_KEPT_UNDER_CHEAP * cheapLine ? true : switchFor(first);
+      forcedSwitch() ??
+      (frame === null || frame < SWITCH_KEPT_UNDER_CHEAP * cheapLine ? true : switchFor(first));
     // What the census counted, on whichever quarter this becomes: the full pass's switch
     // and, after a quarter the GPU drew, its cheap rule and the Download row's estimate.
     // **The full pass's switch is the census's alone**, so it is the same however the
@@ -1864,6 +1874,7 @@ export class DeepRenderer {
       strips: gpu.last?.strips ?? 1,
       // Of `handed`, the samples the interior proof gave up on; the rest are the tail's.
       gated: gpu.last?.gated ?? null,
+      compileWaitMs: gpu.last?.compileWaitMs ?? null,
       // Passes and dispatches, and the longest of each on the device (`passStats`).
       passes: drawn.passes ?? null,
     });

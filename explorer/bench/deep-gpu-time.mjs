@@ -79,6 +79,9 @@ const NAMES = option("names") ? new Set(JSON.parse(readFileSync(option("names"),
 // A third browser under `kernel=gpu`, which lands only the frames the reader's rule sent to
 // the CPU: what the device does with a frame its gates kept from it.
 const WITH_FORCED = process.argv.includes("--with-forced");
+// `--switch=on|off` forces the interior switch in both browsers, through the page's
+// `__deepForceSwitch`, so a frame can be timed both ways (deep_holes_ckpt163).
+const SWITCH = option("switch") ?? null;
 
 /** Display-driver resets (System log, event 4101) Windows has logged since `since` (an ISO
  *  time), or `null` off Windows. Counted from a time and never as a difference of totals:
@@ -235,6 +238,14 @@ function summarize(log, t0) {
     quarterKernel: quarter?.detail?.kernel ?? undefined,
     quarterSwitch: quarter?.detail?.interior ?? undefined,
     fullSwitch: full?.detail?.interior ?? undefined,
+    // The census's counts, drawn with the switch on: `(ran + saved) / ran` is what the
+    // switch's rule reads.
+    census: quarter?.detail?.census ?? undefined,
+    fullRan: full?.detail?.ran ?? undefined,
+    fullSaved: full?.detail?.saved ?? undefined,
+    // How long the full stage's GPU pass waited for its kernel to compile.
+    compileWaitMs: onGpu?.detail?.compileWaitMs ?? undefined,
+    quarterCompileWaitMs: at("field on the gpu", (d) => d.stage === "quarter")?.detail?.compileWaitMs ?? undefined,
     ready: at("gpu ready")?.detail?.ms ?? undefined,
     split: split(log, t0, end, quarter, full),
   };
@@ -335,7 +346,7 @@ const browsers = {
 const frames = (LADDERED ? Object.entries(LADDER).map(([name, link]) => ({ name, link, source: "ladder" })) : sample({ seed: SEED }))
   .filter((f) => NAMES === null || NAMES.has(f.name))
   .slice(0, LIMIT);
-const out = { seed: SEED, forced: FORCED, from: FROM, window: [WIDTH, HEIGHT], started: new Date().toISOString(), frames: frames.length, rows: [], cold: [], first: {} };
+const out = { seed: SEED, forced: FORCED, switch: SWITCH, from: FROM, window: [WIDTH, HEIGHT], started: new Date().toISOString(), frames: frames.length, rows: [], cold: [], first: {} };
 const save = () => record(OUT, out);
 
 /** Open (or reopen) one kernel's browser on the primer, and wait for it to settle. */
@@ -343,6 +354,10 @@ async function start(kernel) {
   const b = browsers[kernel];
   b.page = await open({ port: b.port, width: WIDTH, height: HEIGHT });
   await b.page.send("Page.addScriptToEvaluateOnNewDocument", { source: INSTRUMENT });
+  if (SWITCH !== null)
+    await b.page.send("Page.addScriptToEvaluateOnNewDocument", {
+      source: `globalThis.__deepForceSwitch = ${SWITCH === "on"};`,
+    });
   // The GPU browser opts in; under `--forced` its `kernel=gpu` beats the box anyway.
   if (kernel !== "cpu") await b.page.send("Page.addScriptToEvaluateOnNewDocument", { source: TICKED });
   const first = await navigate(b.page, `${PRIMER}&panel=deep&${b.query}`);
