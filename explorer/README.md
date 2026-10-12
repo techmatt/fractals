@@ -3469,8 +3469,9 @@ explorer/?dv=2&cx=-0.74501772828532335842941892835857434&cy=0.149934432754568191
 
 **What it is.** A Deep frame's full stage, the pass at the canvas's size and any Download
 stage, may be drawn by a WebGPU kernel instead of the CPU pool: `deep-gpu-wgsl.js`, which is
-`deep-gpu-model`'s double-single loop and its interior proof ported line for line, run by
-`deep-gpu.js`. Double-single is two `f32`s standing in for one wider number, since WGSL has
+`deep-gpu-model`'s double-single loop and its interior proof ported line for line, with the
+model's skip table and its exact orbit points since gpu_deep_depth_ckpt163 (*The skip table on
+the GPU*, below), run by `deep-gpu.js`. Double-single is two `f32`s standing in for one wider number, since WGSL has
 no `f64`; `deep-gpu-model/README.md` has why it and not plain `f32` ("Double-single as
 measured"). The GPU hands back exactly what the CPU kernel would, one `f64` lane a sample
 with `NaN` for the interior, so the coloring, the kept field, and a recolor never know which
@@ -3863,6 +3864,130 @@ the CPU, and keeps every pass's trace. Measured before the skip table below
 - **The long orbits** draw at 1.87x (`random-dives#337`, its tail 2.0 s of 4.4 s) to 3.63x
   (`go:favicon-end`).
 
+**The skip table on the GPU** *(gpu_deep_depth_ckpt163)*. Matt opened BLA for the GPU path
+alone; the CPU kernel stays without one. The double-single kernel now takes
+`deep-gpu-model`'s skip table (`bla.rs`): a run of `2^k` steps from orbit index
+`j·2^k + 1` is one step `δ' = A·δ + B·dc`, valid while `|δ|` is inside the run's radius, at
+the double-single kernel's own tolerance `2^-48`, at which the model moved no measured frame
+by more than 0.04 points. The kernel looks a run up bottom-up from the 16-step level, behind
+the model's gate (each level's largest radius, which the header carries, is asked before any
+of its entries is read), and applies it in double-single (`bla_lookup`, `bla_apply` in
+`deep-gpu-wgsl.js`); a run counts as one step against a pass's budget, so passes are sized
+and cut as before. The table is built in the page from the pool's own `f64` orbit
+(`deep-gpu-bla.js`), merged against the frame's `|dc|` bound, byte for byte the table the
+model builds (`deep-gpu.test.mjs` holds it to the bundles `export --bla on` writes; `hypot`
+is the model's `hypot64` on both sides), in a module worker so that the page's thread never
+waits on it, and it is kept on the device while frames keep the orbit and the bound. Where
+the frame's orbit holds no live run the table is not built at all: one over the orbit's
+first 65,536 points is built first (`TABLE_PROBE`, about 20 ms), and a dead one ends it,
+because `random-dives#337`'s 1.9-million-point orbit took 963 ms to build a table with no
+live run, whose lookups then cost it 22% of the device's time. A frame without a table binds
+one of no levels, and the kernel is then the one before the skip bit for bit: measured in
+one browser, `random-dives#337` drew 2.34 s against 2.37 s and the anchor 3.50 s against
+3.41 s with the table on and off.
+
+**A table that does not pay is dropped.** Live runs are not runs a sample takes: a lookup
+costs a read every sixteenth step whether it finds one or not, and `go:favicon-end` (a cap of
+two million) drew 18% slower with its table (19.0 s against 15.6 s, two landings each), whose
+runs its deltas almost never fit, for 3% fewer steps. So the kernel counts the runs it takes
+in the pass counters' spare word, and at each step checkpoint (`CHECKPOINT · 2^k`, where
+every sample still running has taken the same steps, so the count is the frame's and not the
+clock's) a frame whose runs since the last checkpoint were under 2% of its steps
+(`SKIP_SHARE`, `keepsTable`) binds the empty table for the rest of the frame. A run saves at
+least fifteen iterations, so 2% of the steps is at least 30% of the iterations. Measured per
+window at screen size: B and C skip on 6.6% of their steps until they finish, A-1e-60 on 5.6%
+then 1.2% then none, `go:favicon-end` on 0.77% and `go:julia3-end` on none.
+`go:favicon-end` drops its table at step 1024 and lands in 16.4 s.
+
+**And no table at all for a frame wider than `2^-100`** (`TABLE_WIDTH`, about 7.9e-31). The
+first 159-frame run with the skip (`deep-gpu-time-ckpt163.json`) drew 115 frames on the GPU,
+39 of which built a table: the four from 1e-60 down kept theirs and gained (`C-1e-80` Julia's
+wait 0.57 of what it was, `B-1e-80`'s 0.61, `A-1e-60`'s 0.76), and every one from 1e-22 up
+but one dropped its table at the first or second checkpoint, after paying for the build (up to
+0.68 s) and the lookups; their first windows' shares were 0 to 3%, bar two degree-two frames
+near 8% that fell away by the second. The one that kept it, `deep-gallery#18` Julia at
+4.7e-18, drew in 16.1 s against 18.0 s, and this rule gives that back. A run is
+linear while `|δ|` is under `2^-48 |Z|`, and `δ` starts near the frame's width, so a frame at
+1e-20 has some twenty bits of growth to skip through and one at 1e-60 some hundred and fifty:
+the width decides it, read off the frame alone, and every shallower frame draws on exactly
+the path it drew on before the skip.
+
+**What the kernel's size costs.** The skip and the exact points make each kernel module
+larger, and a kernel's first compile longer: over the two 159-frame runs the median compile
+of one kernel went from 1.65 s to 2.21 s, up to 5.1 s, beside a CPU pool at work. A frame
+whose quarter pass is shorter than its kernel's compile waits the difference, once a degree
+and plane, and the browser's shader cache makes the same kernel's compile on a later page
+load 20 to 90 ms (*The kernels a frame needs*, above).
+
+The self-test runs three frames with a table (`selftest-d2-skip`, `selftest-d2-julia-skip`,
+`selftest-d2-seahorse-skip`: escapes on both planes, and the proof armed and carrying beside
+the skip), so a device that cannot run the skip as the model does never draws with it. On
+this card the kernel matches the model word for word, `frac` apart, on all of them at both
+budget schedules, and on eight check bundles with a table: A, B and C at 1e-60, A and B at
+1e-100, D at 1e-110 and 1e-112, and `random-dives#501`. On four of those (and on
+`Dedge-3e-23` without a table) 5 to 18 samples differ from the model in their low words and,
+with a table, in the steps they took to the same count; each is exactly the pixel the
+model's flushing run moves (`export --ftz-check`), so it is the device flushing a subnormal
+the model keeps, the accuracy bound the module doc names, and the kernel check now holds
+such a pixel's counts to the flushing run as it already held its words.
+
+**Interior frames past 1e-100 read the orbit's flushed points exactly.** D-1e-110 and
+D-1e-112 gated because the frame-wide flush term, `2^-320`, outgrew the proof's discs
+(*The depth ladder*, above). `hiLoOrbit` now keeps, where anything flushed, every point
+narrowing flushed some of at its own scale with its exponent (`EXACT_BYTES`, 32 a point,
+bound only where the orbit flushed), as `deep-gpu-model`'s `GpuOrbit::exact` does, and
+byte for byte its points. The kernel reads them in the careful step and where it forms `z`
+in the delta's units, and forms `z` in the point's own units where the point is far above
+`δ`, so a superattracting return is handed to the proof as the `2^-322` it is rather than
+as `δ`; the flush term is then charged only to an iterate formed off a stored point that
+flushed. `deep-gpu-model/README.md`'s *Deep interior* has the model's side. The model closes
+every sample of D-1e-110 and D-1e-112 at 622, as `perturb` does; the self-test holds the
+kernel to it on the nucleus at 1e-110 (`selftest-d3-deep-interior`), and the check bundles
+at 1e-110 and 1e-112 prove all 2,304 samples each, word for word.
+
+**The arming dispatch.** With the table and the exact points the D frames reach their
+proof's arming in a handful of runs, and the long dispatch the proof's arming made
+(*A big frame is drawn in strips*, above) did not come back: over four landings each, the
+longest dispatch was 10 to 18 ms on D-1e-80 and 8 to 19 ms on D-1e-110. Planning every
+proof frame's dispatches against three times their measured cost was tried and dropped: it
+doubled the dispatches and moved the longest one nowhere.
+
+**The depth ladder again, with both** *(2026-10-12, `depth-ladder-after2.json`, no
+display-driver reset)*. The whole GPU wait over the 31 frames went from 484 s to 296 s,
+against the CPU's 2,005 s: 4.1x to 6.8x. CPU times are the before run's, which had nothing
+beside it.
+
+| frames | CPU | GPU before | GPU after | before | after |
+|---|--:|--:|--:|--:|--:|
+| A, 1e-80 to 1e-112 (Multibrot 5) | 63 to 105 s | 15.5 to 24.8 s | 8.7 to 12.2 s | 4.07x to 4.24x | 7.24x to 8.89x |
+| B, 1e-60 to 1e-112 (Mandelbrot) | 106 to 233 s | 25.0 to 53.8 s | 14.4 to 28.7 s | 4.24x to 4.39x | 6.81x to 8.41x |
+| C Julia, 1e-80 to 1e-110 | 137 to 213 s | 31.0 to 47.1 s | 18.9 to 28.4 s | 4.38x to 4.52x | 7.21x to 7.50x |
+| D-1e-110 (minibrot interior) | 1.9 s | 6.3 s | 1.6 s | 0.29x | 1.17x |
+| D-1e-60 to D-1e-100 | 1.5 to 1.8 s | 1.0 to 1.4 s | 1.0 to 1.5 s | 1.30x to 1.53x | 1.20x to 1.46x |
+| Misiurewicz, 1e-60 to 1e-110 | 0.3 to 0.5 s | the CPU's, as cheap | the CPU's, as cheap | 0.87x to 1.23x | 0.85x to 1.14x |
+| the four long orbits | 3.1 to 82 s | 1.4 to 22.7 s | 1.5 to 23.4 s | 1.87x to 3.62x | 1.60x to 3.51x |
+
+Every frame agrees with the CPU's picture as it did, 0.05% to 0.23% visible on the busy ones
+and 0.84% on `go:julia3-end`. The busy frames' wait is now mostly the CPU's: B-1e-112 waits
+22.8 s for its reference orbit and quarter pass and 5.6 s for the GPU's field. The anchor and
+the four long orbits are the final code's (`depth-ladder-after3.json`, after the width rule
+above): they build no table, and what moved is compile time, `random-dives#337` paying the
+degree-five pair's 4.2 s in that run. The D frames build theirs (0.13 to 0.17 s) and finish
+before the first checkpoint, 0.1 to 0.3 s a frame.
+
+**The 159-frame sample again, with the final code** *(2026-10-12,
+`deep-gpu-time-ckpt163b.json`, no display-driver reset)*: the GPU browser's whole wait went
+from 710 s to 691 s against the CPU's 1,674 s, 2.40x to 2.42x in total, and 1.71x to 1.67x at
+the median, which is the two days' noise on frames of a few seconds. Agreement is unchanged,
+157 matching and the same two acceptable (`random-dives#970` 1.20%, `#564` 1.42%). Six frames
+built a table, the deep ones, and 109 drew on exactly the path they drew on at ckpt162; the
+sample's only costly frames past 1e-30 are `A-1e-60`, `B-1e-80` and `C-1e-80` Julia, whose
+waits came to 0.77, 0.60 and 0.57 of what they were. The 26 cold loads came to 391 s to
+126 s, 3.11x. The sample is the corpus's, and the corpus has little past 1e-30, so what the
+skip and the exact points buy is the depth ladder's table above. Beside it, the same day:
+`deep-gpu-agree.mjs` matched all 24 of its frames (A-1e-60 at 0.22% visible with its table),
+and `link-fidelity.mjs` held all 95 steps exact, its depth tab included.
+
 ### What is not here
 
 **Nucleus references in the main Render** — the tab still draws every frame against its
@@ -3884,7 +4009,9 @@ something in them it is **between a 21% loss and 2.6×** and **moves the picture
 tolerance, including the tightest one the approximation admits**. It cost 9,423 bytes of
 `perturb.wasm` for a path no page could reach, and those bytes are back. The seven frames
 stay, in `perturb-wasm/tests/common` with their `dv` links, because they are the only
-deep frames this project has that are not one flat colour.
+deep frames this project has that are not one flat colour. That is the CPU kernel's, and it
+stands: the GPU's double-single kernel has had a skip table since gpu_deep_depth_ckpt163,
+where `f32`'s rounding already sets the bar (*The skip table on the GPU*, above).
 
 And those frames found something about this tab that is not about the skip at all: at
 these depths the width's cap painted exterior as interior. **That is fixed** — *Iterations,
