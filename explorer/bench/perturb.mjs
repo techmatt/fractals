@@ -65,6 +65,25 @@ export async function load(url = new URL("../perturb.wasm", import.meta.url)) {
     return copy;
   };
 
+  /** A list of samples of the frame, by global index: the call `deep-worker.js` makes for
+   *  `samples`, one little-endian `f64` per index in list order. */
+  const samples = (spec, orbit, indices) => {
+    const [pointer, length] = put(JSON.stringify(spec));
+    const at = wasm.alloc(orbit.length);
+    new Uint8Array(wasm.memory.buffer, at, orbit.length).set(orbit);
+    const list = new Uint8Array(indices.buffer, indices.byteOffset, indices.byteLength);
+    const where = wasm.alloc(list.length);
+    new Uint8Array(wasm.memory.buffer, where, list.length).set(list);
+    const out = wasm.compute_samples(pointer, length, at, orbit.length, where, indices.length);
+    wasm.dealloc(pointer, length);
+    wasm.dealloc(at, orbit.length);
+    wasm.dealloc(where, list.length);
+    if (out === 0) throw new Error("compute_samples refused");
+    const copy = new Uint8Array(wasm.memory.buffer, out, indices.length * 8).slice();
+    wasm.dealloc(out, indices.length * 8);
+    return new Float64Array(copy.buffer);
+  };
+
   /** The whole frame's lanes, in one call. */
   const frame = (spec) => {
     const orbit = reference(spec);
@@ -92,6 +111,7 @@ export async function load(url = new URL("../perturb.wasm", import.meta.url)) {
     plan,
     reference,
     band,
+    samples,
     frame,
     probe,
     maxiter: (width) => wasm.maxiter_for_width(width),

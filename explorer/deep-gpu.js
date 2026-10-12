@@ -145,8 +145,8 @@ export const TAIL_SAMPLES = { plain: 2000, proof: 8000 };
 export const TAIL_WORKERS = 12;
 /**
  * The CPU's estimated full-stage iterations a worker under which a frame stays on the CPU
- * *(gpu_deep_ship_ckpt162, Phase 4)*. Read off the quarter pass, which is always the CPU's
- * and counts what it ran. The full stage runs sixteen times its samples, and measured 14.8
+ * *(gpu_deep_ship_ckpt162, Phase 4)*. Read off the quarter pass where the CPU drew it,
+ * which counts what it ran, and off its census where the GPU did (deep_wait_ckpt163). The full stage runs sixteen times its samples, and measured 14.8
  * to 22.0 times its iterations over 109 frames, so the estimate can fall up to about a
  * quarter short. Where the quarter ran 15 M iterations or fewer at twelve workers (a CPU
  * field of 0.1 to 0.7 s) the GPU measured 0.70 to 1.09 times the CPU's speed on 44 frames,
@@ -172,27 +172,39 @@ export const MAX_LOSSES = 2;
  *  self-test's files or the kernel module not fetched): the browser's or the machine's
  *  moment and not the arithmetic, so a later frame asks again, until this many. */
 export const MAX_MISSES = 3;
-/** The least a frame waits for a self-test still running before it goes to the CPU. */
-export const READY_WAIT_MS = 3000;
-/** The most, however slow the frame's quarter pass was. */
-export const MAX_READY_WAIT_MS = 30000;
+/**
+ * **A frame the GPU may draw waits for the self-test's outcome, not for a clock**
+ * *(deep_wait_ckpt163)*. It used to wait `8 q` (its quarter pass's time, between 3 and 30
+ * seconds) and then go to the CPU, so on a fresh profile, whose test lands at about 5 s, the
+ * first frame of a link was the CPU's picture and the same link a minute later the GPU's:
+ * the clock chose a picture, which the Deep tab's rule forbids. Now a frame the counts say
+ * the GPU should draw waits for the answer, and this bound is a liveness guard only: a test
+ * still running at it is abandoned for the session, its late answer ignored, so every frame
+ * after goes the same way as the one that gave up.
+ */
+export const SETTLE_BOUND_MS = 30000;
 /** And under `?kernel=gpu`, which a harness asks for in order to measure the GPU. */
 export const FORCED_WAIT_MS = 120000;
 
 /**
- * How long a full stage waits for a self-test still running, from what its quarter pass
- * took on the CPU (`null` where there was none). The full stage is sixteen times the
- * quarter's samples, so the CPU would take about `16 q`; the GPU draws such a frame in a
- * third of that or less, so waiting pays wherever the test lands inside about `10 q`.
- * **Eight quarter passes**, half the CPU's own cost, bounded below by `READY_WAIT_MS` and
- * above by `MAX_READY_WAIT_MS`: a test that never lands costs at most half a frame more,
- * and the common one, landing a few seconds after the quarter pass, draws the frame on the
- * GPU rather than sending it to the CPU after an idle wait. Time decides only which kernel
- * draws, never a pixel of what either draws.
+ * **The quarter pass on the GPU** *(deep_wait_ckpt163)*: where the box is ticked, the
+ * self-test has passed, and the CPU's census of the frame (one quarter sample in sixteen,
+ * drawn first) says the quarter would run at least this many iterations a worker, the
+ * quarter is the GPU's too. 150 M a worker is a CPU quarter of 1.5 to 2 s here, where the
+ * GPU's fixed costs (its first passes, a read-back, a compile on first use) are well under
+ * what it saves; a frame the census puts there is a hundred times the cheap line, so it is
+ * one whose full pass the GPU draws as well. Iterations and not time, so a frame goes the
+ * same way on every load.
  */
-export function readyWait(quarterMs) {
-  if (!(quarterMs > 0)) return READY_WAIT_MS;
-  return Math.min(MAX_READY_WAIT_MS, Math.max(READY_WAIT_MS, 8 * quarterMs));
+export const QUARTER_ITERATIONS_PER_WORKER = 150e6;
+/** Degrees four to six compile two to three times longer on first use, and the quarter
+ *  waits for that compile where the full pass would have overlapped it. */
+export const QUARTER_HIGH_DEGREE_FACTOR = 3;
+
+/** Whether the census's estimate of the quarter's iterations puts the quarter on the GPU. */
+export function quarterOnGpu({ iterations, degree = 2, workers = TAIL_WORKERS }) {
+  const line = QUARTER_ITERATIONS_PER_WORKER * workers * (degree >= 4 ? QUARTER_HIGH_DEGREE_FACTOR : 1);
+  return iterations != null && iterations >= line;
 }
 
 // ---- The debugging key ----------------------------------------------------------------
@@ -1141,9 +1153,16 @@ export class DeepGpu {
     if (this.testing !== null) return this.testing;
     if (!this.health.wants) return Promise.resolve(this.health.usable);
     const started = performance.now();
+    this.testStarted = started;
     const losses = this.health.losses;
     this.testing = this.#open()
       .then(() => {
+        // A test a frame stopped waiting for is not passed by landing late: the frames
+        // after it would then draw on the GPU, and the one that gave up on the CPU.
+        if (this.abandoned) {
+          this.#release();
+          return false;
+        }
         this.health.passed();
         this.log("gpu ready", { form: this.form, ms: Math.round(performance.now() - started), adapter: this.adapter });
         this.#warm();
@@ -1187,8 +1206,15 @@ export class DeepGpu {
    * compile is said when a frame asks.
    */
   prepare({ degree, julia }) {
-    if (this.off || !this.health.usable || this.device === null) return;
-    if (!(degree >= 2 && degree <= 6)) return;
+    if (this.off || !(degree >= 2 && degree <= 6)) return;
+    // **Asked while the self-test runs, compiled once it passes** *(deep_wait_ckpt163)*: a
+    // first frame used to drop the request here, so a degree the self-test does not warm
+    // paid its whole compile inside its first draw.
+    if (this.testing !== null && !this.health.usable) {
+      this.testing.then((passed) => passed && this.prepare({ degree, julia })).catch(() => {});
+      return;
+    }
+    if (!this.health.usable || this.device === null) return;
     const device = this.device;
     (async () => {
       const W = await wgsl();
@@ -1215,27 +1241,40 @@ export class DeepGpu {
    *  starting one where a lost device is due a retry). A page that asked for the GPU by
    *  name waits for the self-test however long it takes, so its frames say which kernel
    *  drew them for a reason and not for a race. */
-  async ready(within = READY_WAIT_MS) {
-    if (this.off) return false;
+  async ready(within = SETTLE_BOUND_MS) {
+    if (this.off || this.abandoned) return false;
     if (this.health.usable) return true;
     if (this.health.status === "off") return false;
     const testing = this.start();
     let timer;
-    const waited = await Promise.race([testing, new Promise((resolve) => (timer = setTimeout(() => resolve(false), within)))]);
+    const settled = Symbol("bound");
+    // From the test's own start, not this frame's ask: a test is one event, and every frame
+    // waiting on it gets the same answer.
+    const left = Math.max(0, (this.testStarted ?? performance.now()) + within - performance.now());
+    const waited = await Promise.race([testing, new Promise((resolve) => (timer = setTimeout(() => resolve(settled), left)))]);
     clearTimeout(timer);
+    if (waited === settled) {
+      // The liveness guard, not a race: what the frame does now, every frame does.
+      this.abandoned = true;
+      this.health.failed(`the self-test did not answer in ${Math.round(within / 1000)} s`);
+      this.log("gpu off", { why: this.health.why, status: this.health.status });
+      this.changed();
+      return false;
+    }
     return waited === true && this.health.usable;
   }
 
   /** Why a frame of this shape stays on the CPU, or `null` where the GPU may draw it.
-   *  `quarterMs`, what the frame's quarter pass took on the CPU, sets how long it may wait
-   *  on a self-test still running (`readyWait`); `iterations`, the CPU's estimate of the
-   *  stage from that pass, keeps a cheap one on the CPU (`cheap`) without waiting at all. */
-  async refuses({ samples, sampleWidth = null, degree, interior, orbitPoints, quarterMs = null, iterations = null, workers = TAIL_WORKERS }) {
+   *  `iterations`, the CPU's estimate of the frame's full stage, keeps a cheap one on the
+   *  CPU (`cheap`) without waiting at all; `frameSamples`, the full stage's samples where
+   *  this is its quarter, is what `small` reads. A frame neither keeps waits for the
+   *  self-test's outcome (`SETTLE_BOUND_MS`). */
+  async refuses({ samples, frameSamples = samples, sampleWidth = null, degree, interior, orbitPoints, iterations = null, workers = TAIL_WORKERS }) {
     if (this.kernel === "cpu") return "asked for the CPU";
     if (this.off) return "not chosen";
-    if (this.kernel !== "gpu" && samples < GPU_MIN_SAMPLES) return "small";
+    if (this.kernel !== "gpu" && frameSamples < GPU_MIN_SAMPLES) return "small";
     if (this.kernel !== "gpu" && cheap({ iterations, workers })) return "cheap";
-    if (!(await this.ready(this.kernel === "gpu" ? FORCED_WAIT_MS : readyWait(quarterMs)))) return `not ready (${this.health.status}${this.health.why ? `: ${this.health.why}` : ""})`;
+    if (!(await this.ready(this.kernel === "gpu" ? FORCED_WAIT_MS : SETTLE_BOUND_MS))) return `not ready (${this.health.status}${this.health.why ? `: ${this.health.why}` : ""})`;
     return fits({ samples, degree, interior, orbitPoints, limits: this.limits, ...(sampleWidth == null ? {} : { sampleWidth }) });
   }
 

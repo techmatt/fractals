@@ -49,8 +49,8 @@
 
 import * as fx from "./deep-fx.js";
 import * as deepLink from "./deep-link.js";
-import { BODY_TARGET, DeepRenderer, bodyShare, deepSpecOf } from "./deep-render.js";
-import { DeepGpu } from "./deep-gpu.js";
+import { BODY_TARGET, DeepRenderer, bodyShare, deepSpecOf, switchFor } from "./deep-render.js";
+import { DeepGpu, GPU_MIN_SAMPLES, cheap } from "./deep-gpu.js";
 import {
   HOLD_MS,
   SAVE_COUNT,
@@ -92,35 +92,6 @@ const SETTLE_MS = 350;
  *  own `PREVIEW_DIVISOR`, because a preview that was a different rectangle would shift as
  *  it sharpened. */
 const PREVIEW_DIVISOR = 4;
-
-/**
- * What an iteration costs with the kernel's interior switch on, against one with it off,
- * where the switch does not fire — the price the full pass pays for asking.
- *
- * **Measured in the committed module, and taken low** *(profiling_pass_ckpt146)*: on
- * frames the switch never fires on, off ran in 0.50 to 0.73 of the time on did, the lanes
- * identical, so the price is 1.4x to 2x. The rule below keeps the switch on unless
- * turning it off is cheaper at the low end of that range, so a frame near the crossing
- * keeps the setting the kernel ships.
- */
-const SWITCH_PRICE = 1.4;
-
-/**
- * Whether the full pass should run with the interior switch on, read off the quarter pass
- * of the same frame.
- *
- * **The switch never moves a pixel**: a sample it stops early is one the plain loop runs to
- * the cap, and both write `NaN`. So this is a speed and nothing else, and the quarter pass —
- * drawn with it on, the kernel's default — says exactly what the plain loop would have run:
- * `ran` is what it did run and `saved` what the switch spared it. The plain loop runs
- * `ran + saved` at the lower price; the switch runs `ran` at `SWITCH_PRICE`. A sixteenth of
- * the samples is a sample of the frame's interior share, which is the thing that decides
- * it and the thing the crate README showed no width can stand in for.
- */
-function switchFor(quarter) {
-  if (quarter?.ran == null || quarter.saved == null || quarter.ran <= 0) return true;
-  return quarter.ran + quarter.saved >= SWITCH_PRICE * quarter.ran;
-}
 
 /**
  * How long the pool may say nothing before the tab says so, in milliseconds.
@@ -469,6 +440,9 @@ export function mount(host) {
   const CACHE_LIMIT = 3;
 
   function remember(key, field) {
+    // A frame that finished on the device after the box was unticked is not one an unticked
+    // box draws *(deep_wait_ckpt163)*: put up, but never kept to come back.
+    if (field?.kernel === "gpu" && gpu.off) return;
     fields.delete(key);
     fields.set(key, field);
     while (fields.size > CACHE_LIMIT) fields.delete(fields.keys().next().value);
@@ -558,6 +532,7 @@ export function mount(host) {
    * lands its quarter pass first — it only brings that entry to the front.
    */
   function hold(of, shaded, key, field, full) {
+    if (field?.kernel === "gpu" && gpu.off) return;
     const frame = deepLink.fieldKey(of, 1, 1);
     const at = held.findIndex((entry) => entry.frame === frame);
     const was = at < 0 ? null : held.splice(at, 1)[0];
@@ -985,7 +960,7 @@ export function mount(host) {
       unsettle();
       // A full stage may go to the GPU: its kernels compile beside the orbit and the
       // quarter pass rather than after them.
-      if (upto !== "preview") gpu?.prepare({ degree: view.degree ?? 2, julia: view.julia !== null });
+      gpu?.prepare({ degree: view.degree ?? 2, julia: view.julia !== null });
 
       let target = view;
       if (probe && upto !== "preview" && !pinned()) {
@@ -1003,6 +978,7 @@ export function mount(host) {
       for (const stage of wanted) {
         const key = deepLink.fieldKey(target, stage.width, stage.height, stage.supersample);
         let field = fields.get(key);
+        if (stage.name === "full" && field?.quarter === true) field = undefined;
         const cached = field !== undefined;
         const span = spanOf(stage);
         // The bar's colour: a picture of this frame is up once the quarter pass has
@@ -1018,9 +994,14 @@ export function mount(host) {
           field = await deep.field(target, stage.width, stage.height, {
             supersample: stage.supersample,
             interior: stage.name === "preview" ? true : interior,
-            // The full stage may go to the GPU, and shows its picture as passes land.
-            gpu: full,
+            // The full stage may go to the GPU, and shows its picture as passes land; the
+            // quarter too, where the census says it is worth it (`deep-render.js`).
+            gpu: true,
             preview: full ? quarter : null,
+            // **The quarter is a quarter of the full grid's samples** *(deep_wait_ckpt163)*,
+            // and the full pass on the CPU finishes the other fifteen sixteenths of it.
+            of: full ? null : [grid.width, grid.height],
+            have: full ? quarter : null,
             onPartial: full ? (partial) => showPartial(deep, partial, target, generation) : null,
             onProgress: (done, elapsed) => {
               if (generation !== pass) return;
@@ -1049,12 +1030,12 @@ export function mount(host) {
             kept: timing.kept ?? null,
             feedMs: Math.round(timing.feedMs ?? 0),
             planMs: Math.round(timing.planMs ?? 0),
-            interior: stage.name === "preview" ? true : interior,
+            interior: stage.name === "preview" ? (field.quarterSwitch ?? true) : interior,
           });
           remember(key, field);
         }
         if (stage.name === "preview") {
-          interior = switchFor(field);
+          interior = field.fullSwitch ?? switchFor(field);
           quarter = field;
         }
         enterStage("coloring", { live: false });
@@ -1083,18 +1064,24 @@ export function mount(host) {
         // **Each kernel's stages are measured apart** *(gpu_deep_ship_ckpt162)*: a download
         // that does not fit the GPU is drawn on the CPU, and scaling its estimate from a GPU
         // stage would promise it several times too soon; one the GPU takes, scaled from the
-        // CPU's, was promised about sixteen times too late. `measure` is the CPU's (the
-        // quarter pass is always the CPU's, so every drawn frame has one) and `measureGpu`
+        // CPU's, was promised about sixteen times too late. `measure` is the CPU's (every
+        // drawn frame has one: its quarter, or its census where the GPU drew the quarter) and `measureGpu`
         // the GPU's full stage, which the Download row is given only for a picture the GPU
         // would take (`measured(samples)`).
         const cost = {
           frame: deepLink.fieldKey(target, 1, 1),
-          samples: stage.width * stage.height * stage.supersample * stage.supersample,
+          samples: field.computed ?? stage.width * stage.height * stage.supersample * stage.supersample,
           field: field.elapsed / 1000,
           shade: shaded.elapsed / 1000,
         };
-        if (field.kernel === "gpu") measureGpu = cost;
-        else measure = cost;
+        // A quarter the GPU drew measures nothing the Download row asks about.
+        if (field.kernel === "gpu") {
+          if (stage.name !== "preview") measureGpu = cost;
+          // A quarter the GPU drew: the CPU's estimate is its census's, drawn on the CPU.
+          else if (field.census?.elapsed != null) {
+            measure = { ...cost, samples: field.census.count, field: field.census.elapsed / 1000 };
+          }
+        } else measure = cost;
         // The picture a download at the canvas's own size can save instead of drawing it
         // again: the pass's last stage, and only where that stage is the canvas's own size
         // — a quarter-resolution preview is not a picture of this canvas.
@@ -1261,7 +1248,7 @@ export function mount(host) {
       );
       const field = await deep.field(target, width, height, {
         supersample,
-        interior: switchFor(quarter),
+        interior: quarter?.fullSwitch ?? switchFor(quarter),
         // The GPU where the device can hold this size; the renderer keeps the rest. The
         // screen's quarter pass, where held, is what the cheap rule reads, scaled to the file.
         gpu: true,
@@ -1500,7 +1487,7 @@ export function mount(host) {
       if (!key.startsWith(frame)) continue;
       const [width, height, supersample] = key.slice(frame.length).split("x").map(Number);
       const stage = { width, height, supersample };
-      if (key === full) return stage;
+      if (key === full && fields.get(key)?.quarter !== true) return stage;
       if (best === undefined || width * height > best.width * best.height) best = stage;
     }
     return best;
@@ -3141,8 +3128,10 @@ export function mount(host) {
       const field = await deep.field(landed.frame, stage.width, stage.height, {
         supersample: 1,
         interior: stage.name === "preview" ? true : interior,
-        gpu: stage.name === "full",
+        gpu: true,
         preview: stage.name === "full" ? (drawnFields.preview ?? null) : null,
+        of: stage.name === "full" ? null : [grid.width, grid.height],
+        have: stage.name === "full" ? (drawnFields.preview ?? null) : null,
         onProgress: (done, elapsed) => {
           if (generation === pass) report(stage, done, elapsed);
         },
@@ -3151,7 +3140,7 @@ export function mount(host) {
         },
       });
       if (field === null || generation !== pass) return SUPERSEDED;
-      if (stage.name === "preview") interior = switchFor(field);
+      if (stage.name === "preview") interior = field.fullSwitch ?? switchFor(field);
       drawnFields[stage.name] = field;
     }
     let frame = inColour(landed.frame);
@@ -3801,6 +3790,21 @@ export function mount(host) {
   function setGpu(value) {
     storeFlag(GPU_CHOSEN, value);
     gpu.choose(value);
+    // **A field drawn under the other setting is not kept** *(deep_wait_ckpt163)*: a step
+    // back or a recolour would otherwise put up the device's lanes for a reader who has
+    // just turned it off, or the CPU's for one who has just turned it on, where a fresh load
+    // of the same link gives the other. Unticked, everything the GPU drew goes; ticked,
+    // every full field the GPU might take (not small, not cheap by its own count). Quarters
+    // stay: the full pass reads only their census, which no kernel draws.
+    const other = (field) =>
+      value
+        ? field.kernel !== "gpu" &&
+          field.quarter !== true &&
+          field.values.length >= GPU_MIN_SAMPLES &&
+          !cheap({ iterations: field.ran })
+        : field.kernel === "gpu";
+    for (const [key, field] of fields) if (other(field)) fields.delete(key);
+    held = held.filter((entry) => entry.field == null || !other(entry.field));
   }
 
   // ------------------------------------------------------------------- auto-render
@@ -4468,7 +4472,9 @@ export function mount(host) {
         return;
       }
       const full = host.grid();
-      if (fields.has(deepLink.fieldKey(next, full.width, full.height, 1))) {
+      // A full field, never a quarter that happens to share the key after a resize.
+      const fullField = fields.get(deepLink.fieldKey(next, full.width, full.height, 1));
+      if (fullField !== undefined && fullField.quarter !== true) {
         stop();
         disarm();
         view = next;

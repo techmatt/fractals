@@ -26,7 +26,18 @@ import { existsSync } from "node:fs";
 
 import { load as loadEngine, RAMP } from "./bench/engine.mjs";
 import { load as loadPerturb } from "./bench/perturb.mjs";
-import { BODY_TARGET, bodyShare, shadeSpecOf, deepSpecOf, orbitKey, sameOrbit } from "./deep-render.js";
+import {
+  BODY_TARGET,
+  bodyShare,
+  shadeSpecOf,
+  deepSpecOf,
+  orbitFor,
+  orbitKey,
+  quarterIndices,
+  sameOrbit,
+  seeds,
+  switchFor,
+} from "./deep-render.js";
 import * as deep from "./deep-link.js";
 import * as fx from "./deep-fx.js";
 
@@ -1066,4 +1077,103 @@ test("New coloring's rule is the crate's, over a field laid out as either tab la
   assert.equal(rule.lambda, 1);
   // At λ = 1 the range is 30.5 counts, over one turn, to three figures.
   assert.equal(rule.period, 30.5);
+});
+
+// ------------------------------------------------------- the quarter, a quarter of the grid
+//
+// **The quarter pass draws a sixteenth of the full grid's own samples, and the full pass the
+// rest** *(deep_wait_ckpt163)*. What makes that the same picture is that a sample is a pure
+// function of the spec, the orbit and its index, whatever list or band it was drawn in and
+// whichever way the interior switch was set: held here against the committed module, over a
+// frame that escapes and one with a minibrot's interior in it.
+
+/** A frame with an interior in it: the period-3 minibrot on the real axis, whole. */
+const MINIBROT = { center_re: "-1.7548776662466927", center_im: "0", width: 4e-8 };
+
+for (const [name, frame, maxiter] of [
+  ["an escaping frame", TANGLE, null],
+  ["a frame with interior", MINIBROT, 20000],
+]) {
+  test(`the quarter's samples and the rest assemble the band's frame, bit for bit: ${name}`, { skip }, () => {
+    const [w, h] = [32, 20];
+    const base = { ...frame, schema: 1, resolution: [w, h], maxiter: maxiter ?? perturb.maxiter(frame.width) };
+    const orbit = perturb.reference(base);
+    assert.ok(orbit !== null, "reference_orbit refused");
+    const whole = new Float64Array(perturb.band(base, orbit, 0, h).buffer);
+    const off = { ...base, interior: false };
+
+    const { census, rest } = quarterIndices(w, h);
+    assert.equal(census.length + rest.length, (w / 4) * (h / 4));
+    const assembled = new Float64Array(w * h).fill(-1);
+    const put = (indices, values) => indices.forEach((at, k) => (assembled[at] = values[k]));
+    // The census with the switch on, the rest of the quarter with it off, and the full
+    // pass's fifteen sixteenths with it on again: every combination a frame can take.
+    put(census, perturb.samples(base, orbit, census));
+    put(rest, perturb.samples(off, orbit, rest));
+    const quarter = new Set([...census, ...rest]);
+    const complement = Uint32Array.from({ length: w * h }, (_, i) => i).filter((i) => !quarter.has(i));
+    assert.equal(complement.length, w * h - quarter.size);
+    put(complement, perturb.samples(base, orbit, complement));
+
+    const a = new BigUint64Array(whole.buffer);
+    const b = new BigUint64Array(assembled.buffer);
+    let differ = 0;
+    for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) differ += 1;
+    assert.equal(differ, 0, `${differ} of ${a.length} samples differ`);
+    if (maxiter !== null) assert.ok(whole.some(Number.isNaN), "the frame has no interior, so this test is blind");
+  });
+}
+
+test("a quarter's census lies on the full grid, at (4r + 2, 4c + 2)", () => {
+  const [w, h] = [1076, 576];
+  const { census, rest } = quarterIndices(w, h);
+  assert.equal(census.length + rest.length, 269 * 144);
+  for (const at of [...census.slice(0, 50), ...rest.slice(0, 50), ...rest.slice(-50)]) {
+    assert.equal(Math.floor(at / w) % 4, 2);
+    assert.equal((at % w) % 4, 2);
+  }
+  // One in sixteen, by rows and columns a multiple of four in the quarter.
+  assert.equal(census.length, Math.ceil(144 / 4) * Math.ceil(269 / 4));
+  assert.equal(new Set([...census, ...rest]).size, 269 * 144);
+});
+
+test("only a quarter of the same grid seeds a full pass", () => {
+  const values = new Float64Array(269 * 144);
+  const quarter = { values, width: 269, height: 144, grid: [1076, 576] };
+  assert.equal(seeds(quarter, 1076, 576), true);
+  assert.equal(seeds(quarter, 1076, 576, 2), false);
+  assert.equal(seeds(quarter, 1080, 576), false);
+  assert.equal(seeds({ ...quarter, grid: undefined }, 1076, 576), false);
+  assert.equal(seeds(null, 1076, 576), false);
+});
+
+test("the switch is read off counts drawn with it on", () => {
+  assert.equal(switchFor(null), true);
+  assert.equal(switchFor({ ran: 100, saved: 0 }), false);
+  assert.equal(switchFor({ ran: 100, saved: 40 }), true);
+  assert.equal(switchFor({ ran: 100, saved: 39 }), false);
+});
+
+test("a held orbit longer than the frame's cap is cut to the orbit a fresh load computes", () => {
+  const pack = (count, flags) => {
+    const buffer = new ArrayBuffer(16 + 16 * count);
+    const view = new DataView(buffer);
+    view.setUint32(0, count, true);
+    view.setUint32(4, flags, true);
+    new Float64Array(buffer, 16).forEach((_, i, all) => (all[i] = i));
+    return buffer;
+  };
+  const held = { packed: pack(100, 1), stamp: 7, points: 100 };
+  // Short enough already: the held record itself.
+  assert.equal(orbitFor(held, 16 + 16 * 100), held);
+  assert.equal(orbitFor(held, 16 + 16 * 400), held);
+  const cut = orbitFor(held, 16 + 16 * 40);
+  const view = new DataView(cut.packed);
+  assert.equal(view.getUint32(0, true), 40);
+  assert.equal(view.getUint32(4, true) & 1, 0, "a fresh orbit at this cap never escaped");
+  assert.equal(cut.packed.byteLength, 16 + 16 * 40);
+  assert.deepEqual([...new Float64Array(cut.packed, 16)], [...new Float64Array(held.packed, 16, 80)]);
+  assert.notEqual(cut.stamp, held.stamp, "the device keys what it uploads by stamp");
+  // The periodic flag survives the cut.
+  assert.equal(new DataView(orbitFor({ packed: pack(100, 3), stamp: 1 }, 16 + 16 * 10).packed).getUint32(4, true), 2);
 });

@@ -207,8 +207,9 @@ function summarize(log, t0) {
   const full = at("field landed", (d) => d.stage === "full");
   const fullStage = at("stage", (d) => d.stage === "full");
   const compiled = log.filter((e) => e.event === "gpu kernel compiled");
-  const onCpu = at("field on the cpu");
-  const onGpu = at("field on the gpu");
+  // The full stage's: since deep_wait_ckpt163 the quarter may ask the GPU too.
+  const onCpu = at("field on the cpu", (d) => d.stage !== "quarter");
+  const onGpu = at("field on the gpu", (d) => d.stage !== "quarter");
   return {
     failed: end?.event === "failed" ? (end.detail?.message ?? "failed") : undefined,
     wallMs: end ? Math.round(end.t - t0) : null,
@@ -231,6 +232,9 @@ function summarize(log, t0) {
     passes: onGpu?.detail?.passes ?? undefined,
     lost: onGpu?.detail?.lost || undefined,
     quarterRan: quarter?.detail?.ran ?? undefined,
+    quarterKernel: quarter?.detail?.kernel ?? undefined,
+    quarterSwitch: quarter?.detail?.interior ?? undefined,
+    fullSwitch: full?.detail?.interior ?? undefined,
     ready: at("gpu ready")?.detail?.ms ?? undefined,
     split: split(log, t0, end, quarter, full),
   };

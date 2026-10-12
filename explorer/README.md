@@ -3475,8 +3475,10 @@ the GPU*, below), run by `deep-gpu.js`. Double-single is two `f32`s standing in 
 no `f64`; `deep-gpu-model/README.md` has why it and not plain `f32` ("Double-single as
 measured"). The GPU hands back exactly what the CPU kernel would, one `f64` lane a sample
 with `NaN` for the interior, so the coloring, the kept field, and a recolor never know which
-kernel drew it. The quarter pass is always the CPU's, and so is the reference orbit, which
-the GPU reads as a `HiLo` buffer of the orbit the pool already computed. Details says which
+kernel drew it. The reference orbit is always the CPU's, which the GPU reads as a `HiLo`
+buffer of the orbit the pool already computed, and so is the quarter pass's census; the
+quarter itself may be the GPU's since deep_wait_ckpt163 (*Where a Deep frame's wait goes*,
+below). Details says which
 drew the picture up: "Drawn on the CPU.", or "Drawn on the GPU in double-single precision",
 with how many pixels the CPU finished. The GPU box says whether the GPU is on and, where it
 cannot be, why (*Rendering, and what starts on its own* above); the reason a particular
@@ -3516,7 +3518,8 @@ the CPU, checked in this order:
   the middle of a gap that was never measured. A card idling at 300 MHz between frames runs
   its first pass seven to fourteen times slow, and the passes, read-backs, and launch then
   take the whole of the time. It counts iterations and not time, so a frame goes the same way
-  on every load. The rule reads the quarter pass wherever one is in hand: an on-screen
+  on every load. Where the GPU drew the quarter, the count is its census's, scaled to the
+  stage asking. The rule reads the quarter pass wherever one is in hand: an on-screen
   landing, an off-screen one (Dive results, the detached Keep diving descent, and Save those
   minibrots), and a Download, which reads the screen's quarter pass of the frame where it is
   still held and scales it to the file's samples. A Download with none held goes to the GPU.
@@ -3525,9 +3528,13 @@ the CPU, checked in this order:
   rest drew on the GPU. A cheap frame's download at 1072 × 576 stayed on the CPU as cheap at 1×, and went
   to the GPU at 4×, where the scaled estimate is four times as large.
 - **Not ready**: no WebGPU, no adapter, a fallback adapter (a software rasterizer is not a GPU
-  path), a failed self-test, or one still running. A frame waits on a test still running for
-  eight quarter passes, half what the CPU would take over the stage, and never less than 3 s
-  or more than 30 s (`readyWait`). A failed self-test is final for the page load, and the box
+  path), or a failed self-test. A frame waits on a test still running for its outcome, not for
+  a clock *(deep_wait_ckpt163)*: it used to wait eight quarter passes, 3 to 30 s
+  (`readyWait`), so a fresh profile's first frame of a link was the CPU's picture and the same
+  link a minute later the GPU's. `SETTLE_BOUND_MS` (30 s from the test's start) is a liveness
+  bound only: a test still running at it is abandoned for the page load and its late answer
+  ignored, so every frame after goes the way the one that gave up went. The cost is a cold
+  first frame that may wait out the test, about 5 s here. A failed self-test is final for the page load, and the box
   says so; no adapter or a refused device is asked again by later frames, up to three times.
 - **Does not fit**: a degree past six, an orbit past the adapter's limits, or a single row
   of samples whose state (128 bytes a sample with the proof, 56 without) or output does not

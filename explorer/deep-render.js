@@ -25,6 +25,7 @@
 // every band. A band call never computes one. See `deep-worker.js`.
 
 import { BAND_TARGET_MS, bandsOf, recut } from "./render.js";
+import { CHEAP_ITERATIONS_PER_WORKER, quarterOnGpu } from "./deep-gpu.js";
 import { stopsOf } from "./stops.js";
 import * as fx from "./deep-fx.js";
 
@@ -58,6 +59,125 @@ const RECUT_OVER = 1.5;
  * the first chunk to report replaces this with a measurement of the list's own.
  */
 const OPENING_SAMPLES = 64;
+
+/**
+ * What an iteration costs with the kernel's interior switch on, against one with it off,
+ * where the switch does not fire — the price a pass pays for asking.
+ *
+ * **Measured in the committed module, and taken low** *(profiling_pass_ckpt146)*: on
+ * frames the switch never fires on, off ran in 0.50 to 0.73 of the time on did, the lanes
+ * identical, so the price is 1.4x to 2x. The rule below keeps the switch on unless
+ * turning it off is cheaper at the low end of that range, so a frame near the crossing
+ * keeps the setting the kernel ships.
+ */
+export const SWITCH_PRICE = 1.4;
+
+/**
+ * Whether a pass should run with the interior switch on, read off samples of the same
+ * frame drawn with it on.
+ *
+ * **The switch never moves a CPU pixel**: a sample it stops early is one the plain loop
+ * runs to the cap, and both write `NaN`. So on the CPU this is a speed and nothing else,
+ * and samples drawn with it on — the kernel's default — say exactly what the plain loop
+ * would have run: `ran` is what they did run and `saved` what the switch spared them. The
+ * plain loop runs `ran + saved` at the lower price; the switch runs `ran` at
+ * `SWITCH_PRICE`. (The GPU kernel is chosen by it too, so there it chooses a picture, and
+ * the counts it reads are the frame's own.)
+ */
+export function switchFor(drawn) {
+  if (drawn?.ran == null || drawn.saved == null || drawn.ran <= 0) return true;
+  return drawn.ran + drawn.saved >= SWITCH_PRICE * drawn.ran;
+}
+
+/**
+ * **The quarter pass is a quarter of the full grid's own samples** *(deep_wait_ckpt163)*.
+ * It used to be a grid of its own, a quarter the width, whose sample centres fell between
+ * the full grid's; now quarter sample `(r, c)` is full sample `(4r + 2, 4c + 2)` of the
+ * full spec, drawn against the full grid's orbit, so the full pass has a sixteenth of its
+ * samples already and finishes only the rest. Every value is `compute_samples` under the
+ * full spec, which is bit for bit what a band covering that sample computes, so the full
+ * field is the field it always was.
+ */
+export const QUARTER_STRIDE = 4;
+const QUARTER_OFFSET = 2;
+
+/** One quarter sample in four along each axis is drawn first with the switch on — the
+ *  census that chooses the switch for the rest of the quarter and for the full pass. */
+const CENSUS_STRIDE = 4;
+
+/** A quarter whose census says the whole frame is under this many times the GPU's cheap
+ *  line keeps the switch on, as every quarter used to: there the switch costs tenths of a
+ *  second, and the cheap rule reads the quarter's iterations exactly as it was fitted to. */
+const SWITCH_KEPT_UNDER_CHEAP = 4;
+
+/** Whether `quarter` is a quarter of the `width` x `height` grid's own samples, which a full
+ *  pass at that grid may take as its first sixteenth. */
+export function seeds(quarter, width, height, supersample = 1) {
+  return (
+    quarter != null &&
+    supersample === 1 &&
+    Array.isArray(quarter.grid) &&
+    quarter.grid[0] === width &&
+    quarter.grid[1] === height &&
+    quarter.width * QUARTER_STRIDE === width &&
+    quarter.height * QUARTER_STRIDE === height &&
+    quarter.values instanceof Float64Array &&
+    quarter.values.length === quarter.width * quarter.height
+  );
+}
+
+/** The full grid's index of each quarter sample, split into the census and the rest, both
+ *  in the quarter's own row order. */
+export function quarterIndices(width, height) {
+  const qw = width / QUARTER_STRIDE;
+  const qh = height / QUARTER_STRIDE;
+  const census = [];
+  const rest = [];
+  for (let r = 0; r < qh; r++) {
+    const row = (QUARTER_STRIDE * r + QUARTER_OFFSET) * width;
+    for (let c = 0; c < qw; c++) {
+      const at = row + QUARTER_STRIDE * c + QUARTER_OFFSET;
+      if (r % CENSUS_STRIDE === 0 && c % CENSUS_STRIDE === 0) census.push(at);
+      else rest.push(at);
+    }
+  }
+  return { census: Uint32Array.from(census), rest: Uint32Array.from(rest) };
+}
+
+/** The packed reference's header: `count`, flags, the period residual. */
+const ORBIT_HEADER = 16;
+
+/**
+ * **The held orbit, as this frame's own spec would have computed it** *(deep_wait_ckpt163)*.
+ * `sameOrbit` hands a frame an orbit held from a deeper cap — a key zoom out, a Julia pan,
+ * a lowered cap — and the CPU kernel reads no point past its own cap, so its pixels never
+ * knew. The GPU reads the whole orbit to narrow it, and takes its flush term and its skip
+ * table's verdict over every point it holds, so the same link drew a different GPU picture
+ * reached that way than loaded fresh. Cut to `referenceBytes` (the plan's: the points this
+ * spec reads), it is byte for byte the orbit a fresh load computes: the same limbs, so the
+ * same points, and an orbit that escaped inside the cut is never longer than it. The
+ * escaped flag is cleared where the cut is past the held escape, as a fresh orbit that
+ * never reached it would say; the GPU reads only the periodic one.
+ */
+export function orbitFor(held, referenceBytes) {
+  if (held === null || !(referenceBytes > ORBIT_HEADER)) return held;
+  const count = new DataView(held.packed).getUint32(0, true);
+  const limit = Math.floor((referenceBytes - ORBIT_HEADER) / 16);
+  if (count <= limit) return held;
+  const packed = held.packed.slice(0, ORBIT_HEADER + 16 * limit);
+  const head = new DataView(packed);
+  head.setUint32(0, limit, true);
+  head.setUint32(4, head.getUint32(4, true) & ~1, true);
+  return { ...held, packed, points: limit, bytes: packed.byteLength, stamp: `${held.stamp}:${limit}` };
+}
+
+/** A sample-list chunk of about `BAND_TARGET_MS` at `perSample` milliseconds a sample on
+ *  one worker, never under `OPENING_SAMPLES`: a list cut finer than its cost pays the
+ *  orbit's unpacking on every message. */
+function chunkFor(perSample) {
+  if (!(perSample > 0)) return OPENING_SAMPLES;
+  return Math.max(OPENING_SAMPLES, Math.round(BAND_TARGET_MS / perSample));
+}
 
 /**
  * The cap policy's probe grid: how many of the frame's own sample cells one rung of the
@@ -1237,6 +1357,8 @@ export class DeepRenderer {
       interior = true,
       gpu = false,
       preview = null,
+      of = null,
+      have = null,
       onPartial = null,
       onProgress,
       onOrbit,
@@ -1245,22 +1367,31 @@ export class DeepRenderer {
   ) {
     this.cancel();
     const generation = this.generation;
+    // **A quarter of a grid's own samples** *(deep_wait_ckpt163)*, where the caller names the
+    // grid as `of` and it is four times this field on each axis: drawn by `#quarter` under
+    // the grid's spec and orbit, so everything below asks about the grid.
+    const quartered =
+      of !== null &&
+      supersample === 1 &&
+      of[0] === width * QUARTER_STRIDE &&
+      of[1] === height * QUARTER_STRIDE;
+    const [gridWidth, gridHeight] = quartered ? of : [width, height];
 
-    // **Asked before the orbit, not after it.** A frame the kernel will refuse —
-    // a Julia view too far from both its anchors for the width it is asking for —
-    // should cost a sentence rather than a reference orbit, and the refusal is
-    // the module's own words either way.
     // **Where the time before the bands went** *(deep_wait_ckpt163)*: the orbit (the
     // worker's own time and the wall from asking to holding it), feeding it to the pool, and
     // planning. Read by the Deep log alone, as `timing` on the `field landed` line.
     const began = performance.now();
     const timing = { orbitMs: null, orbitWallMs: 0, kept: false, feedMs: 0, planMs: 0 };
     this.timing = timing;
-    const refusal = this.plan(deepSpecOf(view, width, height, { supersample, period }));
+    // **Asked before the orbit, not after it.** A frame the kernel will refuse —
+    // a Julia view too far from both its anchors for the width it is asking for —
+    // should cost a sentence rather than a reference orbit, and the refusal is
+    // the module's own words either way.
+    const refusal = this.plan(deepSpecOf(view, gridWidth, gridHeight, { supersample, period }));
     if (!refusal.ok) throw new Error(refusal.why);
 
     const asked = performance.now();
-    const reference = await this.#reference(view, width, height, supersample, period, {
+    const reference = await this.#reference(view, gridWidth, gridHeight, supersample, period, {
       generation,
       onProgress: (done, total) => onStep?.({ phase: "orbit", done, total }),
     });
@@ -1274,18 +1405,36 @@ export class DeepRenderer {
     // A tile centred on its own nucleus names the period and **not** the reference: the
     // centre already is the reference, and naming it as well would put the same point in
     // the spec twice.
-    const spec = deepSpecOf(view, width, height, {
-      supersample,
-      period,
-      reference: period === null ? reference : null,
-      interior,
-    });
+    const specAt = (switched) =>
+      deepSpecOf(view, gridWidth, gridHeight, {
+        supersample,
+        period,
+        reference: period === null ? reference : null,
+        interior: switched,
+      });
+    const spec = specAt(interior);
     const shape = this.plan(spec);
     if (!shape.ok) throw new Error(shape.why);
     const feeding = performance.now();
     if (!(await this.#feedAll(generation))) return null;
     timing.feedMs = performance.now() - feeding;
     timing.planMs = feeding - began - timing.orbitWallMs;
+
+    if (quartered) {
+      // The quarter's own grid, for a quarter the GPU draws: a picture of its own, never
+      // a seed of the CPU's full pass.
+      const ownAt = (switched) =>
+        deepSpecOf(view, width, height, {
+          supersample,
+          period,
+          reference: period === null ? reference : null,
+          interior: switched,
+        });
+      return this.#quarter(specAt, width, height, generation, {
+        onProgress,
+        gpu: gpu ? { ownAt, degree: view.degree ?? 2 } : null,
+      });
+    }
 
     // **The GPU, where the caller allows it and the device will take the frame**
     // *(gpu_deep_ship_ckpt162)*. It fills the same lanes and resolves the same object, so
@@ -1299,6 +1448,11 @@ export class DeepRenderer {
       });
       if (drawn !== undefined) return drawn;
       if (generation !== this.generation) return null;
+    }
+
+    // The quarter's samples, where it is a quarter of this grid: the CPU finishes the rest.
+    if (seeds(have, width, height, supersample)) {
+      return this.#complete(spec, have, width, height, generation, { onProgress });
     }
 
     const sampleWidth = width * supersample;
@@ -1326,6 +1480,161 @@ export class DeepRenderer {
       this.queue = bands;
       for (const slot of this.slots) this.#dispatch(slot, this.job);
     });
+  }
+
+  /**
+   * The quarter pass as a quarter of the full grid's samples *(deep_wait_ckpt163)*: a census
+   * of one quarter sample in sixteen drawn with the interior switch on, then the rest with
+   * the switch the census chooses — the switch is a speed on the CPU and never a pixel, and
+   * the quarter used to pay its price on every frame, 1.2x to 1.7x on the busy ones where
+   * it never fires. Resolves the object the bands resolve, at the quarter's own size, with
+   * `grid` (the full grid it is a quarter of) and `fullSwitch` (the switch the full pass
+   * should run, chosen from counts drawn with it on, as it always was).
+   */
+  async #quarter(specAt, width, height, generation, { onProgress, gpu = null }) {
+    const gridWidth = width * QUARTER_STRIDE;
+    const gridHeight = height * QUARTER_STRIDE;
+    const { census, rest } = quarterIndices(gridWidth, gridHeight);
+    const total = census.length + rest.length;
+    const started = performance.now();
+    const scratch = new Float64Array(gridWidth * gridHeight);
+    const first = await this.samples(specAt(true), census, scratch, {
+      generation,
+      onProgress: (_, __, done) => onProgress?.(done / total, performance.now() - started),
+    });
+    if (first === null) return null;
+    // The whole frame's iterations, as the census counts them with the switch on.
+    const frame =
+      first.ran === null
+        ? null
+        : (first.ran * total * QUARTER_STRIDE * QUARTER_STRIDE) / census.length;
+    const cheapLine = CHEAP_ITERATIONS_PER_WORKER * this.slots.length;
+    const quarterSwitch =
+      frame === null || frame < SWITCH_KEPT_UNDER_CHEAP * cheapLine ? true : switchFor(first);
+    // What the census counted, on whichever quarter this becomes: the full pass's switch
+    // and, after a quarter the GPU drew, its cheap rule and the Download row's estimate.
+    // **The full pass's switch is the census's alone**, so it is the same however the
+    // quarter was drawn — on the GPU, on the CPU after the device refused, or held from
+    // before the box was ticked.
+    const counted = {
+      ran: first.ran,
+      saved: first.saved,
+      count: census.length,
+      elapsed: first.elapsed,
+      iterations: frame,
+      samples: gridWidth * gridHeight,
+    };
+    const fullSwitch = switchFor(first);
+
+    // **The GPU's, where the census says it is worth it** *(deep_wait_ckpt163)*: decided by
+    // the census's counts and the self-test's outcome, never by the clock, so a frame's
+    // quarter goes the same way on every load. Its picture is the GPU's own grid, a
+    // quarter the width, and its `ran` is `null` (the GPU's steps are not iterations), so
+    // the full pass reads the census instead: the switch here, and the cheap rule, which
+    // a frame the census put here is a hundred times over.
+    if (
+      gpu !== null &&
+      this.gpu != null &&
+      !this.gpu.off &&
+      this.gpu.kernel !== "gpu" &&
+      quarterOnGpu({ iterations: frame === null ? null : frame / (QUARTER_STRIDE * QUARTER_STRIDE), degree: gpu.degree, workers: this.slots.length })
+    ) {
+      const own = gpu.ownAt(quarterSwitch);
+      const shape = this.plan(own);
+      if (shape.ok) {
+        const drawn = await this.#gpuField(own, shape, width, height, 1, generation, {
+          preview: null,
+          onPartial: null,
+          // After the census's share of the bar, so it never runs backward.
+          onProgress: (fraction) =>
+            onProgress?.((census.length + fraction * rest.length) / total, performance.now() - started),
+          estimate: { iterations: frame, frameSamples: gridWidth * gridHeight },
+          stage: "quarter",
+        });
+        if (drawn === null) return null;
+        if (drawn !== undefined) {
+          return {
+            ...drawn,
+            elapsed: performance.now() - started,
+            quarter: true,
+            census: counted,
+            quarterSwitch,
+            fullSwitch,
+          };
+        }
+        if (generation !== this.generation) return null;
+      }
+    }
+    const second = await this.samples(specAt(quarterSwitch), rest, scratch, {
+      generation,
+      opening: chunkFor((first.elapsed * this.slots.length) / Math.max(1, census.length)),
+      onProgress: (_, __, done) =>
+        onProgress?.((census.length + done) / total, performance.now() - started),
+    });
+    if (second === null) return null;
+    const values = new Float64Array(width * height);
+    for (let r = 0; r < height; r++) {
+      const row = (QUARTER_STRIDE * r + QUARTER_OFFSET) * gridWidth + QUARTER_OFFSET;
+      for (let c = 0; c < width; c++) values[r * width + c] = scratch[row + QUARTER_STRIDE * c];
+    }
+    const ran = first.ran === null || second.ran === null ? null : first.ran + second.ran;
+    const saved =
+      first.saved === null || second.saved === null ? null : first.saved + second.saved;
+    return {
+      values,
+      width,
+      height,
+      supersample: 1,
+      elapsed: performance.now() - started,
+      ran,
+      saved,
+      kernel: "cpu",
+      handed: 0,
+      grid: [gridWidth, gridHeight],
+      quarter: true,
+      census: counted,
+      quarterSwitch,
+      fullSwitch,
+    };
+  }
+
+  /** The full pass finished from a quarter of its own samples *(deep_wait_ckpt163)*: the
+   *  quarter's values put in place, and the other fifteen sixteenths drawn as a list. */
+  async #complete(spec, have, width, height, generation, { onProgress }) {
+    const values = new Float64Array(width * height);
+    const rest = new Uint32Array(width * height - have.width * have.height);
+    let k = 0;
+    for (let r = 0; r < height; r++) {
+      const kept = r % QUARTER_STRIDE === QUARTER_OFFSET;
+      const from = ((r - QUARTER_OFFSET) / QUARTER_STRIDE) * have.width;
+      for (let c = 0; c < width; c++) {
+        const at = r * width + c;
+        if (kept && c % QUARTER_STRIDE === QUARTER_OFFSET) {
+          values[at] = have.values[from + (c - QUARTER_OFFSET) / QUARTER_STRIDE];
+        } else {
+          rest[k++] = at;
+        }
+      }
+    }
+    const got = await this.samples(spec, rest, values, {
+      generation,
+      opening: chunkFor((have.elapsed * this.slots.length) / (have.width * have.height)),
+      onProgress: (fraction, elapsed) => onProgress?.(fraction, elapsed),
+    });
+    if (got === null) return null;
+    return {
+      values,
+      width,
+      height,
+      supersample: 1,
+      elapsed: got.elapsed,
+      ran: have.ran === null || got.ran === null ? null : have.ran + got.ran,
+      saved: have.saved === null || got.saved === null ? null : have.saved + got.saved,
+      kernel: "cpu",
+      handed: 0,
+      // The samples this pass drew itself, for the Download row's estimate.
+      computed: rest.length,
+    };
   }
 
   /**
@@ -1410,31 +1719,49 @@ export class DeepRenderer {
    * its device before reading anything back, so the caller draws it with the bands.
    *
    * `ran` and `saved` are `null`: the GPU's steps are not the CPU kernel's iterations,
-   * and the one reader of the pair, the interior switch, reads it off the quarter pass,
+   * and the one reader of the pair, the interior switch, reads it off the quarter's census,
    * which is always the CPU's.
    */
-  async #gpuField(spec, shape, width, height, supersample, generation, { preview, onPartial, onProgress }) {
+  async #gpuField(
+    spec,
+    shape,
+    width,
+    height,
+    supersample,
+    generation,
+    { preview, onPartial, onProgress, estimate = null, stage = "full" },
+  ) {
     const gpu = this.gpu;
-    const orbit = this.orbit;
+    const orbit = orbitFor(this.orbit, shape.reference_bytes);
     const samples = shape.sample_width * shape.sample_height;
     const workers = this.slots.length;
+    // The CPU's own estimate of the frame, which keeps a cheap one on the CPU: the census's,
+    // for a quarter or for a full stage after a quarter the GPU drew; otherwise what the
+    // quarter pass ran, scaled to this stage's samples.
+    const census = estimate ?? (preview?.kernel === "gpu" ? (preview.census ?? null) : null);
+    const iterations =
+      census !== null
+        ? estimate !== null
+          ? census.iterations
+          : census.iterations === null
+            ? null
+            : (census.iterations * samples) / census.samples
+        : preview?.ran == null || !(preview.values?.length > 0)
+          ? null
+          : (preview.ran * samples) / preview.values.length;
     const refused = await gpu.refuses({
       samples,
+      frameSamples: estimate?.frameSamples ?? samples,
       sampleWidth: shape.sample_width,
       degree: shape.degree,
       interior: shape.interior === true,
       orbitPoints: orbit === null ? 0 : new DataView(orbit.packed).getUint32(0, true),
-      // How long the CPU took over this frame's quarter pass, which is how long the frame
-      // may wait on a self-test still running.
-      quarterMs: preview?.elapsed ?? null,
-      // What the quarter pass ran, scaled to this stage's samples: the CPU's own estimate
-      // of the stage, which keeps a cheap one on the CPU.
-      iterations: preview?.ran == null || !(preview.values?.length > 0) ? null : (preview.ran * samples) / preview.values.length,
+      iterations,
       workers,
     });
     if (generation !== this.generation) return null;
     if (refused !== null || orbit === null) {
-      this.onGpu?.("cpu", { why: refused ?? "no orbit" });
+      this.onGpu?.("cpu", { stage, why: refused ?? "no orbit" });
       return undefined;
     }
     const started = performance.now();
@@ -1504,7 +1831,7 @@ export class DeepRenderer {
     if (!live()) return null;
     if (drawn.status === "cancelled") return null;
     if (drawn.status === "unserved" || drawn.handed === null) {
-      this.onGpu?.("cpu", { why: drawn.why ?? drawn.status });
+      this.onGpu?.("cpu", { stage, why: drawn.why ?? drawn.status });
       return undefined;
     }
     take(drawn.handed);
@@ -1514,6 +1841,7 @@ export class DeepRenderer {
     const finished = await tail.chain;
     if (!finished || !live()) return null;
     this.onGpu?.("gpu", {
+      stage,
       handed: tail.total,
       lost: drawn.status === "lost",
       ms: performance.now() - started,
@@ -1559,7 +1887,12 @@ export class DeepRenderer {
    * moved on, as everything here does; rejects where the kernel refused the list.
    * `onProgress(fraction, elapsedMs, samplesDone)` is called as chunks land.
    */
-  async samples(spec, indices, values, { generation = this.generation, onProgress } = {}) {
+  async samples(
+    spec,
+    indices,
+    values,
+    { generation = this.generation, onProgress, opening: chunk = OPENING_SAMPLES } = {},
+  ) {
     if (generation !== this.generation) return null;
     const count = indices.length;
     if (count === 0) return { count: 0, elapsed: 0, ran: 0, saved: 0 };
@@ -1567,7 +1900,7 @@ export class DeepRenderer {
     if (!(await this.#feedAll(generation))) return null;
     // A cut to four chunks a worker, and never coarser than the opening cap: `recut` is the
     // band cutter, and a range of list positions is a range like any other.
-    const opening = Math.min(OPENING_SAMPLES, Math.ceil(count / (4 * this.slots.length)));
+    const opening = Math.min(chunk, Math.ceil(count / (4 * this.slots.length)));
     const chunks = recut([[0, count]], Math.max(1, opening), 1);
     return new Promise((resolve, reject) => {
       this.job = {

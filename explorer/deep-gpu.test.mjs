@@ -649,12 +649,17 @@ test("an acquisition that failed for the moment is asked again, until the third"
   assert.equal(h.wants, false);
 });
 
-test("a frame waits on the self-test for half the CPU's expected cost, within bounds", () => {
-  assert.equal(gpu.readyWait(null), gpu.READY_WAIT_MS);
-  assert.equal(gpu.readyWait(0), gpu.READY_WAIT_MS);
-  assert.equal(gpu.readyWait(100), gpu.READY_WAIT_MS);
-  assert.equal(gpu.readyWait(600), 4800);
-  assert.equal(gpu.readyWait(10000), gpu.MAX_READY_WAIT_MS);
+test("a quarter goes to the GPU by the census's iterations, never by a clock", () => {
+  const line = gpu.QUARTER_ITERATIONS_PER_WORKER * 12;
+  assert.equal(gpu.quarterOnGpu({ iterations: null, workers: 12 }), false);
+  assert.equal(gpu.quarterOnGpu({ iterations: line - 1, workers: 12 }), false);
+  assert.equal(gpu.quarterOnGpu({ iterations: line, workers: 12 }), true);
+  // Degrees four to six pay a longer compile, so they ask for more.
+  assert.equal(gpu.quarterOnGpu({ iterations: line, degree: 5, workers: 12 }), false);
+  assert.equal(gpu.quarterOnGpu({ iterations: line * gpu.QUARTER_HIGH_DEGREE_FACTOR, degree: 5, workers: 12 }), true);
+  // A quarter the GPU takes is far above the cheap line: its full pass is the GPU's too.
+  assert.ok(gpu.QUARTER_ITERATIONS_PER_WORKER * 16 > 50 * gpu.CHEAP_ITERATIONS_PER_WORKER);
+  assert.equal(gpu.readyWait, undefined, "no clock decides which kernel draws");
 });
 
 // ---- The vectors, against the arithmetic they test ---------------------------------------
