@@ -3996,6 +3996,49 @@ skip and the exact points buy is the depth ladder's table above. Beside it, the 
 `deep-gpu-agree.mjs` matched all 24 of its frames (A-1e-60 at 0.22% visible with its table),
 and `link-fidelity.mjs` held all 95 steps exact, its depth tab included.
 
+**Where a Deep frame's wait goes** *(deep_wait_ckpt163)*. The tab's log splits every frame
+into orbit, quarter, full, shade and other (`field landed` carries `orbitMs`, `wholeMs` and
+the rest; `deep-gpu-time.mjs` records `split`). On the depth ladder before this checkpoint,
+the CPU's wait was 90% full pass, and the GPU's was 63% quarter pass, because the quarter
+was always the CPU's: B-1e-112 waited 23.2 s for a quarter and 5.7 s for the GPU's full
+pass. Four changes, in the order they paid:
+
+- **The quarter on the GPU.** The quarter pass is now full-grid samples `(4r + 2, 4c + 2)`,
+  so the CPU's full pass computes only the other fifteen in sixteen. A census of one quarter
+  sample in sixteen, drawn first with the switch on, counts the frame. Where the box is
+  ticked, the self-test passed and the census puts the quarter at 150 M iterations a worker
+  or more (three times that at degrees four to six, for the compile), the GPU draws the
+  quarter. Ladder GPU quarter: 197 s to 31 s.
+- **The CPU kernel two samples a vector.** `perturb.wasm` fills two samples per `f64x2`
+  in the scalar loop's operation order, so its lanes are the scalar build's bit for bit
+  (`bench/perturb-parity.mjs`, 142 specs). Pool: 1.71x with the switch off, 1.46x on.
+  An engine without wasm SIMD refuses the whole module, so `perturbModuleUrl` validates a
+  22-byte probe and fetches `perturb-scalar.wasm` where it fails.
+- **The reference orbit unrolled.** `fx.rs`'s multiply and square over 29-bit digits up to
+  10 limbs, the low columns skipped under a proven carry bound with an exact fallback:
+  2.3 to 3.0x on one thread, every orbit byte for byte (`bench/orbit-parity.mjs`, 533
+  specs). Module growth for both: 385 KB to 588 KB raw (138 to 183 KB gzipped).
+- **A sample list is never cut finer than about a row a message** (`LIST_FLOOR`), the
+  regression the first change brought and the measurement caught: `compute_samples` unpacks
+  the orbit per call, and one heavy chunk had re-cut a 1.45 M-point frame's list to about
+  21,000 messages.
+
+Before and after, 1076 × 576, twelve workers, the RTX 2060 SUPER, the box ticked for GPU:
+
+| run | CPU before | CPU after | GPU before | GPU after |
+|---|--:|--:|--:|--:|
+| depth ladder, 31 frames | 2225 s | 1025 s | 314 s | 137 s |
+| 159-frame sample | 1662 s | 893 s | 667 s | 529 s |
+| its 26 cold loads | 379 s | 205 s | 123 s | 100 s |
+
+All 159 frames drew faster on the CPU, and 158 on the GPU; the one that did not,
+`random-dives#443`, is the run's first degree-six frame and carries that kernel's compile.
+The CPU's picture is byte for byte what it was (`bench/deep-same.mjs --mode=servers`,
+22 frames), `deep-gpu-agree.mjs` matched 24 of 24 and `link-fidelity.mjs` held 95 of 95.
+`deep-same.mjs --mode=paths` holds a fresh load and a landed link to one picture with the
+box ticked, 22 of 22; a display-driver reset in the middle of one run put the fresh browser
+on the CPU for the rest of it, which is a lost device and not an arrival path.
+
 ### What is not here
 
 **Nucleus references in the main Render** — the tab still draws every frame against its
