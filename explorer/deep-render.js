@@ -61,6 +61,18 @@ const RECUT_OVER = 1.5;
 const OPENING_SAMPLES = 64;
 
 /**
+ * The fewest samples a chunk of a long sample list is cut to *(deep_wait_ckpt163)*: about
+ * a row of the full grid, the floor a band has. `compute_samples` unpacks the held orbit on
+ * every call, as `compute_band` does, so a message costs the orbit's length whatever it
+ * carries. Without the floor, one chunk of a frame's interior measured at a hundred times
+ * the average re-cut everything still queued to a few samples a message. On
+ * `random-dives#6` (an orbit of 1.45 M points) that was about 21,000 messages for 9.4 G
+ * iterations: a full pass of 53 to 111 s, where its bands took 15. A list too short to give
+ * every worker four chunks of it is cut finer instead, so a small list still spreads.
+ */
+const LIST_FLOOR = 1024;
+
+/**
  * What an iteration costs with the kernel's interior switch on, against one with it off,
  * where the switch does not fire — the price a pass pays for asking.
  *
@@ -1900,8 +1912,10 @@ export class DeepRenderer {
     if (!(await this.#feedAll(generation))) return null;
     // A cut to four chunks a worker, and never coarser than the opening cap: `recut` is the
     // band cutter, and a range of list positions is a range like any other.
-    const opening = Math.min(chunk, Math.ceil(count / (4 * this.slots.length)));
-    const chunks = recut([[0, count]], Math.max(1, opening), 1);
+    const spread = Math.ceil(count / (4 * this.slots.length));
+    const floor = Math.max(1, Math.min(LIST_FLOOR, spread));
+    const opening = Math.max(floor, Math.min(chunk, spread));
+    const chunks = recut([[0, count]], opening, floor);
     return new Promise((resolve, reject) => {
       this.job = {
         kind: "samples",
@@ -1918,6 +1932,7 @@ export class DeepRenderer {
         started: performance.now(),
         ran: 0,
         saved: 0,
+        floor,
       };
       this.queue = chunks;
       for (const slot of this.slots) this.#dispatchSamples(slot, this.job);
@@ -1954,7 +1969,7 @@ export class DeepRenderer {
     job.sampleCost = job.sampleCost === null ? cost : (job.sampleCost + cost) / 2;
     const target = BAND_TARGET_MS / job.sampleCost;
     const widest = this.queue.reduce((most, [a, b]) => Math.max(most, b - a), 0);
-    if (target * RECUT_OVER < widest) this.queue = recut(this.queue, target, 1);
+    if (target * RECUT_OVER < widest) this.queue = recut(this.queue, target, job.floor);
     const out = new Float64Array(reply.values);
     for (let k = 0; k < span; k++) job.values[job.indices[start + k]] = out[k];
     job.done += span;
