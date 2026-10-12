@@ -1036,7 +1036,21 @@ export function mount(host) {
           });
           if (field === null || generation !== pass) return;
           if (stage.name === "preview") quarterMs = performance.now() - started;
-          log("field landed", { stage: stage.name, kernel: field.kernel, handed: field.handed, ran: field.ran, ms: Math.round(field.elapsed) });
+          const timing = deep.timing ?? {};
+          log("field landed", {
+            stage: stage.name,
+            kernel: field.kernel,
+            handed: field.handed,
+            ran: field.ran,
+            ms: Math.round(field.elapsed),
+            wholeMs: Math.round(performance.now() - started),
+            orbitMs: timing.orbitMs == null ? null : Math.round(timing.orbitMs),
+            orbitWallMs: Math.round(timing.orbitWallMs ?? 0),
+            kept: timing.kept ?? null,
+            feedMs: Math.round(timing.feedMs ?? 0),
+            planMs: Math.round(timing.planMs ?? 0),
+            interior: stage.name === "preview" ? true : interior,
+          });
           remember(key, field);
         }
         if (stage.name === "preview") {
@@ -1051,6 +1065,7 @@ export function mount(host) {
         const landed = await shadeNow(deep, field, target, generation);
         if (landed === null) return;
         const shaded = landed.shaded;
+        log("shaded", { stage: stage.name, ms: Math.round(shaded.elapsed ?? 0), cached });
         target = landed.frame;
         if (host.deriving()) {
           view = { ...view, level: shaded.level };

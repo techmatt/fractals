@@ -119,16 +119,18 @@ function handle(message) {
   // in this heap, where it was computed, and a copy goes back for the rest of the pool.
   if (message.kind === "reference") {
     release();
+    const began = performance.now();
     const out = withText(message.spec, (pointer, length) => wasm.reference_orbit(pointer, length));
+    const ms = performance.now() - began;
     if (out === 0) {
-      answer(message, { orbit: null });
+      answer(message, { orbit: null, ms });
       return;
     }
     const count = new DataView(wasm.memory.buffer).getUint32(out, true);
     const length = REFERENCE_HEADER + 16 * count;
     orbit = { pointer: out, length };
     const copy = new Uint8Array(wasm.memory.buffer, out, length).slice().buffer;
-    answer(message, { orbit: copy, points: count }, [copy]);
+    answer(message, { orbit: copy, points: count, ms }, [copy]);
     return;
   }
 

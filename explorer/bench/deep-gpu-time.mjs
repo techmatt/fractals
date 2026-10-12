@@ -232,7 +232,30 @@ function summarize(log, t0) {
     lost: onGpu?.detail?.lost || undefined,
     quarterRan: quarter?.detail?.ran ?? undefined,
     ready: at("gpu ready")?.detail?.ms ?? undefined,
+    split: split(log, t0, end, quarter, full),
   };
+}
+
+/** Each landing's wait cut into its parts *(deep_wait_ckpt163)*, off the page's `timing` on the
+ *  `field landed` lines and its `shaded` lines: the reference orbit (the worker's own time,
+ *  zero where the orbit was held), the quarter pass's bands, the full field, the two
+ *  colourings, and everything else (the page, the pool, the feed and plan, the GPU's gate
+ *  and set-up, painting). Every part is milliseconds; `other` is the wall less the rest. */
+function split(log, t0, end, quarter, full) {
+  if (!end) return undefined;
+  const shade = (stage) => log.find((e) => e.event === "shaded" && e.detail?.stage === stage)?.detail?.ms ?? 0;
+  const q = quarter?.detail ?? {};
+  const f = full?.detail ?? {};
+  const parts = {
+    orbit: (q.orbitMs ?? 0) + (f.orbitMs ?? 0),
+    quarter: q.ms ?? 0,
+    full: f.ms ?? 0,
+    shade: shade("preview") + shade("full"),
+  };
+  const wall = Math.round(end.t - t0);
+  return { ...parts, other: wall - parts.orbit - parts.quarter - parts.full - parts.shade,
+    feed: (q.feedMs ?? 0) + (f.feedMs ?? 0), orbitWall: (q.orbitWallMs ?? 0) + (f.orbitWallMs ?? 0),
+    fullKept: f.kept ?? null };
 }
 
 /** Land `link` in an open page through its own door, and time it. */

@@ -1191,6 +1191,8 @@ export class DeepRenderer {
       bytes: reply.orbit.byteLength,
       stamp: this.orbits,
       packed: reply.orbit,
+      // The worker's own time inside `reference_orbit`, without the message hop.
+      ms: reply.ms ?? null,
     };
     // The worker that computed it holds it already.
     slot.fed = this.orbit.stamp;
@@ -1248,15 +1250,25 @@ export class DeepRenderer {
     // a Julia view too far from both its anchors for the width it is asking for —
     // should cost a sentence rather than a reference orbit, and the refusal is
     // the module's own words either way.
+    // **Where the time before the bands went** *(deep_wait_ckpt163)*: the orbit (the
+    // worker's own time and the wall from asking to holding it), feeding it to the pool, and
+    // planning. Read by the Deep log alone, as `timing` on the `field landed` line.
+    const began = performance.now();
+    const timing = { orbitMs: null, orbitWallMs: 0, kept: false, feedMs: 0, planMs: 0 };
+    this.timing = timing;
     const refusal = this.plan(deepSpecOf(view, width, height, { supersample, period }));
     if (!refusal.ok) throw new Error(refusal.why);
 
+    const asked = performance.now();
     const reference = await this.#reference(view, width, height, supersample, period, {
       generation,
       onProgress: (done, total) => onStep?.({ phase: "orbit", done, total }),
     });
     if (generation !== this.generation) return null;
     if (reference === null) throw new Error("the kernel could not compute a reference orbit for this view");
+    timing.orbitWallMs = performance.now() - asked;
+    timing.kept = reference.kept;
+    timing.orbitMs = reference.kept ? 0 : (this.orbit?.ms ?? null);
     onOrbit?.({ ...this.orbit, packed: undefined, kept: reference.kept });
 
     // A tile centred on its own nucleus names the period and **not** the reference: the
@@ -1270,7 +1282,10 @@ export class DeepRenderer {
     });
     const shape = this.plan(spec);
     if (!shape.ok) throw new Error(shape.why);
+    const feeding = performance.now();
     if (!(await this.#feedAll(generation))) return null;
+    timing.feedMs = performance.now() - feeding;
+    timing.planMs = feeding - began - timing.orbitWallMs;
 
     // **The GPU, where the caller allows it and the device will take the frame**
     // *(gpu_deep_ship_ckpt162)*. It fills the same lanes and resolves the same object, so
