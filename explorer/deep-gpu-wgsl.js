@@ -630,7 +630,7 @@ ${frameLo ? "@group(0) @binding(1) var<uniform> frame_lo: FrameLo;" : "// bindin
 @group(0) @binding(3) var<storage, read> orbit: array<${orbit}>;
 @group(0) @binding(4) var<storage, read_write> states: array<PixelState>;
 // [0] pixels still running after a pass, [1] the compacted list's length, [2] delta steps
-// the pass took over every pixel.
+// the pass took over every pixel, [3] how many of them were runs of the skip table.
 @group(0) @binding(5) var<storage, read_write> counters: array<atomic<u32>, 4>;
 @group(0) @binding(6) var<storage, read_write> list: array<u32>;
 // Per pixel, written by emit(): (n, bits of frac) where escaped, (OUT_NONE, status) else.
@@ -641,10 +641,12 @@ ${frameLo ? "@group(0) @binding(1) var<uniform> frame_lo: FrameLo;" : "// bindin
 var<workgroup> wg: array<f32, ${workgroup}>;
 var<workgroup> wg_running: atomic<u32>;
 var<workgroup> wg_steps: atomic<u32>;
+var<workgroup> wg_skips: atomic<u32>;
 // The guard's workgroup slot: this invocation's local index, set by every entry point.
 var<private> slot: u32;
-// The delta steps the last run() took, for the pass's count.
+// The delta steps the last run() took, for the pass's count, and how many were skips.
 var<private> taken_steps: u32;
+var<private> taken_skips: u32;
 
 const SCALE_FLOOR: f32 = ${pow2(-62)};
 const UNSCALE_AT: i32 = -60;
@@ -768,16 +770,18 @@ fn bla_lookup(m: u32, d: vec2<f32>, s: i32, left: u32, guard: bool, dzm: f32, dz
   for (var i = 0u; i < cands; i++) {
     let k = bla_header.min_level + i;
     let index = bla_header.level[i].x + (ix >> k);
-    let run = bla_runs[index];
-    if (!bla_below(run.r2_m, run.r2_e, d, s)) {
+    // The radius alone, and the interior prefix only where it is asked: a lookup reads 8 of
+    // a run's 64 bytes, and the run itself is read by bla_apply once one is taken.
+    if (!bla_below(bla_runs[index].r2_m, bla_runs[index].r2_e, d, s)) {
       break;
     }
     if (guard) {
-      if (run.dmin_m == 0.0f) {
+      let dmin_m = bla_runs[index].dmin_m;
+      if (dmin_m == 0.0f) {
         break;
       }
-      let q = G(dzm * run.dmin_m);
-      if (dze + run.dmin_e + exponent_of(q) < frame.floor) {
+      let q = G(dzm * dmin_m);
+      if (dze + bla_runs[index].dmin_e + exponent_of(q) < frame.floor) {
         break;
       }
     }
@@ -1443,6 +1447,7 @@ ${julia ? `  let col = i % frame.width_px;
 // One pixel, at most budget delta steps; true while it is still running.
 fn run(i: u32, budget: u32) -> bool {
   taken_steps = 0u;
+  taken_skips = 0u;
   var st = states[i];
   if (st.status != RUNNING || budget == 0u) {
     return false;
@@ -1499,6 +1504,7 @@ ${julia ? "" : `  let dce = exponent_of(max_abs(dc.re.x, dc.im.x));
         scale = scale_of(dc, sc, s);
       }
       taken += 1u;
+      taken_skips += 1u;
       steps += 1u;
       if (s0 != 0) {
         scaled += 1u;
@@ -1744,6 +1750,9 @@ fn pass_all(@builtin(global_invocation_id) gid: vec3<u32>,
   if (taken_steps > 0u) {
     atomicAdd(&wg_steps, taken_steps);
   }
+  if (taken_skips > 0u) {
+    atomicAdd(&wg_skips, taken_skips);
+  }
   workgroupBarrier();
   if (lid == 0u) {
     let c = atomicLoad(&wg_running);
@@ -1753,6 +1762,10 @@ fn pass_all(@builtin(global_invocation_id) gid: vec3<u32>,
     let t = atomicLoad(&wg_steps);
     if (t > 0u) {
       atomicAdd(&counters[2], t);
+    }
+    let k = atomicLoad(&wg_skips);
+    if (k > 0u) {
+      atomicAdd(&counters[3], k);
     }
   }
 }
@@ -1775,6 +1788,9 @@ fn pass_list(@builtin(global_invocation_id) gid: vec3<u32>,
   if (taken_steps > 0u) {
     atomicAdd(&wg_steps, taken_steps);
   }
+  if (taken_skips > 0u) {
+    atomicAdd(&wg_skips, taken_skips);
+  }
   workgroupBarrier();
   if (lid == 0u) {
     let c = atomicLoad(&wg_running);
@@ -1784,6 +1800,10 @@ fn pass_list(@builtin(global_invocation_id) gid: vec3<u32>,
     let t = atomicLoad(&wg_steps);
     if (t > 0u) {
       atomicAdd(&counters[2], t);
+    }
+    let k = atomicLoad(&wg_skips);
+    if (k > 0u) {
+      atomicAdd(&counters[3], k);
     }
   }
 }

@@ -769,6 +769,24 @@ async function compile(device, code, label) {
   return module;
 }
 
+/**
+ * Whether a skip table still pays, from the skips the kernel took against the steps it took
+ * since the last step checkpoint *(gpu_deep_depth_ckpt163)*. A run saves at least fifteen
+ * iterations, and looking runs up costs every sixteenth step a read whether one is found or
+ * not: `go:favicon-end` (cap two million) drew 18% slower with its table, whose live runs its
+ * deltas almost never fit, for 3% fewer steps. Under `SKIP_SHARE` of the window's steps the
+ * table is dropped for the rest of the frame. Counts and not time, so a frame drops it at the
+ * same checkpoint on every run.
+ */
+export function keepsTable({ steps, skips }) {
+  return !(steps > 0) || skips >= SKIP_SHARE * steps;
+}
+/** A run saves at least fifteen iterations a skip, so 2% of the steps saves at least 30% of
+ *  the iterations, against the 18% `go:favicon-end`'s lookups cost it. Measured per window
+ *  at screen size: the busy deep frames B and C skip on 6.6% of their steps until they finish,
+ *  `go:favicon-end` on 0.77%, `go:julia3-end` on none. */
+export const SKIP_SHARE = 0.02;
+
 /** The orbit points a skip table is first built over: where they hold no live run, the
  *  frame's table is not built at all. About 20 ms of build. */
 export const TABLE_PROBE = 65536;
@@ -903,7 +921,7 @@ class Runner {
       c.dispatchWorkgroups(this.groups);
       c.end();
     }
-    encoder.clearBuffer(this.counters, 8, 4);
+    encoder.clearBuffer(this.counters, 8, 8);
     let cleared = false;
     dispatches.forEach((d, k) => {
       // The running count is the last chunk's alone: every chunk's dispatches add to it.
@@ -952,7 +970,7 @@ class Runner {
         durations.push(ms);
       }
     }
-    return { running: counts[0], steps: counts[2], durations };
+    return { running: counts[0], steps: counts[2], skips: counts[3], durations };
   }
 
   /** `emit`, and the `out` words read back and handed to `read` while they are mapped. */
@@ -1792,10 +1810,13 @@ export class DeepGpu {
       const { frame, frameLo } = frameBuffers(plan, orbit.count, HANDOFF);
       device.queue.writeBuffer(runner.frame, 0, frame);
       device.queue.writeBuffer(runner.frameLo, 0, frameLo);
-      const table = this.skip ? await this.#tableFor(device, job.orbit, plan, frame) : this.empty;
+      let table = this.skip ? await this.#tableFor(device, job.orbit, plan, frame) : this.empty;
       if (!job.live()) return { status: "cancelled" };
-      record.table = table === this.empty ? null : { levels: table.levels, valid: table.valid, ms: table.ms };
+      record.table = table === this.empty ? null : { levels: table.levels, valid: table.valid, ms: table.ms, windows: [], dropped: null };
       runner.bind(this.layouts, orbit.buffer, table, orbit.exact ?? this.noExact);
+      // The skip's own count since the last step checkpoint, and the steps it was out of.
+      let windowSteps = 0;
+      let windowSkips = 0;
 
       const fallback = previewOf(job.preview, width, height);
       // A partial of a frame in strips shows the quarter field where no strip has run yet.
@@ -1853,6 +1874,8 @@ export class DeepGpu {
           record.spent += steps;
           record.dispatches += dispatches.length;
           record.trace.push([steps, mode[0], counted.running, Math.round(wallMs), gpuMs === null ? null : +gpuMs.toFixed(2), dispatches.length, widest === null ? null : +widest.toFixed(2)]);
+          windowSteps += counted.steps;
+          windowSkips += counted.skips ?? 0;
           if (mode === "compact") {
             record.compacts += 1;
             listed = 0;
@@ -1864,6 +1887,21 @@ export class DeepGpu {
           if (!job.live()) return { status: "cancelled" };
           job.onProgress?.((doneBefore + n - running) / count, performance.now() - started);
           if (running === 0) break;
+          // **A table that does not pay is dropped** *(gpu_deep_depth_ckpt163)*, at a step
+          // checkpoint, where every sample still running has taken the same steps and the
+          // counts are the frame's and not the clock's (`keepsTable`).
+          if (table !== this.empty && isCheckpoint(spent)) {
+            const keep = keepsTable({ steps: windowSteps, skips: windowSkips });
+            record.table.windows.push([spent, windowSteps, windowSkips]);
+            windowSteps = 0;
+            windowSkips = 0;
+            if (!keep) {
+              table = this.empty;
+              record.table.dropped = spent;
+              runner.bind(this.layouts, orbit.buffer, table, orbit.exact ?? this.noExact);
+              this.log("gpu table dropped", { spent, windows: record.table.windows });
+            }
+          }
           if (handsTail({ spent, running, maxiter: plan.maxiter, interior, workers, scale: this.tailScale })) {
             record.tail = true;
             break;

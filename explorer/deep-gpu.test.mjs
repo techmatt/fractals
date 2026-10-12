@@ -761,6 +761,15 @@ test("the skip table is the model's, byte for byte, from the same f64 orbit", ()
   assert.equal(B.RUN_BYTES, W.BLA_RUN_BYTES);
 });
 
+test("a skip table is kept while its skips are a share of the window's steps", () => {
+  assert.equal(gpu.keepsTable({ steps: 0, skips: 0 }), true, "an empty window decides nothing");
+  assert.equal(gpu.keepsTable({ steps: 1000, skips: 1000 * gpu.SKIP_SHARE }), true);
+  assert.equal(gpu.keepsTable({ steps: 1000, skips: 1000 * gpu.SKIP_SHARE - 1 }), false);
+  // The counts the kernel adds its skips to: the pass's counters, word 3, beside its steps.
+  const source = W.kernelSource({ degree: 2, julia: false, interior: true });
+  assert.equal((source.match(/atomicAdd\(&counters\[3\], k\);/g) ?? []).length, 2, "both passes count their skips");
+});
+
 test("a table too short to hold a run is a header of no levels, which finds nothing", () => {
   const points = new Float64Array([0, 0, 0.1, 0.2, 0.3, 0.1, 0.2, 0.2]);
   const t = B.buildTable({ points, count: 4, periodic: false, degree: 2, julia: false, dcmax: 0 });
