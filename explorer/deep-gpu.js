@@ -787,6 +787,11 @@ export function keepsTable({ steps, skips }) {
  *  `go:favicon-end` on 0.77%, `go:julia3-end` on none. */
 export const SKIP_SHARE = 0.02;
 
+/** The widest frame a skip table is built for, `2^-100` (about 7.9e-31): past it the table
+ *  pays (A, B and C from 1e-60 down, 1.3x to 3.6x on the device's field), short of it no
+ *  measured frame kept one (*The skip table on the GPU*, `explorer/README.md`). */
+export const TABLE_WIDTH = 2 ** -100;
+
 /** The orbit points a skip table is first built over: where they hold no live run, the
  *  frame's table is not built at all. About 20 ms of build. */
 export const TABLE_PROBE = 65536;
@@ -1608,6 +1613,12 @@ export class DeepGpu {
     };
     const B = await blaBuilder();
     const dcmax = plan.julia ? 0 : B.dcBound(shape);
+    // **No table for a frame wider than `TABLE_WIDTH`**, decided by the frame alone: a run
+    // is linear while `|δ|` is under `2^-48 |Z|`, and `δ` starts at about the frame's width,
+    // so a frame at 1e-20 has some twenty bits of growth to skip through and one at 1e-60
+    // some hundred and fifty. Measured over the 159-frame sample, no frame from 1e-22 up kept
+    // its table past its second checkpoint, and building and trying it cost them up to 0.7 s.
+    if (!(plan.width < TABLE_WIDTH)) return this.empty;
     const key = `${held.stamp}|${plan.degree}|${plan.julia ? 1 : 0}|${dcmax}`;
     if (this.table?.key === key) return this.table.dead ? this.empty : this.table;
     this.table?.header?.destroy();
