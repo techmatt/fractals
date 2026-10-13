@@ -1,7 +1,7 @@
 # deep-gpu-model
 
-A native Rust model of the WebGPU kernel the Deep tab draws its full passes with, and that
-kernel's oracle *(gpu_deep_ship_ckpt162)*. It restates `perturb`'s perturbation kernel
+A native Rust model of the WebGPU kernel that draws the Deep tab's full passes (and its
+quarter passes, where the census puts them on the GPU), and that kernel's oracle *(gpu_deep_ship_ckpt162)*. It restates `perturb`'s perturbation kernel
 (`fractal-wallpapers/perturbation`, the kernel `explorer/perturb-wasm` wraps, taken here
 directly and named `perturb` in `Cargo.toml`) in the only types WGSL has, runs it natively, and measures it
 against `perturb`'s own `f64` kernel sample for sample. The shader is
@@ -889,7 +889,8 @@ budget of 645 double-single steps (`A-1e-60`'s worst 0.37 ns per pixel-step) and
 `f32` ones.
 
 These are kernel rates. What a reader waits for, a whole frame with its reference orbit,
-its quarter pass on the CPU, and whatever samples the GPU hands back, is
+its quarter pass (the CPU's, or the GPU's where the census puts it there), and whatever
+samples the GPU hands back, is
 `explorer/README.md`'s to measure, under "The GPU draws the full pass where it has earned
 it".
 

@@ -16,7 +16,7 @@
 
 import { ARITY, CASE_STRIDE, FORMS, OPS, WORKGROUP, source } from "./ds-wgsl.js";
 import { ESCAPED, KERNEL_FORMS, RUNNING, STATE_BYTES, STATE_NAMES, kernelSource } from "./kernel-wgsl.js";
-import { PARAMS_BYTES, paramsBytes } from "../../deep-gpu-wgsl.js";
+import { BLA_HEADER_BYTES, BLA_RUN_BYTES, EXACT_BYTES, LAYOUT, PARAMS_BYTES, PARAMS_LISTED, paramsBytes } from "../../deep-gpu-wgsl.js";
 
 const query = new URLSearchParams(location.search);
 /** A comma-separated query parameter, or `fallback` when it is absent. */
@@ -421,23 +421,15 @@ class Bench {
       this.resolve = device.createBuffer({ size: QUERY_SLOTS * 8, usage: usage.QUERY_RESOLVE | usage.COPY_SRC });
       this.stampsRead = device.createBuffer({ size: QUERY_SLOTS * 8, usage: usage.MAP_READ | usage.COPY_DST });
     }
-    const compute = GPUShaderStage.COMPUTE;
-    const entry = (binding, type) => ({ binding, visibility: compute, buffer: { type } });
-    this.layout0 = device.createBindGroupLayout({
-      entries: [
-        entry(0, "uniform"),
-        entry(1, "uniform"),
-        entry(2, "uniform"),
-        entry(3, "read-only-storage"),
-        entry(4, "storage"),
-        entry(5, "storage"),
-        entry(6, "storage"),
-        entry(7, "storage"),
-      ],
-    });
-    // The indirect arguments are a group of their own, bound only by `args`: a buffer may
-    // not be a writable binding and the indirect buffer of one dispatch at once.
-    this.layout1 = device.createBindGroupLayout({ entries: [entry(0, "storage")] });
+    // The skip table and the exact orbit points, which the double-single kernel binds since
+    // the skip table reached the GPU; a bundle without them gets dummies it never reads.
+    this.blaHeader = upload(bundle.arrays.bla_header ?? new Uint8Array(BLA_HEADER_BYTES), usage.UNIFORM);
+    this.blaRuns = upload(bundle.arrays.bla_runs ?? new Uint8Array(BLA_RUN_BYTES), usage.STORAGE);
+    this.exact = upload(bundle.arrays.orbit_exact ?? new Uint8Array(EXACT_BYTES), usage.STORAGE);
+    // The shipped layout, for both schemes: the f32 kernel declares no binding past 7, and
+    // the indirect arguments are a group of their own, bound only by `args`, since a buffer
+    // may not be a writable binding and the indirect buffer of one dispatch at once.
+    [this.layout0, this.layout1] = LAYOUT.map((entries) => device.createBindGroupLayout({ entries }));
     this.groups = {};
     for (const scheme of ["f32", "ds"]) {
       this.groups[scheme] = device.createBindGroup({
@@ -451,6 +443,9 @@ class Bench {
           { binding: 5, resource: { buffer: this.counters } },
           { binding: 6, resource: { buffer: this.list } },
           { binding: 7, resource: { buffer: this.out } },
+          { binding: 8, resource: { buffer: this.blaHeader } },
+          { binding: 9, resource: { buffer: this.blaRuns } },
+          { binding: 10, resource: { buffer: this.exact } },
         ],
       });
     }
@@ -460,6 +455,7 @@ class Bench {
 
   destroy() {
     for (const b of [this.frame, this.frameLo, this.orbits.f32, this.orbits.ds, this.params, this.states, this.counters]) b.destroy();
+    for (const b of [this.blaHeader, this.blaRuns, this.exact]) b.destroy();
     for (const b of [this.list, this.out, this.indirect, this.counts, this.countsRead]) b.destroy();
     if (this.timestamps) {
       this.query.destroy();
@@ -468,7 +464,7 @@ class Bench {
     }
   }
 
-  /** The five entry points for a scheme, form and workgroup size, compiled once. */
+  /** The four entry points the probe runs for a scheme, form and workgroup size, compiled once. */
   async pipelinesFor(scheme, form, workgroup, smooth) {
     const key = `${scheme}/${form}/${workgroup}/${smooth}`;
     if (this.pipelines.has(key)) return this.pipelines.get(key);
@@ -479,14 +475,13 @@ class Bench {
     const plain = this.device.createPipelineLayout({ bindGroupLayouts: [this.layout0] });
     const both = this.device.createPipelineLayout({ bindGroupLayouts: [this.layout0, this.layout1] });
     const make = (entryPoint, layout) => this.device.createComputePipelineAsync({ layout, compute: { module, entryPoint } });
-    const [init, all, list, compact, args] = await Promise.all([
+    const [init, pass, compact, args] = await Promise.all([
       make("init", plain),
-      make("pass_all", plain),
-      make("pass_list", plain),
+      make("run_pass", plain),
       make("compact", plain),
       make("args", both),
     ]);
-    const made = { init, all, list, compact, args, workgroup, compileMs: performance.now() - started, lines: code.split("\n").length };
+    const made = { init, pass, compact, args, workgroup, compileMs: performance.now() - started, lines: code.split("\n").length };
     this.pipelines.set(key, made);
     return made;
   }
@@ -505,6 +500,9 @@ class Bench {
     // The flush term is the proof's alone, and neither kernel here runs it.
     const params = paramsBytes({ budget, periodic: m.periodic, length: m.orbit_len, count: this.count, flush: 0 });
     device.queue.writeBuffer(this.params, 0, params);
+    // The one pass entry walks the list or every pixel, as `listed` says; a compacting run
+    // cuts the list before its first pass, so every pass of it walks the list.
+    device.queue.writeBuffer(this.params, PARAMS_LISTED, Uint32Array.of(compact ? 1 : 0));
     const groups = Math.ceil(this.count / workgroup);
     const group = this.groups[scheme];
 
@@ -549,13 +547,9 @@ class Bench {
         const pass = encoder.beginComputePass(stamped());
         stamp += 2;
         pass.setBindGroup(0, group);
-        if (compact) {
-          pass.setPipeline(p.list);
-          pass.dispatchWorkgroupsIndirect(this.indirect, 0);
-        } else {
-          pass.setPipeline(p.all);
-          pass.dispatchWorkgroups(groups);
-        }
+        pass.setPipeline(p.pass);
+        if (compact) pass.dispatchWorkgroupsIndirect(this.indirect, 0);
+        else pass.dispatchWorkgroups(groups);
         pass.end();
         encoder.copyBufferToBuffer(this.counters, 0, this.counts, 8 * k, 4);
         encoder.copyBufferToBuffer(this.counters, 8, this.counts, 8 * k + 4, 4);

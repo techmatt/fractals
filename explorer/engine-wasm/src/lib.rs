@@ -1302,25 +1302,6 @@ pub extern "C" fn curve_stops(
     release_text(&report.to_string())
 }
 
-/// [`derive::roughness`] on a composite's lanes, which the caller keeps: the number a
-/// derived weight is read off, for the pilot and the tests. NaN where the spec is not a
-/// composite or no pair of samples has a base and a texture.
-#[unsafe(no_mangle)]
-pub extern "C" fn texture_roughness(
-    spec_ptr: *const u8,
-    spec_len: usize,
-    lanes_ptr: *const u8,
-    lanes_len: usize,
-    stride: u32,
-) -> f64 {
-    let Some((plan, base, Texture::Narrow(texture))) =
-        read_lanes(spec_ptr, spec_len, lanes_ptr, lanes_len, true)
-    else {
-        return f64::NAN;
-    };
-    derive::roughness(&base, &texture, plan.lanes[1].transform, stride).unwrap_or(f64::NAN)
-}
-
 /// A direct trap's near misses over output rows `[row_start, row_end)`, at one sample a
 /// pixel of whatever resolution the spec names: [`derive::PROBE_BYTES`] per pixel, the
 /// hit count and the load as little-endian `f32`. Split over the pool the way

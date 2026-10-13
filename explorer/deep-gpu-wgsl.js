@@ -46,9 +46,6 @@ export const POLICY = { off: 0, cap: 1, flag: 2, handoff: 3 };
 export const FRAME_BYTES = 64;
 export const FRAME_LO_BYTES = 32;
 export const PARAMS_BYTES = 48;
-export const ORBIT_POINT_BYTES = 16;
-export const COUNTERS_BYTES = 16;
-export const OUT_BYTES = 8;
 
 /** Bytes a pixel's state takes: with the interior proof compiled in, and without. */
 export const stateBytes = (interior) => (interior ? 128 : 56);
@@ -73,9 +70,6 @@ export function decodeOut(word0, word1) {
   if (word0 >>> 0 !== OUT_NONE) return { status: ESCAPED, n: word0 >>> 0, frac: f32FromBits(word1) };
   return { status: word1 >>> 0, n: 0, frac: 0 };
 }
-
-/** The entry points every kernel module has. */
-export const ENTRY_POINTS = ["init", "run_pass", "compact", "args", "emit"];
 
 /** The entry points a kernel's pipelines are made from: `args` is not built (a pass cuts a
  *  list into direct dispatches). */
@@ -597,7 +591,8 @@ const quickExponent = (floor, degree) => Math.trunc(floor / (degree - 1));
  * the switch off; without them the state is 56 bytes a pixel and `Frame.interior` is never
  * read, so a frame with the switch on must use a module compiled with it), `form` a guard
  * name from `KERNEL_FORMS`, `workgroup` the threads per workgroup, and `smooth`
- * ("builtin", or "exact" for a bit-for-bit `frac`). Entry points: `ENTRY_POINTS`.
+ * ("builtin", or "exact" for a bit-for-bit `frac`). Entry points: `init`, `run_pass`,
+ * `compact`, `args`, and `emit`.
  */
 export function kernelSource({ degree, julia, interior, form = "plain", workgroup = 64, smooth = "builtin" }) {
   if (!Number.isInteger(degree) || degree < 2 || degree > 6) throw new Error(`degree ${degree} is not one the kernel draws`);

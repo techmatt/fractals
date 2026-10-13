@@ -198,7 +198,7 @@ fn probe_at(spec: &Spec, maxiter: u32) -> Probed {
 /// **Where the policy settles, and what it costs**, on the seven deep frames and
 /// the six controls.
 ///
-/// This is the table the crate README's cap-policy section carries. `decision`
+/// This is the table the kernel README's cap-policy section (§8) carries. `decision`
 /// is the whole escalation's sample-iterations against the fine pass's at the
 /// settled cap — what asking the question costs against drawing the answer.
 #[test]
@@ -349,7 +349,7 @@ const TILE_SCALE: f64 =
 /// measures it — what turns a native second into a reader's second.
 const POOL: f64 = 4.7;
 
-/// Wasm's own overhead over native on this loop, from the crate README §4.
+/// Wasm's own overhead over native on this loop, from `fractal-wallpapers/perturbation/README.md` §4.
 const WASM: f64 = 1.05;
 
 /// `explorer/deep-link.js`'s `COORDINATE_LIMIT`, the deep contract's own: the
@@ -426,7 +426,7 @@ fn draw(spec: &Spec) -> (f64, f64, f64) {
 /// own settled cap, a solve is a few Newton steps at the nucleus's period, and a
 /// tile is an ordinary small render. The last column is the question a later
 /// prompt needs answered — what naming the nucleus as the reference is worth,
-/// which §2 of the crate README measured as 20.5 rebases a sample going to zero.
+/// which §2 of the kernel README measured as 20.5 rebases a sample going to zero.
 #[test]
 #[ignore = "minutes: the whole search on eight frames, with every tile drawn twice"]
 fn what_the_nucleus_search_finds_and_what_it_costs() {

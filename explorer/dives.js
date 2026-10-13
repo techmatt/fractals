@@ -113,8 +113,7 @@ export function variantWords(variant, taken = variant.rungs) {
  */
 export const SAVE_COUNT = 8;
 
-/** The A slot's modes, and the B slot's, in the order their buttons stand. */
-export const A_MODES = ["here", "paste", "random"];
+/** The B slot's modes, in the order its buttons stand; the A slot's are the same less "none". */
 export const B_MODES = ["none", "here", "paste", "random"];
 
 /** Whether A follows the view: *Here*, not yet pinned. */

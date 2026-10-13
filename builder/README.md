@@ -1963,7 +1963,8 @@ a copy of that record numbers all 817 identically; only the title differs, which
 spells the checkpoint. The command needs Pillow, node and cargo, and it
 is no part of `build` or `check`. Its output is never committed. ⚠ The native crate is built
 when its binary is missing and never when it is stale, so after an edit to
-`perturb-wasm/src/dive.rs` run `cargo build --release` in `builder/deep-gallery-native` first.
+`perturb-wasm/src/` or to the kernel in `fractal-wallpapers/perturbation/src/` run
+`cargo build --release` in `builder/deep-gallery-native` first.
 
 ### Random dives
 

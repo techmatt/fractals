@@ -247,9 +247,9 @@ function handle(message) {
     const band = new Uint8Array(wasm.memory.buffer, pointer, bytes).slice().buffer;
     wasm.dealloc(pointer, bytes);
     // What the band ran and what the interior switch spared it, in iterations: the
-    // renderer sums them over the pass, and the tab reads a quarter pass's pair to choose
-    // the switch for the full one (`deep.js`, `switchFor`). A module older than the pair
-    // answers `null`, and the tab then leaves the switch as the kernel ships it.
+    // renderer sums them over the pass and reads the census's pair to choose the switch for
+    // the rest of the quarter and for the full pass (`deep-render.js`, `switchFor`). A module
+    // older than the pair answers `null`, and the switch then stays as the kernel ships it.
     const ran = wasm.band_ran?.() ?? null;
     const saved = wasm.band_saved?.() ?? null;
     answer(

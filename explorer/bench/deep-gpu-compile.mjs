@@ -37,6 +37,8 @@ const ROUND = (kernels) => `(async () => {
   const adapter = await navigator.gpu.requestAdapter({ powerPreference: "high-performance" });
   if (!adapter) return { error: "no adapter" };
   const device = await adapter.requestDevice();
+  // The fallback is a --source copy of the module from before c76f8adb, which had two pass
+  // entries and no list of them: kept so that old-against-new compile timing still runs.
   const entries = W.KERNEL_ENTRY_POINTS ?? ["init", "pass_all", "pass_list", "compact", "emit"];
   const rows = [];
   for (const name of ${JSON.stringify(kernels)}) {

@@ -163,7 +163,7 @@ deep-render.js        its pool, its one reference orbit a frame, and its shade s
 deep-worker.js        one worker: one perturb instance, one held orbit, one band
 deep-gpu.js           the GPU, off unless ticked: device, self-test, passes, the CPU's share
 deep-gpu-wgsl.js      the GPU kernel's text: deep-gpu-model's double-single loop in WGSL
-deep-gpu-selftest/    the self-test's vectors and two exported frames, and how they were made
+deep-gpu-selftest/    the self-test's vectors and six exported frames, and how they were made
 deep-fx.js            exact decimal coordinates, BigInt fixed point
 deep-link.js          the deep link contract, its own beside the shallow one
 deep-gallery.js       the Deep tab's gallery: the register read, grouped and tiled
@@ -202,11 +202,12 @@ saved.test.mjs        8 tests: a bad stored value is an empty list, one link is 
 undo.test.mjs         10 tests: one action is one entry, a step back keeps what is ahead, the cap
 zip.test.mjs          2 tests: CRC-32's check values, and an archive read back to its bytes
 stamp.test.mjs        21 tests: the link goes in three ways, and the picture does not move
-deep-fx.test.mjs      13 tests: the Deep tab's arithmetic is exact where a double is not
-deep-link.test.mjs    45 tests: the deep contract, the shallow one held to not moving,
+deep-fx.test.mjs      14 tests: the Deep tab's arithmetic is exact where a double is not
+deep-link.test.mjs    52 tests: the deep contract, the shallow one held to not moving,
                       and the gallery register held to the deep one
-deep.test.mjs         30 tests: where the two modules meet, against both committed ones
-deep-gpu.test.mjs     29 tests: the GPU path's frame, orbit, passes and dispatches, tail and cheap rules, strips, the box, and the key
+deep.test.mjs         38 tests: where the two modules meet, against both committed ones
+deep-gpu.test.mjs     48 tests: the GPU path's frame, orbit, passes and dispatches, tail and cheap rules, strips, the box, the key,
+                      the census's quarter, recovery, the background compile, and the skip table
 hold.test.mjs         7 tests: a held move keeps the colour at the reference value
 fit.test.mjs          15 tests: a fit runs the palette its passes across Leveled's stretch
 dives.test.mjs        21 tests: the Dive block's chains, draws and results, and Random dives
@@ -2121,9 +2122,10 @@ The choice is remembered in `localStorage` under `explorer.deep-gpu` (`on` or `o
 reads as off), the same way as Auto-render's and for the same reason, and it is never
 written into a link, so a link draws the same for a reader with the box off as it always
 did. Ticking it asks for the device and runs the self-test then (a box ticked on an earlier
-visit asks when the tab starts its pool), and from the moment it passes, frames go to the
-GPU by the rules in *The GPU draws the full pass where it has earned it* below; until then
-the CPU draws. Where the GPU cannot be had for this visit the box is unticked and disabled,
+visit asks when the tab starts its pool), and frames go to the GPU by the rules in *The GPU
+draws the full pass where it has earned it* below; a frame those rules send to the GPU waits
+for the test's outcome (within `SETTLE_BOUND_MS`) rather than drawing on the CPU meanwhile.
+Where the GPU cannot be had for this visit the box is unticked and disabled,
 and its label says why in a few words, because a touch reader never sees a title: **GPU
 unavailable: no WebGPU**, **software only** (a fallback adapter), **failed its self-test**,
 **stopped responding** (a lost device that could not be had again, or a fourth lost device
@@ -3393,7 +3395,7 @@ and a URL's escaping rule, neither of which has anything to do with how deep the
   *(ckpt141)*. The pass is committed rather than automatic — a link is a press — so Cancel
   is there for it.
 
-`deep-link.test.mjs` is 45 tests — two of them the gallery register's — and `deep-fx.test.mjs` is 13, on Node's own runner with
+`deep-link.test.mjs` is 52 tests — two of them the gallery register's — and `deep-fx.test.mjs` is 14, on Node's own runner with
 nothing installed; several of them hold the shallow contract to not having moved, including
 that a deep Julia link is refused by it at both doors — `cx` and `cy` are keys that reader
 knows, which is exactly why the marker has to be what dispatches.
@@ -3445,11 +3447,11 @@ a shade, which is the whole reason the field is kept. The anchor's quarter pass 
 just under `AUTO_PREVIEW_MS`, which is worth knowing: at the anchor a gesture does settle
 into a preview, and one decade deeper it stops doing so.
 
-**The full pass now chooses the interior switch off its own quarter pass**
-*(profiling_pass_ckpt146, 2026-09-24)*. In wasm the switch costs the loop about half its
-speed wherever it does not fire, and on the frames a reader opens it mostly does not;
-the quarter pass says exactly what the full pass would run either way (`switchFor` in
-`deep.js`, and `fractal-wallpapers/perturbation/README.md`'s *In wasm the switch is
+**The full pass now chooses the interior switch off the quarter's census**
+*(profiling_pass_ckpt146, 2026-09-24; off the quarter pass itself until deep_wait_ckpt163)*.
+In wasm the switch costs the loop about half its speed wherever it does not fire, and on the
+frames a reader opens it mostly does not; the census, drawn with the switch on, says exactly
+what the full pass would run either way (`switchFor` in `deep-render.js`, and `fractal-wallpapers/perturbation/README.md`'s *In wasm the switch is
 dearer, and the page now chooses it per frame* for the price). No pixel moves. A deep link
 opened in the page, a 1600×1100 window on twelve cores, to the finished screen picture,
 alternated over two rounds, rasters identical:
@@ -3500,8 +3502,8 @@ frame went to the CPU is the tab's log (`explorer.deep-log`) and nowhere else.
 Every page load with the box ticked earns the GPU afresh. When the box is ticked, or when
 the Deep tab first starts its pool with it already ticked, `DeepGpu.start` asks for a
 high-performance adapter and runs a self-test on it: the
-exported double-single vectors bit for bit, then two small frames `deep-gpu-model` exported
-(`deep-gpu-selftest/`) word for word, `frac` apart, at two budget schedules each so that a
+exported double-single vectors bit for bit, then six small frames `deep-gpu-model` exported
+(`deep-gpu-selftest/`: two plain, three with a skip table, and a deep interior) word for word, `frac` apart, at two budget schedules each so that a
 resumed pass is tested too. The second schedule runs the way a frame does, compacting the
 list as it thins, and is cut finer than any frame: one workgroup a dispatch and three runs of
 steps a pass. So every dispatch's offset and the running count's reset are held to the model
@@ -3565,7 +3567,9 @@ whole; the anchor frame drawn in seven strips is pixel-identical to it drawn in 
 strip runs the unchanged pass loop of the hardening below, with its own budgets, work caps,
 and tail: the samples a strip hands the CPU are finished by the workers while the next strip
 runs on the device, and the bar counts both. A device lost part way through hands the CPU
-the strip it was on and the strips after it, and keeps the ones already finished.
+nothing: the frame is resumed at the strip it lost on a device of the same identity, drawn
+again from the start on another, or drawn whole on the CPU where the GPU went off (*A lost
+device hands over nothing*, below).
 
 Measured through the real Download row (`bench/deep-gpu-downloads.mjs`, 2026-10-11), the
 GPU's file against the CPU's (field and coloring, press to file):
@@ -3586,7 +3590,7 @@ took 183 s at 1920 × 1080 16× (8 strips), 21 s and 350 s at 2560 × 1440 1× a
 15), and 50 s and 219 s at 3840 × 2160 1× and 4× (2 and 8). 3840 × 2160 at 16× is past
 `MAX_SAMPLES` and offered by neither kernel. A download cancelled at 30% stopped, and the
 next drew on the GPU; a device destroyed at 70% of a two-strip download handed the CPU the
-second strip whole and the file still landed, a match to the CPU's own. Windows logged no
+second strip whole, under the rule deep_holes_ckpt163 replaced, and the file still landed, a match to the CPU's own. Windows logged no
 display-driver reset (Event 4101) across the run. Every frame's passes stayed inside twice
 the targets but D-1e-80's, whose early passes over a whole strip ran 200 to 313 ms in 13
 dispatches of up to 25.8 ms: inside the work caps, but past twice both targets. It does the
@@ -3615,7 +3619,9 @@ pass. Moving the compile earlier does not hide it where the orbit and the quarte
 shorter than the compile: `deep-gallery#0` (degree four) landed in 4.8 s against the CPU's
 5.2 s in a fresh browser, 1.09x, where the timed run below, its kernels already compiled,
 measured 1.77x. The pair is compiled
-once a page load, so the cost falls on the first frame of each degree and plane. After the
+once a page load, so the cost falls on the first frame of each degree and plane that the
+background chain below has not compiled already (the Julia pairs at five and six it never
+does). After the
 self-test, and after every recovery, the kernels it did not leave are compiled in the
 background, one at a time, in the order a frame is likely to want them (`WARM_ORDER`): the
 plain kernels of degree two and three Mandelbrot and degree two Julia, then the Mandelbrot
@@ -3707,9 +3713,10 @@ is unplaced. A frame's log now keeps any pass past twice either target, whole an
 index (`passStats`'s `over`), so the next one can be placed. The D frames' 26 ms were
 placed that way (above, *A big frame is drawn in strips*).
 
-**What it hands to the CPU, and why.** The CPU finishes three kinds of sample, each restarted
+**What it hands to the CPU, and why.** The CPU finishes two kinds of sample, each restarted
 from its first iteration on its own `f64` loop and its own proof (`compute_samples`), so a
-lane is either the GPU kernel's or exactly the CPU kernel's:
+lane is either the GPU kernel's or exactly the CPU kernel's; the third case below is the one
+that no longer hands anything over:
 
 - **Gated samples**: a sample the interior proof gives up on ends `GATED`, the `handoff`
   policy, rather than running to the cap in a precision the proof cannot vouch for.
@@ -3835,8 +3842,9 @@ degree above two has one to three busy Julia frames in the sample, so those colu
   and `#758` 8.6 of 12.9. Those still landed 1.17x to 1.49x as fast.
 - **A first visit on a fresh browser profile**, with the box ticked (a box a reader ticks
   partway through a visit starts the same test then): the self-test is ready only after 4.8 to 4.9 s,
-  its kernels compiling uncached, so the first frame waits the 3 s floor and draws on the CPU,
-  5.2 s against 1.9 s. Every later load in the same profile is ready in 0.8 to 1.2 s.
+  its kernels compiling uncached, so under the 3 s floor this was measured with the first frame
+  drew on the CPU, 5.2 s against 1.9 s; since deep_wait_ckpt163 it waits for the test's outcome
+  instead. Every later load in the same profile is ready in 0.8 to 1.2 s.
 
 **Cold loads**: 26 frames opened by a fresh navigation each, the way a reader who ticked the
 box on an earlier visit opens a link in a new tab.
@@ -4148,18 +4156,19 @@ deep-gpu.js        the GPU, untouched until the reader ticks its box: the device
                    self-test that earns it, the passes, the tail, a lost device's recovery,
                    where it stands for the box, and the ?kernel=cpu|gpu override
 deep-gpu-wgsl.js   the kernel's WGSL, deep-gpu-model's double-single loop and proof
-deep-gpu-selftest/ the vectors and two exported frames the self-test runs once the box is ticked
+deep-gpu-selftest/ the vectors and six exported frames the self-test runs once the box is ticked
 deep-fx.js         exact decimal coordinates, BigInt fixed point
 deep-link.js       the deep link contract — parse, emit, canonicalize, describe
 deep-gallery.js    the gallery under the tab's sentence, and deep-gallery.jsonl its register
-deep-fx.test.mjs   13 tests: the arithmetic is exact where a double is not
-deep-link.test.mjs 45 tests: the contract, the shallow one held to not moving, and the
+deep-fx.test.mjs   14 tests: the arithmetic is exact where a double is not
+deep-link.test.mjs 52 tests: the contract, the shallow one held to not moving, and the
                    gallery register
-deep.test.mjs      30 tests: where the two modules meet, against both committed ones —
+deep.test.mjs      38 tests: where the two modules meet, against both committed ones —
                    and the cap policy's seam, which fails the same way the rest of
                    this file does, by drawing a plausible picture
-deep-gpu.test.mjs  39 tests: the GPU path's frame, orbit, passes, dispatches, tail, cheap frames, strips, health, recovery,
-                   the box (off touches no WebGPU, unticking counts no loss), and key
+deep-gpu.test.mjs  48 tests: the GPU path's frame, orbit, passes, dispatches, tail, cheap frames, strips, health, recovery,
+                   the box (off touches no WebGPU, unticking counts no loss), the key, the
+                   census's quarter, the background compile, and the skip table
 bench/julia.mjs    what a Julia frame costs against the Mandelbrot frame at the same c
 bench/deep-stall.mjs  a colour change reaches the canvas through every pass, cancel and
                    undo sequence that once lost one — one of two bench files that assert
@@ -4679,15 +4688,15 @@ Committed beside the module, `engine.manifest.json` records what it was built fr
 | `rustc` | the compiler, with its commit and date |
 | `wallpapers_commit` | the sibling checkout's `HEAD` at bake time |
 | `engine_changes` | every change this consumer has needed in the engine, one line each |
-| `raw_bytes` / `gzip_bytes` | 785,424 raw, **231,149 gzipped** |
+| `raw_bytes` / `gzip_bytes` | the module's size in bytes, raw and gzipped |
 
 `engine_changes` is typed, in `builder/explorer.py`, and is the condition CLAUDE.md puts
 on a website prompt touching the sibling engine at all: a zero-behaviour change is allowed
 there only if it is named here. Nothing in the sibling repository marks a commit as one of
 these, so a derived list would be a guessed one.
 
-**And one of the seven lines is further than that carve-out reaches, and says so.**
-`coloring::shade_samples` and its two siblings are signatures *added* to the engine rather
+**And several of the eighteen lines go further than visibility, and say so.** The first was
+`coloring::shade_samples` and its two siblings, signatures added to the engine rather
 than visibility widened — the shade over the pool needs the frame's normalization apart from
 the colouring it feeds, and no amount of `pub` on what was there gives a caller that.
 `explorer_shade_pool_ckpt136` was told to make that seam. It is still zero behaviour: each
@@ -4746,10 +4755,10 @@ nearly does.
 
 ### The other kernel, and why it is not this one
 
-`perturb-wasm/` is a second crate and will be a second module — since
-deep_seam_move_ckpt163 a wrapper over the sibling checkout's kernel crate,
-`fractal-wallpapers/perturbation`, which it takes by path. It renders the
-degree-2 Mandelbrot set **below the `f64` floor** — by perturbation against one
+`perturb-wasm/` is a second crate and two modules of its own, `perturb.wasm` and
+`perturb-scalar.wasm` — since deep_seam_move_ckpt163 a wrapper over the sibling checkout's
+kernel crate, `fractal-wallpapers/perturbation`, which it takes by path. It renders
+`z^d + c`, degrees two to six on both planes, **below the `f64` floor** — by perturbation against one
 high-precision reference orbit, with rebasing — and it is deliberately not part
 of `engine.wasm`. Nothing in it is linked into that module, so the shallow path
 cannot be slowed, re-ordered or moved by it, and a shallow permalink draws the
@@ -7510,8 +7519,10 @@ nothing installed. `CLAUDE.md` and `.github/workflows/checks.yml` carry the comm
   that loses its device becomes that loss's recovery, a stopped acquisition moves nothing,
   and the kernel the page uses is the ready device's identity, the CPU once off, and
   undecided between; an acquisition that failed for the moment is asked again until the third; a
-  frame waits on a self-test still running for half the CPU's expected cost of it, within
-  bounds; every self-test vector is what a JavaScript reference of the same
+  test or a recovery out of time is off; a quarter goes to the GPU by the census's
+  iterations, never by a clock; the background compile's order, and when it waits, shares,
+  pauses, and stops; the skip table is the model's byte for byte and is kept only while its
+  skips are a share of the window's steps; every self-test vector is what a JavaScript reference of the same
   double-single arithmetic gives; the GPU is the reader's to turn on: with the box off
   nothing asks for `navigator.gpu` (start, ready, refuses, likely, prepare, and draw all
   decline untouched), `?kernel=cpu` beats a ticked box and `?kernel=gpu` an unticked one, a
@@ -7534,7 +7545,7 @@ Needs the sibling checkout, `cargo`, and the `wasm32-unknown-unknown` target
 rebake. The module was last baked with 1.96.0 because 1.98.1 draws the heavy modes two
 to three and a half times slower (*The operator is the engine's*, above).
 `RUSTUP_TOOLCHAIN=<version>` in front of the command picks the toolchain. `engine-wasm/target/` is gitignored — it is
-the several hundred megabytes cargo needs to produce a 718 KB file.
+the several hundred megabytes cargo needs to produce a file under a megabyte.
 
 **The bare command rebuilds the wasm every time, and that is why `--palettes-only`
 exists.** `explorer.bake` compiles the crate and rewrites `engine.manifest.json` unless

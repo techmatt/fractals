@@ -73,8 +73,8 @@ const quickExponent = (floor, degree) => Math.trunc(floor / (degree - 1));
  * the smooth fraction's logs and divisions are taken: "builtin" is WGSL's `log` and `/`,
  * what the Deep tab runs; "exact" forms each in double-single and rounds once, the
  * correctly rounded `ln` and quotient the model's CPU run computes, so that a pixel's
- * whole state can be held bit for bit. Entry points: `init`, `pass_all`, `pass_list`,
- * `compact`, `args`, `emit`.
+ * whole state can be held bit for bit. Entry points: `init`, `run_pass`, `compact`, `args`,
+ * `emit`.
  */
 export function kernelSource({ scheme, degree, julia, form = "plain", workgroup = 64, smooth = "exact" }) {
   if (scheme === "ds") return dsKernelSource({ degree, julia, interior: false, form, workgroup, smooth });

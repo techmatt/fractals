@@ -22,9 +22,9 @@
     "A default-on `deep` feature takes the sibling's `perturbation/` kernel as an optional dependency, for render-link's dv= links (deep_seam_move_ckpt163); this module takes the engine with default-features = false, links none of it, and rebuilds at the pin to its committed bytes."
   ],
   "engine_version": "0.1.0",
-  "gzip_bytes": 253697,
-  "raw_bytes": 928452,
+  "gzip_bytes": 253271,
+  "raw_bytes": 927357,
   "rustc": "1.96.0 (ac68faa20 2026-05-25)",
   "schema": 1,
-  "wallpapers_commit": "571a010e3665e9b8e548d8ff26c2387e73dfca1c"
+  "wallpapers_commit": "8fa40ed68910e50bfb103f019952b4cc924f336a"
 }

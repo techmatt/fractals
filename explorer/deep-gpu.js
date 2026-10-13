@@ -6,7 +6,7 @@
 // WebGPU: no adapter, no device, no kernel module fetched, no self-test (`DeepGpu.off`).
 // **Once it is ticked, the GPU draws a Deep frame only where this page load's self-test
 // passed, and the CPU kernel draws it otherwise.** The self-test is stage 2's: the exported vectors
-// through every double-single primitive bit for bit, then two small exported frames
+// through every double-single primitive bit for bit, then six small exported frames
 // (`deep-gpu-selftest/`) word for word, `frac` excepted, at two budget schedules each so
 // that the resume path is tested too. Any miss, no WebGPU, no adapter, or a fallback
 // adapter (a software rasterizer is not a GPU path) leaves the CPU kernel drawing; the
@@ -1299,8 +1299,7 @@ export class DeepGpu {
     /** Kernels (`{degree, julia, interior}`) compiled in the background, in this order, once
      *  a self-test passes (`WARM_ORDER`), so the first frame that wants one does not wait on
      *  its compile. An instance's, so that a bench page can ask for another. */
-    // A bench page may cut the chain to its first `__deepWarmCount` kernels.
-    this.warm = Number.isInteger(globalThis.__deepWarmCount) ? warm.slice(0, globalThis.__deepWarmCount) : warm;
+    this.warm = warm;
     /** The background compile under way (`#warm`'s promise), or `null`: one chain a device. */
     this.warming = null;
     this.health = new Health();

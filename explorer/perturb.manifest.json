@@ -1,10 +1,10 @@
 {
-  "built": "2026-10-12",
+  "built": "2026-10-13",
   "crate": "explorer/perturb-wasm",
   "dependencies": [
     "fractal-wallpapers/perturbation"
   ],
-  "kernel_tree": "d53ab1a37b064bb2c64edeee7d90e9a9d5ba35e2",
+  "kernel_tree": "f26385857f82e2981b4125024f6fd24809ee7e7c",
   "modules": {
     "perturb-scalar.wasm": {
       "gzip_bytes": 163128,

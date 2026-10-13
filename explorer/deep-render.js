@@ -399,7 +399,7 @@ export function deepSpecOf(
   // kernel ships it on, so a spec with the switch on is byte for byte the spec it was. It
   // never moves a pixel — a sample it stops early is one the plain loop runs to the cap,
   // and both write `NaN` — so which way it is set is a speed and nothing else. See
-  // `switchFor` in `deep.js`.
+  // `switchFor` above.
   if (interior === false) spec.interior = false;
   // The degree, where it is not two: the kernel's default is two, so a degree-2 spec is
   // byte for byte the spec it was before the member existed.

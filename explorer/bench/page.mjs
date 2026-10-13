@@ -385,13 +385,9 @@ async function edits() {
   rows.push(await interaction("pan", DRAG(120, 60)));
   rows.push(await interaction("zoom in", WHEEL(-120)));
   rows.push(await interaction("zoom out", WHEEL(120)));
-  rows.push(
-    await interaction(
-      "resize",
-      `(async () => { window.__benchWidth = window.innerWidth; return true; })()`,
-    ),
-  );
-  // A resize is the window's, not a control's, so it goes through the browser.
+  // A placeholder row, replaced below: a resize is the window's, not a control's, so it
+  // goes through the browser.
+  rows.push(await interaction("resize", `(async () => true)()`));
   await page.evaluate("globalThis.__bench.reset()");
   const startedResize = Date.now();
   await page.send("Emulation.setDeviceMetricsOverride", {

@@ -338,11 +338,6 @@ impl GpuTable {
         self.interior.len() * INTERIOR_BYTES
     }
 
-    /// Bytes of the low-half buffer a double-single kernel binds.
-    pub fn lo_bytes(&self) -> usize {
-        self.lo.len() * LO_BYTES
-    }
-
     /// The highest stored level, when any is.
     pub fn top_level(&self) -> Option<u32> {
         (self.header.levels > 0).then(|| self.header.min_level + self.header.levels - 1)
