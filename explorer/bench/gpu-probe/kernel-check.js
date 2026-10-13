@@ -31,6 +31,7 @@ import {
   LAYOUT,
   OUT_NONE,
   PARAMS_BYTES,
+  PARAMS_LISTED,
   PROOF_NAMES,
   RUNNING,
   SELFTEST_LAYOUT,
@@ -243,15 +244,14 @@ class Runner {
     const plain = this.device.createPipelineLayout({ bindGroupLayouts: [this.layouts[0]] });
     const both = this.device.createPipelineLayout({ bindGroupLayouts: this.layouts });
     const make = (entryPoint, layout) => this.device.createComputePipelineAsync({ layout, compute: { module, entryPoint } });
-    const [init, all, list, compact, args, emit] = await Promise.all([
+    const [init, pass, compact, args, emit] = await Promise.all([
       make("init", plain),
-      make("pass_all", plain),
-      make("pass_list", plain),
+      make("run_pass", plain),
       make("compact", plain),
       make("args", both),
       make("emit", plain),
     ]);
-    this.p = { init, all, list, compact, args, emit, compileMs: performance.now() - started, lines: code.split("\n").length };
+    this.p = { init, pass, compact, args, emit, compileMs: performance.now() - started, lines: code.split("\n").length };
     return this.p;
   }
 
@@ -289,6 +289,8 @@ class Runner {
       device.queue.writeBuffer(this.budgets, 0, budgets);
       const encoder = device.createCommandEncoder();
       const useList = compact && (listed || running < COMPACT_BELOW * this.count);
+      // The one pass entry walks the list or every pixel, as `listed` in the uniform says.
+      device.queue.writeBuffer(this.params, PARAMS_LISTED, Uint32Array.of(useList ? 1 : 0));
       for (let k = 0; k < batch; k++) {
         encoder.copyBufferToBuffer(this.budgets, 4 * k, this.params, 0, 4);
         if (useList && (!listed || (issued + k) % COMPACT_EVERY === 0)) {
@@ -308,13 +310,9 @@ class Runner {
         encoder.clearBuffer(this.counters, 8, 4);
         const pass = encoder.beginComputePass();
         pass.setBindGroup(0, this.group0);
-        if (useList) {
-          pass.setPipeline(this.p.list);
-          pass.dispatchWorkgroupsIndirect(this.indirect, 0);
-        } else {
-          pass.setPipeline(this.p.all);
-          pass.dispatchWorkgroups(groups);
-        }
+        pass.setPipeline(this.p.pass);
+        if (useList) pass.dispatchWorkgroupsIndirect(this.indirect, 0);
+        else pass.dispatchWorkgroups(groups);
         pass.end();
         encoder.copyBufferToBuffer(this.counters, 0, this.counts, 4 * k, 4);
       }

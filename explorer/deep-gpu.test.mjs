@@ -2,8 +2,9 @@
 // frame and orbit the page builds for the device against the tracked self-test bundles
 // `deep-gpu-model` exported, the meaning of a sample's `out` word, the pass-sizing and
 // tail rules, the strips a frame too big for the device is cut into, the health policy and
-// the reader's opt-in, the self-test vectors against a JavaScript reference of the same
-// arithmetic, and the `kernel` key that never reaches a link. What needs a device
+// the reader's opt-in, the background compile's order and when it waits or stops, the
+// self-test vectors against a JavaScript reference of the same arithmetic, and the
+// `kernel` key that never reaches a link. What needs a device
 // is held by `bench/gpu-probe/kernel-check.html` and the tab's own self-test.
 //
 // node --test explorer/deep-gpu.test.mjs
@@ -826,12 +827,235 @@ test("a quarter goes to the GPU by the census's iterations, never by a clock", (
   assert.equal(gpu.quarterOnGpu({ iterations: null, workers: 12 }), false);
   assert.equal(gpu.quarterOnGpu({ iterations: line - 1, workers: 12 }), false);
   assert.equal(gpu.quarterOnGpu({ iterations: line, workers: 12 }), true);
-  // Degrees four to six pay a longer compile, so they ask for more.
-  assert.equal(gpu.quarterOnGpu({ iterations: line, degree: 5, workers: 12 }), false);
-  assert.equal(gpu.quarterOnGpu({ iterations: line * gpu.QUARTER_HIGH_DEGREE_FACTOR, degree: 5, workers: 12 }), true);
+  // Degrees four to six ask for no more since the background compile (deep_holes_ckpt163).
+  assert.equal(gpu.QUARTER_HIGH_DEGREE_FACTOR, 1);
+  assert.equal(gpu.quarterOnGpu({ iterations: line - 1, degree: 5, workers: 12 }), false);
+  assert.equal(gpu.quarterOnGpu({ iterations: line, degree: 5, workers: 12 }), true);
   // A quarter the GPU takes is far above the cheap line: its full pass is the GPU's too.
   assert.ok(gpu.QUARTER_ITERATIONS_PER_WORKER * 16 > 50 * gpu.CHEAP_ITERATIONS_PER_WORKER);
   assert.equal(gpu.readyWait, undefined, "no clock decides which kernel draws");
+});
+
+// ---- The background compile -------------------------------------------------------------
+
+const spell = ({ degree, julia, interior }) => `d${degree}${julia ? "J" : "M"}${interior ? "+" : "-"}`;
+/** What the self-test leaves compiled: degree two's two planes and degree three's
+ *  Mandelbrot, the switch on. */
+const TESTED = new Set(["d2M+", "d2J+", "d3M+"]);
+
+test("the background compile's order: cheap plain kernels, then pairs by how often they are drawn", () => {
+  assert.deepEqual(gpu.WARM_ORDER.map(spell), [
+    "d2M-", "d3M-", "d2J-",
+    "d4M+", "d4M-", "d5M+", "d5M-", "d6M+", "d6M-",
+    "d3J+", "d3J-", "d4J+", "d4J-", "d5J+", "d5J-", "d6J+", "d6J-",
+  ]);
+  // With what the self-test leaves, the order and it name all twenty kernels once each.
+  const named = [...TESTED, ...gpu.warmLeft(gpu.WARM_ORDER, (k) => TESTED.has(spell(k))).map(spell)];
+  assert.equal(new Set(named).size, 20);
+  assert.equal(named.length, 20);
+  // What is left is the order less what is there, in the same order.
+  const has = new Set(["d2M-", "d4M+", "d6J-"]);
+  assert.deepEqual(gpu.warmLeft(gpu.WARM_ORDER, (k) => has.has(spell(k))).slice(0, 4).map(spell), ["d3M-", "d2J-", "d4M-", "d5M+"]);
+  assert.deepEqual(gpu.warmLeft(gpu.WARM_ORDER, () => true), []);
+});
+
+test("the background compile stops for another device or the box off, and pauses while hidden", () => {
+  const device = {};
+  assert.equal(gpu.warmState({ device, current: device, off: false }), "go");
+  assert.equal(gpu.warmState({ device, current: device, off: false, visibility: "visible" }), "go");
+  assert.equal(gpu.warmState({ device, current: device, off: false, visibility: "hidden" }), "pause");
+  assert.equal(gpu.warmState({ device, current: {}, off: false }), "stop");
+  assert.equal(gpu.warmState({ device, current: null, off: false, visibility: "hidden" }), "stop");
+  assert.equal(gpu.warmState({ device, current: device, off: true }), "stop");
+});
+
+/** A chain over fakes: `compiled` the kernels there, `events` what happened in order. */
+function chainRig({ order = gpu.WARM_ORDER, there = TESTED } = {}) {
+  const compiled = new Map([...there].map((name) => [name, Promise.resolve()]));
+  const events = [];
+  const rig = {
+    compiled,
+    events,
+    now: "go",
+    idle: Promise.resolve(),
+    busy: null,
+    defer: null,
+    shown: null,
+    fail: new Set(),
+    run() {
+      return gpu.warmChain({
+        order,
+        has: (k) => compiled.has(spell(k)),
+        compile: (k, background) => {
+          const name = spell(k);
+          if (!compiled.has(name)) {
+            events.push(`${name}${background ? " bg" : ""}`);
+            compiled.set(name, rig.fail.has(name) ? Promise.reject(new Error("refused")) : Promise.resolve());
+          }
+          return compiled.get(name);
+        },
+        state: () => rig.now,
+        idle: () => rig.idle,
+        busy: () => rig.busy,
+        defer: rig.defer,
+        visible: () => new Promise((resolve) => (rig.shown = resolve)),
+      });
+    },
+  };
+  return rig;
+}
+
+test("the chain compiles what is left, one at a time, in order, and counts what it started", async () => {
+  const rig = chainRig();
+  rig.fail.add("d5M+");
+  const { count, stopped } = await rig.run();
+  assert.equal(stopped, false);
+  assert.equal(count, 17);
+  assert.deepEqual(rig.events, gpu.WARM_ORDER.map(spell).map((name) => `${name} bg`));
+});
+
+test("the chain waits for a frame on the device, and shares a compile already under way", async () => {
+  const order = gpu.WARM_ORDER.slice(0, 3);
+  const rig = chainRig({ order, there: [] });
+  let release;
+  rig.idle = new Promise((resolve) => (release = resolve));
+  const running = rig.run();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.deepEqual(rig.events, [], "nothing beside a frame");
+  // A frame of that shape asked first: the chain awaits its compile and does not count it.
+  rig.compiled.set("d2M-", Promise.resolve());
+  release();
+  const { count } = await running;
+  assert.equal(count, 2);
+  assert.deepEqual(rig.events, ["d3M- bg", "d2J- bg"]);
+});
+
+test("a frame queued while the chain waited is waited for too", async () => {
+  const rig = chainRig({ order: gpu.WARM_ORDER.slice(0, 1), there: [] });
+  let first;
+  let second;
+  rig.idle = new Promise((resolve) => (first = resolve));
+  const running = rig.run();
+  const next = new Promise((resolve) => (second = resolve));
+  // `draw` replaces `idle` with its own promise before the one before it settles.
+  rig.idle = next;
+  first();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.deepEqual(rig.events, []);
+  second();
+  await running;
+  assert.deepEqual(rig.events, ["d2M- bg"]);
+});
+
+test("the chain starts no compile beside one the page asked for, and asks again after it", async () => {
+  const rig = chainRig({ order: gpu.WARM_ORDER.slice(0, 2), there: [] });
+  let done;
+  rig.busy = new Promise((resolve) => (done = resolve));
+  const running = rig.run();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.deepEqual(rig.events, [], "nothing beside the page's compile");
+  // That compile was the first kernel's, and a frame went on the device meanwhile.
+  rig.compiled.set("d2M-", Promise.resolve());
+  let frame;
+  rig.idle = new Promise((resolve) => (frame = resolve));
+  rig.busy = null;
+  done();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.deepEqual(rig.events, [], "the frame is waited for after the compile");
+  frame();
+  assert.deepEqual(await running, { count: 1, stopped: false });
+  assert.deepEqual(rig.events, ["d3M- bg"]);
+});
+
+test("the chain's first kernel waits a task, and a pair asked for meanwhile goes first", async () => {
+  const rig = chainRig({ order: gpu.WARM_ORDER.slice(0, 2), there: [] });
+  let turn;
+  let asked = 0;
+  rig.defer = () => {
+    asked += 1;
+    return new Promise((resolve) => (turn = resolve));
+  };
+  const running = rig.run();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.deepEqual(rig.events, []);
+  // The frame queued on the self-test compiles its own kernel in that turn.
+  rig.compiled.set("d2M-", Promise.resolve());
+  turn();
+  assert.deepEqual(await running, { count: 1, stopped: false });
+  assert.deepEqual(rig.events, ["d3M- bg"]);
+  assert.equal(asked, 1, "once, before the first kernel");
+});
+
+test("a box unticked and ticked again on the same device starts the chain again, never two", async () => {
+  let modules = 0;
+  const device = {
+    pushErrorScope() {},
+    popErrorScope: async () => null,
+    createShaderModule: () => {
+      modules += 1;
+      return { getCompilationInfo: async () => ({ messages: [] }) };
+    },
+    createPipelineLayout: () => ({}),
+    createComputePipelineAsync: async () => ({}),
+  };
+  const logged = [];
+  const g = new gpu.DeepGpu({ chosen: true, log: (event) => logged.push(event) });
+  g.warm = gpu.WARM_ORDER.slice(0, 3);
+  g.device = device;
+  g.form = "plain";
+  g.layouts = [{}];
+  g.health.passed();
+  assert.equal(g.health.usable, true);
+  // A frame on the device holds the chain at its first kernel.
+  let frame;
+  g.idle = new Promise((resolve) => (frame = resolve));
+  assert.equal(await g.start(), true);
+  const first = g.warming;
+  assert.ok(first !== null, "a usable device with kernels left starts the chain");
+  await g.start();
+  assert.equal(g.warming, first, "never two chains on one device");
+  // Unticked: the chain sees the box off when the frame ends, and stops.
+  g.chosen = false;
+  frame();
+  await first;
+  assert.equal(g.warming, null);
+  assert.equal(modules, 0);
+  // Ticked again before the device was given up: the chain runs to the end.
+  g.chosen = true;
+  await g.start();
+  assert.ok(g.warming !== null);
+  await g.warming;
+  assert.equal(modules, 3);
+  assert.ok(logged.includes("gpu kernels warm"));
+  // Nothing left: a tick starts nothing.
+  await g.start();
+  assert.equal(g.warming, null);
+});
+
+test("the chain stops on another device or the box off, and resumes when the tab is shown", async () => {
+  const stopping = chainRig({ there: [] });
+  stopping.now = "stop";
+  assert.deepEqual(await stopping.run(), { count: 0, stopped: true });
+  assert.deepEqual(stopping.events, []);
+
+  const hidden = chainRig({ order: gpu.WARM_ORDER.slice(0, 2), there: [] });
+  hidden.now = "pause";
+  const running = hidden.run();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.deepEqual(hidden.events, [], "nothing while hidden");
+  hidden.now = "go";
+  hidden.shown();
+  assert.deepEqual(await running, { count: 2, stopped: false });
+
+  // A device lost after the first kernel: the chain stops at the next.
+  const lost = chainRig({ order: gpu.WARM_ORDER.slice(0, 3), there: [] });
+  const compile = lost.compiled.set.bind(lost.compiled);
+  lost.compiled.set = (name, value) => {
+    lost.now = "stop";
+    return compile(name, value);
+  };
+  assert.deepEqual(await lost.run(), { count: 1, stopped: true });
+  assert.deepEqual(lost.events, ["d2M- bg"]);
 });
 
 // ---- The vectors, against the arithmetic they test ---------------------------------------
@@ -944,7 +1168,10 @@ test("a skip table is kept while its skips are a share of the window's steps", (
   assert.equal(gpu.keepsTable({ steps: 1000, skips: 1000 * gpu.SKIP_SHARE - 1 }), false);
   // The counts the kernel adds its skips to: the pass's counters, word 3, beside its steps.
   const source = W.kernelSource({ degree: 2, julia: false, interior: true });
-  assert.equal((source.match(/atomicAdd\(&counters\[3\], k\);/g) ?? []).length, 2, "both passes count their skips");
+  assert.equal((source.match(/atomicAdd\(&counters\[3\], s\);/g) ?? []).length, 1, "the pass counts its skips");
+  // One pass entry, walking every pixel or the list, so a backend compiles `run` once.
+  assert.equal((source.match(/fn run_pass\(/g) ?? []).length, 1);
+  assert.equal((source.match(/run\(i, params\.budget\)/g) ?? []).length, 1);
 });
 
 test("a table too short to hold a run is a header of no levels, which finds nothing", () => {

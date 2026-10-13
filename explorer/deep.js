@@ -322,12 +322,8 @@ export function mount(host) {
           : (field) => field.kernel === "gpu" && field.identity !== to,
         to === "cpu" ? "the GPU went off" : "the GPU came back as another device",
       ),
-    // The kernels a frame most often wants, compiled once the self-test has passed so
-    // the first such frame does not pay for it: degree two, the switch on and off.
-    warm: [
-      { degree: 2, julia: false, interior: true },
-      { degree: 2, julia: false, interior: false },
-    ],
+    // Every kernel is compiled in the background once a self-test passes, in the order a
+    // frame is likely to want them (`WARM_ORDER`), so the first such frame does not pay.
   });
   // A harness that asked for a kernel, or turned the log on, may reach the device, and read
   // which kernel drew each picture kept (`bench/deep-gpu-lose.mjs`).

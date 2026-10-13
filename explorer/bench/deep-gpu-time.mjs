@@ -32,6 +32,7 @@
 //
 //   node explorer/bench/deep-gpu-time.mjs [--limit=N] [--cold=N] [--port=8000] [--seed=162] [--forced]
 //                                         [--from=N] [--out=deep-gpu-time.json] [--names=file.json]
+//                                         [--no-wait-warm]
 //
 // A GPU frame that loses its device, or finds the GPU off after an earlier loss, is kept as
 // `lostFirst` and drawn again in a fresh browser, which acquires a fresh adapter: a driver
@@ -82,6 +83,12 @@ const WITH_FORCED = process.argv.includes("--with-forced");
 // `--switch=on|off` forces the interior switch in both browsers, through the page's
 // `__deepForceSwitch`, so a frame can be timed both ways (deep_holes_ckpt163).
 const SWITCH = option("switch") ?? null;
+// `--quarter-factor=N` sets the page's `__deepQuarterFactor`: the degree four-to-six factor
+// on the line that sends a quarter to the GPU.
+const QUARTER_FACTOR = option("quarter-factor") ?? null;
+// Each GPU browser waits for its background compile chain to finish before the sample
+// (`gpu kernels warm`, at most 120 s); `--no-wait-warm` gives it the old fixed six seconds.
+const WAIT_WARM = !process.argv.includes("--no-wait-warm");
 
 /** Display-driver resets (System log, event 4101) Windows has logged since `since` (an ISO
  *  time), or `null` off Windows. Counted from a time and never as a difference of totals:
@@ -209,7 +216,11 @@ function summarize(log, t0) {
   const quarter = at("field landed", (d) => d.stage === "preview");
   const full = at("field landed", (d) => d.stage === "full");
   const fullStage = at("stage", (d) => d.stage === "full");
-  const compiled = log.filter((e) => e.event === "gpu kernel compiled");
+  // A frame's own compiles, and apart from them the background chain's that fell in its
+  // window (which the frame did not wait for, unless it shared one).
+  const compiles = log.filter((e) => e.event === "gpu kernel compiled");
+  const compiled = compiles.filter((e) => e.detail?.background !== true);
+  const background = compiles.filter((e) => e.detail?.background === true);
   // The full stage's: since deep_wait_ckpt163 the quarter may ask the GPU too.
   const onCpu = at("field on the cpu", (d) => d.stage !== "quarter");
   const onGpu = at("field on the gpu", (d) => d.stage !== "quarter");
@@ -228,6 +239,7 @@ function summarize(log, t0) {
     handed: full?.detail?.handed ?? null,
     compileMs: compiled.reduce((sum, e) => sum + (e.detail?.ms ?? 0), 0),
     compiled: compiled.map((e) => `d${e.detail?.degree}${e.detail?.julia ? "J" : "M"}${e.detail?.interior ? "i" : ""}`),
+    backgroundMs: background.reduce((sum, e) => sum + (e.detail?.ms ?? 0), 0),
     cpuWhy: onCpu?.detail?.why ?? undefined,
     gpuMs: onGpu ? Math.round(onGpu.detail?.ms ?? 0) : undefined,
     tailMs: onGpu?.detail?.tailMs != null ? Math.round(onGpu.detail.tailMs) : undefined,
@@ -346,7 +358,7 @@ const browsers = {
 const frames = (LADDERED ? Object.entries(LADDER).map(([name, link]) => ({ name, link, source: "ladder" })) : sample({ seed: SEED }))
   .filter((f) => NAMES === null || NAMES.has(f.name))
   .slice(0, LIMIT);
-const out = { seed: SEED, forced: FORCED, switch: SWITCH, from: FROM, window: [WIDTH, HEIGHT], started: new Date().toISOString(), frames: frames.length, rows: [], cold: [], first: {} };
+const out = { seed: SEED, forced: FORCED, switch: SWITCH, quarterFactor: QUARTER_FACTOR, waitWarm: WAIT_WARM, from: FROM, window: [WIDTH, HEIGHT], started: new Date().toISOString(), frames: frames.length, rows: [], cold: [], first: {} };
 const save = () => record(OUT, out);
 
 /** Open (or reopen) one kernel's browser on the primer, and wait for it to settle. */
@@ -354,6 +366,10 @@ async function start(kernel) {
   const b = browsers[kernel];
   b.page = await open({ port: b.port, width: WIDTH, height: HEIGHT });
   await b.page.send("Page.addScriptToEvaluateOnNewDocument", { source: INSTRUMENT });
+  if (QUARTER_FACTOR !== null)
+    await b.page.send("Page.addScriptToEvaluateOnNewDocument", {
+      source: `globalThis.__deepQuarterFactor = ${Number(QUARTER_FACTOR)};`,
+    });
   if (SWITCH !== null)
     await b.page.send("Page.addScriptToEvaluateOnNewDocument", {
       source: `globalThis.__deepForceSwitch = ${SWITCH === "on"};`,
@@ -362,9 +378,31 @@ async function start(kernel) {
   if (kernel !== "cpu") await b.page.send("Page.addScriptToEvaluateOnNewDocument", { source: TICKED });
   const first = await navigate(b.page, `${PRIMER}&panel=deep&${b.query}`);
   await rest(b.page);
-  // The self-test's background compiles (degree two, the switch on and off) land here.
-  await sleep(kernel === "cpu" ? 1000 : 6000);
+  // The background compile chain runs once the self-test passes, and a sample frame landed
+  // beside it would time the chain's compiles as its own: wait for `gpu kernels warm`.
+  // `--no-wait-warm` keeps the old fixed six seconds, for a reader who lands before it ends.
+  if (kernel === "cpu") await sleep(1000);
+  else if (!WAIT_WARM) await sleep(6000);
+  else {
+    const warm = await warmed(b.page, 120000);
+    if (warm === null) console.log(`  ${kernel}: no "gpu kernels warm" within 120 s; going on`);
+    else console.log(`  ${kernel}: kernels warm, ${warm.ms} ms, ${warm.count} compiled`);
+    await sleep(1000);
+  }
   return first;
+}
+
+/** The page's `gpu kernels warm` detail once it is logged, polled, or `null` after `within`. */
+async function warmed(page, within) {
+  const deadline = Date.now() + within;
+  while (Date.now() < deadline) {
+    const got = await page
+      .evaluate(`(window.__deepLog ?? []).find((e) => e.event === "gpu kernels warm")?.detail ?? null`)
+      .catch(() => null);
+    if (got !== null) return got;
+    await sleep(250);
+  }
+  return null;
 }
 
 async function reopen(kernel) {

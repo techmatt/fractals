@@ -66,6 +66,8 @@ export const STATE_BYTES = { proof: 128, plain: 56 };
 /** Where a dispatch's `budget` and `base` sit in `Params` (`deep-gpu-wgsl.js`'s). */
 export const PARAMS_BUDGET = 0;
 export const PARAMS_BASE = 36;
+/** Where a pass's `listed` flag sits in `Params`: 1 for the compacted list, 0 for every pixel. */
+export const PARAMS_LISTED = 44;
 
 /** Threads per workgroup, and the most workgroups one dimension of a dispatch may take
  *  unless the adapter says otherwise. The kernel indexes samples along `x` alone. */
@@ -214,14 +216,129 @@ export const FORCED_WAIT_MS = 120000;
  * same way on every load.
  */
 export const QUARTER_ITERATIONS_PER_WORKER = 150e6;
-/** Degrees four to six compile two to three times longer on first use, and the quarter
- *  waits for that compile where the full pass would have overlapped it. */
-export const QUARTER_HIGH_DEGREE_FACTOR = 3;
+/** Degrees four to six used to ask three times the iterations, because their kernels compile
+ *  two to three times longer on first use and the quarter waited for that compile where the
+ *  full pass would have overlapped it. **One since deep_holes_ckpt163**: the background
+ *  compile has every kernel built before a frame wants it, and on the depth ladder the four
+ *  degree-five frames past 1e-80 that the factor kept on the CPU drew their quarter in 0.7 to
+ *  0.9 s on the GPU against 2.0 to 3.3 s, the whole frame 1.4 to 2.6 s sooner, with no wait on
+ *  a compile. Kept as a constant, and a bench page may still set `__deepQuarterFactor`. */
+export const QUARTER_HIGH_DEGREE_FACTOR = 1;
 
 /** Whether the census's estimate of the quarter's iterations puts the quarter on the GPU. */
 export function quarterOnGpu({ iterations, degree = 2, workers = TAIL_WORKERS }) {
-  const line = QUARTER_ITERATIONS_PER_WORKER * workers * (degree >= 4 ? QUARTER_HIGH_DEGREE_FACTOR : 1);
+  // A bench page may set `__deepQuarterFactor` to time another factor (deep_holes_ckpt163).
+  const factor = globalThis.__deepQuarterFactor ?? QUARTER_HIGH_DEGREE_FACTOR;
+  const line = QUARTER_ITERATIONS_PER_WORKER * workers * (degree >= 4 ? factor : 1);
   return iterations != null && iterations >= line;
+}
+
+// ---- The background compile ------------------------------------------------------------
+
+/** Both of the interior switch's settings for one degree and plane, the switch on first: the
+ *  census picks the switch only for a frame under four times the cheap line, so which one a
+ *  heavy frame wants is not known in advance, and the proof's is the likelier. */
+const pair = (degree, julia) => [
+  { degree, julia, interior: true },
+  { degree, julia, interior: false },
+];
+
+/**
+ * **The kernels compiled in the background once a self-test passes** *(deep_holes_ckpt163)*,
+ * in the order a frame is likely to want them: the cheap plain kernels of the planes most
+ * drawn first, then the heavy degrees by how often the 159-frame sample lands on them
+ * (Mandelbrot at degree two 34 frames, three 30, four 23, five 23, six 22; Julia four or
+ * five each at degrees four to six). The self-test leaves degree two's Mandelbrot and Julia
+ * and degree three's Mandelbrot compiled with the switch on, and this list names them again
+ * only inside a pair, where they are found compiled and cost nothing. A frame's own pair
+ * (`prepare`) jumps the queue.
+ */
+export const WARM_ORDER = [
+  { degree: 2, julia: false, interior: false },
+  { degree: 3, julia: false, interior: false },
+  { degree: 2, julia: true, interior: false },
+  ...pair(4, false),
+  ...pair(5, false),
+  ...pair(6, false),
+  ...pair(3, true),
+  ...pair(4, true),
+  ...pair(5, true),
+  ...pair(6, true),
+];
+
+/** The kernels of `order` that `has` (a kernel already compiled or compiling) leaves. */
+export function warmLeft(order, has) {
+  return order.filter((kernel) => !has(kernel));
+}
+
+/** What the background compile does next: `stop` where the device it started on is gone or
+ *  the box is off, `pause` while the tab is hidden, and `go` otherwise. */
+export function warmState({ device, current, off, visibility = "visible" }) {
+  if (current !== device || off) return "stop";
+  return visibility === "hidden" ? "pause" : "go";
+}
+
+/**
+ * Walk `order` one kernel at a time, compiling what `has` says is not there yet. Before each
+ * one it waits for `idle()` to settle and stay settled (no frame on the device), and asks
+ * `state()` (`warmState`) again after every wait, waiting on `visible()` while it says
+ * `pause`. A kernel already compiling elsewhere (a frame's, or `prepare`'s) is awaited rather
+ * than started beside it, so the chain never runs two compiles of its own. Nor does it start
+ * one beside anybody else's: once idle, `busy()` is a promise while a compile the page asked
+ * for (`prepare`, a frame, the self-test frame) is in flight on the device, and `null` once
+ * none is, and the chain waits it out and asks everything again. `defer()`, awaited once
+ * before the first kernel the chain would start, lets a frame queued on the self-test ask
+ * for its own pair first. `compile(kernel, background)` returns the kernel's promise; a
+ * refusal is that kernel's and the chain goes on. Resolves `{count, stopped}`, `count` the
+ * kernels it started.
+ */
+export async function warmChain({ order, has, compile, state, idle, visible, busy = () => null, defer = null }) {
+  let count = 0;
+  let deferred = defer === null;
+  for (const kernel of order) {
+    for (;;) {
+      const now = state();
+      if (now === "stop") return { count, stopped: true };
+      if (now === "pause") {
+        await visible();
+        continue;
+      }
+      if (has(kernel)) break;
+      if (!deferred) {
+        deferred = true;
+        await defer();
+        continue;
+      }
+      const prior = idle();
+      await prior;
+      if (idle() !== prior || state() !== "go") continue;
+      const other = busy();
+      if (other == null) break;
+      await other;
+    }
+    const mine = !has(kernel);
+    try {
+      await compile(kernel, mine);
+    } catch {
+      // Refused again, and said, when a frame asks for it.
+    }
+    if (mine) count += 1;
+  }
+  return { count, stopped: false };
+}
+
+/** Resolves once the tab is visible; at once where there is no document. */
+function whenVisible() {
+  const doc = globalThis.document;
+  if (doc == null || doc.visibilityState !== "hidden") return Promise.resolve();
+  return new Promise((resolve) => {
+    const seen = () => {
+      if (doc.visibilityState === "hidden") return;
+      doc.removeEventListener("visibilitychange", seen);
+      resolve();
+    };
+    doc.addEventListener("visibilitychange", seen);
+  });
 }
 
 // ---- The debugging key ----------------------------------------------------------------
@@ -1040,6 +1157,9 @@ class Runner {
       slots[2 * k + 1] = d.base;
     });
     device.queue.writeBuffer(this.slots, 0, slots);
+    // One entry walks every pixel or the list, as `listed` says; written ahead of the
+    // passes it governs, in queue order.
+    device.queue.writeBuffer(this.params, PARAMS_LISTED, Uint32Array.of(mode === "all" ? 0 : 1));
     const buffers = [];
     let encoder = device.createCommandEncoder();
     if (mode === "compact") {
@@ -1064,7 +1184,7 @@ class Runner {
         this.queries === null ? {} : { timestampWrites: { querySet: this.queries, beginningOfPassWriteIndex: 2 * k, endOfPassWriteIndex: 2 * k + 1 } },
       );
       pass.setBindGroup(0, this.group0);
-      pass.setPipeline(mode === "all" ? p.all : p.list);
+      pass.setPipeline(p.pass);
       pass.dispatchWorkgroups(d.groups);
       pass.end();
       if (split && k < n - 1) {
@@ -1150,7 +1270,7 @@ class Runner {
  * not said here.
  */
 export class DeepGpu {
-  constructor({ kernel = null, chosen = false, log = () => {}, changed = () => {}, onKernel = () => {}, warm = [] } = {}) {
+  constructor({ kernel = null, chosen = false, log = () => {}, changed = () => {}, onKernel = () => {}, warm = WARM_ORDER } = {}) {
     this.kernel = kernel;
     this.chosen = chosen;
     this.log = log;
@@ -1170,9 +1290,12 @@ export class DeepGpu {
      *  of the page's (`#open`), and why it was lost where it was. */
     this.testDevice = null;
     this.testLost = null;
-    /** Kernels (`{degree, julia, interior}`) compiled in the background once the self-test
-     *  passes, so the first frame that wants one does not wait on its compile. */
+    /** Kernels (`{degree, julia, interior}`) compiled in the background, in this order, once
+     *  a self-test passes (`WARM_ORDER`), so the first frame that wants one does not wait on
+     *  its compile. An instance's, so that a bench page can ask for another. */
     this.warm = warm;
+    /** The background compile under way (`#warm`'s promise), or `null`: one chain a device. */
+    this.warming = null;
     this.health = new Health();
     this.device = null;
     this.form = null;
@@ -1289,7 +1412,15 @@ export class DeepGpu {
   start() {
     if (this.off) return Promise.resolve(false);
     if (this.testing !== null) return this.testing;
-    if (!this.health.wants) return Promise.resolve(this.health.usable);
+    if (!this.health.wants) {
+      // A box unticked and ticked again before the device was given up keeps that device,
+      // and the chain that saw it off has stopped: start it again where kernels are left.
+      if (this.health.usable && this.device !== null) {
+        const has = ({ degree, julia, interior }) => this.pipelines.has(this.#key(degree, julia, interior));
+        if (warmLeft(this.warm, has).length > 0) this.#warm();
+      }
+      return Promise.resolve(this.health.usable);
+    }
     const trial = { started: performance.now(), abandoned: false, recovering: this.health.status === "lost" };
     this.trial = trial;
     const testing = acquire({
@@ -1392,19 +1523,57 @@ export class DeepGpu {
     })().catch(() => {});
   }
 
-  /** Compile the `warm` kernels in the background, one after another. */
-  async #warm() {
+  /** Compile the `warm` kernels in the background, one after another, never beside a frame
+   *  on the device (`warmChain`) nor beside a compile the page asked for, until the device
+   *  changes or the box goes off. Never two chains on one device: a chain running on this
+   *  device is the one returned. */
+  #warm() {
     const device = this.device;
-    try {
-      const W = await wgsl();
-      for (const { degree, julia, interior } of this.warm) {
-        if (this.device !== device || this.off) return;
-        await this.#pipelines(W, device, degree, julia, interior);
+    if (device === null) return Promise.resolve();
+    if (this.warming !== null && this.#warmingOn === device) return this.warming;
+    const started = performance.now();
+    const chain = (async () => {
+      try {
+        const W = await wgsl();
+        const { count, stopped } = await warmChain({
+          order: this.warm,
+          has: ({ degree, julia, interior }) => this.pipelines.has(this.#key(degree, julia, interior)),
+          compile: ({ degree, julia, interior }, background) => this.#pipelines(W, device, degree, julia, interior, background),
+          state: () => warmState({ device, current: this.device, off: this.off, visibility: globalThis.document?.visibilityState }),
+          idle: () => this.idle,
+          busy: () => {
+            const mine = [...this.#busy].filter(([, on]) => on === device).map(([made]) => made);
+            return mine.length === 0 ? null : Promise.allSettled(mine);
+          },
+          // A task's turn, so that a frame queued on the self-test (`prepare`'s `then`, and
+          // the frame's own draw) asks for its kernels before the chain asks for its first.
+          defer: () =>
+            new Promise((resolve) =>
+              typeof globalThis.requestIdleCallback === "function" ? globalThis.requestIdleCallback(() => resolve(), { timeout: 100 }) : setTimeout(resolve, 0),
+            ),
+          visible: whenVisible,
+        });
+        if (!stopped) this.log("gpu kernels warm", { ms: Math.round(performance.now() - started), count });
+      } catch {
+        // The kernel module not fetched: a frame that asks says so.
       }
-    } catch {
-      // A kernel that will not compile is refused again, and said, when a frame asks.
-    }
+    })();
+    this.warming = chain;
+    this.#warmingOn = device;
+    chain.then(() => {
+      if (this.warming !== chain) return;
+      this.warming = null;
+      this.#warmingOn = null;
+    });
+    return chain;
   }
+
+  /** The device `warming` runs on. */
+  #warmingOn = null;
+
+  /** Compiles in flight that the page asked for, not the chain: each kernel's promise, and
+   *  the device it compiles on. The chain starts none of its own while one is here. */
+  #busy = new Map();
 
   /** Whether the GPU is ready, waiting up to `within` for a self-test or a recovery in
    *  flight (and starting one where the GPU is untested). A page that asked for the GPU by
@@ -1590,9 +1759,15 @@ export class DeepGpu {
     };
   }
 
-  /** The pipelines for one kernel module, compiled once per device. */
-  async #pipelines(W, device, degree, julia, interior) {
-    const key = `${degree}|${julia ? 1 : 0}|${interior ? 1 : 0}|${this.form}`;
+  /** A kernel module's place in `pipelines`. */
+  #key(degree, julia, interior) {
+    return `${degree}|${julia ? 1 : 0}|${interior ? 1 : 0}|${this.form}`;
+  }
+
+  /** The pipelines for one kernel module, compiled once per device. `background` is the
+   *  warm chain's, and only said in the log. */
+  async #pipelines(W, device, degree, julia, interior, background = false) {
+    const key = this.#key(degree, julia, interior);
     let made = this.pipelines.get(key);
     if (made === undefined) {
       made = (async () => {
@@ -1603,15 +1778,14 @@ export class DeepGpu {
         const make = (entryPoint, layout) => device.createComputePipelineAsync({ layout, compute: { module, entryPoint } });
         // `args`, the list's indirect dispatch, is not built: a pass here knows the list's
         // length and cuts it into direct dispatches (`dispatchPlan`).
-        const [init, all, list, compact, emit] = await Promise.all([
+        const [init, pass, compact, emit] = await Promise.all([
           make("init", plain),
-          make("pass_all", plain),
-          make("pass_list", plain),
+          make("run_pass", plain),
           make("compact", plain),
           make("emit", plain),
         ]);
-        this.log("gpu kernel compiled", { degree, julia, interior, ms: Math.round(performance.now() - started) });
-        return { init, all, list, compact, emit };
+        this.log("gpu kernel compiled", { degree, julia, interior, ms: Math.round(performance.now() - started), ...(background ? { background: true } : {}) });
+        return { init, pass, compact, emit };
       })();
       // A module that will not compile is this kernel's and not the device's: its frames
       // are the CPU's, and the refusal is remembered for the session.
@@ -1619,6 +1793,14 @@ export class DeepGpu {
         throw new Unserved(`the d${degree}${julia ? " Julia" : ""} kernel: ${error?.message ?? error}`);
       });
       this.pipelines.set(key, made);
+      if (!background) {
+        const settled = made;
+        this.#busy.set(settled, device);
+        settled.then(
+          () => this.#busy.delete(settled),
+          () => this.#busy.delete(settled),
+        );
+      }
     }
     return made;
   }

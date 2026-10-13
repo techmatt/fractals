@@ -3612,8 +3612,34 @@ shorter than the compile: `deep-gallery#0` (degree four) landed in 4.8 s against
 5.2 s in a fresh browser, 1.09x, where the timed run below, its kernels already compiled,
 measured 1.77x. The pair is compiled
 once a page load, so the cost falls on the first frame of each degree and plane. After the
-self-test, degree two's two kernels are compiled in the background, and the browser's own
-cache makes a later page load's compile of a kernel it has seen 20 to 90 ms. `prepare`
+self-test, and after every recovery, the kernels it did not leave are compiled in the
+background, one at a time, in the order a frame is likely to want them (`WARM_ORDER`): the
+plain kernels of degree two and three Mandelbrot and degree two Julia, then the Mandelbrot
+pairs at degrees four, five, and six, then the Julia pairs at degrees three to six, the
+switch on before off within a pair. Each waits until no frame is on the device and no
+compile the page asked for is in flight, though not for the CPU pool; the first waits a
+task besides, so that a frame queued on the self-test asks for its own pair first. The chain
+pauses while the tab is hidden and stops when the device changes or the box goes off, and
+a box ticked again on the same device starts it again where kernels are left, never two at
+once. A frame that wants a kernel the chain is compiling shares that
+one compile, and a frame's own pair (`prepare`) jumps the queue. The log says `background`
+on each kernel the chain compiled, and `gpu kernels warm` when it is done. The browser's own
+cache makes a later page load's compile of a kernel it has seen 20 to 90 ms.
+
+**One pass entry, so `run` is compiled once** *(deep_holes_ckpt163)*. A kernel had a
+`pass_all` and a `pass_list`, each inlining the whole per-sample loop, and Chrome on D3D12
+compiles each entry's pipeline on its own: `bench/deep-gpu-compile.mjs` measured them at
+about half a kernel's compile each (degree six with the proof, 4.2 s and 4.1 s of 8.3 s).
+Now one entry, `run_pass`, reads `listed` (the old `pad2` of `Params`) to walk every pixel
+or the compacted list, and calls `run` once. Its pictures are the old kernel's byte for
+byte: `deep-same --kernel=ticked` against the tree before it, 24 of 24. All twenty kernels,
+fresh browsers, old and new interleaved: 69.9 s against 58.7 s, then 59.8 s against 30.4 s
+once the driver's own shader cache, which outlives a browser profile, had seen both. On the
+depth ladder, with the chain on, no frame compiled a kernel of its own: `A-1e-60` 6.2 s to
+5.6 s and `go:julia3-end` 3.0 s to 2.4 s, each formerly the first of its degree and plane.
+That let the quarter's degree factor go (`QUARTER_HIGH_DEGREE_FACTOR`, three to one): the
+four degree-five ladder frames past 1e-80 now draw their quarter on the GPU, 1.4 to 2.6 s
+sooner each, and the ladder's GPU total went from 135.4 s to 126.6 s. `prepare`
 runs for a frame the quarter pass will call cheap too, which costs that frame the compile
 beside the pool for nothing (below); the next frame of that shape the GPU draws finds it
 compiled.
@@ -4030,8 +4056,8 @@ pass. Four changes, in the order they paid:
   so the CPU's full pass computes only the other fifteen in sixteen. A census of one quarter
   sample in sixteen, drawn first with the switch on, counts the frame. Where the box is
   ticked, the self-test passed and the census puts the quarter at 150 M iterations a worker
-  or more (three times that at degrees four to six, for the compile), the GPU draws the
-  quarter. Ladder GPU quarter: 197 s to 31 s.
+  or more (three times that at degrees four to six, for the compile, until the background
+  compile let deep_holes_ckpt163 drop the factor), the GPU draws the quarter. Ladder GPU quarter: 197 s to 31 s.
 - **The CPU kernel two samples a vector.** `perturb.wasm` fills two samples per `f64x2`
   in the scalar loop's operation order, so its lanes are the scalar build's bit for bit
   (`bench/perturb-parity.mjs`, 142 specs). Pool: 1.71x with the switch off, 1.46x on.

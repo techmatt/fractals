@@ -75,7 +75,11 @@ export function decodeOut(word0, word1) {
 }
 
 /** The entry points every kernel module has. */
-export const ENTRY_POINTS = ["init", "pass_all", "pass_list", "compact", "args", "emit"];
+export const ENTRY_POINTS = ["init", "run_pass", "compact", "args", "emit"];
+
+/** The entry points a kernel's pipelines are made from: `args` is not built (a pass cuts a
+ *  list into direct dispatches). */
+export const KERNEL_ENTRY_POINTS = ["init", "run_pass", "compact", "emit"];
 
 /**
  * The bind group layouts, as plain descriptors (`visibility` 4 is `GPUShaderStage.COMPUTE`).
@@ -114,6 +118,8 @@ export const LAYOUT = [
 export const PARAMS_BUDGET = 0;
 export const PARAMS_BASE = 36;
 export const PARAMS_ROW0 = 40;
+/** Where a pass says whether it walks the list (1) or every pixel (0). */
+export const PARAMS_LISTED = 44;
 export function paramsBytes({ budget, periodic, length, count, flush, row0 = 0 }) {
   const buffer = new ArrayBuffer(PARAMS_BYTES);
   new Uint32Array(buffer, 0, 4).set([budget >>> 0, periodic ? 1 : 0, length >>> 0, count >>> 0]);
@@ -575,7 +581,7 @@ struct Params {
   flush: i32,
   base: u32,
   row0: u32,
-  pad2: u32,
+  listed: u32,
 }
 `;
 }
@@ -1733,15 +1739,31 @@ fn init(@builtin(global_invocation_id) gid: vec3<u32>,
   }
 }
 
-// Every pixel, one invocation each; the running and step counts are summed per workgroup
-// first.
+// One pass over the pixels, one invocation each *(deep_holes_ckpt163)*: every pixel, or with
+// listed set the pixels the last compact pass listed, from base on (args sizes one indirect
+// dispatch of the whole list, and a caller that knows the list's length may instead cut it
+// into direct dispatches). One entry and one call of run rather than an entry for each,
+// because a backend compiles each entry's pipeline on its own and run is nearly all of a
+// kernel: two entries compiled it twice. The running and step counts are summed per
+// workgroup first.
 @compute @workgroup_size(${workgroup})
-fn pass_all(@builtin(global_invocation_id) gid: vec3<u32>,
+fn run_pass(@builtin(global_invocation_id) gid: vec3<u32>,
             @builtin(local_invocation_index) lid: u32) {
   slot = lid;
   var still = false;
-  let i = gid.x + params.base;
-  if (i < params.count) {
+  let k = gid.x + params.base;
+  var i = 0u;
+  var go = false;
+  if (params.listed != 0u) {
+    if (k < atomicLoad(&counters[1])) {
+      i = list[k];
+      go = true;
+    }
+  } else if (k < params.count) {
+    i = k;
+    go = true;
+  }
+  if (go) {
     still = run(i, params.budget);
   }
   if (still) {
@@ -1763,47 +1785,9 @@ fn pass_all(@builtin(global_invocation_id) gid: vec3<u32>,
     if (t > 0u) {
       atomicAdd(&counters[2], t);
     }
-    let k = atomicLoad(&wg_skips);
-    if (k > 0u) {
-      atomicAdd(&counters[3], k);
-    }
-  }
-}
-
-// The pixels the last compact pass listed, from base on: args sizes one indirect dispatch
-// of the whole list, and a caller that knows the list's length may instead cut it into
-// direct dispatches.
-@compute @workgroup_size(${workgroup})
-fn pass_list(@builtin(global_invocation_id) gid: vec3<u32>,
-             @builtin(local_invocation_index) lid: u32) {
-  slot = lid;
-  var still = false;
-  let k = gid.x + params.base;
-  if (k < atomicLoad(&counters[1])) {
-    still = run(list[k], params.budget);
-  }
-  if (still) {
-    atomicAdd(&wg_running, 1u);
-  }
-  if (taken_steps > 0u) {
-    atomicAdd(&wg_steps, taken_steps);
-  }
-  if (taken_skips > 0u) {
-    atomicAdd(&wg_skips, taken_skips);
-  }
-  workgroupBarrier();
-  if (lid == 0u) {
-    let c = atomicLoad(&wg_running);
-    if (c > 0u) {
-      atomicAdd(&counters[0], c);
-    }
-    let t = atomicLoad(&wg_steps);
-    if (t > 0u) {
-      atomicAdd(&counters[2], t);
-    }
-    let k = atomicLoad(&wg_skips);
-    if (k > 0u) {
-      atomicAdd(&counters[3], k);
+    let s = atomicLoad(&wg_skips);
+    if (s > 0u) {
+      atomicAdd(&counters[3], s);
     }
   }
 }
