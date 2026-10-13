@@ -1665,7 +1665,14 @@ fn text(ptr: *const u8, len: usize) -> Result<String, String> {
 }
 
 /// Hand a `Vec` to JavaScript and forget it: the caller owns it until `dealloc`.
+///
+/// Trimmed first, because JavaScript frees a buffer at the length it computes and
+/// `dealloc` rebuilds the `Vec` with that as its capacity: a buffer with more room than
+/// it fills (`shade_level`'s, under about fourteen pixels, where `reserve` doubled the
+/// header's) hands the allocator the wrong size, and wasm's dlmalloc checks it and aborts.
+/// Where capacity is already the length, which is every real frame, this does nothing.
 fn release(mut bytes: Vec<u8>) -> *mut u8 {
+    bytes.shrink_to_fit();
     let ptr = bytes.as_mut_ptr();
     std::mem::forget(bytes);
     ptr

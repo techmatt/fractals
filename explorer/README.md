@@ -4661,7 +4661,10 @@ module's bytes. `perturb-wasm/build.rs` is empty and kept for the same reason.
 
 **No wasm-bindgen.** The module is the engine plus `src/lib.rs`, exported `extern "C"`
 with `#[unsafe(no_mangle)]`. JavaScript owns every buffer through `alloc` and `dealloc`,
-and nothing is generated on either side. `panic = "abort"`, `lto = true`,
+and nothing is generated on either side. A buffer is freed at the length JavaScript
+computes for it, so every one handed out is trimmed to its length first: wasm's allocator
+checks the size it is given on a free, and `shade_level`'s output under about fourteen
+pixels, with more room than it filled, used to abort there (explorer_review_ckpt163). `panic = "abort"`, `lto = true`,
 `codegen-units = 1` — the LTO is also what dead-strips `png`, `jpeg-encoder` and `flate2`
 out of a module that never writes a file.
 

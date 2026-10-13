@@ -802,7 +802,7 @@ nothing to do with this crate: `explorer_shade_pool_ckpt136` banded the shade.)
 **What a visitor downloads for it: nothing, unless they open the Deep tab.** One module and
 the tab's eight JavaScript modules are fetched on that tab's first open and never before
 (the two that read a deep link, `deep-link.js` and `deep-fx.js`, come earlier where a deep
-link is already in front of the page). Against `engine.wasm`'s 253,403 gzipped, the
+link is already in front of the page). Against `engine.wasm`'s 253,697 gzipped, the
 181,860 of `perturb.wasm` is 72% of it, and the 163,128 of the scalar module 64% — paid
 only by a reader who asked for a renderer for everything below 1e-10, or who pressed Find
 minibrots or New coloring in the shallow view, the two doors into it there.
