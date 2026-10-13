@@ -354,6 +354,8 @@ export function mount(host) {
   }
   /** A partial picture's shade in flight, so that the next is skipped rather than queued. */
   let partialShading = false;
+  /** The last partial asked for (`showPartial`'s arguments), which a recolour shades again. */
+  let lastPartial = null;
   /** While a partial of the GPU's full stage is up, the picture it covered — the quarter
    *  pass's — which is what a cancelled or failed stage puts back: a partial is not a
    *  picture of anything, and must not outlive its stage. `null` otherwise. */
@@ -582,12 +584,16 @@ export function mount(host) {
 
   /** Keep the picture just drawn, so a gesture has something to slide. */
   function keep(image, of) {
+    stale = { canvas: canvasOf(image), view: of };
+    underPartial = null;
+  }
+
+  function canvasOf(image) {
     const canvas = document.createElement("canvas");
     canvas.width = image.width;
     canvas.height = image.height;
     canvas.getContext("2d").putImageData(image, 0, 0);
-    stale = { canvas, view: of };
-    underPartial = null;
+    return canvas;
   }
 
   /** Take a partial down where its stage did not land: the picture it covered goes back up
@@ -673,12 +679,20 @@ export function mount(host) {
    * else moves: no hold, no cache, no finished picture, since this is not the frame yet. A
    * shade still running when the next partial is due skips that one, and one landing after
    * the stage has finished is dropped.
+   *
+   * **In the colour current when it lands** *(explorer_review_ckpt163)*: one whose colour
+   * was turned while it shaded is shaded again at once, as `shadeNow` does, rather than
+   * staying up in the colour the reader left until the next partial is due, which on a slow
+   * frame is seconds. `lastPartial` is what a recolour asks to shade again (`recolourOnce`).
    */
   function showPartial(deep, partial, frame, generation) {
-    if (generation !== pass || partialShading) return;
+    if (generation !== pass) return;
+    lastPartial = { deep, partial, frame, generation };
+    if (partialShading) return;
     partialShading = true;
+    const asked = inColour(frame);
     deep
-      .shade({ ...partial, values: partial.values.slice() }, inColour(frame), {}, { derive: false })
+      .shade({ ...partial, values: partial.values.slice() }, asked, {}, { derive: false })
       .then((shaded) => {
         if (shaded === null || generation !== pass || running?.stage !== "full") return;
         const under = underPartial?.under ?? stale;
@@ -689,6 +703,9 @@ export function mount(host) {
       .catch(() => {})
       .finally(() => {
         partialShading = false;
+        if (underPartial !== null && deepLink.emit(inColour(asked)) !== deepLink.emit(asked)) {
+          showPartial(deep, partial, frame, generation);
+        }
       });
   }
 
@@ -1700,7 +1717,13 @@ export function mount(host) {
     // the retired kernel's picture the frame, and what As shown saved, under the box that
     // had just retired it. The redraw `retire` owes is what comes up instead.
     if (!current(field)) return;
-    if (stale !== under) return;
+    // **A partial of the GPU's full stage keeps its place** *(explorer_review_ckpt163)*: the
+    // picture under it — this frame's quarter, which is what is recoloured, and what Cancel
+    // puts back — takes the colour, and the partial is shaded again in it. Putting the
+    // quarter up instead blurred the picture until the next partial, and a recolour a partial
+    // landed during was dropped, so Cancel then put the quarter back in the colour left.
+    const partialUp = underPartial !== null && running?.stage === "full" && sameFrame(underPartial.under.view, of);
+    if (!partialUp && stale !== under) return;
     if (bringing !== null && bringing !== of) return;
     bringing = null;
     let target = inColour(of);
@@ -1710,6 +1733,13 @@ export function mount(host) {
       host.onColour();
     }
     drawn = target;
+    if (partialUp) {
+      if (!pending()) drawn = view;
+      underPartial.under = { canvas: canvasOf(shaded.image), view: drawn };
+      if (lastPartial !== null) showPartial(lastPartial.deep, lastPartial.partial, lastPartial.frame, lastPartial.generation);
+      host.settle();
+      return;
+    }
     const onFrame = !pending();
     if (onFrame) drawn = view;
     keep(shaded.image, drawn);

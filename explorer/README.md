@@ -3684,7 +3684,12 @@ sequence of budgets leaves the state one unbounded run would. Under a tenth of t
 still running, passes run a compacted list of the samples left, dispatched directly from its
 length (the indirect `args` entry point is kept for `kernel-check`). A partial picture is
 read back and shown at most every half second. One pass is in flight at a time, and the
-page's event loop runs between passes.
+page's event loop runs between passes. **A colour turned while partials are up recolours
+the quarter under the partial and shades the partial again** *(explorer_review_ckpt163)*,
+and a partial that was shading as the colour turned is shaded once more as it lands. Before,
+a recolour put the blurred quarter over the partial, or was dropped where a partial in the
+old colour landed during it, and a Cancel then put the quarter back in the colour the reader
+had left while the address named the new one.
 
 **A pass is cut into dispatches of about 12 ms, each submitted on its own** *(resets
 hardening, 2026-10-11)*. A card like this one preempts compute only between dispatches
