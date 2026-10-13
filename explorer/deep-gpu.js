@@ -1386,9 +1386,10 @@ export class DeepGpu {
   }
 
   /**
-   * The reader ticked or unticked the box. On starts the self-test now; off lets a test or
-   * a frame already on the device finish (stopping either would read as a lost device),
-   * then gives the device up without counting a loss. Resolves whether the GPU is ready.
+   * The reader ticked or unticked the box. On starts the self-test now; off lets a test
+   * finish (stopping one would read as a lost device) and a frame on the device reach its
+   * next pass, where it stops (`#draw`), then gives the device up without counting a loss.
+   * Resolves whether the GPU is ready.
    */
   async choose(on) {
     this.chosen = on;
@@ -1486,15 +1487,17 @@ export class DeepGpu {
   }
 
   /** Say a change of the kernel the page uses, where pictures drawn by the one before may
-   *  stand: from a kernel, never from nothing, and never for a box the reader moved. */
+   *  stand: from a kernel, and from nothing to a device, since the CPU drew what a frame
+   *  asked of a GPU that was not ready yet (an acquisition that missed); never from nothing
+   *  to the CPU, which drew everything already, and never for a box the reader moved. */
   #settle() {
     if (this.off) return;
     const now = kernelNow(this.health, this.device === null ? null : this.identity);
     if (now === null || now === this.using) return;
     const from = this.using;
     this.using = now;
-    if (from === null) return;
-    this.log("gpu kernel changed", { from, to: now });
+    if (from === null && now === "cpu") return;
+    if (from !== null) this.log("gpu kernel changed", { from, to: now });
     this.onKernel({ from, to: now });
   }
 
@@ -1622,12 +1625,17 @@ export class DeepGpu {
    *  `iterations`, the CPU's estimate of the frame's full stage, keeps a cheap one on the
    *  CPU (`cheap`) without waiting at all; `frameSamples`, the full stage's samples where
    *  this is its quarter, is what `small` reads. A frame neither keeps waits for the
-   *  self-test's outcome (`SETTLE_BOUND_MS`). */
+   *  self-test's outcome (`SETTLE_BOUND_MS`).
+   *
+   *  **Small and cheap are said before the box** *(explorer_review_ckpt163)*: the answer
+   *  rides on the CPU field drawn instead (`declined`), and the page retires the fields an
+   *  unticked box alone kept off the GPU (`not chosen`) when it is ticked, so a field this
+   *  rule keeps on the CPU either way has to say so. */
   async refuses({ samples, frameSamples = samples, sampleWidth = null, degree, interior, orbitPoints, iterations = null, workers = TAIL_WORKERS }) {
     if (this.kernel === "cpu") return "asked for the CPU";
-    if (this.off) return "not chosen";
     if (this.kernel !== "gpu" && frameSamples < GPU_MIN_SAMPLES) return "small";
     if (this.kernel !== "gpu" && cheap({ iterations, workers })) return "cheap";
+    if (this.off) return "not chosen";
     if (!(await this.ready(this.kernel === "gpu" ? FORCED_WAIT_MS : SETTLE_BOUND_MS))) return `not ready (${this.health.status}${this.health.why ? `: ${this.health.why}` : ""})`;
     return fits({ samples, degree, interior, orbitPoints, limits: this.limits, ...(sampleWidth == null ? {} : { sampleWidth }) });
   }
@@ -2305,6 +2313,10 @@ export class DeepGpu {
         let costGroups = null;
         for (;;) {
           if (!job.live()) return { status: "cancelled" };
+          // **An untick stops the frame at its next pass** *(explorer_review_ckpt163)*, between
+          // two read-backs, which no device reads as a loss: the CPU draws the whole frame
+          // instead, as it would have under an unticked box, rather than after the device's.
+          if (this.off) return { status: "unserved", why: "off" };
           const mode = passMode(running, n, listed);
           if (mode === "compact") listLen = running;
           const groups = mode === "all" ? runner.groups : Math.ceil(listLen / WORKGROUP);

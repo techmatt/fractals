@@ -57,7 +57,7 @@ import {
   perturbModuleUrl,
   switchFor,
 } from "./deep-render.js";
-import { DeepGpu, GPU_MIN_SAMPLES, cheap } from "./deep-gpu.js";
+import { DeepGpu } from "./deep-gpu.js";
 import {
   HOLD_MS,
   SAVE_COUNT,
@@ -313,14 +313,14 @@ export function mount(host) {
     log: (event, detail) => log(event, detail),
     changed: () => syncGpu(),
     // **The kernel the page uses changed under its pictures** *(deep_holes_ckpt163)*: the GPU
-    // went off after a loss, or came back on a device of another identity. Everything the
-    // kernel before drew goes, and the picture up is drawn again (`retire`).
-    onKernel: ({ to }) =>
+    // went off after a loss, came back on a device of another identity, or became ready
+    // after an acquisition that missed. Everything the kernel before drew goes, and so does
+    // what the CPU drew because the GPU was not ready (`current`); the picture up is drawn
+    // again (`retire`).
+    onKernel: ({ from, to }) =>
       retire(
-        to === "cpu"
-          ? (field) => field.kernel === "gpu"
-          : (field) => field.kernel === "gpu" && field.identity !== to,
-        to === "cpu" ? "the GPU went off" : "the GPU came back as another device",
+        (field) => !current(field),
+        to === "cpu" ? "the GPU went off" : from === null ? "the GPU became ready" : "the GPU came back as another device",
       ),
     // Every kernel is compiled in the background once a self-test passes, in the order a
     // frame is likely to want them (`WARM_ORDER`), so the first such frame does not pay.
@@ -495,9 +495,23 @@ export function mount(host) {
    * CPU field, and a GPU field only while the GPU is on and is the device that drew it. While
    * a recovery is still deciding, the device before it stands. A field a loss mixed is
    * nobody's.
+   *
+   * **And a CPU field is not, where only the box or a GPU not yet ready kept it off the GPU**
+   * *(explorer_review_ckpt163)*: its `declined` says why the GPU did not draw it, so a field
+   * an unticked box kept (`not chosen`) is retired once the box is ticked, and one a missed
+   * acquisition kept (`not ready`) once a device is in use. Every other reason — small,
+   * cheap, past the device's limits — is the frame's own, and a fresh load says it again.
+   * This is what the tick retires by, so that it never judges a frame by another rule than
+   * the one that sent it to a kernel.
    */
   function current(field) {
-    if (field == null || field.kernel !== "gpu") return true;
+    if (field == null) return true;
+    if (field.kernel !== "gpu") {
+      const why = field.declined ?? "";
+      if (why === "not chosen" || why === "off") return gpu.off;
+      if (why.startsWith("not ready")) return gpu.off || gpu.using === null || gpu.using === "cpu";
+      return true;
+    }
     if (field.lost === true || gpu.off) return false;
     return gpu.using !== "cpu" && (gpu.using === null || gpu.using === field.identity);
   }
@@ -1647,8 +1661,15 @@ export function mount(host) {
     const grid = host.grid();
     const stage = keptStage(of);
     if (stage === undefined) {
-      // The picture up is always a stage that was just kept, so this is a bug and not a
-      // state: said in the console, and in the log, rather than a colour that silently
+      // A picture `retire` took the field from waits for the redraw it owes, which lands in
+      // the colour current then (`payOwed`; a search running holds it until the search
+      // ends): a state, and never the retired kernel's picture put up again in a new colour.
+      if (of === drawn && drawnField === null) {
+        log("recolour waits for the redraw", { frame: deepLink.emit(of) });
+        return;
+      }
+      // Otherwise the picture up is always a stage that was just kept, so this is a bug and
+      // not a state: said in the console, and in the log, rather than a colour that silently
       // never arrives.
       console.warn("deep recolour: no kept field for the picture on the canvas", deepLink.emit(of));
       log("recolour found no field", { frame: deepLink.emit(of) });
@@ -1673,7 +1694,13 @@ export function mount(host) {
       console.error("the deep recolour failed", { view: deepLink.emit(view) }, error);
       return;
     }
-    if (shaded === null || !owns || stale !== under) return;
+    if (shaded === null || !owns) return;
+    // **Nor where its field was retired while it shaded** *(explorer_review_ckpt163)*, an
+    // untick or the GPU going off, as `render` refuses such a stage: putting it up again made
+    // the retired kernel's picture the frame, and what As shown saved, under the box that
+    // had just retired it. The redraw `retire` owes is what comes up instead.
+    if (!current(field)) return;
+    if (stale !== under) return;
     if (bringing !== null && bringing !== of) return;
     bringing = null;
     let target = inColour(of);
@@ -1683,8 +1710,8 @@ export function mount(host) {
       host.onColour();
     }
     drawn = target;
-    const current = !pending();
-    if (current) drawn = view;
+    const onFrame = !pending();
+    if (onFrame) drawn = view;
     keep(shaded.image, drawn);
     // A recolour of the full field of the frame the reader is on is that frame drawn to the
     // end in its new colour: what a download at the canvas's size saves, and what Cancel and
@@ -1692,7 +1719,7 @@ export function mount(host) {
     const full = stage.width === grid.width && stage.height === grid.height;
     drawnFull = full;
     drawnField = field;
-    if (current && full) {
+    if (onFrame && full) {
       finished = shaded.image;
       finishedOf = deepLink.emit({
         ...inColour(drawn, asked),
@@ -1700,10 +1727,10 @@ export function mount(host) {
       });
       finishedSamples = 1;
     }
-    if (current) hold(drawn, shaded, key, field, full);
+    if (onFrame) hold(drawn, shaded, key, field, full);
     paint();
     if (running === null) {
-      host.showState(current ? "final" : "stopped");
+      host.showState(onFrame ? "final" : "stopped");
       stat(`${stage.width}×${stage.height} · recolored in ${shaded.elapsed.toFixed(0)} ms · cap ${count(drawn.maxiter)}${ceilingSaid(drawn)}`);
       sayKernel(field);
     }
@@ -3254,25 +3281,34 @@ export function mount(host) {
     // The full stage may go to the GPU, as an on-screen landing's does: its kernels compile
     // beside the quarter pass, and the quarter pass is what the cheap rule reads.
     gpu?.prepare({ degree: landed.frame.degree ?? 2, julia: landed.frame.julia !== null });
-    for (const stage of stages) {
+    // A stage drawn by a kernel the page has left since is drawn again, as `render` does: a
+    // result is the picture its link draws.
+    const drawStage = async (stage) => {
       const span = spanOf(stage);
       running.sharpening = stage.name === "full";
       enterStage(stage.name);
       activity(`${said_stage(stage)}…`, span.from);
-      const field = await deep.field(landed.frame, stage.width, stage.height, {
-        supersample: 1,
-        interior: stage.name === "preview" ? true : interior,
-        gpu: true,
-        preview: stage.name === "full" ? (drawnFields.preview ?? null) : null,
-        of: stage.name === "full" ? null : [grid.width, grid.height],
-        have: stage.name === "full" ? (drawnFields.preview ?? null) : null,
-        onProgress: (done, elapsed) => {
-          if (generation === pass) report(stage, done, elapsed);
-        },
-        onStep: (step) => {
-          if (generation === pass) activity(`${said_stage(stage)} · ${said_step(step)}`, span.from);
-        },
-      });
+      for (;;) {
+        const field = await deep.field(landed.frame, stage.width, stage.height, {
+          supersample: 1,
+          interior: stage.name === "preview" ? true : interior,
+          gpu: true,
+          preview: stage.name === "full" ? (drawnFields.preview ?? null) : null,
+          of: stage.name === "full" ? null : [grid.width, grid.height],
+          have: stage.name === "full" ? (drawnFields.preview ?? null) : null,
+          onProgress: (done, elapsed) => {
+            if (generation === pass) report(stage, done, elapsed);
+          },
+          onStep: (step) => {
+            if (generation === pass) activity(`${said_stage(stage)} · ${said_step(step)}`, span.from);
+          },
+        });
+        if (field === null || generation !== pass || current(field)) return field;
+        log("field retired on landing", { stage: stage.name, identity: field.identity ?? null, aside: true });
+      }
+    };
+    for (const stage of stages) {
+      const field = await drawStage(stage);
       if (field === null || generation !== pass) return SUPERSEDED;
       if (stage.name === "preview") interior = field.fullSwitch ?? switchFor(field);
       drawnFields[stage.name] = field;
@@ -3287,12 +3323,21 @@ export function mount(host) {
       if (drawnColour != null) frame = { ...frame, palette: drawnColour.palette, shade: drawnColour.shade };
       if (drawnColour?.aliased) said = `${said} ${drawnColour.aliased}`;
     }
-    enterStage("coloring", { live: false });
-    activity(`${said_stage(stages[1])} · coloring`, 1);
     const holder = {};
-    colouring = holder;
-    const shaded = await deep.shade(drawnFields.full, frame, holder, { derive: host.deriving() });
-    if (shaded === null || generation !== pass) return SUPERSEDED;
+    let shaded;
+    for (;;) {
+      enterStage("coloring", { live: false });
+      activity(`${said_stage(stages[1])} · coloring`, 1);
+      colouring = holder;
+      shaded = await deep.shade(drawnFields.full, frame, holder, { derive: host.deriving() });
+      if (shaded === null || generation !== pass) return SUPERSEDED;
+      // And one retired while it was shading is drawn again.
+      if (current(drawnFields.full)) break;
+      log("field retired while shading", { stage: "full", identity: drawnFields.full.identity ?? null, aside: true });
+      const again = await drawStage(stages[1]);
+      if (again === null || generation !== pass) return SUPERSEDED;
+      drawnFields.full = again;
+    }
     if (host.deriving()) frame = { ...frame, level: shaded.level };
     log("landed aside", {});
     const canvas = document.createElement("canvas");
@@ -3929,19 +3974,9 @@ export function mount(host) {
     // back or a recolour would otherwise put up the device's lanes for a reader who has
     // just turned it off, or the CPU's for one who has just turned it on, where a fresh load
     // of the same link gives the other. Unticked, everything the GPU drew goes; ticked,
-    // every full field the GPU might take (not small, not cheap by its own count). Quarters
-    // stay: the full pass reads only their census, which no kernel draws.
-    retire(
-      value
-        ? (field) =>
-            field.kernel !== "gpu" &&
-            field.quarter !== true &&
-            field.values.length >= GPU_MIN_SAMPLES &&
-            !cheap({ iterations: field.ran })
-        : (field) => field.kernel === "gpu",
-      value ? "the GPU box was ticked" : "the GPU box was unticked",
-      { restart: value },
-    );
+    // every field, quarter or full, that the unticked box alone kept on the CPU — what the
+    // GPU said when it was asked (`current`), never a second guess at its rules here.
+    retire((field) => !current(field), value ? "the GPU box was ticked" : "the GPU box was unticked", { restart: value });
   }
 
   /**

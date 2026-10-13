@@ -2142,15 +2142,31 @@ and is disabled, its title naming the override. **The Render cell is contained**
 inline-size`, as the shallow mode cell is), because uncontained the box's label widened the
 left column by up to 208 px, moving Navigation off the shallow view's x and moving it again
 as the label changed state; contained, the row wraps inside the 21rem floor with the box on
-its second line. Unticking lets a self-test or a frame already on the device finish, since
-stopping either would read as a lost device, then gives the device up without counting a
-loss (`Health.stoodDown`), so a later tick tests a fresh device; a frame decided for the GPU
-and still queued behind it goes to the CPU. **A tick or an untick retires what the other
-setting drew** *(deep_holes_ckpt163)*: the fields and held frames it applies to go
-(`deep.js`'s `retire`), and the picture up, where its field went, is drawn again at the
-stage it was, at once and with Auto-render off too, since it restores a picture the reader
-already had. Before, an untick left the GPU's picture up with its field gone, and the next
-recolour found nothing to colour. `deep.js`'s `syncGpu` writes the box from
+its second line. Unticking lets a self-test finish, since stopping one would read as a lost
+device, and stops a frame on the device at its next pass, between two read-backs, which no
+device reads as a loss: the CPU then draws that stage whole, as an unticked box would have
+*(explorer_review_ckpt163; it used to run the GPU frame to its end, partials and all, and
+then draw it again)*. The device is then given up without counting a loss
+(`Health.stoodDown`), so a later tick tests a fresh device; a frame decided for the GPU and
+still queued behind it goes to the CPU. **A tick or an untick retires what the other setting
+drew** *(deep_holes_ckpt163)*: the fields and held frames it applies to go (`deep.js`'s
+`retire`), and the picture up, where its field went, is drawn again at the stage it was, at
+once and with Auto-render off too, since it restores a picture the reader already had.
+Before, an untick left the GPU's picture up with its field gone, and the next recolour found
+nothing to colour. **Which CPU fields a tick retires is what the GPU said when it was asked**
+*(explorer_review_ckpt163)*: a CPU field carries `declined`, the reason the GPU did not draw
+it, and one an unticked box alone kept off it (`not chosen`), quarter or full, is retired by
+a tick, as one a missed acquisition kept (`not ready`) is once a device is in use. The tick
+used to judge for itself, by the cheap rule on twelve workers and the full field's own
+iterations where a frame is sent by the pool's worker count and the quarter's estimate, and
+it kept quarters, so on an eight-thread machine a frame the GPU takes stayed the CPU's after
+a tick, and a heavy frame's quarter stayed the CPU's where a fresh load draws the GPU's. The
+same reading (`current`) keeps a pass that runs across a tick (a download, a dive's arrival,
+a landing drawn aside into Dive results) from landing the other setting's field, and a
+recolour in flight from putting a retired field back up; a retired picture recoloured during
+a search waits for the redraw it is owed, which lands in the colour current then. A pass
+restarted by a tick comes back as the pass it was, the cap probe included, so a link's
+arrival restarted by one gains no `n`. `deep.js`'s `syncGpu` writes the box from
 `DeepGpu.standing()` and `GPU_UNAVAILABLE` holds its words.
 
 **A superseded pass yields in milliseconds, so the settle is the only debounce there is**

@@ -1467,28 +1467,31 @@ export class DeepRenderer {
 
     // **The GPU, where the caller allows it and the device will take the frame**
     // *(gpu_deep_ship_ckpt162)*. It fills the same lanes and resolves the same object, so
-    // nothing past this call knows which kernel drew it; `undefined` is a frame it would
-    // not take, which the bands below then draw.
+    // nothing past this call knows which kernel drew it; `{ declined }` is a frame it would
+    // not take, which the bands below then draw, and the field they draw carries why.
+    let declined = null;
     if (gpu && this.gpu != null) {
       const drawn = await this.#gpuField(spec, shape, width, height, supersample, generation, {
         preview,
         onPartial,
         onProgress,
       });
-      if (drawn !== undefined) return drawn;
+      if (drawn === null || drawn.declined === undefined) return drawn;
       if (generation !== this.generation) return null;
+      declined = drawn.declined;
     }
+    const stamped = (field) => (field == null || declined === null ? field : { ...field, declined });
 
     // The quarter's samples, where it is a quarter of this grid: the CPU finishes the rest.
     if (seeds(have, width, height, supersample)) {
-      return this.#complete(spec, have, width, height, generation, { onProgress });
+      return stamped(await this.#complete(spec, have, width, height, generation, { onProgress }));
     }
 
     const sampleWidth = width * supersample;
     const values = new Float64Array(sampleWidth * height * supersample);
     const bands = this.#cut(bandsOf(height, this.slots.length), supersample, true);
 
-    return new Promise((resolve, reject) => {
+    const banded = new Promise((resolve, reject) => {
       this.job = {
         generation,
         spec: JSON.stringify(spec),
@@ -1509,6 +1512,7 @@ export class DeepRenderer {
       this.queue = bands;
       for (const slot of this.slots) this.#dispatch(slot, this.job);
     });
+    return declined === null ? banded : banded.then(stamped);
   }
 
   /**
@@ -1562,16 +1566,19 @@ export class DeepRenderer {
     // quarter the width, and its `ran` is `null` (the GPU's steps are not iterations), so
     // the full pass reads the census instead: the switch here, and the cheap rule, which
     // a frame the census put here is a hundred times over.
+    // A quarter the census would send there and an unticked box kept on the CPU says so, as
+    // a full stage's does (`declined`): ticking the box retires it.
+    let declined = null;
     if (
       gpu !== null &&
       this.gpu != null &&
-      !this.gpu.off &&
       this.gpu.kernel !== "gpu" &&
       quarterOnGpu({ iterations: frame === null ? null : frame / (QUARTER_STRIDE * QUARTER_STRIDE), degree: gpu.degree, workers: this.slots.length })
     ) {
       const own = gpu.ownAt(quarterSwitch);
-      const shape = this.plan(own);
-      if (shape.ok) {
+      const shape = this.gpu.off ? null : this.plan(own);
+      if (shape === null) declined = "not chosen";
+      else if (shape.ok) {
         const drawn = await this.#gpuField(own, shape, width, height, 1, generation, {
           preview: null,
           onPartial: null,
@@ -1582,7 +1589,7 @@ export class DeepRenderer {
           stage: "quarter",
         });
         if (drawn === null) return null;
-        if (drawn !== undefined) {
+        if (drawn.declined === undefined) {
           return {
             ...drawn,
             elapsed: performance.now() - started,
@@ -1593,6 +1600,7 @@ export class DeepRenderer {
           };
         }
         if (generation !== this.generation) return null;
+        declined = drawn.declined;
       }
     }
     const second = await this.samples(specAt(quarterSwitch), rest, scratch, {
@@ -1625,6 +1633,7 @@ export class DeepRenderer {
       census: counted,
       quarterSwitch,
       fullSwitch,
+      ...(declined === null ? {} : { declined }),
     };
   }
 
@@ -1745,8 +1754,10 @@ export class DeepRenderer {
    * samples it hands back finished here on the CPU by [`samples`], so every lane is either
    * the GPU kernel's or exactly the CPU kernel's. Resolves the object the bands resolve,
    * with `kernel: "gpu"`, `identity` (the device and guard form that drew it) and `handed`,
-   * the samples the CPU finished; `null` where the generation moved; `undefined` where the
-   * GPU would not take this frame at all, so the caller draws it with the bands.
+   * the samples the CPU finished; `null` where the generation moved; `{ declined }`, why,
+   * where the GPU would not take this frame at all, so the caller draws it with the bands
+   * and the field they draw carries the reason (`declined`, which the page reads to retire
+   * a CPU field the GPU would take once the box is ticked or the device is ready).
    *
    * **A lost device never finishes the frame** *(deep_holes_ckpt163)*. The attempt it was
    * drawing is thrown away, its tail lists stopped from writing into it (`alive`: `samples`
@@ -1872,7 +1883,7 @@ export class DeepRenderer {
       if (refused !== null || orbit === null) {
         await abandon(attempt);
         this.onGpu?.("cpu", { stage, why: refused ?? "no orbit", ...(losses > 0 ? { losses } : {}) });
-        return undefined;
+        return { declined: refused ?? "no orbit" };
       }
       // **Resumed where the device that recovered is the one that was lost**, and otherwise
       // drawn from the start into a buffer of its own.
@@ -1923,7 +1934,7 @@ export class DeepRenderer {
       if (drawn.status === "unserved") {
         await abandon(attempt);
         this.onGpu?.("cpu", { stage, why: drawn.why ?? drawn.status, ...(losses > 0 ? { losses } : {}) });
-        return undefined;
+        return { declined: drawn.why ?? drawn.status };
       }
       attempt.take(drawn.handed);
       // What the device settled is everything the CPU was not given.
