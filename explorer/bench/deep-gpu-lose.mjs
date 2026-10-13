@@ -15,7 +15,7 @@
 //   3. recover, mid-quarter: the same during a quarter the census sends to the GPU.
 //   4. unrecoverable, idle and mid-frame: the box says the GPU is unavailable, the picture
 //      up is redrawn as a fresh `kernel=cpu` load's, nothing the GPU drew is held, a step
-//      back draws the CPU's picture, and a recolour lands.
+//      back draws the CPU's picture of the address A wrote back, and a recolour lands.
 //   5. untick with a GPU picture up: redrawn as a fresh `kernel=cpu` load's, and a recolour
 //      lands.
 //
@@ -224,7 +224,8 @@ try {
   if (wants(3)) need(QUARTER, "gpu");
   if (wants(4)) {
     need(A, "gpu");
-    [A, B, MID].forEach((f) => need(f, "cpu"));
+    // A's CPU reference is made in the case, off the address the page wrote back.
+    [B, MID].forEach((f) => need(f, "cpu"));
   }
   if (wants(5)) need(B, "cpu");
   for (const [key, { frame, kernel }] of needs) {
@@ -233,8 +234,20 @@ try {
     const drew = state?.kernel ?? "-";
     console.log(`reference ${frame.name} ${kernel}: ${drew} ${state?.hash ?? "never came to rest"}`);
   }
-} finally {
+} catch (error) {
   await ref.close().catch(() => {});
+  throw error;
+}
+
+/** A fresh `kernel=cpu` load, in the reference browser, of the address a page wrote back
+ *  (its `location.search`), less the keys `address` adds again and any `kernel=`. */
+function freshCpu(search) {
+  const query = search
+    .replace(/^\?/, "")
+    .split("&")
+    .filter((pair) => pair !== "" && !["kernel", "panel", "demo"].includes(pair.split("=")[0]))
+    .join("&");
+  return navigate(ref, query, "cpu");
 }
 
 /** The reference, or a FAIL row saying why it proves nothing. */
@@ -335,11 +348,18 @@ try {
 
   // ---------------------------------------------------------------- 4. unrecoverable
   if (wants(4)) {
+    // **The step back is held to A's own address, not to A's link** *(deep_holes_ckpt163)*:
+    // the trail's entry for A is the address the page wrote back after its fit, with the
+    // scale, lambda, period, and phase fitted off the GPU's field, and a step back restores
+    // that address and refits nothing, by design. With nothing the GPU drew held, the back
+    // picture is the CPU's redraw of that address, so its reference is a fresh `kernel=cpu`
+    // load of exactly that query, made once A has come to rest and before B lands.
     const gpuA = reference("4 unrecoverable idle", A, "gpu");
-    const cpuA = gpuA && reference("4 unrecoverable idle", A, "cpu");
-    const cpuB = cpuA && reference("4 unrecoverable idle", B, "cpu");
-    if (gpuA && cpuA && cpuB) {
-      await navigate(page, A.link);
+    const cpuB = gpuA && reference("4 unrecoverable idle", B, "cpu");
+    if (gpuA && cpuB) {
+      const a = await navigate(page, A.link);
+      const cpuA = a === null ? null : await freshCpu(a.query);
+      if (cpuA !== null) console.log(`reference A as written back ${a.query}: ${cpuA.kernel} ${cpuA.hash}`);
       const b = await land(page, B.link);
       const from = await mark(page);
       await page.evaluate(unrecoverable);
@@ -351,12 +371,12 @@ try {
       await sleep(500);
       const back = await rest(page);
       const colour = await recolours(page);
-      const ok = b?.kernel === "gpu" && off && up?.box === "unavailable" && matches(up, cpuB, "cpu") && noGpu(kept) && matches(back, cpuA, "cpu") && colour.ok;
+      const ok = a?.kernel === "gpu" && cpuA !== null && b?.kernel === "gpu" && off && up?.box === "unavailable" && matches(up, cpuB, "cpu") && noGpu(kept) && matches(back, cpuA, "cpu") && colour.ok;
       say({
         case: "4 unrecoverable idle",
         verdict: ok ? "PASS" : "FAIL",
-        note: `B ${up?.hash} (fresh cpu ${cpuB.hash}) ${up?.kernel}, box ${up?.box}, GPU held ${!noGpu(kept)}, back to A ${back?.hash} (fresh cpu ${cpuA.hash}) ${back?.kernel}, recolour ${colour.ok}`,
-        b, up, back, held: kept, colour,
+        note: `B ${up?.hash} (fresh cpu ${cpuB.hash}) ${up?.kernel}, box ${up?.box}, GPU held ${!noGpu(kept)}, back to A ${back?.hash} (fresh cpu of its address ${cpuA?.hash ?? "never came to rest"}) ${back?.kernel}, recolour ${colour.ok}`,
+        a, cpuA, b, up, back, held: kept, colour,
       });
     }
     const cpuMid = reference("4 unrecoverable mid-frame", MID, "cpu");
@@ -399,6 +419,7 @@ try {
   }
 } finally {
   await page.close().catch(() => {});
+  await ref.close().catch(() => {});
 }
 
 console.log(`${cases.length - failed}/${cases.length} pass`);
