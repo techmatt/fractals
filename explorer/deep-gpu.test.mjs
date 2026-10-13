@@ -847,12 +847,13 @@ test("the background compile's order: cheap plain kernels, then pairs by how oft
   assert.deepEqual(gpu.WARM_ORDER.map(spell), [
     "d2M-", "d3M-", "d2J-",
     "d4M+", "d4M-", "d5M+", "d5M-", "d6M+", "d6M-",
-    "d3J+", "d3J-", "d4J+", "d4J-", "d5J+", "d5J-", "d6J+", "d6J-",
+    "d3J+", "d3J-", "d4J+", "d4J-",
   ]);
-  // With what the self-test leaves, the order and it name all twenty kernels once each.
+  // With what the self-test leaves, sixteen kernels once each: what the browser's shader
+  // cache holds from one page load to the next.
   const named = [...TESTED, ...gpu.warmLeft(gpu.WARM_ORDER, (k) => TESTED.has(spell(k))).map(spell)];
-  assert.equal(new Set(named).size, 20);
-  assert.equal(named.length, 20);
+  assert.equal(new Set(named).size, 16);
+  assert.equal(named.length, 16);
   // What is left is the order less what is there, in the same order.
   const has = new Set(["d2M-", "d4M+", "d6J-"]);
   assert.deepEqual(gpu.warmLeft(gpu.WARM_ORDER, (k) => has.has(spell(k))).slice(0, 4).map(spell), ["d3M-", "d2J-", "d4M-", "d5M+"]);
@@ -910,7 +911,7 @@ test("the chain compiles what is left, one at a time, in order, and counts what 
   rig.fail.add("d5M+");
   const { count, stopped } = await rig.run();
   assert.equal(stopped, false);
-  assert.equal(count, 17);
+  assert.equal(count, 13);
   assert.deepEqual(rig.events, gpu.WARM_ORDER.map(spell).map((name) => `${name} bg`));
 });
 

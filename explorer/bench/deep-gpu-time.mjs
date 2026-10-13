@@ -86,6 +86,8 @@ const SWITCH = option("switch") ?? null;
 // `--quarter-factor=N` sets the page's `__deepQuarterFactor`: the degree four-to-six factor
 // on the line that sends a quarter to the GPU.
 const QUARTER_FACTOR = option("quarter-factor") ?? null;
+// `--cold-only` skips the warm landings and times only the cold loads.
+const COLD_ONLY = process.argv.includes("--cold-only");
 // Each GPU browser waits for its background compile chain to finish before the sample
 // (`gpu kernels warm`, at most 120 s); `--no-wait-warm` gives it the old fixed six seconds.
 const WAIT_WARM = !process.argv.includes("--no-wait-warm");
@@ -429,7 +431,7 @@ try {
   console.log(`adapter ${out.adapter}, ${out.cores} cores, canvas ${out.canvas.join("x")}, gpu ${out.health?.status}`);
   if (out.adapter === null) throw new Error("no WebGPU adapter: nothing to time");
 
-  for (const [index, frame] of frames.entries()) {
+  for (const [index, frame] of COLD_ONLY ? [] : frames.entries()) {
     if (index < FROM) continue;
     const row = { index, ...frame, ...shapeOf(frame.link) };
     const cpu = await land(browsers.cpu.page, frame.link);

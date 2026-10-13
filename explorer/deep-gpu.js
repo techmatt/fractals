@@ -252,6 +252,14 @@ const pair = (degree, julia) => [
  * and degree three's Mandelbrot compiled with the switch on, and this list names them again
  * only inside a pair, where they are found compiled and cost nothing. A frame's own pair
  * (`prepare`) jumps the queue.
+ *
+ * **Thirteen, not all seventeen, because the browser's shader cache holds about sixteen
+ * kernels** (measured on Chrome, D3D12): with every kernel compiled each load, the cache
+ * evicted the self-test's own three, and the next page load's self-test compiled them again,
+ * 7.4 to 7.6 s against 1.4 to 1.5 s; on the 159-frame sample's cold loads that came to 43 s
+ * more in all. With thirteen the chain and the self-test hit the cache on every later load
+ * (the self-test 1.4 to 1.8 s, the chain about 0.3 s). The degree five and six Julia pairs,
+ * four or five frames each in the sample, are left to `prepare`.
  */
 export const WARM_ORDER = [
   { degree: 2, julia: false, interior: false },
@@ -262,8 +270,6 @@ export const WARM_ORDER = [
   ...pair(6, false),
   ...pair(3, true),
   ...pair(4, true),
-  ...pair(5, true),
-  ...pair(6, true),
 ];
 
 /** The kernels of `order` that `has` (a kernel already compiled or compiling) leaves. */
@@ -1293,7 +1299,8 @@ export class DeepGpu {
     /** Kernels (`{degree, julia, interior}`) compiled in the background, in this order, once
      *  a self-test passes (`WARM_ORDER`), so the first frame that wants one does not wait on
      *  its compile. An instance's, so that a bench page can ask for another. */
-    this.warm = warm;
+    // A bench page may cut the chain to its first `__deepWarmCount` kernels.
+    this.warm = Number.isInteger(globalThis.__deepWarmCount) ? warm.slice(0, globalThis.__deepWarmCount) : warm;
     /** The background compile under way (`#warm`'s promise), or `null`: one chain a device. */
     this.warming = null;
     this.health = new Health();

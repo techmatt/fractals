@@ -3615,8 +3615,12 @@ once a page load, so the cost falls on the first frame of each degree and plane.
 self-test, and after every recovery, the kernels it did not leave are compiled in the
 background, one at a time, in the order a frame is likely to want them (`WARM_ORDER`): the
 plain kernels of degree two and three Mandelbrot and degree two Julia, then the Mandelbrot
-pairs at degrees four, five, and six, then the Julia pairs at degrees three to six, the
-switch on before off within a pair. Each waits until no frame is on the device and no
+pairs at degrees four, five, and six, then the Julia pairs at degrees three and four, the
+switch on before off within a pair. Not the Julia pairs at five and six: the browser's
+shader cache holds about sixteen kernels, and with all twenty compiled each load it evicted
+the self-test's own, so the next load's self-test compiled them again, 7.4 to 7.6 s against
+1.4 to 1.5 s (43 s more over the 159-frame sample's cold loads). With sixteen, every later
+load's self-test and chain hit the cache, the chain done in about 0.3 s. Each waits until no frame is on the device and no
 compile the page asked for is in flight, though not for the CPU pool; the first waits a
 task besides, so that a frame queued on the self-test asks for its own pair first. The chain
 pauses while the tab is hidden and stops when the device changes or the box goes off, and
