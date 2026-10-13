@@ -37,41 +37,49 @@ const THREADS: usize = 8;
 /// and 1,116, 31 or 62 steps past theirs), and with them their delta, count, step
 /// counters and the `|dz|²` the gate left. Every other row, the interior-off one among
 /// them, hashes as it did.
-const IDENTITY: [(&str, [u32; 2], bool, u64, u64); 7] = [
+///
+/// The phase-1 hashes are Windows bytes. `frac` comes out of `f32::ln`, which is the C
+/// runtime's `logf`, and another platform's rounds an odd last place differently (Linux
+/// moved `random-dives#5` under F32Pair). So each row carries a second pair, of every word
+/// but `frac`, which no `ln` reaches: the phase-1 hashes hold whole on Windows and the
+/// second pair on every platform, as `perturbation/tests/parity.rs` holds its pins.
+/// Measured with `wgsl::log` swapped for `f64::ln` rounded to `f32`: the whole hash moved on
+/// `random-dives#5` HiLo and `random-dives#883` F32Pair, and the second pair on no row.
+const IDENTITY: [Identity; 7] = [
     (
         r#"{"id": "random-dives#501", "re": "0.64774731161734500930901700212431872380828355273804", "im": "0.51776563981107259688773400463987628082965300802274", "w": 8.662732633712781e-42, "n": 20000, "degree": 5}"#,
         [16, 9],
         true,
-        0xd7776b72808d876a,
-        0x1adcd1003f8e7cdd,
+        [0xd7776b72808d876a, 0x1adcd1003f8e7cdd],
+        [0xaeb4f145bf2b89e4, 0xdf05830613a3138c],
     ),
     (
         r#"{"id": "random-dives#5", "re": "-0.75765813056425443555", "im": "0.07282660995819819077", "w": 7.255822008177002e-09, "n": 38347, "degree": 2}"#,
         [24, 14],
         true,
-        0x64ca1e72ffc5e460,
-        0x24a1077be8380121,
+        [0x64ca1e72ffc5e460, 0x24a1077be8380121],
+        [0x4dc21c8af85dec87, 0x094e313bc7996d80],
     ),
     (
         r#"{"id": "deep-gallery#33", "re": "0", "im": "0", "w": 7.787286674045785e-08, "n": 34239, "degree": 2, "julia_re": "-0.74937053247003823168823992075369", "julia_im": "0.041472667068168900034718746387049", "anchor": "origin"}"#,
         [16, 9],
         true,
-        0x8f730c9e0127bb31,
-        0xa7d06a056fc6c1dd,
+        [0x8f730c9e0127bb31, 0xa7d06a056fc6c1dd],
+        [0x88447af78067fe39, 0x43dfa04d75c00a61],
     ),
     (
         r#"{"id": "figure:math-misiurewicz-pairs#2", "re": "-0.1010963638456221610257854", "im": "0.9562865108091415007710961", "w": 0.0024101, "n": 16337, "degree": 2, "julia_re": "-0.1010963638456221610257854", "julia_im": "0.9562865108091415007710961", "anchor": "parameter"}"#,
         [16, 9],
         true,
-        0x971f00f8ed392c7b,
-        0x75bb52bfb572c421,
+        [0x971f00f8ed392c7b, 0x75bb52bfb572c421],
+        [0x431f533503d7416d, 0x0f1fd1727067ff80],
     ),
     (
         r#"{"id": "nucleus-3116-periodic", "re": "0.64774731161734500930901700212431871126941013022100244438793490777767414164458935", "im": "0.51776563981107259688773400463987632330403073150911819396055504521478466034303479", "w": 1.474220271796546e-40, "n": 20000, "degree": 5, "period": 3116}"#,
         [16, 9],
         true,
-        0x1e798ba66d969dec,
-        0xcd0ac69f4538da1c,
+        [0x1e798ba66d969dec, 0xcd0ac69f4538da1c],
+        [0x9055ff44f6c1f926, 0x63d59029511217ab],
     ),
     // Interior off, escaping, rebasing (1,401 / 1,469 times over the frame) and scaled
     // through most of its steps. (`tangle-1e-28` at a cap of 40,000 stood here first and
@@ -81,17 +89,24 @@ const IDENTITY: [(&str, [u32; 2], bool, u64, u64); 7] = [
         r#"{"id": "random-dives#883", "re": "-0.855203701175822929932607772197457", "im": "-0.216193311420101972051552441179384", "w": 2.704353590502409e-24, "n": 631176, "degree": 2}"#,
         [16, 9],
         false,
-        0xd91c0daaa9751e7f,
-        0x19de3e69389df9d8,
+        [0xd91c0daaa9751e7f, 0x19de3e69389df9d8],
+        [0x2bf310b60178d86d, 0x790d37b84f97c513],
     ),
     (
         r#"{"id": "dive-sheet:u0496", "re": "0.84705383614488507118", "im": "0.45497047478211847321", "w": 7.284373984668588e-07, "n": 30368, "degree": 6}"#,
         [16, 9],
         true,
-        0x3a296bd242ff23cc,
-        0xd46e212c7b3c51af,
+        [0x3a296bd242ff23cc, 0xd46e212c7b3c51af],
+        [0xe50bbf31dc2dbcdd, 0x968652c45359e6f4],
     ),
 ];
+
+/// A row, its resolution, the interior switch, and its hashes under F32Pair and HiLo:
+/// every word (Windows), then every word but `frac` (everywhere).
+type Identity = (&'static str, [u32; 2], bool, [u64; 2], [u64; 2]);
+
+/// [`model::PixelState::bits`]'s index of `frac`.
+const FRAC: usize = 6;
 
 fn fnv(hash: &mut u64, word: u32) {
     for byte in word.to_le_bytes() {
@@ -100,34 +115,50 @@ fn fnv(hash: &mut u64, word: u32) {
     }
 }
 
+/// Every word into `whole`, and every word but `frac` into `held`.
+fn fnv_state(whole: &mut u64, held: &mut u64, bits: [u32; 12]) {
+    for (i, w) in bits.into_iter().enumerate() {
+        fnv(whole, w);
+        if i != FRAC {
+            fnv(held, w);
+        }
+    }
+}
+
 /// With the switch off, every pixel ends in exactly the state the phase-1 model left it
 /// in, every field of it; and the switch on with a table that offers no run (no level
 /// stored) leaves exactly that state too, so the seam itself changes nothing.
 #[test]
 fn switched_off_the_model_is_the_phase_one_model_bit_for_bit() {
-    for (row, res, interior, want_pair, want_hilo) in IDENTITY {
+    for (row, res, interior, whole, held) in IDENTITY {
         let fs = FrameSpec::from_row(row).unwrap();
         let spec = fs.spec(res, None, interior);
         let orbit = spec.reference_orbit().unwrap();
-        for (enc, want) in [(Encoding::F32Pair, want_pair), (Encoding::HiLo, want_hilo)] {
+        for (k, enc) in [Encoding::F32Pair, Encoding::HiLo].into_iter().enumerate() {
             let gpu = GpuOrbit::from_reference(&orbit, enc);
             let frame = Frame::from_spec(&spec, gpu.len()).unwrap();
             let empty = GpuTable::empty(orbit.periodic);
-            let (mut off, mut seam) = (0xcbf2_9ce4_8422_2325u64, 0xcbf2_9ce4_8422_2325u64);
+            const FNV: u64 = 0xcbf2_9ce4_8422_2325;
+            let (mut off, mut off_held, mut seam, mut seam_held) = (FNV, FNV, FNV, FNV);
             for r in 0..res[1] {
                 for c in 0..res[0] {
-                    for w in model::run_pixel(&frame, &gpu, c, r, u32::MAX).bits() {
-                        fnv(&mut off, w);
-                    }
+                    let st = model::run_pixel(&frame, &gpu, c, r, u32::MAX);
+                    fnv_state(&mut off, &mut off_held, st.bits());
                     let (st, stats) = model::run_pixel_bla(&frame, &gpu, &empty, c, r, u32::MAX);
                     assert_eq!(stats, BlaStats::default());
-                    for w in st.bits() {
-                        fnv(&mut seam, w);
-                    }
+                    fnv_state(&mut seam, &mut seam_held, st.bits());
                 }
             }
-            assert_eq!(off, want, "{} {enc:?}: switch off", fs.id);
-            assert_eq!(seam, want, "{} {enc:?}: empty table", fs.id);
+            assert_eq!(off_held, held[k], "{} {enc:?}: switch off, but frac", fs.id);
+            assert_eq!(
+                seam_held, held[k],
+                "{} {enc:?}: empty table, but frac",
+                fs.id
+            );
+            if cfg!(windows) {
+                assert_eq!(off, whole[k], "{} {enc:?}: switch off", fs.id);
+                assert_eq!(seam, whole[k], "{} {enc:?}: empty table", fs.id);
+            }
         }
     }
 }

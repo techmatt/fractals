@@ -149,7 +149,8 @@ picture by its own rounding, so the bar is the model with the switch on agreeing
 - **Switched off, nothing moved.** `tests/bla.rs` holds every field of every pixel's
   final state, on seven frames and both encodings, to hashes taken from the
   model before the switch existed, and holds the switch on with an empty table to the
-  same hashes.
+  same hashes. Those are Windows bytes, held whole there; elsewhere every field but
+  `frac` is held, because `frac` comes from the C runtime's `logf`.
 - **The table is the removed one's design**: its merge rule, its guards (no run reaches
   `len − 1`; a leaf whose landing point could clear the bailout is dead; `n + l < maxiter`
   at lookup; the interior gate cannot fire inside a run, through each entry's smallest
@@ -403,11 +404,12 @@ Four flags shape a bundle for its reader. `--interior on` compiles the proof in,
 `--interior-policy cap|flag|handoff` says what a sample the proof gives up on becomes
 (`handoff`, `GATED` and back to the CPU, is the Deep tab's). `--slim on` writes only
 `frame`, `frame_lo`, `orbit_hilo`, `ds_state` and `ds_proof`, which is all a device test
-reads. `--ftz-check on` runs the double-single kernel a second time with x86's flush-to-zero
-and denormals-are-zero set, and records in the manifest how many pixels' state, and apart
-from it how many `frac`s, that moves (`ftz`; a full bundle also carries `ds_state_ftz` and
-`ds_proof_ftz`): a GPU that flushes subnormals, as D3D12 does, matches the flushing run and
-not the plain one wherever the two differ.
+reads. `--ftz-check on` runs the double-single kernel a second time with x86's
+flush-to-zero and denormals-are-zero set, and records in the manifest how many pixels'
+state, and apart from it how many `frac`s, that moves (`ftz`; a full bundle also carries
+`ds_state_ftz` and `ds_proof_ftz`): a GPU that flushes subnormals, as D3D12 does, matches
+the flushing run and not the plain one wherever the two differ. It sets MXCSR, so it runs
+on x86-64 only, and the test that exercises it skips that half elsewhere.
 
 Three readers. **The self-test** is tracked: `node explorer/deep-gpu-selftest/export.mjs`
 writes the vectors and two slim frames into `explorer/deep-gpu-selftest/` with `--ftz-check

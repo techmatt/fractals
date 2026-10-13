@@ -1227,9 +1227,12 @@ mod tests {
 
     /// A slim bundle with the interior switch on carries the proof's words, re-runs from
     /// its own bytes to every one of them, and a flipped proof bit is caught; the flushing
-    /// re-run finds nothing to move on a frame whose deltas stay far above `2^-126`.
+    /// re-run finds nothing to move on a frame whose deltas stay far above `2^-126`. That
+    /// re-run sets x86-64's MXCSR ([`with_flush`]), so elsewhere the bundle is built without
+    /// it and the rest still holds.
     #[test]
     fn a_slim_bundle_holds_the_proof() {
+        let flush = cfg!(target_arch = "x86_64");
         let row =
             r#"{"id":"p","re":"-0.1225611668766536","im":"0.7448617666197442","w":1e-9,"n":4000}"#;
         let b = shaped(
@@ -1238,7 +1241,7 @@ mod tests {
             4000,
             true,
             Shape {
-                ftz: true,
+                ftz: flush,
                 slim: true,
                 bla: false,
             },
@@ -1247,8 +1250,10 @@ mod tests {
         let arrays = arrays_of(&text).unwrap();
         assert!(!arrays.contains_key("orbit_f32pair") && !arrays.contains_key("f32_state"));
         assert_eq!(check(&b.bin, &text, 96, 4).unwrap(), 96);
-        let ftz = b.ftz.unwrap();
-        assert_eq!((ftz.differ, ftz.frac_differ), (0, 0));
+        if flush {
+            let ftz = b.ftz.unwrap();
+            assert_eq!((ftz.differ, ftz.frac_differ), (0, 0));
+        }
         let (offset, bytes) = arrays["ds_proof"];
         assert_eq!(bytes, 96 * 18 * 4);
         // Something was proved, so the proof words are not all idle.
