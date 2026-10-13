@@ -993,7 +993,9 @@ export function mount(host) {
     // render of a session — a fetch, a compile and a worker apiece — and a Render button
     // that stayed pressable through it would start a second pass on a second press.
     // `dive` is a pass the Dive block started, whose bar and Cancel follow it too.
-    running = { upto, auto, dive, stage: "starting", started: performance.now(), done: 0 };
+    // `probe` is kept so that a pass restarted (`retire`, `recapping`) comes back as the pass it
+    // was: a link's arrival restarted with the probe on wrote an `n` the link never had.
+    running = { upto, auto, probe, dive, stage: "starting", started: performance.now(), done: 0 };
     finished = null;
     finishedSamples = 0;
     enterStage("starting", { live: false });
@@ -3978,7 +3980,7 @@ export function mount(host) {
       const was = running;
       stop();
       disarm();
-      render(was.upto, { auto: was.auto });
+      render(was.upto, { auto: was.auto, probe: was.probe });
       return;
     }
     if (!up) return;
@@ -4345,7 +4347,8 @@ export function mount(host) {
    * cap *(Matt, iter_buttons_live_ckpt145)*. Seeing mid-pass that the cap is too low is
    * exactly when a reader wants to raise it, and Halve and Double used to fade for the
    * whole of a pass the reader started. The pass comes back as what it was — a Render as
-   * a Render, an auto pass as an auto pass, so Cancel still goes back where it would have —
+   * a Render, an auto pass as an auto pass, a link's arrival with no probe, so Cancel still
+   * goes back where it would have —
    * and never through the settle timer, which draws nothing with Auto-render off.
    *
    * **Restarted, not continued.** The kernel hands back an escape count per sample and
@@ -4367,7 +4370,7 @@ export function mount(host) {
       if (!act() || was === null || was.upto === "minibrots" || was.upto === "dive") return;
       stop();
       disarm();
-      render(was.upto, { auto: was.auto });
+      render(was.upto, { auto: was.auto, probe: was.probe });
     };
   }
 
