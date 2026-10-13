@@ -2255,7 +2255,8 @@ the same.
 A recolour now also records its picture as the one a download at the canvas's size saves.
 Before, `finished` was only ever written by a pass, so — read from the code, not reproduced —
 *As shown* after a Deep palette change handed back the picture in the palette before it,
-under the new palette's link.
+under the new palette's link. Since explorer_review_ckpt163 that picture also carries the
+link it is of, and is saved only while that is the tab's link (*The download*).
 
 ### A colour change lands on the picture up, whatever is running *(deep_stall_ckpt143)*
 
@@ -5249,6 +5250,29 @@ press while it draws cancels, by generation exactly as a pan does.
 While a download is drawing, **the view is held still** — a wheel notch would cancel the
 pass it is waiting on, and losing a two-minute render to a stray scroll is not a trade
 anybody would make. The button is the way out.
+
+Three things that rule leans on were missing until explorer_review_ckpt163, each found by a
+browser repro before it was fixed:
+
+- **Every door for a link holds still too.** `openAny` refuses the way `openLink` does, so a
+  deep tile in the Deep gallery, Random dives, Dive results, or Saved, clicked while a file
+  draws, says *A download is rendering this view* rather than taking the pass and throwing
+  the file away as *Download cancelled*.
+- **A resize made while held is caught up when it ends.** `relayout` refuses while a
+  download runs and nothing used to ask again, so the canvas kept its old backing store,
+  stretched into the new box, until the next resize; `setBusy(false)` asks once.
+- **The Deep row's bar is the Render line's Cancel.** Pressed, it stops the pass, puts the dot
+  back to *stopped*, and draws again a picture retired under the download (a GPU tick, or a
+  loss); with `stop` alone the dot stayed on *rendering* and the next color change fell back
+  to the quarter field.
+
+**On the Deep tab, As shown saves the picture up only while it is the link's.** The tab's
+finished picture carries the link it is of, and the row is handed it only while that is
+`deepLink.emit(view)` at the canvas's size now: a pan inside the settle window, a step onto a
+held quarter in another color, or a full stage that landed after a resize had saved the
+picture before under the new link, or at the old size. Until the same checkpoint *As shown*
+on the Deep tab saved nothing at all — the row named its file by `deep.family()`, which the
+page never handed it, and the press threw.
 
 ### Every downloaded picture carries its own link *(explorer_download_carries_link_ckpt137, 2026-09-20)*
 

@@ -560,6 +560,9 @@ function setBusy(on) {
   // may be touched is the current map's business, whether there is anything to reset is
   // the recipe's, and the sync is what knows both.
   if (shadeWidgets.size > 0) syncShade();
+  // A resize while held was refused by `relayout`, and nothing asks again: the canvas kept its
+  // old backing store, stretched into the new box, until the next resize. Asked once here.
+  if (!on) relayout();
 }
 
 // ------------------------------------------------------------------- what to say
@@ -3279,6 +3282,10 @@ function changed() {
  * having drawn every entry already.
  */
 function openAny(query, opts = {}) {
+  // Refused as `openLink` refuses, before either branch: a deep tile in the gallery, Random
+  // dives, Dive results or Saved is not held still by `setBusy`, and opening one took the
+  // pass a download was drawing and threw the file away as *Download cancelled*.
+  if (locked()) return false;
   if (link.isInflected(`?${query}`)) {
     say(INFLECTION_PAGED);
     return false;
@@ -6302,13 +6309,16 @@ async function main() {
     deep: {
       owns: () => deepOwns(),
       view: () => deep.view(),
+      // The family a file is named by: `naming()` asks it on the As shown path, which threw
+      // without it and saved nothing.
+      family: () => deep.family(),
       query: () => deep.link(),
       plan: (width, height, supersample) => deep.plan(width, height, supersample),
       measured: (samples) => deep.measured(samples),
       shown: () => deep.shown(),
       finalSupersample: () => deep.finalSupersample(),
       picture: (width, height, options) => deep.picture(width, height, options),
-      cancel: () => deep.stop(),
+      cancel: () => deep.cancel(),
     },
   });
   panel.describe();

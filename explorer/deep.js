@@ -420,8 +420,14 @@ export function mount(host) {
    *  at that size saves instead of drawing it again — and how many samples a pixel it was
    *  drawn at, which is one: the Download row asks, because it may want more. Cleared by
    *  every pass, because a picture of the view before is not this one.
+   *
+   *  **`finishedOf` is the link that picture is of**, and `shown()` hands it over only while
+   *  that is the link a download would stamp, `deepLink.emit(view)`. A gesture, a tint or a
+   *  step onto a held quarter moves `view` without a pass, and the picture of the frame before
+   *  was saved under the new frame's link *(explorer_review_ckpt163)*.
    */
   let finished = null;
+  let finishedOf = null;
   let finishedSamples = 0;
   /** The pass in flight: its generation and what it is doing. */
   let pass = 0;
@@ -713,6 +719,7 @@ export function mount(host) {
     // Only a full picture is one a download at the canvas's size can save, and only at the
     // canvas's size now.
     finished = atCanvas(entry.image) ? entry.image : null;
+    finishedOf = deepLink.emit(view);
     finishedSamples = finished !== null ? 1 : 0;
     remember(entry.key, entry.field);
     paint();
@@ -1170,6 +1177,7 @@ export function mount(host) {
         // — a quarter-resolution preview is not a picture of this canvas.
         if (stage === last && stage.name !== "preview") {
           finished = shaded.image;
+          finishedOf = deepLink.emit(host.deriving() ? { ...target, level: shaded.level } : target);
           finishedSamples = stage.supersample;
         }
         hold(target, shaded, key, field, stage.name === "full");
@@ -1301,6 +1309,9 @@ export function mount(host) {
    */
   async function picture(width, height, { supersample = 1, holder = {} } = {}) {
     const generation = ++pass;
+    // A download that supersedes a full stage mid-way takes its partial down, as `render()`
+    // and `stop()` do: the stage it covered will not land now.
+    dropPartial();
     readLog();
     running = { upto: "download", auto: false, stage: "file", started: performance.now(), done: 0 };
     finished = null;
@@ -1644,12 +1655,14 @@ export function mount(host) {
     const key = deepLink.fieldKey(of, stage.width, stage.height, stage.supersample);
     const field = fields.get(key);
     const under = stale;
+    // The colour this shade is in: a tint during it moves `view`, and the picture is still this.
+    const asked = inColour(of);
     let shaded;
     try {
       const deep = await pool();
       shaded = await deep.shade(
         { ...field, values: field.values.slice() },
-        inColour(of),
+        asked,
         {},
         { derive: host.deriving() },
       );
@@ -1679,6 +1692,10 @@ export function mount(host) {
     drawnField = field;
     if (current && full) {
       finished = shaded.image;
+      finishedOf = deepLink.emit({
+        ...inColour(drawn, asked),
+        level: host.deriving() ? shaded.level : asked.level,
+      });
       finishedSamples = 1;
     }
     if (current) hold(drawn, shaded, key, field, full);
@@ -4548,8 +4565,13 @@ export function mount(host) {
       if (samples !== null && measureGpu?.frame === frame && gpu?.likely(samples)) return measureGpu;
       return measure !== null && measure.frame === frame ? measure : null;
     },
-    /** The finished picture at the canvas's own size, once the last stage has landed. */
-    shown: () => finished,
+    /** The finished picture at the canvas's own size, once the last stage has landed, and
+     *  only while it is a picture of the link a download would stamp (`finishedOf`) at the
+     *  canvas's size now. */
+    shown: () =>
+      finished !== null && !pending() && atCanvas(finished) && finishedOf === deepLink.emit(view)
+        ? finished
+        : null,
     /** How many samples a pixel, each way, that picture was drawn at — `0` where there is
      *  none, and one where there is, because one is all the screen draws *(ckpt141)*.
      *  **Asked rather than assumed** *(deep_ui_ckpt140)*: the Download row used to take it
@@ -4557,6 +4579,15 @@ export function mount(host) {
      *  a 4× download on the strength of it. */
     finalSupersample: () => finishedSamples,
     picture,
+    /** A download's bar pressed to cancel it: what the Render button's Cancel does, but for
+     *  the sentence, which the row says. The dot leaves *rendering*, and a picture retired
+     *  under the download is drawn again (`payOwed`); with `stop` alone it was neither, and
+     *  the next colour change fell back to the quarter field. */
+    cancel() {
+      stop();
+      host.showState("stopped");
+      payOwed();
+    },
     /** The kept field of the picture up, or `null`: what the colour controls' Hold look
      *  takes its reference value from *(palette_hold_ckpt145)*. The stage a recolour would
      *  colour, so the reference and the picture it holds are of one field. */
