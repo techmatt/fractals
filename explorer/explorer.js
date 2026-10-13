@@ -913,7 +913,11 @@ function offerDeep() {
   offer(
     `${WALL} The Deep tab goes further, and this frame carries over.`,
     "Open this frame in Deep",
-    () => showPanel("deep"),
+    // The offer outlives a download's start, and the tab change it makes is refused as a
+    // tab's is.
+    () => {
+      if (!locked()) showPanel("deep");
+    },
   );
 }
 
@@ -4457,6 +4461,15 @@ async function startAtlas() {
 
 for (const tab of tabs) {
   tab.addEventListener("click", () => {
+    // **A download holds the tabs too** *(explorer_review_ckpt163)*. Every tab change moves
+    // the canvas: entering Deep stops the viewer's renderer, which is the one drawing a
+    // shallow file, and leaving a tab with Deep mounted draws the viewer, which does the
+    // same; and off the Deep tab the row's bar cancels the viewer's renderer rather than the
+    // deep file. Each threw the file away, or left it drawing past its own Cancel.
+    if (busy) {
+      locked();
+      return;
+    }
     // In Browse the row is Browse's: Gallery is already what it is showing, and any other
     // tab leaves it for that tab.
     if (browser?.active) {

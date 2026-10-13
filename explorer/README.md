@@ -5251,8 +5251,14 @@ While a download is drawing, **the view is held still** — a wheel notch would 
 pass it is waiting on, and losing a two-minute render to a stray scroll is not a trade
 anybody would make. The button is the way out.
 
-Three things that rule leans on were missing until explorer_review_ckpt163, each found by a
+Four things that rule leans on were missing until explorer_review_ckpt163, each found by a
 browser repro before it was fixed:
+
+- **The tabs hold still.** Every tab change moves the canvas — entering Deep stops the
+  viewer's renderer, which is the one drawing a shallow file, leaving a tab with Deep mounted
+  draws the viewer, and off the Deep tab the row's bar cancels the viewer's renderer rather
+  than the deep file — so a tab pressed during a download, and the zoom stop's *Open this
+  frame in Deep*, are refused with the same sentence as a wheel notch.
 
 - **Every door for a link holds still too.** `openAny` refuses the way `openLink` does, so a
   deep tile in the Deep gallery, Random dives, Dive results, or Saved, clicked while a file
