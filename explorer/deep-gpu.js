@@ -1324,7 +1324,8 @@ export class DeepGpu {
      *  bench page can measure both. */
     this.skip = true;
     this.idle = Promise.resolve();
-    this.lostSignal = null;
+    /** The page's device's loss, once it has one, and the reads waiting on it (`#guard`). */
+    this.loss = null;
     this.fault = null;
     /** What the last frame did, for the bench pages: passes, steps, handed samples. */
     this.last = null;
@@ -1689,10 +1690,17 @@ export class DeepGpu {
     this.limits = device.limits;
     this.timed = device.features.has("timestamp-query");
     this.fault = null;
-    this.lostSignal = device.lost.then((lost) => {
-      throw new GpuLost(`${lost.reason ?? "unknown"}: ${lost.message ?? ""}`);
+    // **A read waits on the loss through a promise of its own** *(explorer_review_ckpt163)*:
+    // each one used to race `device.lost` itself, which kept a reaction per read for as long
+    // as the device lived, one a pass, unbounded over a long session. `#guard` registers a
+    // read's reject here and takes it back once the read settles.
+    const loss = { error: null, waiting: new Set() };
+    this.loss = loss;
+    device.lost.then((lost) => {
+      loss.error = new GpuLost(`${lost.reason ?? "unknown"}: ${lost.message ?? ""}`);
+      for (const reject of loss.waiting) reject(loss.error);
+      loss.waiting.clear();
     });
-    this.lostSignal.catch(() => {});
     device.lost.then((lost) => {
       const why = `device lost (${lost.reason ?? "unknown"}): ${lost.message ?? ""}`;
       // Under its self-test, the loss is the test's outcome (`#attempt`); after it, the page's.
@@ -1753,8 +1761,11 @@ export class DeepGpu {
 
   /** `promise`, unless the device is lost or faults first, which throws `GpuLost`. */
   #guard(device) {
-    const lost = this.lostSignal;
+    const loss = this.loss;
     return async (promise) => {
+      let reject = null;
+      const lost = loss.error !== null ? Promise.reject(loss.error) : new Promise((_, no) => loss.waiting.add((reject = no)));
+      lost.catch(() => {});
       let value;
       try {
         value = await Promise.race([promise, lost]);
@@ -1767,10 +1778,18 @@ export class DeepGpu {
         const gone = await Promise.race([device.lost.then(() => true), new Promise((resolve) => setTimeout(() => resolve(false), LOSS_SETTLE_MS))]);
         if (gone) throw new GpuLost(`the device went away under a read: ${error?.message ?? error}`);
         throw error;
+      } finally {
+        loss.waiting.delete(reject);
       }
       if (this.fault !== null || this.device !== device) throw new GpuLost(this.fault ?? "the device went away");
       return value;
     };
+  }
+
+  /** Throws `GpuLost` where `device` is no longer the page's: what a frame made for it after
+   *  an `await` is never kept on the instance a recovered device reads. */
+  #current(device) {
+    if (this.device !== device) throw new GpuLost("the device went away");
   }
 
   /** A kernel module's place in `pipelines`. */
@@ -2040,14 +2059,26 @@ export class DeepGpu {
       spacingM: f.getFloat32(16, true),
       sc: f.getInt32(20, true),
     };
-    const B = await blaBuilder();
-    const dcmax = plan.julia ? 0 : B.dcBound(shape);
     // **No table for a frame wider than `TABLE_WIDTH`**, decided by the frame alone: a run
     // is linear while `|δ|` is under `2^-48 |Z|`, and `δ` starts at about the frame's width,
     // so a frame at 1e-20 has some twenty bits of growth to skip through and one at 1e-60
     // some hundred and fifty. Measured over the 159-frame sample, no frame from 1e-22 up kept
     // its table past its second checkpoint, and building and trying it cost them up to 0.7 s.
+    // Decided before the builder is fetched, so a frame that wants no table never waits on it.
     if (!(plan.width < TABLE_WIDTH)) return this.empty;
+    // **A builder that will not load or run is a refusal, never a loss** *(explorer_review_ckpt163)*:
+    // the device is not at fault, so the frame is the CPU's and the device stays up. Never a
+    // frame without its table instead, which would be another picture of the same link.
+    const builder = async (work) => {
+      try {
+        return await work();
+      } catch (error) {
+        throw new Unserved(error instanceof Unavailable ? error.message : `the skip table's builder: ${error?.message ?? error}`);
+      }
+    };
+    const B = await builder(blaBuilder);
+    const dcmax = plan.julia ? 0 : await builder(() => B.dcBound(shape));
+    this.#current(device);
     const key = `${held.stamp}|${plan.degree}|${plan.julia ? 1 : 0}|${dcmax}`;
     if (this.table?.key === key) return this.table.dead ? this.empty : this.table;
     this.table?.header?.destroy();
@@ -2071,10 +2102,14 @@ export class DeepGpu {
       return this.empty;
     };
     if (count > TABLE_PROBE) {
-      const probe = B.buildTable({ ...args, points: points.subarray(0, 2 * TABLE_PROBE), count: TABLE_PROBE, periodic: false });
+      const probe = await builder(() => B.buildTable({ ...args, points: points.subarray(0, 2 * TABLE_PROBE), count: TABLE_PROBE, periodic: false }));
       if (probe.valid === 0) return dead(`no live run in its first ${TABLE_PROBE} points`);
     }
-    const built = await this.#build(B, { ...args, points });
+    const built = await builder(() => this.#build(B, { ...args, points }));
+    // **A table is kept only by the device it was built for** *(explorer_review_ckpt163)*: a
+    // device lost while the build ran may already have a recovered one in its place, which
+    // would bind this one's buffers and fault.
+    this.#current(device);
     const ms = performance.now() - started;
     if (built.levels === 0 || built.valid === 0) return dead(built.levels === 0 ? "too short" : "no live run");
     device.pushErrorScope("out-of-memory");
@@ -2086,6 +2121,7 @@ export class DeepGpu {
       made.runs.destroy();
       throw new Unserved(`the skip table: ${invalid.message}`);
     }
+    this.#current(device);
     this.table = { ...made, key, levels: built.levels, valid: built.valid, ms: Math.round(ms) };
     this.log("gpu table built", { ms: Math.round(ms), points: count, levels: built.levels, runs: built.runs.byteLength / 64, valid: built.valid });
     return this.table;
@@ -2239,6 +2275,7 @@ export class DeepGpu {
           buffer.destroy();
           throw new Unserved(`orbit: ${invalid.message}`);
         }
+        this.#current(device);
         device.queue.writeBuffer(buffer, 0, hilo.points);
         let exact = null;
         if (hilo.exact !== null) {
@@ -2251,6 +2288,7 @@ export class DeepGpu {
             buffer.destroy();
             throw new Unserved(`orbit's exact points: ${invalid.message}`);
           }
+          this.#current(device);
           device.queue.writeBuffer(exact, 0, hilo.exact);
         }
         this.orbit = { stamp: job.orbit.stamp, buffer, exact, count: hilo.count, periodic: hilo.periodic, flush: hilo.flush };
@@ -2270,6 +2308,7 @@ export class DeepGpu {
           runner.destroy();
           throw new Unserved(`buffers for ${capacity} samples: ${invalid.message}`);
         }
+        this.#current(device);
         this.runner = runner;
       }
       const runner = this.runner;

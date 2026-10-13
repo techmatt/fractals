@@ -4007,6 +4007,21 @@ linear while `|δ|` is under `2^-48 |Z|`, and `δ` starts near the frame's width
 the width decides it, read off the frame alone, and every shallower frame draws on exactly
 the path it drew on before the skip.
 
+**A builder that will not load is a refusal, never a lost device** *(explorer_review_ckpt163)*.
+`deep-gpu-bla.js` is fetched the first time a frame wants a table, which the self-test never
+does. It used to be fetched by every GPU frame, before the width was asked, and a failed
+fetch or a throw while building was taken as the device's fault: with every request for the
+module failed in the browser, one shallow frame dropped a healthy device
+four times over its recoveries and left the box at **stopped responding** for the page load.
+Chrome also keeps a failed module import for the document, so no retry could have helped. Now
+a frame wider than `2^-100` never fetches it, and one narrower whose builder fails is the
+CPU's with the device left up, the same as an allocation the adapter refuses. Never a frame
+without its table instead, since that is another picture of the same link. And a table, an
+orbit, or a strip's buffers made after an `await` are kept only where the device they were
+made for is still the page's: a device lost while a table built (the build handed to its
+worker, the device destroyed) used to leave that table for the recovered device, which bound
+the old one's buffers, faulted, and counted a second loss for the one.
+
 **What the kernel's size costs.** The skip and the exact points make each kernel module
 larger, and a kernel's first compile longer: over the two 159-frame runs the median compile
 of one kernel went from 1.65 s to 2.21 s, up to 5.1 s, beside a CPU pool at work. A frame
