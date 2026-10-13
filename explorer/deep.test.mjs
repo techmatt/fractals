@@ -297,7 +297,8 @@ test("the deep kernel's sample grid is the engine's, measured where both are hon
     return { disagreements, escaping: relative.length, median: relative[relative.length >> 1] };
   };
 
-  // **Held to the median, for `perturb-wasm/README.md`'s reason.** The two loops disagree
+  // **Held to the median, for `fractal-wallpapers/perturbation/README.md`'s reason** (*1.
+  // Against `f64`, where `f64` still draws*). The two loops disagree
   // wildly on samples within an ulp of the boundary — the worst here is hundreds of
   // iterations — and that tail is the chaos of the boundary rather than anything about
   // either kernel, so a worst case would be pinning this suite to `f64`'s own error.
@@ -487,13 +488,13 @@ test("the tab's own spec builder produces what the module reads", { skip }, () =
 // plausible picture *(deep_cap_policy_ckpt138)*. Below about 1e-22 the width policy's cap
 // lands inside the frame's own escape-count distribution, so a sixth to a third of a busy
 // frame runs out of iterations and is painted as interior when it was exterior all along,
-// and nothing on the page looks wrong. `perturb-wasm/src/policy.rs` is the rule and its
-// README carries the measurement over thirteen frames; what is held here is the seam the
+// and nothing on the page looks wrong. `fractal-wallpapers/perturbation/src/policy.rs` is the
+// rule and its README carries the measurement over thirteen frames; what is held here is the seam the
 // page drives it through — that the probe's bands sum to the frame, that the module's own
 // threshold is what decides, and that the two frames the rule has to separate are
 // separated by the committed bytes rather than by a native run.
 
-/** `tangle 1e-22` — one of the seven frames of `perturb-wasm/tests/common`, and a frame
+/** `tangle 1e-22` — one of the seven frames of `fractal-wallpapers/perturbation/tests/common`, and a frame
  *  the width's cap paints wrong. */
 const TANGLE = {
   center_re: "-0.745017728290198619298817365858",

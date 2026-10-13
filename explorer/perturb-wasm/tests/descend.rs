@@ -19,6 +19,9 @@
 //! it is here rather than in `src/` because nothing the wasm module does needs
 //! it and a `src/` edit is a rebake.
 
+// The frames and walks every harness shares, from the kernel's own tests in the sibling
+// checkout: one copy, which `build.rs` already requires to be there.
+#[path = "../../../../fractal-wallpapers/perturbation/tests/common/mod.rs"]
 mod common;
 
 use perturb::{Anchor, Spec};

@@ -5,11 +5,14 @@ edition = "2024"
 publish = false
 
 # A native model of the Deep tab's WebGPU kernel, and later that shader's oracle.
-# `explorer/perturb-wasm` comes in as an rlib for two things only: the reference orbit,
-# and the f64 kernel the model is measured against. Nothing in that crate is built
+# The picture kernel comes in for two things only: the reference orbit, and the f64
+# kernel the model is measured against. That is `fractal-wallpapers/perturbation`, the
+# core `explorer/perturb-wasm` wraps, taken directly from the sibling checkout and named
+# `perturb` here so every `perturb::` path reads as it always has; the wrapper's exports,
+# minibrot search and Dive are nothing this model draws. Nothing in that crate is built
 # differently for it, and its own `Cargo.lock` is not read.
 [dependencies]
-perturb = { path = "../perturb-wasm" }
+perturb = { package = "perturbation", path = "../../../fractal-wallpapers/perturbation" }
 
 # `deep-gallery-native`'s profile, less `panic = "abort"`: under `cargo test --release`
 # that setting makes cargo build the library twice, once per panic strategy, and the

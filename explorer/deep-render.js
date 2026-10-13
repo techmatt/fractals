@@ -216,7 +216,7 @@ function chunkFor(perSample) {
  * the pool is what pays it; `perturb-wasm`'s `policy::PROBE_COLS` and `PROBE_ROWS` are the
  * same two numbers as the crate's own default, and its harness measures at them. 2,304
  * samples is about a thousandth of one pass of a deep frame, and measured over the
- * thirteen frames of `perturb-wasm/tests/common` the whole escalation costs 0.08% to 0.22% of the
+ * thirteen frames of `fractal-wallpapers/perturbation/tests/common` the whole escalation costs 0.08% to 0.22% of the
  * fine pass it decides the cap for.
  *
  * The rows are cut across the pool exactly as a band's are: one worker walking the whole
@@ -2093,7 +2093,7 @@ export class DeepRenderer {
 }
 
 /** The imports the page's own instance is given: `env.progress` is the module's one import
- *  (`perturb-wasm/src/progress.rs`), and the planner never makes a call long enough to
+ *  (`fractal-wallpapers/perturbation/src/progress.rs`), and the planner never makes a call long enough to
  *  have anything to report. */
 const PLANNER_IMPORTS = { env: { progress() {} } };
 

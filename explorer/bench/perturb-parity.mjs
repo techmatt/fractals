@@ -2,10 +2,10 @@
 //
 //   node explorer/bench/perturb-parity.mjs <old.wasm> <new.wasm> [filter]
 //
-// Over every spec in `perturb-wasm/tests/parity-specs.jsonl` (the native pins' own
-// list): the reference orbit, `compute_band` over the whole tile and over the tile cut
-// in two, `compute_samples` over a scattered list, and `band_ran` / `band_saved` after
-// each. Wasm takes `ln` from another library than native does, so the module is held
+// Over every spec in `fractal-wallpapers/perturbation/tests/parity-specs.jsonl`, in the
+// sibling checkout beside the kernel it pins (the native pins' own list): the reference
+// orbit, `compute_band` over the whole tile and over the tile cut in two,
+// `compute_samples` over a scattered list, and `band_ran` / `band_saved` after each. Wasm takes `ln` from another library than native does, so the module is held
 // to its predecessor rather than to the native pins.
 
 import { readFileSync } from "node:fs";
@@ -19,7 +19,10 @@ if (!oldPath || !newPath) {
   process.exit(2);
 }
 
-const specsUrl = new URL("../perturb-wasm/tests/parity-specs.jsonl", import.meta.url);
+const specsUrl = new URL(
+  "../../../fractal-wallpapers/perturbation/tests/parity-specs.jsonl",
+  import.meta.url,
+);
 const specs = readFileSync(specsUrl, "utf8")
   .split("\n")
   .filter((line) => line.trim() !== "")

@@ -14,6 +14,9 @@
 //! cap), drawn from the dive reference, plus the deep frames of `tests/common` named in
 //! [`COMMON`]. `CLASSIFY_DIR` moves the directory.
 
+// The frames and walks every harness shares, from the kernel's own tests in the sibling
+// checkout: one copy, which `build.rs` already requires to be there.
+#[path = "../../../../fractal-wallpapers/perturbation/tests/common/mod.rs"]
 mod common;
 
 use common::*;

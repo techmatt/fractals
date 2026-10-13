@@ -1220,7 +1220,8 @@ export function mount(host) {
   /**
    * **Choose the cap this frame resolves at, before anything is drawn at it.**
    *
-   * The problem it exists for is `perturb-wasm/README.md`'s: below about 1e-22 the width
+   * The problem it exists for is `fractal-wallpapers/perturbation/README.md`'s (*8. The cap
+   * a frame asks for*): below about 1e-22 the width
    * policy's cap lands *inside* the frame's own escape-count distribution, so a sixth to a
    * third of a busy frame runs out of iterations and is painted as interior when it was
    * exterior all along. Nothing on the page looks wrong. The rule is the kernel's — start

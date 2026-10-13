@@ -2048,7 +2048,7 @@ in both views (next section).
   restarted, since it draws nothing at the cap; the change is left to `moved()` like any
   other. **It restarts rather than continuing**: the kernel returns an escape count per
   sample and keeps no `z` or derivative to carry into a longer pass, and exporting them is
-  a `perturb-wasm` change. The reference orbit the pool holds does survive the cancel, and
+  a change to the kernel, `fractal-wallpapers/perturbation`. The reference orbit the pool holds does survive the cancel, and
   a restart draws off it wherever the new cap is within what it was run to (measured on
   `tangle 1e-22`: both a Halve and a Double mid-pass came back *orbit (kept)*). The shallow view has
   no iteration control (its cap is derived from the width), so there is nothing there to
@@ -2415,7 +2415,7 @@ of the three, and the choice is named here so it is not mistaken for a stage.
 
 **Every stage reports, at most every 100 ms.** `perturb.wasm` has one import now,
 `env.progress(done, total)`, called every 4,096 iterations of a reference orbit and once a
-cell of a probe or domain-walk share (`perturb-wasm/src/progress.rs`); the worker throttles
+cell of a probe or domain-walk share (`fractal-wallpapers/perturbation/src/progress.rs`); the worker throttles
 it to a message every 100 ms, and the page's own planner instance supplies a function that
 does nothing. The line says which: *choosing an iteration cap · trying 111,852 (rung 2) ·
 1,152 of 2,304 cells*, *full resolution · reference orbit 40,960 of 330,708*, *full
@@ -2467,7 +2467,8 @@ reference orbit is `Z₀ = 0, Z₁ = c, Z₂ = c² + c, …`, the critical orbit
 `z = c`. So a Julia frame is drawn from the orbit a Mandelbrot frame at that `c` already
 computes, the recurrence loses its `dc` term and gains a starting delta, and rebasing is
 untouched and still exact — `δ := z` works because `Z₀ = 0`, with no subtraction and so no
-cancellation. `perturb-wasm/README.md` has the arithmetic and the proof.
+cancellation. `fractal-wallpapers/perturbation/README.md` has the arithmetic and the proof
+(*The design, in one page*, and *2b. The Julia case, against the same oracle*).
 
 **Two anchors, and the link carries neither.** A frame measures its offset from `z = c` or
 from `z = 0`, whichever is nearer; both are points of the stored orbit, both offsets are
@@ -2542,7 +2543,8 @@ each. **Neither field was wrong.** On the home frame both perturbation fields ma
 alike (median 1.4e-7, p99 1.0e-6, about fifty boundary samples past 0.1 each). Below the
 `f64` floor, against the fixed-point oracle on a child of the video's final frame and one of
 the 1e-19 gallery frame, the kept reference and the frame's own are as close as each other
-(`perturb-wasm/README.md` §2c). They differ in the chaotic tail, a percent or two of the
+(`fractal-wallpapers/perturbation/README.md`'s *2c. A reference somewhere else in the
+frame*). They differ in the chaotic tail, a percent or two of the
 samples, which is f64 rounding taken down two different rebase paths. So the rule is
 determinism, and it is paid for in orbits:
 
@@ -2628,7 +2630,8 @@ samples are still dying at it with `|dz|` grown past the escape radius, under th
 1,000,000 ceiling — the **automatic** one, below.
 
 The rule, its threshold and the thirteen frames it was measured on are
-`perturb-wasm/README.md` §8; what is here is what the tab does with it.
+`fractal-wallpapers/perturbation/README.md`'s *8. The cap a frame asks for*; what is here
+is what the tab does with it.
 
 - **Deciding costs 0.08% to 0.22% of the fine pass**, so the full pass runs once, at the
   settled cap. The probe is a subset of the frame — its cells, its limbs, its geometry, its
@@ -3446,7 +3449,8 @@ into a preview, and one decade deeper it stops doing so.
 *(profiling_pass_ckpt146, 2026-09-24)*. In wasm the switch costs the loop about half its
 speed wherever it does not fire, and on the frames a reader opens it mostly does not;
 the quarter pass says exactly what the full pass would run either way (`switchFor` in
-`deep.js`, and `perturb-wasm/README.md` §7 for the price). No pixel moves. A deep link
+`deep.js`, and `fractal-wallpapers/perturbation/README.md`'s *In wasm the switch is
+dearer, and the page now chooses it per frame* for the price). No pixel moves. A deep link
 opened in the page, a 1600×1100 window on twelve cores, to the finished screen picture,
 alternated over two rounds, rasters identical:
 
@@ -4106,20 +4110,22 @@ Stopping a search early at the 2-fold and 4-fold symmetry stages, and anything a
 *Find minibrots* that persists: no entry reaches Saved, none has a link contract of its
 own, and the list is gone on the next search or the next gesture.
 
-**BLA was built, priced and taken back out, and §6 of the crate README is why.** The skip
+**BLA was built, priced and taken back out, and `fractal-wallpapers/perturbation/README.md`'s *6. The skip table, and why it is not
+here* is why.** The skip
 table bought 50× or more on the ladder it was first measured on — but every frame there
 deep enough for it to pay on was 100% interior, and on seven deep frames that have
 something in them it is **between a 21% loss and 2.6×** and **moves the picture at every
 tolerance, including the tightest one the approximation admits**. It cost 9,423 bytes of
 `perturb.wasm` for a path no page could reach, and those bytes are back. The seven frames
-stay, in `perturb-wasm/tests/common` with their `dv` links, because they are the only
+stay, in `fractal-wallpapers/perturbation/tests/common` with their `dv` links, because they are the only
 deep frames this project has that are not one flat colour. That is the CPU kernel's, and it
 stands: the GPU's double-single kernel has had a skip table since gpu_deep_depth_ckpt163,
 where `f32`'s rounding already sets the bar (*The skip table on the GPU*, above).
 
 And those frames found something about this tab that is not about the skip at all: at
 these depths the width's cap painted exterior as interior. **That is fixed** — *Iterations,
-and the cap a frame asks for* above, and `perturb-wasm/README.md` §8 — and the frames are
+and the cap a frame asks for* above, and `fractal-wallpapers/perturbation/README.md`'s
+*8. The cap a frame asks for* — and the frames are
 what it was argued on. A sixth to a third of each of the five tangle and pinch frames is
 repainted by the settled cap, and effectively the whole of each `body` frame, which were
 flat interior fills over escape counts running to 400,000.
@@ -4195,18 +4201,22 @@ deep-gpu-model/    perturb's kernel restated for a GPU, measured against it; it 
 
 `python -m builder explorer --perturb` rebuilds the two modules and their manifest and
 nothing else: `perturb.wasm` with `-C target-feature=+simd128`, which draws two samples a
-vector (`perturb-wasm/src/lanes.rs`), and `perturb-scalar.wasm` without it, the scalar
+vector (`fractal-wallpapers/perturbation/src/lanes.rs`), and `perturb-scalar.wasm` without it, the scalar
 loop. The page fetches one, chosen once by a `WebAssembly.validate` probe holding one SIMD
 instruction (`deep-render.js`, `perturbModuleUrl`), so Safari 15.4 to 16.3 still has a
 Deep tab; the two draw the same bits, which `bench/perturb-parity.mjs` holds over the
-142 specs of `perturb-wasm/tests/parity-specs.jsonl` and `deep.test.mjs` on four frames.
+142 specs of `fractal-wallpapers/perturbation/tests/parity-specs.jsonl` and `deep.test.mjs` on four frames.
 Build it on the toolchain the manifest names (`RUSTUP_TOOLCHAIN=1.96.0`), or the bytes
-move for no reason in the source. It needs `cargo` and the `wasm32-unknown-unknown` target and **no sibling checkout** —
-the crate has no dependencies at all, which is what makes that true and is why it is its own
-branch rather than a stage of the bake. The manifest has no `engine_version` and no
-`engine_changes`, with the fields absent rather than empty: this crate does not link the
-engine and has never needed a change in it, and an empty `engine_changes` would read as a
-list somebody forgot to fill in.
+move for no reason in the source. It needs `cargo`, the `wasm32-unknown-unknown` target and
+**the sibling checkout**, as the bare command does *(deep_seam_move_ckpt163)*: the kernel
+is `fractal-wallpapers/perturbation`, which the crate takes by path, so the build runs under
+the same remaps and moves with the parent directory as `engine.wasm` does (*The engine,
+compiled*), and it refuses a kernel that is not the tree `engine.manifest.json`'s
+`wallpapers_commit` pins. It is still its own branch rather than a stage of the bake. The
+manifest has no `engine_version`, no `engine_changes` and no commit of its own — `pinned_by`
+names the engine manifest's instead — with the fields absent rather than empty: this crate
+does not link the engine and has never needed a change in it, and an empty `engine_changes`
+would read as a list somebody forgot to fill in.
 
 ## Phoenix *(phoenix_tab_ckpt140, 2026-09-22)*
 
@@ -4711,7 +4721,10 @@ LTO lays the functions out by them. No rustc flag reaches it. Two checkouts at t
 path on different machines or under different users now agree; two paths do not.
 `CARGO_ENCODED_RUSTFLAGS` replaces whatever rustflags the shell exported, deliberately.
 CI's `crates` job builds without the remaps, so its hash still differs from the committed
-one, as it always has.
+one, as it always has. **`perturb.wasm` and `perturb-scalar.wasm` are in the same position
+since deep_seam_move_ckpt163**: their kernel is the path dependency
+`fractal-wallpapers/perturbation`, built under the same remaps, and its hash moves with the
+checkout the same way.
 
 That is also why **`generic_loop` is a bare `--cfg` and not a cargo feature**. A feature
 enters the crate's metadata hash and the module stops reproducing; a `--cfg` the default
@@ -4726,7 +4739,9 @@ nearly does.
 
 ### The other kernel, and why it is not this one
 
-`perturb-wasm/` is a second crate and will be a second module. It renders the
+`perturb-wasm/` is a second crate and will be a second module — since
+deep_seam_move_ckpt163 a wrapper over the sibling checkout's kernel crate,
+`fractal-wallpapers/perturbation`, which it takes by path. It renders the
 degree-2 Mandelbrot set **below the `f64` floor** — by perturbation against one
 high-precision reference orbit, with rebasing — and it is deliberately not part
 of `engine.wasm`. Nothing in it is linked into that module, so the shallow path
@@ -4738,7 +4753,7 @@ layout, so `shade_level` colours it unchanged.
 **The Deep tab, the link contract and the committed `perturb.wasm` all landed
 together** *(build_deep_tab_ckpt135, 2026-09-19)*, which is what settled the
 exports the module was waiting for a consumer to settle. See *Deep* above for the
-tab; `perturb-wasm/README.md` owns the design and the numbers: the limb rule, the
+tab; `fractal-wallpapers/perturbation/README.md` owns the design and the numbers: the limb rule, the
 rebasing, the cap policy, and the proof that where the two kernels disagree it
 is the plain `f64` loop that is wrong.
 
@@ -7568,7 +7583,8 @@ differently when each was brought to `cargo fmt` clean. `perturb-wasm`'s reforma
 moved `perturb.wasm` (the commit before it rebuilt byte for byte): `panic = "abort"` still
 embeds `#[track_caller]` line numbers, so a shifted line in `src/` is a shifted immediate,
 and the module came out the same length and a different file. So every source edit there,
-a comment that moves a line included, owes `python -m builder explorer --perturb` and the
+a comment that moves a line included — and since deep_seam_move_ckpt163 every edit to the
+kernel it wraps, `fractal-wallpapers/perturbation/src/` — owes `python -m builder explorer --perturb` and the
 new bytes in `perturb.manifest.json`. `engine-wasm`'s reformat rebuilt to the identical
 763,343 bytes: three of its five hunks are inside `#[cfg(test)] mod tests`, and the one in
 shipped code, in `densify`, shifts every line after it by three, yet a probe that inserted

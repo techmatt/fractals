@@ -6,9 +6,9 @@ version = 4
 name = "deep-gpu-model"
 version = "0.1.0"
 dependencies = [
- "perturb",
+ "perturbation",
 ]
 
 [[package]]
-name = "perturb"
+name = "perturbation"
 version = "0.1.0"

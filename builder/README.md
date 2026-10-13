@@ -1830,7 +1830,8 @@ caps run to 1.98M, took 6 to 9 s each at the top of that range.
 
 A tile's field comes from `builder/deep-gallery-native/`, a small crate that uses
 `explorer/perturb-wasm` as an rlib, so it runs the arithmetic `perturb.wasm` runs, on every
-core. It is built on first use and its `target/` is ignored. A Julia tile is anchored the
+core — the kernel that crate wraps is the sibling checkout's
+`fractal-wallpapers/perturbation`, so this one needs the checkout too. It is built on first use and its `target/` is ignored. A Julia tile is anchored the
 way the tab anchors one: at whichever of `z = c` and `z = 0` is nearer. Colour comes from
 the tab itself. `deep_gallery_shade.mjs` reads the link with `deep-link.js`, builds the spec
 with `deep-render.js`'s `shadeSpecOf` and shades it through the committed `engine.wasm`, so

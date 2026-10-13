@@ -7,7 +7,7 @@
 //   PORT=8014 node explorer/bench/hunt/probe-minibrots.mjs
 import { Page, SITE, say, sleep } from "./lib.mjs";
 
-/** The committed centres, spelled exactly as `perturb-wasm/tests/common/mod.rs` has them. */
+/** The committed centres, spelled exactly as `fractal-wallpapers/perturbation/tests/common/mod.rs` has them. */
 const FRAMES = [
   ["anchor 2e-11", "dv=2&x=-0.74501772828532335842941892835857434&y=0.14993443275456819177805709088257971&w=2e-11&n=48551&p=twilight_shifted&panel=deep", 6],
   ["tangle 1e-22", "dv=2&x=-0.745017728290198619298817365858&y=0.149934432756897045833502403382&w=1e-22&n=93600&p=twilight_shifted&panel=deep", 6],

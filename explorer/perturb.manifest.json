@@ -1,19 +1,23 @@
 {
   "built": "2026-10-12",
   "crate": "explorer/perturb-wasm",
-  "dependencies": [],
+  "dependencies": [
+    "fractal-wallpapers/perturbation"
+  ],
+  "kernel_tree": "d53ab1a37b064bb2c64edeee7d90e9a9d5ba35e2",
   "modules": {
     "perturb-scalar.wasm": {
-      "gzip_bytes": 163699,
-      "raw_bytes": 462581,
+      "gzip_bytes": 163128,
+      "raw_bytes": 460305,
       "rustflags": ""
     },
     "perturb.wasm": {
-      "gzip_bytes": 182887,
-      "raw_bytes": 587831,
+      "gzip_bytes": 181860,
+      "raw_bytes": 586233,
       "rustflags": "-C target-feature=+simd128"
     }
   },
+  "pinned_by": "engine.manifest.json wallpapers_commit",
   "rustc": "1.96.0 (ac68faa20 2026-05-25)",
-  "schema": 2
+  "schema": 3
 }

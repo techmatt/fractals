@@ -153,7 +153,8 @@ def _parser() -> argparse.ArgumentParser:
         help=(
             "rebuild explorer/perturb.wasm and perturb-scalar.wasm — the Deep tab's "
             "perturbation kernel, with wasm SIMD and without — and their manifest, and nothing "
-            "else; needs cargo but no sibling checkout"
+            "else; needs cargo and the sibling checkout, whose picture kernel it wraps, at "
+            "the commit engine.manifest.json pins"
         ),
     )
     baked.add_argument(
@@ -886,9 +887,9 @@ def _do_explorer(options: argparse.Namespace) -> int:
             )
         return 0
     if options.perturb:
-        # Its own branch and not a stage of the bake: this module has no palettes, no
-        # catalog and no sibling checkout in it, so folding it into the bare command would
-        # make every palette edit rebuild a second crate for nothing.
+        # Its own branch and not a stage of the bake: this module has no palettes and no
+        # catalog in it, so folding it into the bare command would make every palette edit
+        # rebuild a second crate for nothing.
         built = explorer_module.build_perturb()
         for path, raw_bytes, gzip_bytes, flags in built:
             note = f"  ({' '.join(flags)})" if flags else ""

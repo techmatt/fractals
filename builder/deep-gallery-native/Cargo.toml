@@ -5,8 +5,11 @@ edition = "2024"
 publish = false
 
 # The Deep tab's kernel, natively: `explorer/perturb-wasm` as an rlib, so the gallery's
-# fields are the arithmetic `perturb.wasm` does, on every core. Nothing in that crate is
-# built differently for it, and its own `Cargo.lock` is not read.
+# fields are the arithmetic `perturb.wasm` does, on every core. That crate wraps
+# `fractal-wallpapers/perturbation`, the picture kernel, and adds the minibrot search and
+# the Dive this binary also drives, so the sibling checkout has to be there to build it.
+# Nothing in either crate is built differently for it, and their `Cargo.lock`s are not
+# read.
 [dependencies]
 perturb = { path = "../../explorer/perturb-wasm" }
 

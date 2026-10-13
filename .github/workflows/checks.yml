@@ -20,12 +20,14 @@
 #
 # `crates` proves the four Rust crates compile, on the toolchain the manifests record
 # rather than on stable (explorer/README.md has why 1.98.1 is not neutral). It is the one
-# job that is not a bare clone: `engine-wasm` depends on the wallpapers engine by path, so
-# that repository is checked out beside this one at the commit `engine.manifest.json`
-# names. It never replaces a committed `.wasm`. It records each built module's hash beside
-# the committed one and asserts nothing about them, because the committed modules carry
-# the source paths of the Windows machine that built them (`C:\Code\...`, `src\fx.rs`) and
-# no other machine writes those bytes. `wasm-hashes` lays the three platforms side by side.
+# job that is not a bare clone: `engine-wasm` depends on the wallpapers engine by path, and
+# `perturb-wasm` and `deep-gpu-model` on its picture kernel (`perturbation/`), so that
+# repository is checked out beside this one at the commit `engine.manifest.json` names —
+# the one pin for all three modules. It never replaces a committed `.wasm`. It records each
+# built module's hash beside the committed one and asserts nothing about them: this job
+# builds without `builder/explorer.py`'s path remaps, and even with them a path dependency's
+# location enters cargo's `-C metadata` hash, so a module rebuilds to its committed bytes
+# only at the paths it was baked at. `wasm-hashes` lays the three platforms side by side.
 
 name: checks
 
@@ -110,9 +112,13 @@ jobs:
           toolchain: ${{ steps.pin.outputs.rustc }}
           targets: wasm32-unknown-unknown
           components: rustfmt
-      - name: rustfmt, all four crates
+      # Five: the four here, and the picture kernel `perturb-wasm` wraps, which the
+      # wallpapers CI formats too — listed here so a website-side edit to it is caught
+      # wherever it is made.
+      - name: rustfmt, all four crates and the kernel they wrap
         working-directory: fractal-website
         run: |
+          (cd ../fractal-wallpapers/perturbation && cargo fmt --check)
           (cd explorer/perturb-wasm && cargo fmt --check)
           (cd explorer/engine-wasm && cargo fmt --check)
           (cd builder/deep-gallery-native && cargo fmt --check)

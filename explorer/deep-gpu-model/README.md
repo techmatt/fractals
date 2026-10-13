@@ -2,7 +2,8 @@
 
 A native Rust model of the WebGPU kernel the Deep tab draws its full passes with, and that
 kernel's oracle *(gpu_deep_ship_ckpt162)*. It restates `perturb`'s perturbation kernel
-(`explorer/perturb-wasm`) in the only types WGSL has, runs it natively, and measures it
+(`fractal-wallpapers/perturbation`, the kernel `explorer/perturb-wasm` wraps, taken here
+directly and named `perturb` in `Cargo.toml`) in the only types WGSL has, runs it natively, and measures it
 against `perturb`'s own `f64` kernel sample for sample. The shader is
 `explorer/deep-gpu-wgsl.js`, the double-single loop and its interior proof line for line,
 and the page reaches this crate only through bytes it exported: the self-test the page runs
@@ -26,7 +27,7 @@ the model on 55%.
 ## What is where
 
 ```
-Cargo.toml          one dependency, perturb, by path; no others
+Cargo.toml          one dependency, perturb (the sibling's perturbation), by path; no others
 src/wgsl.rs         the WGSL builtins and bit idioms the loop uses, one function each
 src/orbit.rs        the reference orbit as a GPU buffer: F32Pair or HiLo
 src/frame.rs        per-frame constants, and dc formed per pixel from its column and row

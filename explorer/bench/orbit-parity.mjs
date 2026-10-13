@@ -1,7 +1,7 @@
 // Two `perturb.wasm` modules, held to computing the same reference orbit byte for
 // byte — and, with `--time`, timed against each other on one thread.
 //
-// The Rust side pins the orbit natively (`perturb-wasm/tests/orbit_parity.rs`); this
+// The Rust side pins the orbit natively (`fractal-wallpapers/perturbation/tests/orbit_parity.rs`); this
 // is the same question asked of the modules the page actually runs, because a
 // change to the fixed-point arithmetic is compiled twice and only one of those is
 // what a reader's browser executes.

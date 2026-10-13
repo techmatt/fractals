@@ -28,7 +28,11 @@ inflection = []
 # not tell two revisions apart, and it would drag the whole wallpaper project —
 # Python, data, labels — into a build that wants one Rust library. `build.rs`
 # says so plainly when the sibling is not there.
-fractal-engine = { path = "../../../fractal-wallpapers/engine" }
+#
+# `default-features = false` turns off the engine's `deep` feature: that is the native
+# `render-link`'s deep backend over `fractal-wallpapers/perturbation`, and the page runs
+# that kernel as `perturb.wasm`, a module of its own, so this one never links it.
+fractal-engine = { path = "../../../fractal-wallpapers/engine", default-features = false }
 num-complex = "0.4"
 # The spec crosses the boundary as JSON so that a family, a mode, a mode parameter
 # and a palette recipe have one spelling here and one over there: the engine's own.

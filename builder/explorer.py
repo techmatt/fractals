@@ -144,13 +144,17 @@ CRATE_DIR = EXPLORER_DIR / "engine-wasm"
 #: the Deep tab runs below the `f64` floor, and it is a crate of its own so that nothing in
 #: it is linked into `engine.wasm` — the shallow path cannot be slowed or re-bytes by it.
 #:
-#: **It is built without the sibling checkout, and that is the point of it.** The crate has
-#: no dependencies at all, not even the engine, so `--perturb` runs on a bare clone with a
-#: Rust toolchain and nothing else; `build_wasm` above refuses early without the checkout
-#: because the engine crate is a path dependency of the other one.
+#: **It wraps the sibling checkout's picture kernel** *(deep_seam_move_ckpt163)*. The
+#: fixed-point reals, the reference orbit, the delta loop and the spec are
+#: `fractal-wallpapers/perturbation`, which `fractal-engine render-link` draws deep links
+#: from natively; this crate adds the minibrot search, the Dive and the exports. So
+#: `--perturb` needs the checkout as `build_wasm` does, is built under the same remaps, and
+#: is pinned by the same commit: `engine.manifest.json`'s `wallpapers_commit` is the one
+#: spelling of it for all three modules, and `build_perturb` refuses a kernel that is not
+#: the one that commit holds.
 #:
 #: **Two modules from the one crate** *(deep_wait_ckpt163)*. `perturb.wasm` is built with
-#: wasm SIMD and draws two samples a vector (`perturb-wasm/src/lanes.rs`);
+#: wasm SIMD and draws two samples a vector (`fractal-wallpapers/perturbation/src/lanes.rs`);
 #: `perturb-scalar.wasm` is the same crate without it, the scalar loop, for an engine that
 #: cannot validate SIMD (Safari 15.4 to 16.3). The page probes once and fetches one
 #: (`deep-render.js`, `perturbModule`); both draw the same bits, which
@@ -277,8 +281,12 @@ PERTURB_BUILDS = (
     (PERTURB_SCALAR_MODULE, "target", ()),
 )
 
-#: The perturbation manifest's schema: 2 since it records two modules.
-PERTURB_SCHEMA = 2
+#: The perturbation manifest's schema: 2 since it records two modules, 3 since the kernel is
+#: a dependency and the engine manifest's commit pins it.
+PERTURB_SCHEMA = 3
+
+#: Where the perturbation modules' kernel lives in the sibling checkout, relative to its root.
+PERTURB_KERNEL = "perturbation"
 
 #: The manifest's schema, in the same spirit as every JSONL record here.
 SCHEMA = 1
@@ -406,6 +414,10 @@ ENGINE_CHANGES = [
     "shallow site links byte-identical before and after, the three anchors at 1600x900 ss4 "
     "0.99x to 1.01x and byte-identical, engine tests 257 unmoved; this module does not call "
     "link and its bytes are unmoved by it.",
+    "A default-on `deep` feature takes the sibling's `perturbation/` kernel as an optional "
+    "dependency, for render-link's dv= links (deep_seam_move_ckpt163); this module takes "
+    "the engine with default-features = false, links none of it, and rebuilds at the pin "
+    "to its committed bytes.",
 ]
 
 _RUSTC_VERSION = re.compile(r"^rustc (\S+ \([0-9a-f]+ \d{4}-\d{2}-\d{2}\))")
@@ -1446,17 +1458,19 @@ def remapped_paths() -> dict[str, str]:
     }
 
 
-def remapped_env() -> dict[str, str]:
+def remapped_env(*extra: str) -> dict[str, str]:
     """The environment `cargo build` runs `engine-wasm` under: the remaps, and only those.
 
     `CARGO_ENCODED_RUSTFLAGS` rather than `RUSTFLAGS`, because a path with a space in it
     survives the unit-separator encoding and not the whitespace one. It replaces any
     rustflags the shell carried, deliberately: a module whose bytes depend on what
-    somebody had exported is the thing this is here to stop.
+    somebody had exported is the thing this is here to stop. `extra` is a build's own
+    flags, appended after the remaps — the perturbation modules' `+simd128`.
     """
     flags = [
         f"--remap-path-prefix={source}={target}" for source, target in remapped_paths().items()
     ]
+    flags.extend(extra)
     env = {key: value for key, value in os.environ.items() if key != "RUSTFLAGS"}
     env["CARGO_ENCODED_RUSTFLAGS"] = "\x1f".join(flags)
     return env
@@ -1503,30 +1517,31 @@ def write_manifest(raw_bytes: int, gzip_bytes: int) -> Path:
     return MANIFEST
 
 
-def build_perturb() -> list[tuple[Path, int, int, tuple[str, ...]]]:
+def build_perturb(*, pinned: bool = True) -> list[tuple[Path, int, int, tuple[str, ...]]]:
     """Compile the perturbation kernel for wasm, twice, and copy both in beside the page.
 
     `perturb.wasm` with SIMD and `perturb-scalar.wasm` without (see `PERTURB_BUILDS`), each
-    as `(path, raw bytes, gzip bytes, rustflags)`. The rustflags are the build's own and
-    replace any the shell carried, for `remapped_env`'s reason: a module whose bytes depend
-    on what somebody had exported is a module nobody can rebuild.
+    as `(path, raw bytes, gzip bytes, rustflags)`. The rustflags are the build's own plus
+    `remapped_env`'s remaps, and replace any the shell carried: a module whose bytes depend
+    on what somebody had exported, or on where the checkouts sit, is a module nobody can
+    rebuild. The remaps reach the kernel's sources in the sibling checkout as they reach
+    the engine's; what they cannot reach is the `-C metadata` hash cargo takes of a path
+    dependency's location, so these modules now move with the parent directory as
+    `engine.wasm` does (`explorer/README.md`, *The engine, compiled*).
 
-    No `wallpapers_root()` here, deliberately: this crate depends on nothing — not the
-    engine, not even as a dev-dependency — so it builds on a clone with a Rust toolchain
-    and no sibling checkout, and refusing early for want of one would be refusing for a
-    reason that does not apply.
+    **The kernel has to be the one the engine manifest pins** (`perturb_pin_problem`), so
+    that one `wallpapers_commit` is true of all three modules. `pinned=False` skips that
+    for a candidate build that is compared and thrown away — a gate run before the kernel
+    is committed — and is never what writes a manifest.
     """
     if not PERTURB_CRATE_DIR.is_dir():
         raise ExplorerError(f"no crate at {PERTURB_CRATE_DIR}")
+    wallpapers_root()  # refuse early, with the message that names both ways to configure
+    if pinned and (problem := perturb_pin_problem(worktree=True)):
+        raise ExplorerError(problem)
     built_modules = []
     for module, target_dir, flags in PERTURB_BUILDS:
-        env = {
-            key: value
-            for key, value in os.environ.items()
-            if key not in ("RUSTFLAGS", "CARGO_ENCODED_RUSTFLAGS")
-        }
-        if flags:
-            env["CARGO_ENCODED_RUSTFLAGS"] = "\x1f".join(flags)
+        env = remapped_env(*flags)
         finished = subprocess.run(
             ["cargo", "build", "--target", WASM_TARGET, "--release", "--target-dir", target_dir],
             cwd=PERTURB_CRATE_DIR,
@@ -1548,17 +1563,23 @@ def build_perturb() -> list[tuple[Path, int, int, tuple[str, ...]]]:
 def write_perturb_manifest(built: list[tuple[Path, int, int, tuple[str, ...]]]) -> Path:
     """Record what the committed perturbation modules were built from, and with what.
 
-    The same shape as `engine.manifest.json` less two fields, with each module's sizes and
-    rustflags under `modules`: this crate has no `engine_version` and no `engine_changes`,
-    because it does not link the engine and has never needed a change in it. Saying so with
-    the fields absent rather than empty is the honest spelling — an empty `engine_changes`
-    would read as a list somebody forgot to fill in.
+    The same shape as `engine.manifest.json` less three fields, with each module's sizes and
+    rustflags under `modules`. No `engine_version` and no `engine_changes`, because this
+    crate does not link the engine and has never needed a change in it — absent rather than
+    empty, since an empty `engine_changes` would read as a list somebody forgot to fill in.
+    And **no `wallpapers_commit`**: the commit its kernel came from is the engine manifest's
+    own, which `build_perturb` checks before it builds, and `pinned_by` says where that one
+    spelling is, so the pin is never written twice to disagree with itself. `kernel_tree` is
+    not a second pin but a fingerprint: git's id for the `perturbation/` tree the modules
+    were built from, so a pin that later moves past a changed kernel — `python -m builder
+    explorer` with no `--perturb` after it — is caught by `manifest_notes` rather than
+    taken on trust.
     """
     manifest = {
         "schema": PERTURB_SCHEMA,
         "built": date.today().isoformat(),
         "crate": PERTURB_CRATE_DIR.relative_to(SITE_ROOT).as_posix(),
-        "dependencies": [],
+        "dependencies": [f"fractal-wallpapers/{PERTURB_KERNEL}"],
         "modules": {
             module.name: {
                 "gzip_bytes": gzip_bytes,
@@ -1567,6 +1588,8 @@ def write_perturb_manifest(built: list[tuple[Path, int, int, tuple[str, ...]]]) 
             }
             for module, raw_bytes, gzip_bytes, flags in built
         },
+        "kernel_tree": _kernel_tree(),
+        "pinned_by": f"{MANIFEST.name} wallpapers_commit",
         "rustc": _rustc_version(),
     }
     PERTURB_MANIFEST.write_text(
@@ -1607,15 +1630,85 @@ def manifest_notes() -> list[str]:
         capture_output=True,
         text=True,
     )
-    if finished.returncode == 0:
-        return []
-    return [
-        f"explorer: engine.wasm was built from wallpapers {built_from[:12]}, which is not an "
-        "ancestor of that checkout's HEAD — rebuild with `python -m builder explorer`"
-    ]
+    notes = []
+    if finished.returncode != 0:
+        notes.append(
+            f"explorer: engine.wasm was built from wallpapers {built_from[:12]}, which is not "
+            "an ancestor of that checkout's HEAD — rebuild with `python -m builder explorer`"
+        )
+    elif PERTURB_MODULE.is_file() and (problem := perturb_pin_problem(worktree=False)):
+        notes.append(f"explorer: {problem}")
+    elif PERTURB_MANIFEST.is_file():
+        built = json.loads(PERTURB_MANIFEST.read_text(encoding="utf-8")).get("kernel_tree")
+        try:
+            pinned = _kernel_tree()
+        except ExplorerError as why:
+            return [*notes, f"explorer: {why}"]
+        if built != pinned:
+            notes.append(
+                f"explorer: perturb.wasm was built from kernel tree {str(built)[:12]}, and the "
+                f"pin's is {pinned[:12]} — rebuild with `python -m builder explorer --perturb`"
+            )
+    return notes
+
+
+def perturb_pin_problem(*, worktree: bool) -> str | None:
+    """Why the sibling's picture kernel is not the one the engine manifest pins, or `None`.
+
+    The pin is `engine.manifest.json`'s `wallpapers_commit`, and it is true of the
+    perturbation modules exactly when `perturbation/` is the same tree at that commit as in
+    the checkout: at its `HEAD` for `manifest_notes`, and in its worktree — uncommitted
+    edits and stray files included — for `build_perturb`, which is about to compile it. A
+    kernel that has moved since the pin is rebuilt in two steps, so the pin moves first:
+    commit it there, `python -m builder explorer` (which writes the new commit), then
+    `--perturb`.
+    """
+    manifest = load_manifest()
+    built_from = manifest.get("wallpapers_commit") if manifest else None
+    if not isinstance(built_from, str) or not built_from:
+        return f"{MANIFEST.name} names no wallpapers commit to pin the perturbation kernel by"
+    root = wallpapers_root()
+    against = [built_from] if worktree else [built_from, "HEAD"]
+    moved = subprocess.run(
+        ["git", "diff", "--quiet", *against, "--", PERTURB_KERNEL],
+        cwd=root,
+        capture_output=True,
+        text=True,
+    )
+    stray = subprocess.run(
+        ["git", "status", "--porcelain", "--", PERTURB_KERNEL],
+        cwd=root,
+        capture_output=True,
+        text=True,
+    )
+    if moved.returncode == 0 and not (worktree and stray.stdout.strip()):
+        return None
+    where = "the sibling checkout's worktree" if worktree else "its HEAD"
+    return (
+        f"perturb.wasm's kernel is pinned at wallpapers {built_from[:12]} "
+        f"({MANIFEST.name}), and `{PERTURB_KERNEL}/` in {where} is not that tree — commit "
+        "it there, rebuild engine.wasm with `python -m builder explorer` so the pin moves, "
+        "then `python -m builder explorer --perturb`"
+    )
 
 
 # ----------------------------------------------------------------------------- the facts
+
+
+def _kernel_tree() -> str:
+    """Git's id for `perturbation/` at the engine manifest's pin, in the sibling checkout."""
+    manifest = load_manifest() or {}
+    finished = subprocess.run(
+        ["git", "rev-parse", f"{manifest.get('wallpapers_commit')}:{PERTURB_KERNEL}"],
+        cwd=wallpapers_root(),
+        capture_output=True,
+        text=True,
+    )
+    if finished.returncode != 0:
+        raise ExplorerError(
+            f"the pinned commit has no {PERTURB_KERNEL}/: {finished.stderr.strip()}"
+        )
+    return finished.stdout.strip()
 
 
 def _wallpapers_commit() -> str:

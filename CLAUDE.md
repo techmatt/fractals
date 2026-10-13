@@ -549,7 +549,7 @@ Three Windows cautions that have each cost a session already:
 ```
 python -m ruff check . && python -m ruff format --check . && python -m builder check
 node --test explorer/permalink.test.mjs explorer/bands.test.mjs explorer/level.test.mjs explorer/derive.test.mjs explorer/stops.test.mjs explorer/saved.test.mjs explorer/undo.test.mjs explorer/zip.test.mjs explorer/stamp.test.mjs explorer/deep-fx.test.mjs explorer/deep-link.test.mjs explorer/deep.test.mjs explorer/deep-gpu.test.mjs explorer/screensaver.test.mjs explorer/hold.test.mjs explorer/fit.test.mjs explorer/dives.test.mjs explorer/aliasing.test.mjs explorer/period-range.test.mjs explorer/pointers.test.mjs atlas/atlas.test.mjs
-(cd explorer/perturb-wasm && cargo fmt --check) && (cd explorer/engine-wasm && cargo fmt --check) && (cd builder/deep-gallery-native && cargo fmt --check) && (cd explorer/deep-gpu-model && cargo fmt --check)
+(cd ../fractal-wallpapers/perturbation && cargo fmt --check) && (cd explorer/perturb-wasm && cargo fmt --check) && (cd explorer/engine-wasm && cargo fmt --check) && (cd builder/deep-gallery-native && cargo fmt --check) && (cd explorer/deep-gpu-model && cargo fmt --check)
 (cd explorer/deep-gpu-model && cargo test --release)
 ```
 
@@ -560,7 +560,17 @@ holds it. ⚠ **A formatting commit or any source edit in `perturb-wasm` moves
 `python -m builder explorer --perturb`, with the new bytes named in
 `perturb.manifest.json`. `builder check`'s `bake` will not say so: it holds `palettes.js`
 and `catalog.js` and never rebuilds either module, so a `perturb.wasm` that no longer
-matches its crate is a green check. **A formatting commit in `engine-wasm` rebuilds its
+matches its crate is a green check. **The picture kernel itself is the sibling's**
+*(deep_seam_move_ckpt163)*: `fractal-wallpapers/perturbation`, which `perturb-wasm` wraps
+and `engine.manifest.json`'s one `wallpapers_commit` pins for all three modules. An edit
+there is a lock on both repositories and owes both perturb modules, in this order: a
+candidate build from the uncommitted kernel (`explorer.build_perturb(pinned=False)`, from
+Python — the one way past the pin check, and it writes no manifest) held old against new
+by `explorer/bench/perturb-parity.mjs` before anything is committed; then commit it in the
+sibling, `python -m builder explorer` so the pin moves, `--perturb` — which refuses a
+kernel that is not the pinned tree — and `perturb-parity.mjs` again on the modules this
+repository commits. `fractal-wallpapers/perturbation/README.md`'s *Running it* has the
+steps, and `builder check` notes perturb modules built from another kernel than the pin's. **A formatting commit in `engine-wasm` rebuilds its
 module and compares too**, and reports whichever it got. `explorer/README.md`'s
 *Rebuilding* has the measurements behind both.
 
@@ -570,7 +580,7 @@ installed; `explorer/README.md`'s *The test suites* says what each holds, and
 
 The fourth line is the GPU kernel model's tests (`explorer/deep-gpu-model/README.md`),
 which CI runs too: seconds after a build of about twenty, and they can only move when that
-crate or `perturb-wasm` has.
+crate or the sibling's `perturbation/` kernel, which it takes directly, has.
 
 After touching placed prose, `python -m builder prose <page>` as well — see **Where prose
 comes from** above for what it holds together and why one edit has several sites.

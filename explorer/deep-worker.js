@@ -40,7 +40,7 @@ const PROGRESS_MS = 100;
 let posted = 0;
 
 /** `env.progress`, the module's one import: `done` of `total` units of the call in flight,
- *  posted at most every `PROGRESS_MS`. `perturb-wasm/src/progress.rs` says where it is
+ *  posted at most every `PROGRESS_MS`. `fractal-wallpapers/perturbation/src/progress.rs` says where it is
  *  called from and in what units. */
 const imports = {
   env: {
