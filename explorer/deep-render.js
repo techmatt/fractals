@@ -81,6 +81,14 @@ const LIST_FLOOR = 1024;
  * identical, so the price is 1.4x to 2x. The rule below keeps the switch on unless
  * turning it off is cheaper at the low end of that range, so a frame near the crossing
  * keeps the setting the kernel ships.
+ *
+ * **Measured again under SIMD, and left** *(deep_holes_ckpt163)*: the 43 frames of the
+ * 159-frame sample whose census puts them between 1.15 and 3.3, each landed with the switch
+ * forced on and forced off, twice, alternated, the wait the median. Summed over them, 1.4
+ * costs the CPU 300.9 s, against 297.9 s at its best price (1.69), and the GPU 226.8 s,
+ * against 224.1 s at its best (1.27); each kernel's best costs the other more than 1.4 does
+ * (1.3 gives the CPU 302.1 s, 1.7 gives the GPU 230.0 s). About 1% either way, inside the
+ * frame-to-frame noise, and in opposite directions, so no value is better on both.
  */
 export const SWITCH_PRICE = 1.4;
 
