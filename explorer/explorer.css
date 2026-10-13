@@ -1119,6 +1119,11 @@ summary.section-head:focus-visible { outline: 2px solid var(--well-link); outlin
   margin: var(--gutter) var(--gutter) 0;
   aspect-ratio: 16 / 9;
   max-height: 60vh;
+  /* An element with an aspect ratio is never shorter than its content by default, and the
+     content is the canvas at its backing store's height: a 16:9 link opened over a 4:3 one
+     stayed 4:3 tall, and was drawn at a height of the plane its own fresh load does not
+     show (explorer_review_ckpt163). */
+  min-height: 0;
   background: var(--well);
   border: 1px solid var(--well-rule);
 }

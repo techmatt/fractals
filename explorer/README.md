@@ -1868,7 +1868,17 @@ deepest frame is therefore set by the guard and its eight guard digits, 1e-112
   did nothing. `fx.fromStep` now rounds such a step to the guard's last place instead
   (seven significant figures of a pixel at 1e-110) and is `fromNumber` to the digit
   everywhere that answered before, so no gesture above that depth moved. A wheel or box
-  zoom stops at 1e-112, the outer stop's shape mirrored.
+  zoom stops at 1e-112, the outer stop's shape mirrored. **And no gesture writes a centre
+  the contract cannot read back** *(explorer_review_ckpt163)*: a hand-written link can spend
+  the 128 characters on an integer part (`x=1e127`) or name a width far past the outermost
+  frame (`w=1e300`, where a pixel of pan is a 298-digit step), and a pan or zoom from there
+  wrote an address the page refused on the next load. `writable` refuses the move with a
+  sentence and the link stays as it was; the contract is unchanged. A refused pan, this one
+  or the pan below 1e-117 that moves nothing, puts back the picture the drag slid and the
+  dot it set to Rendering (`refuseMove`), which the older refusal had left up. A centre
+  whose integer part is past what the kernel's `Fx::parse` holds (2^63, `x=1e19`) still
+  reads, and the tab stops on the kernel's own sentence that it could not compute a
+  reference orbit.
 - **Find minibrots** greys an entry whose frame needs more than 120 digits with its guard,
   since `deep-render.js` trims a solved centre to `MAX_SCALE` and would otherwise open it
   a little off its own minibrot.
@@ -3324,7 +3334,13 @@ copies only, and no place twice. `builder/README.md`'s *Random dives* has the ru
   not a width written down here. A Julia view has a second way to fail it, and the refusal
   names which one is in force: a `c` with more digits than a double carries cannot go, not
   because the frame is too deep but because the picture next door would be a different set
-  wearing this one's name.
+  wearing this one's name. **A centre crosses as written unless it is longer than the
+  shallow reader takes** (`crossing`, explorer_review_ckpt163): the deep contract spells a
+  coordinate to 128 characters and the shallow one to 64, and a zoom out never shortens a
+  centre, so a frame that resolves in `f64` could carry a centre whose shallow link was
+  refused on the next load. Past 64 it crosses as the double's shortest spelling, which is
+  the same picture, since the shallow renderer reads a double whatever the text says. Find
+  minibrots' shallow branch crosses the same way.
 
 ### Deep links are their own contract, version 3
 
@@ -3359,6 +3375,19 @@ and a URL's escaping rule, neither of which has anything to do with how deep the
 - **`w`** is the width, as a double and the shortest string that reads back as it. A width
   is a *spacing* and not a place, which is why it is the one number down here a double still
   holds honestly.
+- **`a`** is the aspect, the shallow contract's own key and reader, and **the stage takes
+  it at every door** *(explorer_review_ckpt163)*. The tab draws at whatever shape the stage
+  has, and the stage was the viewer's: a link written in a tab entered from a 4:3 view says
+  `a=4:3`, and opened fresh it drew at 16:9, and from Saved at whatever shape the viewer
+  last had — one link, a frame of another height by each route. Now the boot, `openAny` and
+  a step back give the viewer the link's aspect before the tab is shown (`takeAspect`), and
+  a frame the tab holds is put back only onto its own shape (`sameShape` in `deep.js`),
+  since the same centre and width at another aspect is another picture. No link changes:
+  none in this site's records carries an `a`, and one a reader made draws the frame it was
+  written at. The same review found a 16:9 link opened over a 4:3 one kept the 4:3 height
+  in both tabs: an element with an aspect ratio is never shorter than its content by
+  default, and the content is the canvas at its old height, so `.stage` says
+  `min-height: 0`, and `openLink` measures the backing store after a link's shape lands.
 - **`n`** is the iteration cap, **written once it is settled** *(deep_tab_activity_and_
   layout_ckpt141; it was always written until then)*. A view carries `capFrom`: `"probe"`
   (the probe settled it), `"reader"` (typed, halved, doubled, or named by the link it came
@@ -4530,6 +4559,17 @@ still means *leave this page* and nothing collides with the `replaceState` that 
 writes the address bar with. It is session-only and never stored: **300** entries, which is
 three hundred short strings and far more steps back than a reader will ever take at once,
 and the cap evicts from the front, the end nobody is standing on.
+
+**That `replaceState` is rate-limited, and the last of a burst always lands**
+*(explorer_review_ckpt163)*. WebKit throws a `SecurityError` past 100 calls in 30 seconds and
+Gecko past its own limit, where Chrome only warns, and a Deep colour drag or a trackpad wheel
+settles once an input event. Measured on a 2 s Phase drag at 60 Hz: 112 writes, the twelve
+past an emulated WebKit limit thrown out of the settle timer, and the address left on an
+earlier phase than the picture. `readdress` now writes at once where it has not for
+`ADDRESS_MS` (350 ms), and otherwise once at the end of that wait, of the view current then:
+seven writes for the same drag, the last one the picture's. A write the browser refuses
+anyway is tried again two seconds later. The screensaver's own address cancels a viewer
+write still waiting.
 
 Two things it deliberately does not do. It **never** triggers a download, a save or a change
 to the Saved list — it restores pictures, and `syncSave` only reads. And it says nothing at

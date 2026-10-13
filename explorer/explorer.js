@@ -1912,16 +1912,47 @@ function settle({ remember = true } = {}) {
   if (remember) rememberLater();
 }
 
+/**
+ * The least time between two writes of the address bar, and how long a refused write waits
+ * to be tried again.
+ *
+ * **WebKit throws past 100 `replaceState` calls in 30 seconds, and Gecko past its own
+ * limit** — Chrome only warns — and a Deep colour drag or a trackpad wheel settles once an
+ * input event, which is sixty a second *(explorer_review_ckpt163)*. Every call past the
+ * limit threw out of the settle timer, and the one after the hand let go could land inside
+ * the window, leaving the address on an earlier colour than the picture. So a write comes at
+ * once where none has for this long, and otherwise once at the end of the wait, of whatever
+ * view is current then: one a gesture, about three a second under a held drag, which is
+ * under WebKit's rate.
+ */
+const ADDRESS_MS = 350;
+const ADDRESS_RETRY_MS = 2000;
+let addressTimer = 0;
+let addressAt = -Infinity;
+
 /** The address bar: the picture, then the panel, then the Gallery tab's collection where
- *  that tab is showing one other than the general gallery. */
+ *  that tab is showing one other than the general gallery. Written at most once an
+ *  `ADDRESS_MS`, the last of a burst always. */
 function readdress() {
+  clearTimeout(addressTimer);
+  const wait = addressAt + ADDRESS_MS - performance.now();
+  if (wait > 0) {
+    addressTimer = setTimeout(readdress, wait);
+    return;
+  }
+  addressAt = performance.now();
   const collection = tiles?.population().collection ?? gallery.GENERAL;
   // Set on top of the picture and never appended to it *(duplicate_key_links_ckpt154)*.
   const address = link.withKeys(currentQuery(), [
     ["panel", showing === DEFAULT_PANEL ? null : encodeURIComponent(showing)],
     ["collection", showing === "gallery" && collection !== gallery.GENERAL ? encodeURIComponent(collection) : null],
   ]);
-  history.replaceState(null, "", `?${address}`);
+  try {
+    history.replaceState(null, "", `?${address}`);
+  } catch {
+    // Throttled anyway (another caller spent the rate): the current view, a little later.
+    addressTimer = setTimeout(readdress, ADDRESS_RETRY_MS);
+  }
 }
 
 // ------------------------------------------------------------------- the way back
@@ -2027,6 +2058,12 @@ function restore(entry) {
   fitWanted = false;
   arrival.disarm();
   if (link.isDeep(`?${query}`)) {
+    // An entry was drawn, so it reads; its shape is the stage's, as at any other door.
+    try {
+      if (deepRules !== null) takeAspect(deepRules.parse(`?${query}`, deepContext).aspect);
+    } catch {
+      // The open below meets the same refusal and says so.
+    }
     deepOpening = true;
     showPanel("deep");
     arriveDeep(() => deep?.open(query, { restoring: true })).catch((error) => {
@@ -3143,10 +3180,32 @@ function rebuild() {
   buildParams();
   syncPlane();
   syncToggles();
+  shapeStage();
+}
+
+/** The stage takes the view's aspect. */
+function shapeStage() {
   stage.style.aspectRatio = `${view.aspect.across} / ${view.aspect.down}`;
   // The same shape as a number, for the stacked layout: a stage whose height is capped
   // there takes its width from the cap, which a stylesheet cannot work out of a ratio.
   stage.style.setProperty("--stage-aspect", String(view.aspect.across / view.aspect.down));
+}
+
+/**
+ * A deep link's aspect, given to the viewer whose stage the Deep tab draws on.
+ *
+ * **The deep contract carries `a` and the tab draws at whatever shape the stage has**, so
+ * until explorer_review_ckpt163 one deep link drew two frames: at its own aspect where it
+ * was written (the tab entered from a 4:3 view writes `a=4:3`), and at whatever shape the
+ * viewer last had where it was opened — a fresh load at 16:9, Saved at the shallow view's.
+ * The stage takes the link's shape before the tab is shown, as a shallow link's does in
+ * `rebuild`, and the backing store follows at once so the pass is begun at it.
+ */
+function takeAspect(aspect) {
+  if (aspect.across === view.aspect.across && aspect.down === view.aspect.down) return;
+  view = { ...view, aspect: { ...aspect } };
+  shapeStage();
+  resize();
 }
 
 // ------------------------------------------------------------------- what was opened
@@ -3210,6 +3269,11 @@ function openLink(query, given = {}) {
   if (opts.from !== "saved") savedPanel?.unmark();
   seatGap = gap;
   rebuild();
+  // The link may have brought an aspect of its own, and the pass is drawn at the backing
+  // store's size: measured here, or a Saved link at another shape than the last one was
+  // drawn at the old one's grid, stretched (explorer_review_ckpt163). `cover` measured it
+  // only where it had a picture to put up.
+  resize();
   if (picture !== null) cover(picture);
   draw();
   return true;
@@ -3295,6 +3359,27 @@ function openAny(query, opts = {}) {
     return false;
   }
   if (!link.isDeep(`?${query}`)) return openLink(query, opts);
+  // **And a deep link the contract refuses is refused here, before the tab is shown**, the
+  // way `openLink` refuses a shallow one: a sentence under the canvas and the tab the
+  // reader was on. Nothing behind these doors validated it — Saved re-reads storage another
+  // build may have written, and a dropped picture's link is whatever its file says — and
+  // the refusal used to surface as the Deep tab on its old frame, an unhandled rejection,
+  // and nothing said. The reader is fetched first where nothing has needed it yet.
+  if (deepRules === null) {
+    loadDeepRules().then(
+      () => openAny(query, opts),
+      (error) => say(String(error?.message ?? error)),
+    );
+    return true;
+  }
+  let wanted;
+  try {
+    wanted = deepRules.parse(`?${query}`, deepContext);
+  } catch (error) {
+    say(error.message);
+    return false;
+  }
+  takeAspect(wanted.aspect);
   deepOpening = true;
   showPanel("deep");
   arriveDeep(() => {
@@ -3303,7 +3388,7 @@ function openAny(query, opts = {}) {
     arrival.disarm();
     deep?.open(query);
     fitUnlessStated(query);
-  });
+  }).catch((error) => say(String(error?.message ?? error)));
   return true;
 }
 
@@ -4223,8 +4308,8 @@ function leaveDeep(from) {
   const family = deepRules.familyOf(from);
   view = {
     ...link.fresh(family, "smooth", contract),
-    x: { text: from.x.text, value: Number(from.x.text) },
-    y: { text: from.y.text, value: Number(from.y.text) },
+    x: crossing(from.x.text),
+    y: crossing(from.y.text),
     w: { text: from.w.text, value: from.w.value },
     // A cap the Deep tab settled, pinned or took from a minibrot crosses back as the same
     // `n`; the width's own stays the width's.
@@ -4235,16 +4320,29 @@ function leaveDeep(from) {
     level: from.level,
   };
   if (from.julia) {
-    view.constants = {
-      cx: { text: from.julia.x.text, value: Number(from.julia.x.text) },
-      cy: { text: from.julia.y.text, value: Number(from.julia.y.text) },
-    };
+    view.constants = { cx: crossing(from.julia.x.text), cy: crossing(from.julia.y.text) };
   }
   deep?.detach();
   showPanel(DEFAULT_PANEL);
   changed();
   rebuild();
   draw();
+}
+
+/**
+ * A deep number as the shallow view carries it: as written, unless the deep contract's
+ * longer spelling is more than the shallow reader takes.
+ *
+ * **The deep contract spells a coordinate to 128 characters and the shallow one to 64**,
+ * and a zoom out never shortens a centre, so a frame that resolves in `f64` can still carry
+ * a deep-length centre. Echoed as written, it is a link the shallow reader refuses on the
+ * next load. The shallow renderer reads a double whatever the text says, so the double's
+ * own shortest spelling is the same picture, and it is the one spelled only where the
+ * written text would not read back.
+ */
+function crossing(text) {
+  const value = Number(text);
+  return text.length > link.COORDINATE_LIMIT ? link.coordinateOf(value) : { text, value };
 }
 
 /** Whether the ordinary renderer would still resolve a deep frame, asked of the module. */
@@ -5285,8 +5383,8 @@ function openMinibrot(frame) {
   if (resolvesShallow(frame)) {
     view = {
       ...view,
-      x: { text: frame.x.text, value: Number(frame.x.text) },
-      y: { text: frame.y.text, value: Number(frame.y.text) },
+      x: crossing(frame.x.text),
+      y: crossing(frame.y.text),
       w: { text: frame.w.text, value: frame.w.value },
       maxiter: ownCap(frame.maxiter, frame.w.value),
     };
@@ -6248,7 +6346,8 @@ async function main() {
     await loadDeepRules();
   }  if (arriving !== null) {
     try {
-      deepRules.parse(arriving, deepContext);
+      // The viewer behind the tab takes the link's shape: see `takeAspect`.
+      view.aspect = { ...deepRules.parse(arriving, deepContext).aspect };
     } catch (error) {
       refuse(`${error.message} Nothing has been drawn, because guessing what was meant would be worse than saying so.`);
       return;
@@ -6417,7 +6516,11 @@ async function main() {
     parse: (query) => link.parse(`?${query}`, contract),
     estimate: download.estimate,
     pictureOf: download.pictureOf,
-    address: (seat, every) => history.replaceState(null, "", `?${link.withKeys(seat.link, saverFurniture(every))}`),
+    address: (seat, every) => {
+      // A viewer address still waiting out `ADDRESS_MS` would land over the seat's.
+      clearTimeout(addressTimer);
+      history.replaceState(null, "", `?${link.withKeys(seat.link, saverFurniture(every))}`);
+    },
     leave: leaveScreensaver,
     // What stands in for the first picture until it is drawn *(screensaver_first_frame_ckpt154)*.
     viewer: canvas,

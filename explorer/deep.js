@@ -620,7 +620,7 @@ export function mount(host) {
     const frame = deepLink.fieldKey(of, 1, 1);
     const at = held.findIndex((entry) => entry.frame === frame);
     const was = at < 0 ? null : held.splice(at, 1)[0];
-    if (was !== null && was.full && !full) {
+    if (was !== null && was.full && !full && sameShape(was, of)) {
       held.unshift(was);
       return;
     }
@@ -641,14 +641,25 @@ export function mount(host) {
    *  colour — or `null`. */
   function heldFor(of) {
     const frame = deepLink.fieldKey(of, 1, 1);
-    return held.find((entry) => entry.frame === frame) ?? null;
+    return held.find((entry) => entry.frame === frame && sameShape(entry, of)) ?? null;
   }
 
   /** What Cancel goes back to: the newest frame held that is not the one the reader is on,
    *  which is the frame the gesture left. */
   function leftBehind() {
     const frame = deepLink.fieldKey(view, 1, 1);
-    return held.find((entry) => entry.frame !== frame) ?? null;
+    return held.find((entry) => entry.frame !== frame && sameShape(entry, view)) ?? null;
+  }
+
+  /**
+   * Whether a held entry is at `of`'s aspect. **A frame at another aspect is another
+   * picture** — the same centre and width show another height of the plane — and since a
+   * deep link's `a` became the stage's shape (explorer_review_ckpt163) the tab can hold
+   * both: put back on a stage of the other shape, the entry was its own picture stretched,
+   * under the other one's link.
+   */
+  function sameShape(entry, of) {
+    return entry.view.aspect.across === of.aspect.across && entry.view.aspect.down === of.aspect.down;
   }
 
   /**
@@ -1840,18 +1851,51 @@ export function mount(host) {
     // centre's last digit and rounds to nothing, which is the silent gesture `fromStep` was
     // written to end. A zoom out still works, and the sentence says so.
     if ((dx !== 0 || dy !== 0) && fx.isZero(acrossStep) && fx.isZero(downStep)) {
-      host.say(
+      refuseMove(
         `This view is narrower than ${deepLink.DEEPEST_WIDTH}, where the zoom stops, and a pan here ` +
           "moves the center by less than its last digit. Zoom out to move it.",
       );
       return;
     }
-    view = {
+    const next = {
       ...view,
       x: deepLink.coordinateOf(fx.add(view.x.dec, acrossStep)),
       y: deepLink.coordinateOf(fx.add(view.y.dec, downStep)),
     };
+    if (!writable(next)) return;
+    view = next;
     moved();
+  }
+
+  /**
+   * Whether a gesture's centre is one a link can spell, and the sentence where it is not.
+   *
+   * **The contract reads centres it cannot be moved from** *(explorer_review_ckpt163)*. It
+   * takes a link up to 128 characters a coordinate, which a hand-written link spends on an
+   * integer part — `x=1e127` — or a width far past the outermost frame — `w=1e300`, where
+   * one pixel of a pan is a 298-digit step. A pan or a zoom from there wrote an address this
+   * page refuses on the next load. The contract does not move (it is shared with the kernel's
+   * reader next door); the gesture is refused instead, and the link the reader has stays
+   * the link they have.
+   */
+  function writable(next) {
+    if (next.x.text.length <= deepLink.COORDINATE_LIMIT && next.y.text.length <= deepLink.COORDINATE_LIMIT) {
+      return true;
+    }
+    refuseMove(
+      `A move from here would put the center past the ${deepLink.COORDINATE_LIMIT} characters a link ` +
+        "can spell it in, so it is not made. Open a frame nearer the set to move about.",
+    );
+    return false;
+  }
+
+  /** A gesture refused after the page slid or scaled the picture under it: the sentence,
+   *  and the picture and the dot put back as they were, since the view did not move and no
+   *  pass follows to replace the slid preview (explorer_review_ckpt163). */
+  function refuseMove(sentence) {
+    host.say(sentence);
+    paint();
+    if (running === null) host.showState(drawn === null ? "stopped" : "final");
   }
 
   /**
@@ -1915,6 +1959,7 @@ export function mount(host) {
       w: deepLink.widthOf(width),
     };
     if (deepLink.fieldKey(next, 1, 1) === deepLink.fieldKey(view, 1, 1)) return false;
+    if (!writable(next)) return false;
     view = next;
     if (!pinned()) view = { ...view, maxiter: policyCap(width), capFrom: "width" };
     moved();
