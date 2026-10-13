@@ -90,8 +90,9 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
-      # Two siblings under the workspace, which is the layout `engine-wasm`'s path
-      # dependency (`../../../fractal-wallpapers/engine`) and its `build.rs` expect.
+      # Two siblings under the workspace, the layout `engine-wasm`'s path dependency
+      # (`../../../fractal-wallpapers/engine`) expects; without it cargo fails reading that
+      # Cargo.toml.
       - uses: actions/checkout@v4
         with:
           path: fractal-website

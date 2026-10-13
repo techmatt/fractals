@@ -17,7 +17,7 @@
 //! domain counts are the frame's own and do not.
 
 // The frames and walks every harness shares, from the kernel's own tests in the sibling
-// checkout: one copy, which `build.rs` already requires to be there.
+// checkout: one copy, which the path dependency already requires to be there.
 #[path = "../../../../fractal-wallpapers/perturbation/tests/common/mod.rs"]
 mod common;
 

@@ -20,8 +20,8 @@ src/nuclei.rs            the minibrots in and around a view: atom domains, then 
                          high-precision Newton solve, then a size and a frame (§9)
 src/dive.rs              the Dive block: a copy's scale, the twin's shooting, the rung
                          rule, the landings, the cap rule, and New coloring's rule (§11)
-build.rs                 engine-wasm's sibling guard, which cargo never lets fire, and
-                         a rerun on the kernel's sources
+build.rs                 empty, and kept: a build script's presence is in cargo's
+                         -C metadata hash, and deleting it moves both modules' bytes
 tests/probe.rs           three-way probes; not proofs, and they say so
 tests/descend.rs         the frame finder: deep frames with structure, and the exact
                          decimal walk that gets to them (ignored by default)
@@ -684,7 +684,9 @@ gzipped, nearly all of it the perturbed pass and the root solve that now exists 
 Every command here needs the sibling checkout, `fractal-wallpapers`, beside this one:
 the kernel is a path dependency, and without it cargo stops before building anything,
 failing to read `…/fractal-wallpapers/perturbation/Cargo.toml` — a path that names the
-missing checkout.
+missing checkout. `cargo fmt --check` needs it as well, by another route: the three tests'
+`#[path]` `mod common` is the kernel's own `tests/common/mod.rs`, and rustfmt fails to
+resolve it, where `engine-wasm`'s fmt check passes on a bare clone.
 
 ```text
 cargo fmt   --check                                    # the formatting, held: the

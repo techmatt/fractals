@@ -18,8 +18,8 @@ crate-type = ["cdylib", "rlib"]
 # from natively, so the page and the CLI draw from one copy. A path dependency and not a
 # git one, as `engine-wasm` takes the engine, and pinned the same way: by
 # `engine.manifest.json`'s one `wallpapers_commit`. Without the sibling, cargo stops with
-# "failed to read `…/fractal-wallpapers/perturbation/Cargo.toml`" (`build.rs` has why its
-# own sentence never gets the chance). What stays here is what only the explorer asks for: the
+# "failed to read `…/fractal-wallpapers/perturbation/Cargo.toml`", a path that names the
+# missing checkout. What stays here is what only the explorer asks for: the
 # minibrot search, the Dive and the exports.
 [dependencies]
 perturbation = { path = "../../../fractal-wallpapers/perturbation" }

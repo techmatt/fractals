@@ -4651,9 +4651,13 @@ the page's state before taking the picture.
 `../../../fractal-wallpapers/engine` — the sibling checkout. Deliberately not a git
 dependency: the engine crate is versioned `0.1.0` and never bumped, so a git dependency
 could not tell two revisions apart, and it would drag the whole wallpaper project into a
-build that wants one Rust library. `build.rs` exists for one reason — to fail with a
-message that names the missing *repository* instead of cargo's message about a
-`Cargo.toml` that does not exist.
+build that wants one Rust library. Without the sibling, cargo stops while it resolves the
+package, before any build script runs: "failed to read
+`…/fractal-wallpapers/engine/Cargo.toml`", whose path names the missing repository.
+`build.rs` has one job, declaring `generic_loop` to check-cfg (below), and it stays a file
+of its own because whether a package has a build script is part of cargo's `-C metadata`
+hash: deleting it, with the declaration moved to `[lints.rust]`, was measured to move the
+module's bytes. `perturb-wasm/build.rs` is empty and kept for the same reason.
 
 **No wasm-bindgen.** The module is the engine plus `src/lib.rs`, exported `extern "C"`
 with `#[unsafe(no_mangle)]`. JavaScript owns every buffer through `alloc` and `dealloc`,
