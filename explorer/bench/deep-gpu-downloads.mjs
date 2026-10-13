@@ -290,8 +290,9 @@ try {
     record(OUT, { started, frames: NAMES, cases: CASES, rows, cancel, resetsSoFar: resets(started) });
   }
   if (process.argv.includes("--lose")) {
-    // A device lost part way through a download's second strip: the file still lands, the
-    // strips already ended stay the GPU's, and the bar never runs past the end.
+    // A device lost part way through a download's second strip: the file still lands, all
+    // one kernel's (resumed at the strip it lost where the device recovers as itself,
+    // deep_holes_ckpt163), and the bar never runs past the end.
     const since = new Date().toISOString();
     await land(FRAMES["anchor 2e-11"], "gpu");
     const lost = await download({ width: 1920, height: 1080, samples: 4 }, { loseAt: 0.7 });
@@ -302,7 +303,7 @@ try {
       const { moved, visible: seen } = visible(decodePng(readFileSync(cpu.file)), decodePng(readFileSync(lost.file)));
       agree = { moved: +(100 * moved).toFixed(3), visible: +(100 * seen).toFixed(3), verdict: verdictOf(seen) };
     }
-    say(`lose: at ${lost.lostAt}, ${lost.kernel} lost=${lost.field?.lost} handed=${lost.field?.handed} file=${!!lost.file} barMax=${lost.barMax} agree=${JSON.stringify(agree)}`);
+    say(`lose: at ${lost.lostAt}, ${lost.kernel} losses=${lost.field?.losses} handed=${lost.field?.handed} file=${!!lost.file} barMax=${lost.barMax} agree=${JSON.stringify(agree)}`);
     for (const run of [lost, cpu]) if (run.file) rmSync(run.file, { force: true });
     record(OUT, { started, frames: NAMES, cases: CASES, rows, lose: { since, lost, agree, resets: resets(since) }, resetsSoFar: resets(started) });
   }

@@ -2115,35 +2115,41 @@ switch.
 sits after Auto-render in the same Render row, labeled **GPU (experimental)**, and it is off
 by default: while the display-driver resets the GPU kernel was seen beside stay unexplained,
 nobody's machine runs it without being asked. Off means off entirely — no adapter request,
-no device, no kernel compile, no self-test — so a reader who never ticks it touches no WebGPU
-at all, and every frame is the CPU pool's exactly as it was before the GPU existed. The choice
-is remembered in `localStorage` under `explorer.deep-gpu` (`on` or `off`, absent reads as
-off), the same way as Auto-render's and for the same reason, and it is never written into a
-link, so a link draws the same for a reader with the box off as it always did. Ticking it
-asks for the device and runs the self-test then (a box ticked on an earlier visit asks when
-the tab starts its pool), and from the moment it passes, frames go to the GPU by the rules in
-*The GPU draws the full pass where it has earned it* below; until then the CPU draws. Where
-the GPU cannot be had for this visit the box is unticked and disabled, and its label says why
-in a few words, because a touch reader never sees a title: **GPU unavailable: no WebGPU**,
-**software only** (a fallback adapter), **failed its self-test**, **stopped twice** (the
-second lost device in a page load), or **could not start** (three acquisitions missed: no
-adapter, a device refused, or a file not fetched). The group's title carries the full
-sentence, and each lasts until a reload; the stored choice stays `on`, since a disabled box
-cannot be unticked, so the next visit tries again, and the title says that too. Ticked, the
-title says which of four states it is in: waiting (untested, and tested by the first frame
-that wants it), testing, ready, or retrying (a device lost once, or an acquisition missed,
-which the next slow frame asks again). Under `?kernel=cpu` or `?kernel=gpu` the address
-decides and the box gives way: it shows the kernel asked for, ticked for `gpu` (or `GPU
-unavailable:` with the reason, if the GPU is), and is disabled, its title naming the
-override. **The Render cell is contained** (`contain: inline-size`, as the shallow mode cell
-is), because uncontained the box's label widened the left column by up to 208 px, moving
-Navigation off the shallow view's x and moving it again as the label changed state; contained,
-the row wraps inside the 21rem floor with the box on its second line. Unticking lets a self-test or
-a frame already on the device finish, since stopping either would read as a lost device, then
-gives the device up without counting a loss (`Health.stoodDown`), so a later tick tests a
-fresh device; a frame decided for the GPU and still queued behind it goes to the CPU.
-`deep.js`'s `syncGpu` writes the box from `DeepGpu.standing()` and `GPU_UNAVAILABLE` holds
-its words.
+no device, no kernel compile, no self-test — so a reader who never ticks it touches no
+WebGPU at all, and every frame is the CPU pool's exactly as it was before the GPU existed.
+The choice is remembered in `localStorage` under `explorer.deep-gpu` (`on` or `off`, absent
+reads as off), the same way as Auto-render's and for the same reason, and it is never
+written into a link, so a link draws the same for a reader with the box off as it always
+did. Ticking it asks for the device and runs the self-test then (a box ticked on an earlier
+visit asks when the tab starts its pool), and from the moment it passes, frames go to the
+GPU by the rules in *The GPU draws the full pass where it has earned it* below; until then
+the CPU draws. Where the GPU cannot be had for this visit the box is unticked and disabled,
+and its label says why in a few words, because a touch reader never sees a title: **GPU
+unavailable: no WebGPU**, **software only** (a fallback adapter), **failed its self-test**,
+**stopped responding** (a lost device that could not be had again, or a fourth lost device
+in a page load), or **could not start** (three acquisitions missed: no adapter, a device
+refused, or a file not fetched). The group's title carries the full sentence, and each lasts
+until a reload; the stored choice stays `on`, since a disabled box cannot be unticked, so
+the next visit tries again, and the title says that too. Ticked, the title says which of
+five states it is in: waiting (untested, and tested by the first frame that wants it),
+testing, ready, recovering (a lost device being started again and retested, which slow
+frames wait for), or retrying (an acquisition missed, which the next slow frame asks again).
+Under `?kernel=cpu` or `?kernel=gpu` the address decides and the box gives way: it shows the
+kernel asked for, ticked for `gpu` (or `GPU unavailable:` with the reason, if the GPU is),
+and is disabled, its title naming the override. **The Render cell is contained** (`contain:
+inline-size`, as the shallow mode cell is), because uncontained the box's label widened the
+left column by up to 208 px, moving Navigation off the shallow view's x and moving it again
+as the label changed state; contained, the row wraps inside the 21rem floor with the box on
+its second line. Unticking lets a self-test or a frame already on the device finish, since
+stopping either would read as a lost device, then gives the device up without counting a
+loss (`Health.stoodDown`), so a later tick tests a fresh device; a frame decided for the GPU
+and still queued behind it goes to the CPU. **A tick or an untick retires what the other
+setting drew** *(deep_holes_ckpt163)*: the fields and held frames it applies to go
+(`deep.js`'s `retire`), and the picture up, where its field went, is drawn again at the
+stage it was, at once and with Auto-render off too, since it restores a picture the reader
+already had. Before, an untick left the GPU's picture up with its field gone, and the next
+recolour found nothing to colour. `deep.js`'s `syncGpu` writes the box from
+`DeepGpu.standing()` and `GPU_UNAVAILABLE` holds its words.
 
 **A superseded pass yields in milliseconds, so the settle is the only debounce there is**
 *(measured, ckpt146, `bench/deep-supersede.mjs`)*. A wheel notch during the anchor's full
@@ -3690,13 +3696,30 @@ lane is either the GPU kernel's or exactly the CPU kernel's:
   (half a percent of 619,776 samples is 3,099) although on its plain kernel the GPU finishes
   them faster, 6.0 s against 8.5 s; the new rule keeps them. The decision is made from steps and counts and never
   the clock, so the samples handed over are the same on every run.
-- **A lost device**: every unfinished sample, as of the last read-back, or the whole frame
-  where nothing was read back. The next frame asks for a fresh device and a fresh self-test;
-  the second loss in a page load turns the GPU off until a reload, and the box shows it
-  unavailable (stopped twice) rather than staying ticked. A loss under the self-test's own
-  read-back is a loss too: a destroyed device rejects `mapAsync` before `device.lost`
-  resolves, so `#guard` waits up to a second for the loss to show before taking a rejection
-  as the test's own failure, which would be final.
+- **A lost device hands over nothing** *(deep_holes_ckpt163)*. It used to hand the CPU
+  every sample the last read-back had not settled, which finished the frame mixed, the GPU's
+  lanes beside the CPU's, and labeled it the GPU's: a picture neither kernel draws, which a
+  fresh load of the link never gave. Now the loss starts a recovery at once (`acquire`): a
+  fresh adapter, a fresh device and the whole self-test, up to three attempts at 0, 1 and
+  4 s, where a miss or a device lost under the recovery's own test spends an attempt and is
+  not a new loss. A recovery ends ready or off, never between, and frames wait for its
+  outcome within `SETTLE_BOUND_MS` of its start, as they wait for a first test. The frame
+  that lost its device is thrown away, its tail lists stopped from writing into it, and drawn
+  again: resumed at the strip it lost on a device of the same identity (the adapter and the
+  guard form, `adapter|form`), from the start on one of another, and on the CPU from the
+  start where the GPU went off. A pass's outcome never depends on its budgets, so either way
+  the picture is the one an unbroken draw gives; a download is all one kernel's the same
+  way. Three recoveries a page load, and the fourth loss, or a recovery whose every attempt
+  missed, turns the GPU off until a reload, the box showing it unavailable (stopped
+  responding). Every GPU field carries its `identity`, and `DeepGpu.onKernel` tells the page
+  when the kernel it uses changes under its pictures, the GPU going off or coming back as
+  another device; the page then retires everything the kernel before drew and draws the
+  picture up again, and a stage that lands from the kernel before is drawn again instead
+  (`current`). A loss under a self-test's own read-back is a loss too: a destroyed device
+  rejects `mapAsync` before `device.lost` resolves, so `#guard` waits up to a second for the
+  loss to show before taking a rejection as the test's own failure, which would be final.
+  `bench/deep-gpu-lose.mjs` forces losses, recoverable and not, idle, mid-frame and
+  mid-quarter, and holds each picture to a fresh load's.
 
 **Measured** *(Phase 4, 2026-10-11)*, on the RTX 2060 SUPER and twelve cores, a maximized
 1920x1055 headless Chrome on a 1920x1080 display at 100%, so the Deep canvas is 1076x576
@@ -3805,8 +3828,8 @@ timeout) is what a dispatch running past the timeout would leave too, so it does
 the two apart; that they were hangs as well is likely and not shown. Whether the cause is the
 driver or a marginal card is not established, and finding out needs the clocks locked or the
 power limit lowered, which needs admin rights. What the page controls: no dispatch comes near the device timeout
-(above). A lost device sends the frame's unfinished samples to the CPU, and a later frame
-asks for a fresh device. After a reset, though, Chrome refused every new device on this
+(above). A lost device is re-acquired at once and the frame drawn again (above). After a
+reset, though, Chrome refused every new device on this
 machine (`DXGI_ERROR_DEVICE_REMOVED`) until the browser restarted, so in practice the rest of
 that session draws on the CPU at the CPU's speed. Phase 4's run lost its device this way on
 `random-dives#527`: the CPU finished 536,500 samples, 20.4 s against the CPU's own 8.9 s. The
@@ -4086,8 +4109,8 @@ deep-render.js     the pool, the orbit per frame, and the shade spec's placehold
 deep-worker.js     one worker: one perturb instance, one held orbit, one band, or a list of
                    samples a GPU frame hands back
 deep-gpu.js        the GPU, untouched until the reader ticks its box: the device, the
-                   self-test that earns it, the passes, the tail and a lost device handed
-                   to the CPU, where it stands for the box, and the ?kernel=cpu|gpu override
+                   self-test that earns it, the passes, the tail, a lost device's recovery,
+                   where it stands for the box, and the ?kernel=cpu|gpu override
 deep-gpu-wgsl.js   the kernel's WGSL, deep-gpu-model's double-single loop and proof
 deep-gpu-selftest/ the vectors and two exported frames the self-test runs once the box is ticked
 deep-fx.js         exact decimal coordinates, BigInt fixed point
@@ -4099,7 +4122,7 @@ deep-link.test.mjs 45 tests: the contract, the shallow one held to not moving, a
 deep.test.mjs      30 tests: where the two modules meet, against both committed ones —
                    and the cap policy's seam, which fails the same way the rest of
                    this file does, by drawing a plausible picture
-deep-gpu.test.mjs  29 tests: the GPU path's frame, orbit, passes, dispatches, tail, cheap frames, strips, health,
+deep-gpu.test.mjs  39 tests: the GPU path's frame, orbit, passes, dispatches, tail, cheap frames, strips, health, recovery,
                    the box (off touches no WebGPU, unticking counts no loss), and key
 bench/julia.mjs    what a Julia frame costs against the Mandelbrot frame at the same c
 bench/deep-stall.mjs  a colour change reaches the canvas through every pass, cancel and
@@ -4125,6 +4148,10 @@ bench/deep-gpu-downloads.mjs  Deep downloads through the real Download row, GPU 
                    the bar never running backward, the two PNGs by the visible rule, and
                    4101 resets placed under the case that was running; `--cancel` and
                    `--lose` cut a long GPU download and lose the device part way through one
+bench/deep-gpu-lose.mjs  a lost device forced under the tab, recoverable and not, idle,
+                   mid-frame, mid-quarter, and an untick: each picture up and each step
+                   back held to a fresh load's on the kernel the page then uses, nothing
+                   held from the kernel before, and a recolour that lands
 bench/deep-gpu-check.mjs  the shipped GPU kernel held to deep-gpu-model word for word on a
                    real adapter, by driving bench/gpu-probe/kernel-check.html and its .js
                    headless: the self-test, then any bundles under artifacts/deep-gpu-check/
@@ -7425,16 +7452,20 @@ nothing installed. `CLAUDE.md` and `.github/workflows/checks.yml` carry the comm
   by its iterations a worker, stays on the CPU; a frame too big for the device at once is
   cut into even strips of whole rows inside one dispatch and the binding limits, a frame
   it holds whole is one strip, only a row too wide for a strip is refused, and every row a
-  sample's `dc` is formed from in the generated kernel is its strip's plus `row0`; a lost device is retried
-  until the second loss, and an acquisition that failed for the moment until the third; a
+  sample's `dc` is formed from in the generated kernel is its strip's plus `row0`; a page load
+  recovers from three lost devices, each recovery three attempts spaced 0, 1 and 4 s whose
+  misses and losses under its own test are not new losses, ending ready or off, a first test
+  that loses its device becomes that loss's recovery, a stopped acquisition moves nothing,
+  and the kernel the page uses is the ready device's identity, the CPU once off, and
+  undecided between; an acquisition that failed for the moment is asked again until the third; a
   frame waits on a self-test still running for half the CPU's expected cost of it, within
   bounds; every self-test vector is what a JavaScript reference of the same
   double-single arithmetic gives; the GPU is the reader's to turn on: with the box off
   nothing asks for `navigator.gpu` (start, ready, refuses, likely, prepare, and draw all
   decline untouched), `?kernel=cpu` beats a ticked box and `?kernel=gpu` an unticked one, a
   tick asks then and the box hears both the tick and the outcome, and unticking gives a
-  passed device up without counting a loss, so a later tick tests a fresh one while two
-  losses still keep it off; and `?kernel=` is taken off the address before either
+  passed device up without counting a loss, so a later tick tests a fresh one while a GPU
+  off for the page load stays off; and `?kernel=` is taken off the address before either
   link reader sees it, so no link written from the view carries it.
 
 ## Rebuilding

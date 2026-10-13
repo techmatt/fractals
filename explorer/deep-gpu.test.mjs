@@ -580,11 +580,14 @@ test("the GPU is the reader's to turn on, and off touches no WebGPU", async () =
     // Ticking it asks, then and not before; here there is no WebGPU, which is final and
     // the box says why.
     let changes = 0;
-    const chosen = new gpu.DeepGpu({ changed: () => (changes += 1) });
+    const kernels = [];
+    const chosen = new gpu.DeepGpu({ changed: () => (changes += 1), onKernel: (change) => kernels.push(change) });
     assert.equal(await chosen.choose(true), false);
     assert.ok(touched.length > 0, "a tick asks for WebGPU");
     assert.ok(changes >= 2, "the box hears the tick and the outcome");
     assert.deepEqual(chosen.standing(), { state: "unavailable", why: "no-webgpu" });
+    assert.equal(chosen.using, "cpu");
+    assert.deepEqual(kernels, [], "a GPU that never drew retires nothing going off");
     // Unticked, it is off again, and a box ticked on an earlier visit asks at the pool's start.
     await chosen.choose(false);
     assert.deepEqual(chosen.standing(), { state: "off" });
@@ -605,32 +608,200 @@ test("unticking gives a passed device up without counting a loss", () => {
   assert.equal(h.losses, 0);
   assert.equal(h.wants, true, "a later tick tests a fresh device");
   const lost = new gpu.Health();
-  lost.lost("hung");
-  lost.lost("hung again");
+  for (let k = 0; k <= gpu.MAX_RECOVERIES; k++) lost.lost("hung");
   lost.stoodDown();
-  assert.equal(lost.status, "off", "off for the session stays off");
+  assert.equal(lost.status, "off", "off for the page load stays off");
 });
 
-test("a lost device is retried until the second loss, and a failed self-test is final", () => {
+test("a page load recovers from three lost devices, and a failed self-test is final", () => {
+  assert.equal(gpu.MAX_RECOVERIES, 3);
+  assert.deepEqual(gpu.RECOVERY_DELAYS_MS, [0, 1000, 4000]);
   const h = new gpu.Health();
   assert.equal(h.wants, true);
   h.passed();
   assert.equal(h.usable, true);
-  h.lost("hung");
-  assert.equal(h.status, "lost");
-  assert.equal(h.usable, false);
-  assert.equal(h.wants, true, "the next frame retries");
-  h.passed();
-  assert.equal(h.usable, true);
-  h.lost("hung again");
+  for (let k = 1; k <= gpu.MAX_RECOVERIES; k++) {
+    h.lost("hung");
+    assert.equal(h.status, "lost", `loss ${k} is recovered from`);
+    assert.equal(h.usable, false);
+    assert.equal(h.unrecovered, false);
+    h.passed();
+    assert.equal(h.usable, true);
+  }
+  h.lost("hung once more");
   assert.equal(h.status, "off");
+  assert.equal(h.unrecovered, true, "the device went, not the arithmetic");
   assert.equal(h.wants, false);
   h.passed();
-  assert.equal(h.usable, false, "off for the session");
+  assert.equal(h.usable, false, "off for the page load");
   const failed = new gpu.Health();
   failed.failed("vectors");
   assert.equal(failed.status, "off");
+  assert.equal(failed.unrecovered, false);
   assert.equal(failed.wants, false);
+});
+
+test("a recovery's misses spend its attempts and are not losses, and the last ends it", () => {
+  const h = new gpu.Health();
+  h.passed();
+  h.lost("hung");
+  h.attemptMissed("no-adapter");
+  h.attemptMissed("lost during the self-test");
+  assert.equal(h.status, "lost", "two attempts spent, one left");
+  assert.equal(h.losses, 1, "a loss under the recovery's own test is not a new loss");
+  assert.equal(h.misses, 0, "nor a first acquisition's miss");
+  h.passed();
+  assert.equal(h.attempts, 0, "a recovery that passes leaves the next one all its attempts");
+  h.lost("hung again");
+  for (let k = 0; k < gpu.RECOVERY_DELAYS_MS.length; k++) h.attemptMissed("no-adapter");
+  assert.equal(h.status, "off");
+  assert.equal(h.unrecovered, true);
+});
+
+/** `acquire` over scripted outcomes: what each attempt resolves, and the waits it asked. */
+async function acquired(health, outcomes, { stop = () => false } = {}) {
+  const attempts = [];
+  const waits = [];
+  const passed = await gpu.acquire({
+    health,
+    attempt: async ({ recovering }) => {
+      attempts.push(recovering);
+      return outcomes.shift() ?? { passed: true };
+    },
+    wait: async (ms) => {
+      waits.push(ms);
+    },
+    stop,
+  });
+  return { passed, attempts, waits };
+}
+
+test("a recovery is three attempts spaced 0, 1 and 4 seconds, and ends ready or off", async () => {
+  // A recovery that passes on its third attempt, after a miss and a loss under its test.
+  const h = new gpu.Health();
+  h.passed();
+  h.lost("hung");
+  const back = await acquired(h, [{ missed: "no-adapter" }, { lost: "lost during the self-test" }, { passed: true }]);
+  assert.equal(back.passed, true);
+  assert.deepEqual(back.attempts, [true, true, true]);
+  assert.deepEqual(back.waits, [1000, 4000], "the first attempt is at once");
+  assert.equal(h.status, "ready");
+  assert.equal(h.losses, 1);
+
+  // Every attempt missing turns the GPU off for the page load, with no limbo.
+  const gone = new gpu.Health();
+  gone.passed();
+  gone.lost("hung");
+  const off = await acquired(gone, [{ missed: "no-adapter" }, { missed: "no-adapter" }, { missed: "no-adapter" }, { passed: true }]);
+  assert.equal(off.passed, false);
+  assert.equal(off.attempts.length, 3, "no fourth attempt");
+  assert.equal(gone.status, "off");
+  assert.equal(gone.unrecovered, true);
+
+  // A self-test that fails on the new device is the arithmetic's, and final.
+  const wrong = new gpu.Health();
+  wrong.passed();
+  wrong.lost("hung");
+  assert.equal((await acquired(wrong, [{ failed: "vectors" }])).passed, false);
+  assert.equal(wrong.status, "off");
+  assert.equal(wrong.unrecovered, false);
+});
+
+test("a first test that loses its device becomes that loss's recovery, and a miss waits", async () => {
+  const h = new gpu.Health();
+  const first = await acquired(h, [{ lost: "lost during the self-test" }, { passed: true }]);
+  assert.equal(first.passed, true);
+  assert.deepEqual(first.attempts, [false, true], "the test, then the recovery's first attempt");
+  assert.deepEqual(first.waits, []);
+  assert.equal(h.losses, 1);
+  assert.equal(h.status, "ready");
+
+  const missed = new gpu.Health();
+  const later = await acquired(missed, [{ missed: "no-adapter" }]);
+  assert.equal(later.passed, false);
+  assert.deepEqual(later.attempts, [false], "a first test's miss is not retried at once");
+  assert.equal(missed.status, "unavailable");
+  assert.equal(missed.wants, true, "the next frame asks again");
+
+  // The recovery it becomes is said once, before its first attempt, so that its bound runs
+  // from there and not from the first test's start.
+  const told = [];
+  const turned = new gpu.Health();
+  const outcomes = [{ lost: "lost during the self-test" }, { passed: true }];
+  await gpu.acquire({
+    health: turned,
+    attempt: async ({ recovering }) => {
+      told.push(`attempt ${recovering}`);
+      return outcomes.shift();
+    },
+    wait: async () => {},
+    onRecover: () => told.push("recovering"),
+  });
+  assert.deepEqual(told, ["attempt false", "recovering", "attempt true"]);
+});
+
+test("a test or a recovery out of time is off, and a recovery's says the device went", () => {
+  const test = new gpu.Health();
+  test.timedOut("the self-test did not answer in 30 s");
+  assert.equal(test.status, "off");
+  assert.equal(test.unrecovered, false, "a test out of time is not a lost device");
+
+  const recovery = new gpu.Health();
+  recovery.passed();
+  recovery.lost("hung");
+  recovery.timedOut("the recovery did not answer in 30 s");
+  assert.equal(recovery.status, "off");
+  assert.equal(recovery.unrecovered, true, "the box says the card stopped responding");
+});
+
+test("an acquisition stopped (abandoned, or the box unticked) moves nothing", async () => {
+  // Stopped after an attempt that passed: the caller gives the device up, and the GPU
+  // stays where it was, a recovery still owed.
+  const h = new gpu.Health();
+  h.passed();
+  h.lost("hung");
+  let stopped = false;
+  const out = await gpu.acquire({
+    health: h,
+    attempt: async () => {
+      stopped = true;
+      return { passed: true };
+    },
+    wait: async () => {},
+    stop: () => stopped,
+  });
+  assert.equal(out, false);
+  assert.equal(h.status, "lost", "a re-tick resumes the recovery");
+  assert.equal(h.wants, true);
+  // Stopped between attempts: no further attempt is made.
+  const between = new gpu.Health();
+  between.passed();
+  between.lost("hung");
+  let asked = 0;
+  await gpu.acquire({
+    health: between,
+    attempt: async () => {
+      asked += 1;
+      return { missed: "no-adapter" };
+    },
+    wait: async () => {},
+    stop: () => asked >= 1 && between.attempts >= 1,
+  });
+  assert.equal(asked, 1);
+  assert.equal(between.attempts, 1);
+});
+
+test("the kernel the page uses is the ready device's identity, the CPU once off, and undecided between", () => {
+  const h = new gpu.Health();
+  assert.equal(gpu.kernelNow(h, null), null, "untested: nothing has said");
+  h.passed();
+  assert.equal(gpu.kernelNow(h, "NVIDIA turing|fma"), "NVIDIA turing|fma");
+  h.lost("hung");
+  assert.equal(gpu.kernelNow(h, null), null, "recovering: the last answer stands");
+  h.passed();
+  assert.equal(gpu.kernelNow(h, "NVIDIA turing|split"), "NVIDIA turing|split", "another identity is another kernel");
+  for (let k = 0; k < gpu.MAX_RECOVERIES; k++) h.lost("hung");
+  assert.equal(gpu.kernelNow(h, null), "cpu");
 });
 
 test("an acquisition that failed for the moment is asked again, until the third", () => {
@@ -643,6 +814,7 @@ test("an acquisition that failed for the moment is asked again, until the third"
   assert.equal(h.usable, true);
   h.lost("hung");
   assert.equal(h.status, "lost", "a miss and a loss are counted apart");
+  h.passed();
   h.unavailable("E_OUTOFMEMORY");
   h.unavailable("no-adapter");
   assert.equal(h.status, "off");

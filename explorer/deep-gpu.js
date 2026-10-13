@@ -21,9 +21,15 @@
 // run under the `handoff` policy: a sample the proof gives up on ends
 // `GATED` and is finished by the CPU kernel, which restarts it from the first iteration
 // with its own `f64` loop and its own proof (`compute_samples`). So is every sample still
-// running when the frame's tail is thin enough at a step checkpoint (`handsTail`), and so
-// is every unfinished sample after a lost device. A frame whose quarter pass says it is cheap
-// stays on the CPU altogether (`cheap`).
+// running when the frame's tail is thin enough at a step checkpoint (`handsTail`). A frame
+// whose quarter pass says it is cheap stays on the CPU altogether (`cheap`).
+//
+// **A lost device never finishes a frame mixed** *(deep_holes_ckpt163)*. The device is
+// re-acquired at once and tested again (`acquire`), the frame waits for the outcome, and it
+// is drawn again on the GPU where the recovery passed and on the CPU from the start where it
+// did not (`deep-render.js`). Every GPU field carries the `identity` of the device and guard
+// form that drew it, and `onKernel` tells the page when the kernel it uses changes, so that
+// what is on screen and held is always drawn by that kernel.
 //
 // **Passes are sized by time, and that never moves a pixel.** All of a sample's progress
 // lives in its state on the device, and the model guarantees any sequence of budgets leaves
@@ -166,8 +172,18 @@ export const PARTIAL_MS = 500;
 export const PARTIAL_GAIN = 0.05;
 /** A frame smaller than this stays on the CPU unless `?kernel=gpu` asks: overhead-bound. */
 export const GPU_MIN_SAMPLES = 65536;
-/** Lost devices a session survives; the next turns the GPU off until a reload. */
-export const MAX_LOSSES = 2;
+/** Lost devices a page load recovers from *(deep_holes_ckpt163)*; the next turns the GPU off
+ *  until a reload. */
+export const MAX_RECOVERIES = 3;
+/**
+ * **A lost device is re-acquired at once, not on the next frame** *(deep_holes_ckpt163)*: a
+ * fresh adapter, a fresh device and the whole self-test, tried at these offsets from the
+ * loss, one attempt each. A miss, or a device lost under the recovery's own self-test, spends
+ * an attempt and is not a new loss; a recovery whose every attempt misses turns the GPU off
+ * for the page load. Frames wait for the outcome, so no clock chooses a picture: the spacing
+ * is how long a driver reset is given, never what a frame races.
+ */
+export const RECOVERY_DELAYS_MS = [0, 1000, 4000];
 /** Failed acquisitions a session survives (no adapter handed out, a device refused, the
  *  self-test's files or the kernel module not fetched): the browser's or the machine's
  *  moment and not the arithmetic, so a later frame asks again, until this many. */
@@ -179,8 +195,9 @@ export const MAX_MISSES = 3;
  * first frame of a link was the CPU's picture and the same link a minute later the GPU's:
  * the clock chose a picture, which the Deep tab's rule forbids. Now a frame the counts say
  * the GPU should draw waits for the answer, and this bound is a liveness guard only: a test
- * still running at it is abandoned for the session, its late answer ignored, so every frame
- * after goes the same way as the one that gave up.
+ * still running at it is abandoned and the GPU turned off for the page load, its late answer
+ * ignored, so every frame after goes the same way as the one that gave up. A lost device's
+ * recovery is held to the same bound, from the recovery's start *(deep_holes_ckpt163)*.
  */
 export const SETTLE_BOUND_MS = 30000;
 /** And under `?kernel=gpu`, which a harness asks for in order to measure the GPU. */
@@ -679,25 +696,33 @@ export function fits({ samples, degree, interior, orbitPoints, limits, sampleWid
 export const WIDEST_ROW = 8192 * 4;
 
 /**
- * The GPU's standing for the session. `untested` until a self-test runs, `ready` once one
+ * The GPU's standing for the page load. `untested` until a self-test runs, `ready` once one
  * passes, `off` for good after a self-test fails (the arithmetic is wrong, not unlucky) or
- * the WebGPU it needs is missing, and `lost` after a lost device, which the next frame
- * retries with a fresh device and a fresh self-test, until `MAX_LOSSES` turns it `off`.
- * `unavailable` is an acquisition that failed for the moment — no adapter, a device
- * refused, a file not fetched — which the next frame asks again, until `MAX_MISSES`.
+ * the WebGPU it needs is missing, and `lost` from a lost device until its recovery ends,
+ * which is in `ready` or in `off` and nowhere else *(deep_holes_ckpt163)*: a recovery has
+ * `RECOVERY_DELAYS_MS.length` attempts (`attempts` counts those spent), a page load has
+ * `MAX_RECOVERIES` recoveries, and either running out is `off` (`unrecovered` says it was
+ * the device that went). `unavailable` is a first acquisition that failed for the moment —
+ * no adapter, a device refused, a file not fetched — which the next frame asks again, until
+ * `MAX_MISSES`.
  */
 export class Health {
-  constructor(max = MAX_LOSSES, maxMisses = MAX_MISSES) {
+  constructor(max = MAX_RECOVERIES, maxMisses = MAX_MISSES, maxAttempts = RECOVERY_DELAYS_MS.length) {
     this.max = max;
     this.maxMisses = maxMisses;
+    this.maxAttempts = maxAttempts;
     this.status = "untested";
     this.losses = 0;
     this.misses = 0;
+    this.attempts = 0;
+    this.unrecovered = false;
     this.why = null;
   }
 
   passed() {
-    if (this.status !== "off") this.status = "ready";
+    if (this.status === "off") return;
+    this.status = "ready";
+    this.attempts = 0;
   }
 
   failed(why) {
@@ -705,10 +730,35 @@ export class Health {
     this.why = why;
   }
 
+  /** A device lost while the page held it: a recovery starts, unless this one is past
+   *  `max`. */
   lost(why) {
     this.losses += 1;
+    this.attempts = 0;
     this.why = why;
-    if (this.status !== "off") this.status = this.losses >= this.max ? "off" : "lost";
+    if (this.status === "off") return;
+    if (this.losses > this.max) {
+      this.status = "off";
+      this.unrecovered = true;
+    } else this.status = "lost";
+  }
+
+  /** One of a recovery's attempts missed — no adapter, a device refused, or a device lost
+   *  under the recovery's own self-test — which is not a new loss. The last one ends it. */
+  attemptMissed(why) {
+    this.attempts += 1;
+    this.why = why;
+    if (this.status === "lost" && this.attempts >= this.maxAttempts) {
+      this.status = "off";
+      this.unrecovered = true;
+    }
+  }
+
+  /** A test or a recovery that did not answer inside its bound (`ready`): off for the page
+   *  load, and a recovery's is the device that went, not the arithmetic. */
+  timedOut(why) {
+    if (this.status === "lost") this.unrecovered = true;
+    this.failed(why);
   }
 
   unavailable(why) {
@@ -727,10 +777,71 @@ export class Health {
     return this.status === "ready";
   }
 
-  /** Whether a frame should (re)start the device and its self-test. */
+  /** Whether a frame should (re)start the device and its self-test: a lost device's
+   *  recovery is started by the loss itself, and this resumes one an untick paused. */
   get wants() {
     return this.status === "untested" || this.status === "lost" || this.status === "unavailable";
   }
+}
+
+/**
+ * **One acquisition's course, as `Health` decides it** *(deep_holes_ckpt163)*: a first test
+ * where the GPU is untested or missed, a recovery where it is `lost`. `attempt()` acquires a
+ * device and runs the self-test once, resolving `{passed: true}` or one of `{lost}`,
+ * `{missed}` and `{failed}` with why; `wait(ms)` spaces a recovery's attempts
+ * (`RECOVERY_DELAYS_MS`); `stop()` says the acquisition is no longer wanted (abandoned by a
+ * frame's bound, or the box unticked), and is asked before and after every attempt.
+ *
+ * A first test that loses its device is a loss, and becomes that loss's recovery; one that
+ * misses is a miss, which the next frame asks again. Inside a recovery a miss or a loss
+ * spends an attempt. A failure is final either way. Resolves whether the GPU is ready; a
+ * passed attempt that `stop()` then refuses resolves false and moves nothing, and the caller
+ * gives its device up. `onRecover()` is called when a first test's loss turns it into a
+ * recovery, whose bound runs from there.
+ */
+export async function acquire({ health, attempt, wait, stop = () => false, onRecover = () => {} }) {
+  let recovering = health.status === "lost";
+  for (;;) {
+    if (recovering) {
+      const delay = RECOVERY_DELAYS_MS[Math.min(health.attempts, RECOVERY_DELAYS_MS.length - 1)];
+      if (delay > 0) await wait(delay);
+    }
+    if (stop()) return false;
+    const outcome = await attempt({ recovering });
+    if (stop()) return false;
+    if (outcome.passed) {
+      health.passed();
+      return health.usable;
+    }
+    if (outcome.failed !== undefined) {
+      health.failed(outcome.failed);
+      return false;
+    }
+    if (recovering) {
+      health.attemptMissed(outcome.lost ?? outcome.missed);
+      if (health.status !== "lost") return false;
+      continue;
+    }
+    if (outcome.lost !== undefined) {
+      health.lost(outcome.lost);
+      if (health.status !== "lost") return false;
+      recovering = true;
+      onRecover();
+      continue;
+    }
+    health.unavailable(outcome.missed);
+    return false;
+  }
+}
+
+/**
+ * The kernel the page draws with, as `DeepGpu.using` keeps it: the device's `identity` while
+ * the GPU is ready, `"cpu"` once it is off for the page load, and `null` while that is still
+ * being decided (a test or a recovery under way), which leaves the last answer standing.
+ */
+export function kernelNow(health, identity) {
+  if (health.usable && identity !== null) return identity;
+  return health.status === "off" ? "cpu" : null;
 }
 
 // ---- The device -----------------------------------------------------------------------
@@ -739,7 +850,8 @@ export class Health {
  *  call's own failure (`#guard`). */
 const LOSS_SETTLE_MS = 1000;
 
-/** Thrown where the device was lost under a frame: the frame finishes on the CPU. */
+/** Thrown where the device was lost under a frame or a self-test: the frame is drawn again
+ *  once the recovery has answered, and the test spends an attempt. */
 export class GpuLost extends Error {}
 /** Thrown where the GPU cannot serve this frame (an allocation refused, say): the frame
  *  is the CPU's, and the device is not at fault. */
@@ -1031,14 +1143,33 @@ class Runner {
  * `kernel` is the debugging override: `"cpu"` never touches WebGPU, `"gpu"` lifts the
  * small-frame rule (never the self-test or the device's limits). `chosen` is the reader's
  * box, which the override beats: with neither, the GPU is `off` and never touched.
- * `changed` is called whenever what `standing()` says may have moved.
+ * `changed` is called whenever what `standing()` says may have moved, and `onKernel({from,
+ * to})` whenever the kernel the page uses changes under pictures drawn by the one before
+ * (`using`): the GPU went off after a loss, or a recovery passed on a device of another
+ * `identity` *(deep_holes_ckpt163)*. A box ticked or unticked is the page's own doing, and
+ * not said here.
  */
 export class DeepGpu {
-  constructor({ kernel = null, chosen = false, log = () => {}, changed = () => {}, warm = [] } = {}) {
+  constructor({ kernel = null, chosen = false, log = () => {}, changed = () => {}, onKernel = () => {}, warm = [] } = {}) {
     this.kernel = kernel;
     this.chosen = chosen;
     this.log = log;
     this.changed = changed;
+    this.onKernel = onKernel;
+    /** The ready device's adapter and the self-test's guard form, `adapter|form`: what a GPU
+     *  field is stamped with, so that a recovery onto another device retires its pictures.
+     *  `null` while no device is ready. */
+    this.identity = null;
+    /** The kernel the page draws with (`kernelNow`): an identity, `"cpu"`, or `null` before
+     *  any test has said. */
+    this.using = null;
+    /** The acquisition under way (`acquire`): `{started, abandoned, recovering}`, kept after
+     *  it ends, since a frame's bound is measured from its start. */
+    this.trial = null;
+    /** The device under a self-test, whose loss is the test's to answer for and not a loss
+     *  of the page's (`#open`), and why it was lost where it was. */
+    this.testDevice = null;
+    this.testLost = null;
     /** Kernels (`{degree, julia, interior}`) compiled in the background once the self-test
      *  passes, so the first frame that wants one does not wait on its compile. */
     this.warm = warm;
@@ -1095,10 +1226,11 @@ export class DeepGpu {
 
   /**
    * Where the GPU stands, for the box: `forced` (the address decides, `kernel` says which),
-   * `off` (not chosen), `testing` (a self-test is running), `ready`, `waiting` (chosen and
-   * untested, which the next frame that wants it tests), `retrying` (a device lost once, or
-   * an acquisition missed, which the next frame asks again), or `unavailable` for the
-   * session with `why` one of `no-webgpu`, `fallback`, `failed`, `lost` or `missed`.
+   * `off` (not chosen), `recovering` (a device was lost and is being re-acquired, which
+   * frames wait for), `testing` (a self-test is running), `ready`, `waiting` (chosen and
+   * untested, which the next frame that wants it tests), `retrying` (an acquisition missed,
+   * which the next frame asks again), or `unavailable` for the page load with `why` one of
+   * `no-webgpu`, `fallback`, `failed`, `lost` or `missed`.
    */
   standing() {
     const status = this.health.status;
@@ -1110,7 +1242,7 @@ export class DeepGpu {
           ? "no-webgpu"
           : why === "fallback-adapter"
             ? "fallback"
-            : this.health.losses >= this.health.max
+            : this.health.unrecovered
               ? "lost"
               : this.health.misses >= this.health.maxMisses
                 ? "missed"
@@ -1118,9 +1250,10 @@ export class DeepGpu {
     if (this.kernel !== null) return { state: "forced", kernel: this.kernel, unavailable };
     if (!this.chosen) return { state: "off" };
     if (unavailable !== null) return { state: "unavailable", why: unavailable };
+    if (status === "lost") return { state: "recovering" };
     if (this.testing !== null) return { state: "testing" };
     if (status === "ready" && this.device !== null) return { state: "ready" };
-    return { state: status === "lost" || status === "unavailable" ? "retrying" : "waiting" };
+    return { state: status === "unavailable" ? "retrying" : "waiting" };
   }
 
   /**
@@ -1136,60 +1269,96 @@ export class DeepGpu {
       this.changed();
       return passed;
     }
+    // A recovery under way stops at its next attempt (`acquire`'s `stop`), the box's.
     await Promise.allSettled([this.testing, this.idle]);
     if (this.off && this.device !== null) {
       this.#release();
       this.health.stoodDown();
       this.log("gpu stood down");
     }
+    // The page retired what the GPU drew when the box went (`setGpu`): nothing is drawn by
+    // a kernel any more, until a test says which.
+    if (this.off) this.using = null;
     this.changed();
     return false;
   }
 
-  /** Acquire the device and test it, once, in the background; resolves whether it passed.
-   *  Safe to call again: a test in flight is shared, and a lost device is re-acquired. */
+  /** Acquire the device and test it in the background (`acquire`); resolves whether it
+   *  passed. Safe to call again: an acquisition in flight is shared, and a lost device's
+   *  recovery, which the loss starts itself, is that acquisition. */
   start() {
     if (this.off) return Promise.resolve(false);
     if (this.testing !== null) return this.testing;
     if (!this.health.wants) return Promise.resolve(this.health.usable);
-    const started = performance.now();
-    this.testStarted = started;
-    const losses = this.health.losses;
-    this.testing = this.#open()
-      .then(() => {
+    const trial = { started: performance.now(), abandoned: false, recovering: this.health.status === "lost" };
+    this.trial = trial;
+    const testing = acquire({
+      health: this.health,
+      attempt: ({ recovering }) => this.#attempt(trial, recovering),
+      wait: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+      stop: () => trial.abandoned || this.off,
+      // A first test that lost its device is a recovery from here, bounded from here.
+      onRecover: () => {
+        trial.started = performance.now();
+        trial.recovering = true;
+      },
+    })
+      .then((passed) => {
         // A test a frame stopped waiting for is not passed by landing late: the frames
         // after it would then draw on the GPU, and the one that gave up on the CPU.
-        if (this.abandoned) {
-          this.#release();
-          return false;
+        if (!passed) this.#release();
+        if (passed) {
+          this.identity = `${this.adapter}|${this.form}`;
+          this.log("gpu ready", { form: this.form, ms: Math.round(performance.now() - trial.started), adapter: this.adapter, identity: this.identity, recovered: trial.recovering, losses: this.health.losses });
+          this.#warm();
+        } else if (!trial.abandoned && !this.off) {
+          this.log("gpu off", { why: this.health.why, status: this.health.status });
         }
-        this.health.passed();
-        this.log("gpu ready", { form: this.form, ms: Math.round(performance.now() - started), adapter: this.adapter });
-        this.#warm();
-        return true;
-      })
-      .catch((error) => {
-        // A device lost under the self-test is a loss, and an acquisition that failed for
-        // the moment is a miss, each retried by a later frame; anything else the test said
-        // is about the arithmetic, and final.
-        if (error instanceof GpuLost || this.health.losses > losses) {
-          if (this.health.losses === losses) this.#drop(`lost during the self-test: ${error.message}`);
-        } else if (error instanceof Unavailable) {
-          this.health.unavailable(error.message);
-          this.#release();
-        } else {
-          this.health.failed(String(error?.message ?? error));
-          this.#release();
-        }
-        this.log("gpu off", { why: this.health.why, status: this.health.status });
-        return false;
+        return passed;
       })
       .finally(() => {
-        this.testing = null;
+        if (this.testing === testing) this.testing = null;
+        this.#settle();
         this.changed();
       });
+    this.testing = testing;
     this.changed();
-    return this.testing;
+    return testing;
+  }
+
+  /** One acquisition and self-test, as `acquire` asks for it: a device lost under the test is
+   *  the test's outcome and never a loss of the page's (`testDevice`). */
+  async #attempt(trial, recovering) {
+    if (recovering) this.log("gpu recovering", { attempt: this.health.attempts + 1, losses: this.health.losses });
+    this.testLost = null;
+    try {
+      await this.#open();
+      if (this.testLost !== null) throw new GpuLost(this.testLost);
+      return { passed: true };
+    } catch (error) {
+      const why = String(error?.message ?? error);
+      this.#release();
+      // A device lost under the self-test is a loss, and an acquisition that failed for the
+      // moment is a miss; anything else the test said is about the arithmetic, and final.
+      if (error instanceof GpuLost || this.testLost !== null) return { lost: `lost during the self-test: ${this.testLost ?? why}` };
+      if (error instanceof Unavailable) return { missed: why };
+      return { failed: why };
+    } finally {
+      this.testDevice = null;
+    }
+  }
+
+  /** Say a change of the kernel the page uses, where pictures drawn by the one before may
+   *  stand: from a kernel, never from nothing, and never for a box the reader moved. */
+  #settle() {
+    if (this.off) return;
+    const now = kernelNow(this.health, this.device === null ? null : this.identity);
+    if (now === null || now === this.using) return;
+    const from = this.using;
+    this.using = now;
+    if (from === null) return;
+    this.log("gpu kernel changed", { from, to: now });
+    this.onKernel({ from, to: now });
   }
 
   /**
@@ -1237,27 +1406,37 @@ export class DeepGpu {
     }
   }
 
-  /** Whether the GPU is ready, waiting up to `within` for a self-test in flight (and
-   *  starting one where a lost device is due a retry). A page that asked for the GPU by
+  /** Whether the GPU is ready, waiting up to `within` for a self-test or a recovery in
+   *  flight (and starting one where the GPU is untested). A page that asked for the GPU by
    *  name waits for the self-test however long it takes, so its frames say which kernel
    *  drew them for a reason and not for a race. */
   async ready(within = SETTLE_BOUND_MS) {
-    if (this.off || this.abandoned) return false;
-    if (this.health.usable) return true;
+    if (this.off) return false;
+    if (this.health.usable && this.testing === null) return true;
     if (this.health.status === "off") return false;
     const testing = this.start();
-    let timer;
+    const trial = this.trial;
+    if (trial === null) return testing;
     const settled = Symbol("bound");
-    // From the test's own start, not this frame's ask: a test is one event, and every frame
-    // waiting on it gets the same answer.
-    const left = Math.max(0, (this.testStarted ?? performance.now()) + within - performance.now());
-    const waited = await Promise.race([testing, new Promise((resolve) => (timer = setTimeout(() => resolve(settled), left)))]);
-    clearTimeout(timer);
+    let waited = settled;
+    // From the acquisition's own start, not this frame's ask: a test or a recovery is one
+    // event, and every frame waiting on it gets the same answer. A first test that turns
+    // into a recovery moves that start (`onRecover`), so the bound is armed again.
+    for (;;) {
+      let timer;
+      const left = Math.max(0, trial.started + within - performance.now());
+      waited = await Promise.race([testing, new Promise((resolve) => (timer = setTimeout(() => resolve(settled), left)))]);
+      clearTimeout(timer);
+      if (waited !== settled || trial.started + within <= performance.now()) break;
+    }
     if (waited === settled) {
-      // The liveness guard, not a race: what the frame does now, every frame does.
-      this.abandoned = true;
-      this.health.failed(`the self-test did not answer in ${Math.round(within / 1000)} s`);
+      if (trial.abandoned || this.health.status === "off") return false;
+      // The liveness guard, not a race: what the frame does now, every frame does. It ends
+      // this acquisition, whose late answer is then ignored, and turns the GPU off.
+      trial.abandoned = true;
+      this.health.timedOut(`the ${trial.recovering ? "recovery" : "self-test"} did not answer in ${Math.round(within / 1000)} s`);
       this.log("gpu off", { why: this.health.why, status: this.health.status });
+      this.#settle();
       this.changed();
       return false;
     }
@@ -1323,6 +1502,7 @@ export class DeepGpu {
       throw new Unavailable(String(error?.message ?? error));
     }
     this.device = device;
+    this.testDevice = device;
     this.limits = device.limits;
     this.timed = device.features.has("timestamp-query");
     this.fault = null;
@@ -1331,7 +1511,10 @@ export class DeepGpu {
     });
     this.lostSignal.catch(() => {});
     device.lost.then((lost) => {
-      if (this.device === device) this.#drop(`device lost (${lost.reason ?? "unknown"}): ${lost.message ?? ""}`);
+      const why = `device lost (${lost.reason ?? "unknown"}): ${lost.message ?? ""}`;
+      // Under its self-test, the loss is the test's outcome (`#attempt`); after it, the page's.
+      if (this.testDevice === device) this.testLost = why;
+      else this.#drop(device, why);
     });
     device.addEventListener("uncapturederror", (event) => {
       const message = event.error?.message ?? String(event.error);
@@ -1351,18 +1534,27 @@ export class DeepGpu {
     await this.#selfTest(W, device);
   }
 
-  /** Give up the device after a loss, counting it; the next frame retries. */
-  #drop(why) {
-    if (this.device === null && this.health.status !== "ready") return;
+  /** Give up `device` after a loss of the page's, counting it, and start its recovery at
+   *  once (`acquire`). A device the page no longer holds is not lost again: the listener and
+   *  the frame under it both report the one loss, and by the time the second does a recovery
+   *  may already hold a new device. */
+  #drop(device, why) {
+    if (device == null || device !== this.device || this.testDevice === device) return;
     this.health.lost(why);
     this.log("gpu lost", { why, losses: this.health.losses, status: this.health.status });
     this.#release();
+    this.#settle();
     this.changed();
+    if (this.health.status !== "lost") return;
+    // An acquisition still settling (a pass landing this very moment) is let finish first.
+    if (this.testing === null) this.start();
+    else this.testing.finally(() => this.health.status === "lost" && this.start());
   }
 
   #release() {
     const device = this.device;
     this.device = null;
+    this.identity = null;
     this.runner = null;
     this.orbit = null;
     this.table = null;
@@ -1609,10 +1801,12 @@ export class DeepGpu {
    * `values`), `preview` (the quarter field, a stand-in for samples not yet finished) and
    * `workers` (the CPU pool the tail goes to, `TAIL_WORKERS` where not said).
    *
-   * Resolves `{status: "done", handed}` with the samples the CPU is to finish;
-   * `{status: "cancelled"}`; `{status: "lost", handed}` after a lost device, `handed` every
-   * sample not finished by the last read-back, or `null` where nothing was read back; or
-   * `{status: "unserved", why}` where the device would not take the frame at all.
+   * Resolves `{status: "done", handed, identity}` with the samples the CPU is to finish and
+   * the device that drew the rest; `{status: "cancelled"}`; `{status: "lost", strip, rows,
+   * identity}` after a lost device, which hands nothing over (the frame is drawn again, and
+   * `job.resume`, `{strip, rows, identity}`, resumes it at the strip it lost on a device of
+   * the same identity, and a resume it cannot honour is `lost` with `stale: true`, which is
+   * no loss); or `{status: "unserved", why}` where the device would not take the frame.
    *
    * **A frame past what the device holds at once is drawn a strip of whole rows at a time**
    * *(gpu_optin_downloads_ckpt162)*, each strip by exactly the rules a frame always was
@@ -1620,7 +1814,7 @@ export class DeepGpu {
    * own step checkpoints) on one set of buffers, one strip after another. Where the job
    * has `onHanded(indices)`, each strip's tail is handed over the moment that strip ends, so
    * the CPU finishes it while the next strip runs, and `handed` is only what was not; a
-   * lost device or a refusal after the first strip hands the rest of the frame over too.
+   * refusal after the first strip hands the rest of the frame over too.
    */
   async draw(job) {
     const prior = this.idle;
@@ -1733,7 +1927,16 @@ export class DeepGpu {
     if (this.off) return { status: "unserved", why: "off" };
     const W = await wgsl();
     const device = this.device;
-    if (device === null || !this.health.usable) return { status: "unserved", why: "no device" };
+    // A device lost between the frame's ask and its turn is a loss like any other: the frame
+    // waits for the recovery, never for the CPU.
+    // Its resume, if it had one, stands for the next attempt: the strips before it are still
+    // the lost device's, and a recovery onto that device may yet take them.
+    if (device === null || !this.health.usable) {
+      return this.health.status === "lost"
+        ? { status: "lost", handed: null, strip: job.resume?.strip ?? 0, rows: job.resume?.rows, identity: job.resume?.identity ?? null }
+        : { status: "unserved", why: "no device" };
+    }
+    const identity = this.identity;
     const guard = this.#guard(device);
     const { plan, values } = job;
     const width = plan.sample_width;
@@ -1745,13 +1948,26 @@ export class DeepGpu {
     const strips = Math.ceil(height / rows);
     const started = performance.now();
     // Every sample's mark once it holds its last value, a strip's a view of it; `null`
-    // until a read-back has landed, so that a loss before any sends the frame to the bands.
+    // until a read-back has landed.
     let final = null;
+    // **A frame lost in strips resumes at the strip it lost** *(deep_holes_ckpt163)*, where
+    // the caller says so (`resume`, `{strip, rows}` from the lost draw) and the device that
+    // recovered cuts the same strips: the strips before it ended on a device of the same
+    // identity and their tails are the CPU's by design, and a strip is drawn by exactly the
+    // rules it would have been, so the frame is the one an unbroken draw gives.
+    // A resume this draw cannot honour — another device took the frame's turn between the
+    // caller's ask and this one, or the device cuts other strips — is never drawn from strip
+    // 0 into the same buffer, whose earlier tails may still be writing a hand-off of another
+    // cut: the caller is told to draw the frame again into a buffer of its own (`stale`).
+    if (job.resume != null && (job.resume.identity !== identity || job.resume.rows !== rows)) {
+      return { status: "lost", stale: true, handed: null, strip: 0, rows, identity: null };
+    }
+    const from = job.resume != null ? Math.min(job.resume.strip, strips) : 0;
     // The strip running, whether any of it has been read back, and how many samples of the
     // strips before it the device finished, for the progress line.
-    let strip = 0;
+    let strip = from;
     let stripRead = false;
-    let doneBefore = 0;
+    let doneBefore = from * rows * width;
     let streamed = 0;
     const handedAll = [];
     // `trace` is a pass a row: its budget, its mode's initial, the samples running after it,
@@ -1874,12 +2090,12 @@ export class DeepGpu {
 
       const fallback = previewOf(job.preview, width, height);
       // A partial of a frame in strips shows the quarter field where no strip has run yet.
-      if (strips > 1 && job.onPartial && fallback !== null) for (let i = 0; i < count; i++) values[i] = fallback(i);
+      if (strips > 1 && job.onPartial && fallback !== null) for (let i = from * rows * width; i < count; i++) values[i] = fallback(i);
       const sizing = this.sizing;
       const workers = job.workers ?? TAIL_WORKERS;
       let lastPartial = performance.now();
       let partialDone = 0;
-      for (strip = 0; strip < strips; strip++) {
+      for (strip = from; strip < strips; strip++) {
         const row0 = strip * rows;
         const offset = row0 * width;
         const n = Math.min(rows, height - row0) * width;
@@ -1993,17 +2209,23 @@ export class DeepGpu {
         hand(handed);
       }
       record.ms = performance.now() - started;
-      return { status: "done", handed: joined(handedAll), passes: passStats(record) };
+      return { status: "done", handed: joined(handedAll), identity, passes: passStats(record) };
     } catch (error) {
-      const refused = error instanceof Unserved;
-      // A refusal or a loss in the first strip with nothing handed over yet is what it was
-      // before strips: a refusal sends the frame to the bands, and a loss finishes it on the
-      // CPU from what the last read-back settled, or sends it to the bands where none had.
-      if (refused) this.log("gpu declined the frame", { why: error.message, strip });
-      else this.#drop(error instanceof GpuLost ? error.message : `the frame threw: ${error?.message ?? error}`);
-      if (strip === 0 && streamed === 0 && (refused || final === null)) {
-        return refused ? { status: "unserved", why: error.message } : { status: "lost", handed: null, passes: passStats(record) };
+      if (!(error instanceof Unserved)) {
+        // **A lost device hands nothing over** *(deep_holes_ckpt163)*: the frame it was
+        // drawing would finish mixed, the GPU's lanes where a read-back had settled them and
+        // the CPU's everywhere else, a picture neither kernel draws. The caller waits for the
+        // recovery and draws it again, from `strip` where the device that recovered is this
+        // one (`identity`), and from the start on whichever kernel the page then uses where
+        // it is not.
+        this.#drop(device, error instanceof GpuLost ? error.message : `the frame threw: ${error?.message ?? error}`);
+        record.ms = performance.now() - started;
+        return { status: "lost", handed: null, strip: Math.min(strip, strips), rows, identity, passes: passStats(record) };
       }
+      // A refusal in the first strip with nothing handed over yet is what it was before
+      // strips, and sends the frame to the bands.
+      this.log("gpu declined the frame", { why: error.message, strip });
+      if (strip === 0 && streamed === 0) return { status: "unserved", why: error.message };
       // Past that, the strips already ended stay the GPU's, and everything else is the CPU's:
       // the unfinished samples of the strip that was running, then every later strip.
       const offset = Math.min(strip, strips) * rows * width;
@@ -2016,11 +2238,13 @@ export class DeepGpu {
       const handed = joined(rest);
       // `hand` counted the lists already kept; only what the catch added is new.
       record.handed += handed.length - handedAll.reduce((sum, list) => sum + list.length, 0);
-      return { status: refused ? "done" : "lost", handed, passes: passStats(record) };
+      return { status: "done", handed, identity, passes: passStats(record) };
     }
   }
 
-  /** For the bench pages: lose the device on purpose. */
+  /** For the bench pages: lose the device on purpose. Counted as a loss of the page's, and
+   *  recovered from, as a real one is (`device.destroy()` leaves the adapter able to hand
+   *  out another). */
   loseForTesting() {
     this.device?.destroy();
   }

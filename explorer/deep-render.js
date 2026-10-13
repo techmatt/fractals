@@ -1736,9 +1736,20 @@ export class DeepRenderer {
    * A field drawn on the GPU *(gpu_deep_ship_ckpt162)*: `deep-gpu.js`'s passes, then the
    * samples it hands back finished here on the CPU by [`samples`], so every lane is either
    * the GPU kernel's or exactly the CPU kernel's. Resolves the object the bands resolve,
-   * with `kernel: "gpu"` and `handed`, the samples the CPU finished; `null` where the
-   * generation moved; `undefined` where the GPU would not take this frame at all, or lost
-   * its device before reading anything back, so the caller draws it with the bands.
+   * with `kernel: "gpu"`, `identity` (the device and guard form that drew it) and `handed`,
+   * the samples the CPU finished; `null` where the generation moved; `undefined` where the
+   * GPU would not take this frame at all, so the caller draws it with the bands.
+   *
+   * **A lost device never finishes the frame** *(deep_holes_ckpt163)*. The attempt it was
+   * drawing is thrown away, its tail lists stopped from writing into it (`alive`: `samples`
+   * cannot be cancelled, so a list already running finishes into a buffer nobody reads, and
+   * the next attempt waits for it, since the pool takes one list at a time), and the frame
+   * waits for the recovery's outcome (`refuses`, which waits on `ready`). A device that
+   * recovered with the same identity resumes it at the strip it lost, keeping the strips
+   * before; one of another identity draws it again from the start; and a GPU gone off
+   * resolves `undefined`, so the bands draw the whole frame on the CPU. A pass's outcome
+   * never depends on its budgets, so either way the frame is the one kernel's picture, and
+   * the one an unbroken draw gives.
    *
    * `ran` and `saved` are `null`: the GPU's steps are not the CPU kernel's iterations,
    * and the one reader of the pair, the interior switch, reads it off the quarter's census,
@@ -1771,124 +1782,179 @@ export class DeepRenderer {
         : preview?.ran == null || !(preview.values?.length > 0)
           ? null
           : (preview.ran * samples) / preview.values.length;
-    const refused = await gpu.refuses({
-      samples,
-      frameSamples: estimate?.frameSamples ?? samples,
-      sampleWidth: shape.sample_width,
-      degree: shape.degree,
-      interior: shape.interior === true,
-      orbitPoints: orbit === null ? 0 : new DataView(orbit.packed).getUint32(0, true),
-      iterations,
-      workers,
-    });
-    if (generation !== this.generation) return null;
-    if (refused !== null || orbit === null) {
-      this.onGpu?.("cpu", { stage, why: refused ?? "no orbit" });
-      return undefined;
-    }
-    const started = performance.now();
-    const values = new Float64Array(samples);
-    let shown = 0;
     const live = () => generation === this.generation;
+    const started = performance.now();
     // What the device finished, and what the CPU finished of what it was handed: the bar is
-    // their sum, and never runs backward.
+    // their sum, and never runs backward, a redraw after a loss included.
+    let shown = 0;
     let onDevice = 0;
-    const tail = { lists: 0, total: 0, done: 0, part: 0, ms: 0, ran: 0, failed: null, chain: Promise.resolve(true) };
+    // The attempt drawing the frame: its values, its tail, and whether it still counts.
+    let attempt = null;
+    // The last lost draw (`strip`, `rows`, `identity`), and how many there were.
+    let lost = null;
+    let losses = 0;
     const said = () => {
+      const tail = attempt.tail;
       shown = Math.max(shown, Math.min(1, onDevice + (tail.done + tail.part) / samples));
       onProgress?.(shown, performance.now() - started, 0);
     };
-    // **A strip's tail is finished while the next strip runs** *(gpu_optin_downloads_ckpt162)*:
-    // the pool is idle while the device draws, so each list the GPU hands over goes to it at
-    // once, one list after another (`samples` takes one at a time).
-    const take = (indices) => {
-      if (indices.length === 0) return;
-      tail.lists += 1;
-      tail.total += indices.length;
-      tail.chain = tail.chain.then(async (going) => {
-        if (!going || !live()) return false;
-        const got = await this.samples(spec, indices, values, {
-          generation,
-          onProgress: (fraction) => {
-            tail.part = fraction * indices.length;
-            said();
-          },
+    /** Stop an attempt's tail from writing, and wait for the list already running. */
+    const abandon = async (gone) => {
+      if (gone === null) return;
+      gone.alive = false;
+      await gone.tail.chain.catch(() => false);
+    };
+    const fresh = () => {
+      const made = {
+        values: new Float64Array(samples),
+        alive: true,
+        tail: { lists: 0, total: 0, done: 0, part: 0, ms: 0, ran: 0, failed: null, chain: Promise.resolve(true) },
+      };
+      const { tail, values } = made;
+      // **A strip's tail is finished while the next strip runs** *(gpu_optin_downloads_ckpt162)*:
+      // the pool is idle while the device draws, so each list the GPU hands over goes to it at
+      // once, one list after another (`samples` takes one at a time).
+      made.take = (indices) => {
+        if (indices.length === 0) return;
+        tail.lists += 1;
+        tail.total += indices.length;
+        tail.chain = tail.chain.then(async (going) => {
+          if (!going || !live() || !made.alive) return false;
+          const got = await this.samples(spec, indices, values, {
+            generation,
+            onProgress: (fraction) => {
+              if (!made.alive) return;
+              tail.part = fraction * indices.length;
+              said();
+            },
+          });
+          if (got === null || !made.alive) return false;
+          tail.done += indices.length;
+          tail.part = 0;
+          tail.ms += got.elapsed;
+          tail.ran = got.ran === null || tail.ran === null ? null : tail.ran + got.ran;
+          said();
+          return true;
         });
-        if (got === null) return false;
-        tail.done += indices.length;
-        tail.part = 0;
-        tail.ms += got.elapsed;
-        tail.ran = got.ran === null || tail.ran === null ? null : tail.ran + got.ran;
-        said();
-        return true;
-      });
-      // A list the kernel refused stops the device at its next check (`going`, below)
-      // rather than one whole GPU run later, and is thrown once the draw has returned.
-      tail.chain.catch((error) => {
-        tail.failed ??= error;
-      });
+        // A list the kernel refused stops the device at its next check (`going`, below)
+        // rather than one whole GPU run later, and is thrown once the draw has returned.
+        tail.chain.catch((error) => {
+          tail.failed ??= error;
+        });
+      };
+      made.going = () => live() && made.alive && tail.failed === null;
+      return made;
     };
-    const going = () => live() && tail.failed === null;
-    const drawn = await gpu.draw({
-      plan: shape,
-      orbit,
-      values,
-      preview,
-      workers,
-      live: going,
-      onPass: () => {
-        this.heard = performance.now();
-      },
-      onProgress: (fraction) => {
-        onDevice = fraction;
-        said();
-      },
-      onHanded: take,
-      onPartial:
-        onPartial === null
-          ? null
-          : () => onPartial({ values, width, height, supersample, elapsed: performance.now() - started }),
-    });
-    if (tail.failed !== null) throw tail.failed;
-    if (!live()) return null;
-    if (drawn.status === "cancelled") return null;
-    if (drawn.status === "unserved" || drawn.handed === null) {
-      this.onGpu?.("cpu", { stage, why: drawn.why ?? drawn.status });
-      return undefined;
+    for (;;) {
+      // A redraw after a loss asks again, which is what waits for the recovery's outcome.
+      const refused = await gpu.refuses({
+        samples,
+        frameSamples: estimate?.frameSamples ?? samples,
+        sampleWidth: shape.sample_width,
+        degree: shape.degree,
+        interior: shape.interior === true,
+        orbitPoints: orbit === null ? 0 : new DataView(orbit.packed).getUint32(0, true),
+        iterations,
+        workers,
+      });
+      if (generation !== this.generation) {
+        if (attempt !== null) attempt.alive = false;
+        return null;
+      }
+      if (refused !== null || orbit === null) {
+        await abandon(attempt);
+        this.onGpu?.("cpu", { stage, why: refused ?? "no orbit", ...(losses > 0 ? { losses } : {}) });
+        return undefined;
+      }
+      // **Resumed where the device that recovered is the one that was lost**, and otherwise
+      // drawn from the start into a buffer of its own.
+      // The identity rides along, and the draw checks it again at its turn (`#draw`).
+      const resume = lost !== null && lost.identity !== null && lost.identity === gpu.identity && attempt !== null ? { strip: lost.strip, rows: lost.rows, identity: lost.identity } : null;
+      if (resume === null) {
+        await abandon(attempt);
+        if (!live()) return null;
+        attempt = fresh();
+        onDevice = 0;
+      }
+      const { values, tail } = attempt;
+      const drawn = await gpu.draw({
+        plan: shape,
+        orbit,
+        values,
+        preview,
+        workers,
+        resume,
+        live: attempt.going,
+        onPass: () => {
+          this.heard = performance.now();
+        },
+        onProgress: (fraction) => {
+          onDevice = fraction;
+          said();
+        },
+        onHanded: attempt.take,
+        onPartial:
+          onPartial === null
+            ? null
+            : () => onPartial({ values, width, height, supersample, elapsed: performance.now() - started }),
+      });
+      if (tail.failed !== null) throw tail.failed;
+      if (!live()) {
+        attempt.alive = false;
+        return null;
+      }
+      if (drawn.status === "cancelled") return null;
+      if (drawn.status === "lost") {
+        lost = drawn;
+        // A resume the draw would not honour is no loss: the frame is drawn again afresh.
+        if (drawn.stale) continue;
+        losses += 1;
+        this.onGpu?.("lost", { stage, strip: drawn.strip, losses, identity: drawn.identity });
+        continue;
+      }
+      if (drawn.status === "unserved") {
+        await abandon(attempt);
+        this.onGpu?.("cpu", { stage, why: drawn.why ?? drawn.status, ...(losses > 0 ? { losses } : {}) });
+        return undefined;
+      }
+      attempt.take(drawn.handed);
+      // What the device settled is everything the CPU was not given.
+      onDevice = (samples - tail.total) / samples;
+      const finished = await tail.chain;
+      if (!finished || !live()) return null;
+      this.onGpu?.("gpu", {
+        stage,
+        handed: tail.total,
+        losses,
+        identity: drawn.identity,
+        ms: performance.now() - started,
+        // The CPU's time over the handed samples, summed over the lists; with strips, most
+        // of it ran beside the device's.
+        tailMs: tail.ms,
+        tailRan: tail.ran,
+        strips: gpu.last?.strips ?? 1,
+        // Of `handed`, the samples the interior proof gave up on; the rest are the tail's.
+        gated: gpu.last?.gated ?? null,
+        compileWaitMs: gpu.last?.compileWaitMs ?? null,
+        // Passes and dispatches, and the longest of each on the device (`passStats`).
+        passes: drawn.passes ?? null,
+      });
+      return {
+        values,
+        width,
+        height,
+        supersample,
+        elapsed: performance.now() - started,
+        ran: null,
+        saved: null,
+        kernel: "gpu",
+        identity: drawn.identity ?? null,
+        handed: tail.total,
+        // Never true while the loop above stands: a field a loss mixed would say so, and the
+        // page would neither keep it nor hold it (`deep.js`'s `remember` and `hold`).
+        ...(drawn.status === "lost" ? { lost: true } : {}),
+      };
     }
-    take(drawn.handed);
-    // What the device settled is everything the CPU was not given: after a lost device the
-    // last pass's count overstates it, and the bar would run past the end.
-    onDevice = (samples - tail.total) / samples;
-    const finished = await tail.chain;
-    if (!finished || !live()) return null;
-    this.onGpu?.("gpu", {
-      stage,
-      handed: tail.total,
-      lost: drawn.status === "lost",
-      ms: performance.now() - started,
-      // The CPU's time over the handed samples, summed over the lists; with strips, most
-      // of it ran beside the device's.
-      tailMs: tail.ms,
-      tailRan: tail.ran,
-      strips: gpu.last?.strips ?? 1,
-      // Of `handed`, the samples the interior proof gave up on; the rest are the tail's.
-      gated: gpu.last?.gated ?? null,
-      compileWaitMs: gpu.last?.compileWaitMs ?? null,
-      // Passes and dispatches, and the longest of each on the device (`passStats`).
-      passes: drawn.passes ?? null,
-    });
-    return {
-      values,
-      width,
-      height,
-      supersample,
-      elapsed: performance.now() - started,
-      ran: null,
-      saved: null,
-      kernel: "gpu",
-      handed: tail.total,
-    };
   }
 
   /**

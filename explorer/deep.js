@@ -312,6 +312,16 @@ export function mount(host) {
     chosen: storedFlag(GPU_CHOSEN, false),
     log: (event, detail) => log(event, detail),
     changed: () => syncGpu(),
+    // **The kernel the page uses changed under its pictures** *(deep_holes_ckpt163)*: the GPU
+    // went off after a loss, or came back on a device of another identity. Everything the
+    // kernel before drew goes, and the picture up is drawn again (`retire`).
+    onKernel: ({ to }) =>
+      retire(
+        to === "cpu"
+          ? (field) => field.kernel === "gpu"
+          : (field) => field.kernel === "gpu" && field.identity !== to,
+        to === "cpu" ? "the GPU went off" : "the GPU came back as another device",
+      ),
     // The kernels a frame most often wants, compiled once the self-test has passed so
     // the first such frame does not pay for it: degree two, the switch on and off.
     warm: [
@@ -319,8 +329,33 @@ export function mount(host) {
       { degree: 2, julia: false, interior: false },
     ],
   });
-  // A harness that asked for a kernel, or turned the log on, may reach the device.
-  if (host.kernel != null || logRequested()) globalThis.__deepGpu = gpu;
+  // A harness that asked for a kernel, or turned the log on, may reach the device, and read
+  // which kernel drew each picture kept (`bench/deep-gpu-lose.mjs`).
+  if (host.kernel != null || logRequested()) {
+    globalThis.__deepGpu = gpu;
+    const stageOf = (field) => (field?.quarter === true ? "quarter" : "full");
+    globalThis.__deepHeld = () => ({
+      held: held.map((entry) => ({
+        frame: entry.frame,
+        stage: entry.full ? "full" : "quarter",
+        kernel: entry.field?.kernel ?? null,
+        identity: entry.field?.identity ?? null,
+      })),
+      fields: [...fields].map(([key, field]) => ({
+        frame: `${key.slice(0, key.lastIndexOf("|"))}|1x1x1`,
+        key,
+        stage: stageOf(field),
+        kernel: field.kernel,
+        identity: field.identity ?? null,
+      })),
+      drawn: {
+        frame: drawn === null ? null : deepLink.fieldKey(drawn, 1, 1),
+        stage: drawnField === null ? null : stageOf(drawnField),
+        kernel: drawnField?.kernel ?? null,
+        identity: drawnField?.identity ?? null,
+      },
+    });
+  }
   /** A partial picture's shade in flight, so that the next is skipped rather than queued. */
   let partialShading = false;
   /** While a partial of the GPU's full stage is up, the picture it covered — the quarter
@@ -334,6 +369,13 @@ export function mount(host) {
    *  size — rather than the quarter pass. Meaningful only while `drawn` is set; it is what
    *  `showsFinished` reads for the arrival refit *(site_audit_ckpt147)*. */
   let drawnFull = false;
+  /** The field the picture up was shaded from, which says the kernel that drew it
+   *  *(deep_holes_ckpt163)*: what `retire` asks of the picture on screen. Meaningful only
+   *  while `drawn` is set. */
+  let drawnField = null;
+  /** The stage a retired picture is owed, drawn again when the tab is next entered, where it
+   *  was retired while another view held the canvas; `null` otherwise. */
+  let owed = null;
   /** The view the gestures have moved to. Equal to `drawn` when nothing is pending. */
   let view = deepLink.fresh(context);
   /** The last picture drawn, as a canvas, and the view it was of. */
@@ -446,10 +488,23 @@ export function mount(host) {
    */
   const CACHE_LIMIT = 3;
 
+  /**
+   * Whether `field` was drawn by the kernel the page uses now *(deep_holes_ckpt163)*: every
+   * CPU field, and a GPU field only while the GPU is on and is the device that drew it. While
+   * a recovery is still deciding, the device before it stands. A field a loss mixed is
+   * nobody's.
+   */
+  function current(field) {
+    if (field == null || field.kernel !== "gpu") return true;
+    if (field.lost === true || gpu.off) return false;
+    return gpu.using !== "cpu" && (gpu.using === null || gpu.using === field.identity);
+  }
+
   function remember(key, field) {
     // A frame that finished on the device after the box was unticked is not one an unticked
-    // box draws *(deep_wait_ckpt163)*: put up, but never kept to come back.
-    if (field?.kernel === "gpu" && gpu.off) return;
+    // box draws *(deep_wait_ckpt163)*, and one a device drew after the page left it is not
+    // one the page draws *(deep_holes_ckpt163)*: never kept to come back.
+    if (!current(field)) return;
     fields.delete(key);
     fields.set(key, field);
     while (fields.size > CACHE_LIMIT) fields.delete(fields.keys().next().value);
@@ -539,7 +594,7 @@ export function mount(host) {
    * lands its quarter pass first — it only brings that entry to the front.
    */
   function hold(of, shaded, key, field, full) {
-    if (field?.kernel === "gpu" && gpu.off) return;
+    if (!current(field)) return;
     const frame = deepLink.fieldKey(of, 1, 1);
     const at = held.findIndex((entry) => entry.frame === frame);
     const was = at < 0 ? null : held.splice(at, 1)[0];
@@ -657,6 +712,7 @@ export function mount(host) {
     view = to.capFrom === entry.view.capFrom ? entry.view : { ...entry.view, capFrom: to.capFrom };
     drawn = view;
     drawnFull = entry.full;
+    drawnField = entry.field;
     stale = { canvas: entry.canvas, view };
     // Only a full picture is one a download at the canvas's size can save, and only at the
     // canvas's size now.
@@ -667,7 +723,7 @@ export function mount(host) {
     clearMinibrots();
     const which = entry.full ? "full pass" : "quarter pass";
     stat(`${which} ${entry.canvas.width}×${entry.canvas.height} · put back without drawing · cap ${count(view.maxiter)}${ceilingSaid(view)}`);
-    sayKernel(entry.full ? entry.field : null);
+    sayKernel(entry.field);
     host.showState("final");
     host.settle();
     syncControls();
@@ -745,7 +801,8 @@ export function mount(host) {
       gpu.start();
       renderer = await DeepRenderer.start(perturbModuleUrl(), host.shading());
       renderer.gpu = gpu;
-      renderer.onGpu = (kernel, detail) => log(`field on the ${kernel}`, detail);
+      renderer.onGpu = (kernel, detail) =>
+        log(kernel === "lost" ? "field lost its device" : `field on the ${kernel}`, detail);
       return renderer;
     })().catch((error) => {
       starting = null;
@@ -979,7 +1036,8 @@ export function mount(host) {
       // The quarter field, which a full stage on the GPU shows in place of the samples it
       // has not finished yet.
       let quarter = null;
-      for (const stage of wanted) {
+      for (let at = 0; at < wanted.length; at++) {
+        const stage = wanted[at];
         const key = deepLink.fieldKey(target, stage.width, stage.height, stage.supersample);
         let field = fields.get(key);
         if (stage.name === "full" && field?.quarter === true) field = undefined;
@@ -995,7 +1053,7 @@ export function mount(host) {
         if (!cached) {
           const started = performance.now();
           const full = stage.name === "full";
-          field = await deep.field(target, stage.width, stage.height, {
+          const drawStage = () => deep.field(target, stage.width, stage.height, {
             supersample: stage.supersample,
             interior: stage.name === "preview" ? true : interior,
             // The full stage may go to the GPU, and shows its picture as passes land; the
@@ -1019,6 +1077,14 @@ export function mount(host) {
               activity(`${said_stage(stage)} · ${said_step(step)}`, span.from);
             },
           });
+          field = await drawStage();
+          // **A field the kernel before drew does not land** *(deep_holes_ckpt163)*: a stage
+          // that finished on the device after the box was unticked, or after the GPU went off
+          // or came back as another device, is drawn again by the kernel the page uses now.
+          while (field !== null && generation === pass && !current(field)) {
+            log("field retired on landing", { stage: stage.name, identity: field.identity ?? null });
+            field = await drawStage();
+          }
           if (field === null || generation !== pass) return;
           if (stage.name === "preview") quarterMs = performance.now() - started;
           const timing = deep.timing ?? {};
@@ -1054,6 +1120,15 @@ export function mount(host) {
         // current now rather than the one the pass started in, and so does every stage after.
         const landed = await shadeNow(deep, field, target, generation);
         if (landed === null) return;
+        // And none lands that was retired while it was shading (an untick, or the GPU going
+        // off or coming back as another device, neither of which moves the pass): the stage
+        // is drawn again, by the kernel the page uses now.
+        if (!current(field)) {
+          log("field retired while shading", { stage: stage.name, identity: field.identity ?? null });
+          if (fields.get(key) === field) fields.delete(key);
+          at -= 1;
+          continue;
+        }
         const shaded = landed.shaded;
         log("shaded", { stage: stage.name, ms: Math.round(shaded.elapsed ?? 0), cached });
         target = landed.frame;
@@ -1064,6 +1139,7 @@ export function mount(host) {
         }
         drawn = target;
         drawnFull = stage.name === "full";
+        drawnField = field;
         keep(shaded.image, target);
         // What this stage cost, for the Download row's estimate. A cached field's
         // `elapsed` is the cost it was measured at, which is still the cost of that
@@ -1085,7 +1161,9 @@ export function mount(host) {
         };
         // A quarter the GPU drew measures nothing the Download row asks about.
         if (field.kernel === "gpu") {
-          if (stage.name !== "preview") measureGpu = cost;
+          // With the kernel that drew the field it measured, so that retiring that field
+          // retires this too; not the field, whose values the cache may long since have let go.
+          if (stage.name !== "preview") measureGpu = { ...cost, source: { kernel: field.kernel, identity: field.identity ?? null, quarter: false } };
           // A quarter the GPU drew: the CPU's estimate is its census's, drawn on the CPU.
           else if (field.census?.elapsed != null) {
             measure = { ...cost, samples: field.census.count, field: field.census.elapsed / 1000 };
@@ -1122,6 +1200,7 @@ export function mount(host) {
         running = null;
         watch();
         syncControls();
+        payOwed();
       }
     }
   }
@@ -1255,7 +1334,7 @@ export function mount(host) {
       const quarter = fields.get(
         deepLink.fieldKey(target, grid.width / PREVIEW_DIVISOR, grid.height / PREVIEW_DIVISOR, 1),
       );
-      const field = await deep.field(target, width, height, {
+      const drawFile = () => deep.field(target, width, height, {
         supersample,
         interior: quarter?.fullSwitch ?? switchFor(quarter),
         // The GPU where the device can hold this size; the renderer keeps the rest. The
@@ -1270,20 +1349,39 @@ export function mount(host) {
           if (generation === pass) activity(`${said_stage(file)} · ${said_step(step)}`, 0);
         },
       });
-      if (field === null || generation !== pass) return null;
-      // The caller's holder becomes the tab's, so that the tab's own Cancel stops the
-      // colouring as well as the field — a download-sized shade is seconds holding a
-      // couple of gigabytes, and two ways out that stop different halves is one way out
-      // too few.
-      colouring = holder;
-      enterStage("coloring", { live: false });
-      activity(`${said_stage(file)} · coloring`, 1);
-      const shaded = await deep.shade(field, target, colouring, { derive: host.deriving() });
-      if (shaded === null || generation !== pass) return null;
+      // **A file is all one kernel's, and the kernel the page uses when it lands**
+      // *(deep_holes_ckpt163)*: a loss under it is drawn again inside the field (resumed at
+      // the strip it lost on the same device, from the start otherwise), and a file that
+      // finished on a device the page has since left is drawn again here.
+      let field;
+      let shaded;
+      for (;;) {
+        field = await drawFile();
+        while (field !== null && generation === pass && !current(field)) {
+          log("field retired on landing", { stage: "file", identity: field.identity ?? null });
+          field = await drawFile();
+        }
+        if (field === null || generation !== pass) return null;
+        // The caller's holder becomes the tab's, so that the tab's own Cancel stops the
+        // colouring as well as the field — a download-sized shade is seconds holding a
+        // couple of gigabytes, and two ways out that stop different halves is one way out
+        // too few.
+        colouring = holder;
+        enterStage("coloring", { live: false });
+        activity(`${said_stage(file)} · coloring`, 1);
+        // The kernel is asked again once the file is coloured: one retired while it was
+        // shading is drawn again, so no file is saved from a kernel the page has left.
+        shaded = await deep.shade(field, target, colouring, { derive: host.deriving() });
+        if (shaded === null || generation !== pass) return null;
+        if (current(field)) break;
+        log("field retired while shading", { stage: "file", identity: field.identity ?? null });
+        enterStage("file");
+        activity(`${said_stage(file)}…`, 0);
+      }
       // A view the reader made measures its own curve on the frame being saved, exactly as
       // the shallow download does — so the link on the file is the link that redraws it.
       const drawnAs = host.deriving() ? { ...target, level: shaded.level } : target;
-      log("file finished", { width, height, supersample });
+      log("file finished", { width, height, supersample, kernel: field.kernel, identity: field.identity ?? null, handed: field.handed });
       host.showState("final");
       return {
         image: shaded.image,
@@ -1299,6 +1397,7 @@ export function mount(host) {
         running = null;
         watch();
         syncControls();
+        payOwed();
       }
     }
   }
@@ -1400,34 +1499,41 @@ export function mount(host) {
       ? `recolored in ${shaded.elapsed.toFixed(0)} ms`
       : `${(field.elapsed / 1000).toFixed(2)} s, shade ${shaded.elapsed.toFixed(0)} ms`;
     stat(`${which} ${size} · ${cost} · cap ${count(target.maxiter)}${ceilingSaid(target)}${cached ? "" : orbitSaid}`);
-    sayKernel(stage.name === "full" ? field : null);
+    sayKernel(field);
   }
 
   /**
    * Details' line saying which kernel drew the picture up *(gpu_deep_ship_ckpt162)*: one
-   * plain sentence for a full pass, and nothing for a quarter pass, which is always the
-   * CPU's and is not the frame. No reason is given for the CPU: that is the log's. The
-   * field carries `kernel`, so a picture off the cache says what drew it. `data-kernel` is
-   * for the harnesses.
+   * plain sentence, for a quarter pass too, which the GPU draws where its census says so
+   * *(deep_wait_ckpt163; said since deep_holes_ckpt163)*. No reason is given for the CPU:
+   * that is the log's. The field carries `kernel`, so a picture off the cache says what drew
+   * it, and since a loss never finishes a field mixed, the pixels the CPU finished are only
+   * ever the ones the design hands it. `data-kernel` and `data-identity` are for the
+   * harnesses.
    */
   function sayKernel(field) {
     if (els.kernel == null) return;
     if (field == null) {
       els.kernel.textContent = "";
       delete els.kernel.dataset.kernel;
+      delete els.kernel.dataset.identity;
       return;
     }
     const kernel = field.kernel === "gpu" ? "gpu" : "cpu";
+    const what = field.quarter === true ? "Preview drawn" : "Drawn";
     els.kernel.dataset.kernel = kernel;
     if (kernel === "cpu") {
-      els.kernel.textContent = "Drawn on the CPU.";
+      delete els.kernel.dataset.identity;
+      els.kernel.textContent = `${what} on the CPU.`;
       return;
     }
+    if (field.identity != null) els.kernel.dataset.identity = field.identity;
+    else delete els.kernel.dataset.identity;
     const handed = field.handed ?? 0;
     els.kernel.textContent =
       handed === 0
-        ? "Drawn on the GPU in double-single precision."
-        : `Drawn on the GPU in double-single precision; ${count(handed)} ${handed === 1 ? "pixel was" : "pixels were"} finished on the CPU.`;
+        ? `${what} on the GPU in double-single precision.`
+        : `${what} on the GPU in double-single precision; ${count(handed)} ${handed === 1 ? "pixel was" : "pixels were"} finished on the CPU.`;
   }
 
   /** *at the ceiling: x% undecided*, where the probe settled this frame at the ceiling. */
@@ -1573,6 +1679,7 @@ export function mount(host) {
     // a step back return to. Of a frame the reader has left, it is only the picture up.
     const full = stage.width === grid.width && stage.height === grid.height;
     drawnFull = full;
+    drawnField = field;
     if (current && full) {
       finished = shaded.image;
       finishedSamples = 1;
@@ -1582,7 +1689,7 @@ export function mount(host) {
     if (running === null) {
       host.showState(current ? "final" : "stopped");
       stat(`${stage.width}×${stage.height} · recolored in ${shaded.elapsed.toFixed(0)} ms · cap ${count(drawn.maxiter)}${ceilingSaid(drawn)}`);
-      sayKernel(full ? field : null);
+      sayKernel(field);
     }
     host.settle();
     // The frame is drawn now, so the button and the note say so.
@@ -2157,6 +2264,7 @@ export function mount(host) {
         // The viewer's bar is the viewer's picture, which a search for it never touched.
         if (side === "deep") host.showState(drawn === null ? "stopped" : "final");
         syncControls();
+        payOwed();
       }
       host.onSearch?.();
     }
@@ -3033,6 +3141,7 @@ export function mount(host) {
         watch();
         if (aside === null) host.showState(drawn === null ? "stopped" : "final");
         syncControls();
+        payOwed();
       }
     }
     if (generation !== pass) return SUPERSEDED;
@@ -3751,7 +3860,7 @@ export function mount(host) {
     "no-webgpu": ["no WebGPU", "This browser has no WebGPU, so the CPU draws every frame."],
     fallback: ["software only", "This browser offers only a software adapter, which is no faster than the CPU, so the CPU draws every frame."],
     failed: ["failed its self-test", "The graphics card failed the self-test, so the CPU draws every frame until the page is reloaded."],
-    lost: ["stopped twice", "The graphics card stopped responding twice on this visit, so the CPU draws every frame until the page is reloaded."],
+    lost: ["stopped responding", "The graphics card stopped responding and could not be started again on this visit, so the CPU draws every frame until the page is reloaded."],
     missed: ["could not start", "The graphics card could not be started after three tries (no adapter, a device the browser refused, or a file that did not load), so the CPU draws every frame until the page is reloaded."],
   };
   const GPU_LABEL = "GPU (experimental)";
@@ -3787,7 +3896,8 @@ export function mount(host) {
         off: "Draws slow Deep frames and downloads on the graphics card, once it passes a self-test. Off until ticked, and the CPU draws everything until then.",
         waiting: "On: the graphics card is tested before the first frame that needs it. The CPU draws until it passes.",
         testing: "Testing the graphics card. The CPU draws until it passes.",
-        retrying: "The graphics card stopped responding once, so the next slow frame tests it again. The CPU draws until it passes.",
+        retrying: "The graphics card could not be started just now, so the next slow frame tries again. The CPU draws until it passes.",
+        recovering: "The graphics card stopped responding, so it is being started again and retested. Slow frames wait for the outcome.",
         ready: "On: slow Deep frames and downloads draw on the graphics card, which passed its self-test.",
       }[standing.state] + GPU_REMEMBERED;
     }
@@ -3805,15 +3915,83 @@ export function mount(host) {
     // of the same link gives the other. Unticked, everything the GPU drew goes; ticked,
     // every full field the GPU might take (not small, not cheap by its own count). Quarters
     // stay: the full pass reads only their census, which no kernel draws.
-    const other = (field) =>
+    retire(
       value
-        ? field.kernel !== "gpu" &&
-          field.quarter !== true &&
-          field.values.length >= GPU_MIN_SAMPLES &&
-          !cheap({ iterations: field.ran })
-        : field.kernel === "gpu";
-    for (const [key, field] of fields) if (other(field)) fields.delete(key);
+        ? (field) =>
+            field.kernel !== "gpu" &&
+            field.quarter !== true &&
+            field.values.length >= GPU_MIN_SAMPLES &&
+            !cheap({ iterations: field.ran })
+        : (field) => field.kernel === "gpu",
+      value ? "the GPU box was ticked" : "the GPU box was unticked",
+      { restart: value },
+    );
+  }
+
+  /**
+   * **Retire every picture the kernel the page now uses would not draw** *(deep_holes_ckpt163)*:
+   * the one place that does it, for a box ticked or unticked (`setGpu`) and for the GPU going
+   * off or coming back as another device (`DeepGpu`'s `onKernel`). `other(field)` says which
+   * fields go. They leave the cache and `held`, and so do the pictures made from them that
+   * a download would save or price (`finished`, `measureGpu`).
+   *
+   * **The picture up is drawn again**, where its field went: at the stage it was, at once,
+   * with Auto-render off too, because it restores a picture the reader already had rather
+   * than starting one — and its kept field is what every recolour needs, so leaving it up
+   * with none was a tab whose colours did nothing. A pass already running replaces it
+   * anyway, and a stage it lands from the kernel before is refused and drawn again (`current`,
+   * in `render`); `restart` restarts one, for a tick, whose running pass would otherwise land
+   * the CPU's picture under a ticked box, the way `recapping` restarts a render. A pending
+   * view is left alone: what replaces the picture is the next pass of the frame the reader
+   * moved to. Pictures in Dive results (`landAside`) are canvases with no field and are not
+   * retired: they are links to frames, and opening one draws it afresh.
+   */
+  function retire(other, why, { restart = false } = {}) {
+    let gone = 0;
+    for (const [key, field] of fields) {
+      if (!other(field)) continue;
+      fields.delete(key);
+      gone += 1;
+    }
+    const before = held.length;
     held = held.filter((entry) => entry.field == null || !other(entry.field));
+    if (measureGpu !== null && other(measureGpu.source)) measureGpu = null;
+    const up = drawn !== null && drawnField !== null && other(drawnField);
+    log("pictures retired", { why, fields: gone, held: before - held.length, up });
+    // A dive's on-screen arrival (`dive: true`) is the dive's, as the dive itself is: a
+    // restart would drop its `onStage` and end Keep diving.
+    if (restart && running !== null && running.upto !== "download" && running.upto !== "minibrots" && running.upto !== "dive" && running.dive !== true) {
+      const was = running;
+      stop();
+      disarm();
+      render(was.upto, { auto: was.auto });
+      return;
+    }
+    if (!up) return;
+    finished = null;
+    finishedSamples = 0;
+    drawnField = null;
+    owed = drawnFull ? "screen" : "preview";
+    payOwed();
+  }
+
+  /**
+   * Draw a retired picture again, at the stage it was, once nothing stands in the way: no
+   * pass running (a download or a search leaves the picture up as it was, and pays it when
+   * it ends) and the tab holding the canvas (entering it pays it). A picture that has been
+   * replaced since, or a view the reader has moved off, owes nothing.
+   */
+  function payOwed() {
+    if (owed === null) return;
+    if (drawn === null || drawnField !== null || pending()) {
+      owed = null;
+      return;
+    }
+    if (running !== null || !owns) return;
+    const stage = owed;
+    owed = null;
+    disarm();
+    render(stage, { probe: false });
   }
 
   // ------------------------------------------------------------------- auto-render
@@ -4077,6 +4255,8 @@ export function mount(host) {
     if (autoRender && running === null && pending() && refused() === null) {
       render("screen", { auto: true });
     }
+    // A picture retired while the tab was away is drawn again now (`retire`).
+    payOwed();
     return arrived;
   }
 
@@ -4130,6 +4310,10 @@ export function mount(host) {
       stop();
       host.say("Stopped.");
       host.showState("stopped");
+      // A picture retired under the pass just cancelled (a download or a search leaves it
+      // up, and pays it when it ends) is drawn again now, since a cancelled pass pays
+      // nothing (`payOwed`). Cancelling that redraw itself leaves the picture up.
+      payOwed();
       return;
     }
     // Nothing is running here, since anything running makes this Cancel. A committed pass
