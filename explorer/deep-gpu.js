@@ -2487,4 +2487,15 @@ export class DeepGpu {
   loseForTesting() {
     this.device?.destroy();
   }
+
+  /** The document is going away (`pagehide`): the device goes with it, and the skip table's
+   *  worker. A document the back/forward cache keeps would otherwise keep its device and
+   *  every buffer on it, and a restored one reloads (`explorer.js`), so nothing is needed
+   *  again: six Deep links followed with the box ticked held 710 MB more in Chrome's GPU
+   *  process than the same six with it unticked (explorer_review_ckpt163). */
+  close() {
+    this.#release();
+    this.tableWorker?.terminate();
+    this.tableWorker = null;
+  }
 }

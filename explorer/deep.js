@@ -301,6 +301,8 @@ export function mount(host) {
 
   let renderer = null;
   let starting = null;
+  /** Aborted by `close`, which ends a pool still starting (`DeepRenderer.start`). */
+  const goingAway = new AbortController();
   /** The page's GPU *(gpu_deep_ship_ckpt162)*: handed to the renderer, which asks it per
    *  field. **Untouched unless the reader ticked the GPU box** *(gpu_optin_downloads_ckpt162)*:
    *  built here because building it touches no WebGPU, and acquired and self-tested only
@@ -844,7 +846,12 @@ export function mount(host) {
       // of it: nothing here waits on it, and a frame asks whether it passed only when it is
       // ready to draw. Where it is not, `start` touches nothing.
       gpu.start();
-      renderer = await DeepRenderer.start(perturbModuleUrl(), host.shading());
+      renderer = await DeepRenderer.start(
+        perturbModuleUrl(),
+        host.shading(),
+        undefined,
+        goingAway.signal,
+      );
       renderer.gpu = gpu;
       renderer.onGpu = (kernel, detail) =>
         log(kernel === "lost" ? "field lost its device" : `field on the ${kernel}`, detail);
@@ -4968,12 +4975,18 @@ export function mount(host) {
      *  cancels a deep render is still on the tab. This one is the tab's whole share of
      *  `pagehide`, and it is the larger half of what a deep document holds: `perturb.wasm`
      *  is instantiated once per worker and the reference orbit is held in every one of
-     *  them. `DeepRenderer.stop()` existed and had no caller until now. */
+     *  them. `DeepRenderer.stop()` existed and had no caller until now. The GPU's device
+     *  goes too, with every buffer on it (`DeepGpu.close`). */
     close() {
-      stop();
+      // The pool first: `stop` cancels through it, and a cancel restarts every busy worker,
+      // which a document on its way into the back/forward cache must not do
+      // (`DeepRenderer.stop`).
       renderer?.stop();
       renderer = null;
+      goingAway.abort();
+      stop();
       starting = null;
+      gpu.close();
     },
   };
 }

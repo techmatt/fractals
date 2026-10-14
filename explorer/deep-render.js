@@ -518,10 +518,12 @@ export function sameOrbit(held, view, limbs, period = null) {
   return fx.compare(view.x.dec, held.x.dec) === 0 && fx.compare(view.y.dec, held.y.dec) === 0;
 }
 
-/** One pool worker, instantiated and ready. */
-function spawn(module) {
+/** One pool worker, instantiated and ready. `leaving`, where given, ends it the moment it
+ *  is aborted, ready or not (`DeepRenderer.start`). */
+function spawn(module, leaving = null) {
   return new Promise((resolve, reject) => {
     const worker = new Worker(new URL("./deep-worker.js", import.meta.url), { type: "module" });
+    leaving?.addEventListener("abort", () => worker.terminate(), { once: true });
     worker.onmessage = (event) => {
       if (event.data.kind === "ready") {
         worker.onerror = null;
@@ -609,7 +611,15 @@ export class DeepRenderer {
     this.onGpu = null;
   }
 
-  static async start(url, engineShading, wanted) {
+  /**
+   * Compile the module and start the pool, one worker after another.
+   *
+   * **`leaving` is the document's way to end a pool that is still starting**
+   * *(explorer_review_ckpt163)*: there is no renderer to stop until the last worker is
+   * ready, so a document left inside that moment kept every worker started so far. Aborted,
+   * it ends each of them and starts no more.
+   */
+  static async start(url, engineShading, wanted, leaving = null) {
     const module = await compiled(url);
     // The module's one import, and on this thread there is nobody to tell: the planner
     // answers `plan` and the policy's constants, all of which are microseconds.
@@ -617,7 +627,11 @@ export class DeepRenderer {
     const count =
       wanted ?? Math.min(MAX_WORKERS, navigator.hardwareConcurrency || DEFAULT_WORKERS);
     const workers = [];
-    for (let index = 0; index < Math.max(1, count); index++) workers.push(await spawn(module));
+    for (let index = 0; index < Math.max(1, count); index++) {
+      if (leaving?.aborted) break;
+      workers.push(await spawn(module, leaving));
+    }
+    if (leaving?.aborted) throw new Error("the page is going");
     return new DeepRenderer(module, planner, workers, engineShading);
   }
 
@@ -663,6 +677,12 @@ export class DeepRenderer {
     slot.worker.terminate();
     slot.fed = null;
     slot.ready = spawn(this.module).then((worker) => {
+      // The pool was stopped while this one was starting: it is nobody's (as `render.js`'s
+      // `#replace`).
+      if (!this.slots.includes(slot)) {
+        worker.terminate();
+        return;
+      }
       slot.worker = worker;
       this.#route(slot);
     });
@@ -1268,11 +1288,24 @@ export class DeepRenderer {
     if (job !== null) job.resolve(null);
   }
 
-  /** Throw away the pool and the orbit every worker is holding. */
+  /** Throw away the pool and the orbit every worker is holding.
+   *
+   *  **It ends every worker and starts none** *(explorer_review_ckpt163)*. It used to
+   *  `cancel()` first, which restarts every busy worker, so leaving a document mid-pass
+   *  (`pagehide`, its one caller) terminated the busy workers, made a fresh one for each,
+   *  and then terminated the old ones a second time. The fresh ones, made in the last task
+   *  before the document was frozen, stayed in the back/forward cache until it evicted:
+   *  following a link 250 to 350 ms after opening the Deep tab left twelve. */
   stop() {
-    this.cancel();
-    for (const slot of this.slots) slot.worker.terminate();
+    const slots = this.slots;
     this.slots = [];
+    this.cancel();
+    for (const slot of slots) {
+      const busy = slot.busy;
+      slot.busy = null;
+      slot.worker.terminate();
+      busy?.resolve(null);
+    }
     this.orbit = null;
   }
 

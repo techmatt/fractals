@@ -7527,6 +7527,28 @@ Walk, a first Save or a first preview moved: each costs a thread, one `WebAssemb
 of the already-compiled module and a message round trip, per worker, started together — no
 fetch and no compile, because the module crosses to a worker as a compiled `WebAssembly.Module`.
 
+**Four things were still not given back, and are now** *(explorer_review_ckpt163)*, found by
+an hour's scripted wandering across both tabs that counted worker targets and the GPU
+process's memory beside the page's own heap:
+
+- **The GPU's device.** A document left with the GPU box ticked kept its device and every
+  buffer on it. Six Deep links followed in a row held 1065 MB in Chrome's GPU process against
+  209 MB with the box unticked; `DeepGpu.close` now destroys the device and ends the skip
+  table's worker, and the same six hold about 420 MB, flat.
+- **A pool still starting.** `close` had no renderer to stop until the twelfth worker was
+  ready, so a link followed 100 to 175 ms after opening the Deep tab kept every worker started
+  so far. `DeepRenderer.start` takes an abort signal that ends them.
+- **A pool mid-pass.** `DeepRenderer.stop` cancelled first, and a cancel restarts every busy
+  worker, so leaving 200 to 300 ms into a pass made twelve fresh workers in the document's
+  last task and left them frozen in the cache. `stop` now ends every worker and starts none,
+  and `close` stops the pool before it cancels the pass.
+- **The same shape in `render.js`.** `Renderer.stop` cancelled first too, and a cancel
+  replaces the worker of a band predicted to run long (`#abandon`), so leaving a direct trap
+  1.5 s into its final pass left five. The pool is emptied before the cancel now.
+
+The worker targets they left show in `Target.getTargets` as workers with no URL, attached to
+nothing and answering nothing, and leave only when the cache evicts the document.
+
 ## What the last bug hunt covered *(explorer_bug_hunt_ckpt138, 2026-09-20)*
 
 So that the next hunt starts where this one stopped. Eight units over CDP, ~700 navigations,

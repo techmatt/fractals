@@ -480,13 +480,19 @@ export class Renderer {
    *
    * The cached fields go too. They are the largest thing here after the workers and the
    * only reason to keep one is a pass that is no longer going to happen.
+   *
+   * **Every worker ends and none starts** *(explorer_review_ckpt163)*: the pool is emptied
+   * before the cancel, because a cancel abandons a long band by replacing its worker
+   * (`#abandon`), and a replacement spawned in `pagehide` is made in the document's last
+   * task and stays frozen in the back/forward cache with no one to end it. Leaving a direct
+   * trap 1.5 s into its final pass left five.
    */
   stop() {
-    this.cancel();
     for (const worker of this.workers) worker.terminate();
     this.workers = [];
     this.idle = [];
     this.inflight.clear();
+    this.cancel();
     this.fields.clear();
     this.plans.clear();
     this.measured.clear();
