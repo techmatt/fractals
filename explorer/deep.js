@@ -3860,7 +3860,13 @@ export function mount(host) {
     } catch (error) {
       return refuse(String(error.message ?? error));
     }
-    if (frame === null) return refuse("That link is on a plane the Deep tab does not draw, and Dive does not search.");
+    if (frame === null) {
+      return refuse(
+        deepLink.FAMILIES.has(read.shallow?.family)
+          ? "That link's frame is past what a deep link can spell, so Dive does not search it."
+          : "That link is on a plane the Deep tab does not draw, and Dive does not search.",
+      );
+    }
     if (frame.julia !== null) {
       return refuse("That link is a Julia set. Minibrots live on the Mandelbrot and Multibrot planes.");
     }
@@ -4367,6 +4373,9 @@ export function mount(host) {
   function enter(from) {
     warn();
     let arrived = false;
+    // A viewer's frame `carry` refuses: said once the pass it opens on has started, which
+    // clears the line on its way in.
+    let uncarried = false;
     if (from !== null) {
       const carried = carry(from);
       if (carried !== null) {
@@ -4385,6 +4394,8 @@ export function mount(host) {
         fields.clear();
         settledAt = null;
         cameFrom = null;
+      } else {
+        uncarried = true;
       }
     } else if (drawn === null && stale === null) {
       host.say(
@@ -4409,6 +4420,11 @@ export function mount(host) {
     }
     // A picture retired while the tab was away is drawn again now (`retire`).
     payOwed();
+    if (uncarried) {
+      host.say(
+        "The viewer's frame is past what a deep link can spell, so it is not carried in, and the tab opens on its own frame.",
+      );
+    }
     return arrived;
   }
 
@@ -4430,7 +4446,7 @@ export function mount(host) {
       if (re === null || im === null) return null;
       julia = { x: deepLink.coordinateOf(re), y: deepLink.coordinateOf(im) };
     }
-    return {
+    const carried = {
       version: deepLink.VERSION,
       degree: family.degree,
       julia,
@@ -4448,6 +4464,17 @@ export function mount(host) {
       shade: from.shade,
       level: from.level,
     };
+    // **Only a frame the deep contract reads crosses** *(explorer_review_ckpt163)*. The shallow
+    // contract takes widths below the deep one's 1e-120 floor and centres past its 128
+    // characters written out, and carrying one drew under an address this page refuses on
+    // the next load. The contract is asked itself, through the link the frame would be, so no
+    // bound is restated here.
+    try {
+      deepLink.parse(`?${deepLink.emit(carried)}`, context);
+    } catch {
+      return null;
+    }
+    return carried;
   }
 
   // ----------------------------------------------------------------- the wiring

@@ -874,13 +874,57 @@ function tooDeep(width) {
   // *(explorer_ui_text_ckpt139)*.
   // On the two sets `z² + c` draws, the page now has that arithmetic in a tab of its
   // own, and this frame is exactly what it opens at.
-  if (carryable() !== null) {
-    offeredAt = frameOf(view);
-    offerDeep();
-  } else {
-    say(WALL);
-  }
+  sayWall();
   return true;
+}
+
+/**
+ * Say the wall, with the offer of the Deep tab where the frame carries into it.
+ *
+ * **Offered only where the frame carries** *(explorer_review_ckpt163)*: the shallow contract
+ * reads widths below the deep one's floor and centres past its length, and the offer used to
+ * open the Deep tab on a frame whose address the page refuses on the next load. The deep
+ * contract is the judge, so where it has not been fetched yet the wall is said first and the
+ * offer follows once it has, if the line is still the wall's on this frame.
+ */
+function sayWall() {
+  if (carryable() === null) {
+    say(WALL);
+    return;
+  }
+  const at = frameOf(view);
+  const offerWhereRead = () => {
+    if (!deepReads(view)) {
+      say(WALL);
+      return;
+    }
+    offeredAt = at;
+    offerDeep();
+  };
+  if (deepRules !== null) {
+    offerWhereRead();
+    return;
+  }
+  say(WALL);
+  loadDeepRules().then(
+    () => {
+      if (frameOf(view) === at && !deepOwns() && status.textContent === WALL) offerWhereRead();
+    },
+    () => {},
+  );
+}
+
+/** Whether the deep contract reads `of`'s centre and width, the two a shallow link can spell
+ *  past it: asked of the contract itself, so no bound is restated here. `deep.js`'s `carry`
+ *  asks it again of the whole frame, Julia constant and cap included. */
+function deepReads(of) {
+  const q = new URLSearchParams({ dv: String(deepRules.VERSION), x: of.x.text, y: of.y.text, w: of.w.text });
+  try {
+    deepRules.parse(`?${q}`, deepContext);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 const WALL = "This is as deep as this renderer can zoom here.";
@@ -899,12 +943,8 @@ function sayRefused(said) {
   const walled =
     renderer !== null &&
     !renderer.resolves(view.x.value, view.y.value, view.w.value, grid.width, grid.height);
-  if (walled && carryable() !== null) {
-    offeredAt = frameOf(view);
-    offerDeep();
-  } else {
-    say(walled ? WALL : said);
-  }
+  if (walled) sayWall();
+  else say(said);
   return walled;
 }
 

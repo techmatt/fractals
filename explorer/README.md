@@ -3264,7 +3264,14 @@ copies only, and no place twice. `builder/README.md`'s *Random dives* has the ru
   family's shallow name, so a degree-5 Julia view comes back as `f=julia5`.
 - **At the ordinary explorer's zoom stop**, unchanged, on either of the two sets this
   kernel draws, the refusal now ends with an offer: *Open this frame in Deep*, the view
-  carried. It is the one place on this
+  carried. **Only a frame the deep contract reads is offered or carried**
+  *(explorer_review_ckpt163)*: the shallow contract reads widths below the deep one's 1e-120
+  floor and centres past its 128 characters written out (`w=1e-200`, `x=1e308`), and the
+  offer used to open the tab on such a frame and write an address the page refuses on the next
+  load. The offer asks the deep contract itself, and is made once that contract has been
+  fetched; `deep.js`'s `carry` asks it of the whole frame, so the tab, clicked from such a
+  view, opens on its own frame and says why. A centre the contract reads but the kernel
+  cannot orbit (`x=1e19`) is still the kernel's refusal. It is the one place on this
   page that offers rather than states, and it is there because telling a reader who has
   zoomed until the arithmetic gave out that the thing is impossible would be a sentence that
   is no longer true. **The offer is the shallow view's and goes when it does**
