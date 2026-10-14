@@ -5367,6 +5367,15 @@ browser repro before it was fixed:
   loss); with `stop` alone the dot stayed on *rendering* and the next color change fell back
   to the quarter field.
 
+**A file pressed for while the screen's own pass draws lets that pass finish once the file is
+done** *(explorer_review_ckpt163)*. The file takes the pass, and the tab used to rest on the
+quarter picture, on *final*, under a link whose fresh load draws the full frame: in the
+stress sweep every one of 68 downloads started mid-render ended that way, a press at 90% of
+the full stage included. The screen's pass is restarted as it was, with no probe, since the
+file's has settled the cap, and off the kept quarter field it goes straight to the full
+stage. A dive's landing is not restarted (it is the dive's), and a file cancelled from its
+bar restarts nothing: that is a Cancel, and it leaves the picture up *stopped*.
+
 **On the Deep tab, As shown saves the picture up only while it is the link's.** The tab's
 finished picture carries the link it is of, and the row is handed it only while that is
 `deepLink.emit(view)` at the canvas's size now: a pan inside the settle window, a step onto a

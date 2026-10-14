@@ -1352,6 +1352,17 @@ export function mount(host) {
    * file is spelled from.
    */
   async function picture(width, height, { supersample = 1, holder = {} } = {}) {
+    // **The screen's own pass a download takes is drawn on once the file is done**
+    // *(explorer_review_ckpt163)*: a file pressed for as soon as the row is priced lands while
+    // the screen still shows its quarter, and the tab used to rest there, on *final*, under a
+    // link whose fresh load draws the full picture. Restarted as it was, the way `retire` and
+    // `recapping` restart one, and with no probe, since the file's has settled the cap. A dive's
+    // landing is the dive's (its `onStage` would be lost), and a file cancelled from its bar
+    // restarts nothing: that is a Cancel, and it leaves the picture up *stopped*.
+    const superseded =
+      running !== null && (running.upto === "screen" || running.upto === "preview") && running.dive !== true
+        ? running
+        : null;
     const generation = ++pass;
     // A download that supersedes a full stage mid-way takes its partial down, as `render()`
     // and `stop()` do: the stage it covered will not land now.
@@ -1449,6 +1460,12 @@ export function mount(host) {
         running = null;
         watch();
         syncControls();
+        if (superseded !== null && shown && owns) {
+          // The file's holder is the download's, and its colouring is over.
+          colouring = {};
+          disarm();
+          render(superseded.upto, { auto: superseded.auto, probe: false });
+        }
         payOwed();
       }
     }
