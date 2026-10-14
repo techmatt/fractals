@@ -4575,9 +4575,18 @@ export function mount(host) {
     const looping = keeping !== null;
     const diving = running !== null && (running.upto === "dive" || running.dive === true);
     endKeeping();
-    if (diving) stop();
     diveSaid = looping ? "Keep diving stopped." : "Stopped.";
-    host.showState(drawn === null ? "stopped" : "final");
+    if (diving) {
+      // **What the tab's own Cancel does, for a pass of the dive's** (explorer_review_ckpt163):
+      // a landing stopped part way is Stopped and not Final, and a picture retired under the
+      // search (an untick, a GPU loss) is drawn again now. `stop` moves `pass`, so the dive's
+      // own `finally` pays nothing.
+      stop();
+      host.showState("stopped");
+      payOwed();
+    } else {
+      host.showState(drawn === null ? "stopped" : "final");
+    }
     syncControls();
   });
   // The action is read afresh at every press, so a loop running takes a new one at its next.

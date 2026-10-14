@@ -3037,7 +3037,11 @@ coloring are exactly what they were.
   still one Ctrl+Z.
 - **The bar and Cancel cover the whole press**: the search the first four tenths, a mapped
   landing's search round its view and its shooting the next tenth, and the pass the second
-  half (`DIVE_SPANS`). **The status line states provenance and nothing of it enters the
+  half (`DIVE_SPANS`). Pressed during a pass of the dive's, the block's Cancel does what the
+  tab's own does *(explorer_review_ckpt163)*: a landing stopped part way puts the dot on
+  *stopped*, where it used to say *final* over the quarter picture, and a picture retired
+  during the search (a GPU untick, or a loss) is drawn again, where it used to stay up with
+  no field for any color change to work from. **The status line states provenance and nothing of it enters the
   link**: the plane, the copy's period and size, where it was found (this view, the pinned or
   pasted view, or a wallpaper by its place in a collection — `wallpaper 37 of the general
   gallery of 1000`, never its key, which a reader can do nothing with), the rung, the landing, the turn and the twin that
