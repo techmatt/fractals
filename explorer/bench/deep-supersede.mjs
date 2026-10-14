@@ -74,6 +74,33 @@ async function idle(page, within = 180000) {
   return page.until(`document.getElementById("deep-progress").hidden && document.getElementById("deep-render").textContent !== "Cancel"`, { within, every: 25 });
 }
 
+/** At rest on a deep picture: idle with a stage of the tab's own up and the address the
+ *  tab's, and the canvas the same across three reads 300 ms apart. What `entry` hashes.
+ *
+ *  **`idle` alone is not rest** *(explorer_review_ckpt163)*. A shallow link with `panel=deep`
+ *  draws the viewer first and mounts the tab after, so the bar is hidden and Render reads
+ *  Render before the tab's pass has begun; and the arrival is fitted to Absolute off its
+ *  first stage and again when the full stage lands, about 80 ms after the bar has gone. A
+ *  hash taken at `idle` was sometimes the viewer's picture or the one before the refit, and
+ *  `entry` failed on the committed tree as often as on a change. */
+async function rested(page, within = 180000) {
+  await idle(page, within);
+  const deadline = Date.now() + within;
+  let last = null;
+  let same = 0;
+  while (same < 2 && Date.now() < deadline) {
+    await sleep(300);
+    const now = await page.evaluate(`(() => {
+      const quiet = document.getElementById("deep-progress").hidden && document.getElementById("deep-render").textContent !== "Cancel";
+      const drawn = document.getElementById("deep-stats").textContent !== "" && location.search.startsWith("?dv=");
+      return quiet && drawn ? ${HASH} : null;
+    })()`);
+    same = now !== null && now === last ? same + 1 : 0;
+    last = now;
+  }
+  return last;
+}
+
 /** From the trace, for the pass begun after `after`: when it began — the first line after
  *  `after` that is not a full stage, since a pass in flight at `after` is still in its own
  *  full stage — and when its full stage first shows, which is the moment its quarter picture
@@ -103,7 +130,7 @@ const SCENARIOS = {
       await load(page, SHALLOW_DEEP);
       await idle(page);
       times.push(Date.now() - started);
-      hashes.push(await page.evaluate(HASH));
+      hashes.push(await rested(page));
     }
     const drew = await page.evaluate(`document.getElementById("deep-stats").textContent`);
     return { hashes, same: hashes[0] === hashes[1], times, stats: drew };
