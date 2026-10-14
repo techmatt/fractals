@@ -3900,9 +3900,17 @@ function showPanel(asked) {
       if (showing !== "deep") return;
       deep?.show();
       if (list === "random") diveResults?.show("random");
+      // **The viewer's frame is carried only where the viewer has moved since the tab last
+      // took the canvas** *(explorer_review_ckpt163)*. After a deep link the viewer is still on
+      // its home, and a trip out to Saved or the gallery and back carried that home in over
+      // the deep frame and cleared its held frames and fields. A reader who comes from a
+      // shallow view they moved still brings it, which is what the carry is for.
+      const at = view === null ? null : carriedFrameOf(view);
+      const moved = at !== viewerAtDeep;
+      viewerAtDeep = at;
       // A frame carried in on a Leveled colour comes in fitted to Absolute
       // *(absolute_fit_ckpt147)*, once its first stage lands; an Absolute one keeps its own.
-      if (!deepOpening && deep?.enter(carryable()) && deep.view().shade.scale !== "absolute") {
+      if (!deepOpening && deep?.enter(moved ? carryable() : null) && deep.view().shade.scale !== "absolute") {
         arrival.disarm();
         fitWanted = true;
         linkFit = false;
@@ -4349,6 +4357,17 @@ const DEEP_FAMILIES = new Set([
 
 function carryable() {
   return DEEP_FAMILIES.has(view.family) ? view : null;
+}
+
+/** The viewer's frame as it stood when the Deep tab last took the canvas, by
+ *  `carriedFrameOf`, or `null` before it ever has: what entering the tab compares with to
+ *  know whether the viewer has moved since (`showPanel`). */
+let viewerAtDeep = null;
+
+/** What a carry takes from a shallow view, as one string: the plane, the frame, a Julia
+ *  set's constant and a held cap. Its colour is not in it: the tab keeps its own. */
+function carriedFrameOf(of) {
+  return [frameOf(of), of.constants?.cx?.text ?? "", of.constants?.cy?.text ?? "", of.maxiter ?? ""].join(" ");
 }
 
 /**

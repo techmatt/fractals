@@ -3266,7 +3266,13 @@ copies only, and no place twice. `builder/README.md`'s *Random dives* has the ru
   is lost crossing the floor, and a shallow Julia view brings its parameter with it.
   Anywhere else the tab opens at the last deep view it had, or at the Mandelbrot home, and
   says which families deep draws. *Shallow mode* goes the other way under the
-  family's shallow name, so a degree-5 Julia view comes back as `f=julia5`.
+  family's shallow name, so a degree-5 Julia view comes back as `f=julia5`. **The frame is
+  carried only where the viewer has moved since the tab last took the canvas**
+  *(explorer_review_ckpt163)*: its plane, its frame, a Julia set's constant, or a held cap.
+  After a deep link the viewer is still on its home, and every trip out to Saved, the
+  gallery, Walk, Phoenix, or the atlas and back used to carry that home in over the deep
+  frame, clearing its held frames and fields with it. A trip out that leaves the viewer
+  where it was now comes back to the tab's own frame, as it was left.
 - **At the ordinary explorer's zoom stop**, unchanged, on either of the two sets this
   kernel draws, the refusal now ends with an offer: *Open this frame in Deep*, the view
   carried. **Only a frame the deep contract reads is offered or carried**

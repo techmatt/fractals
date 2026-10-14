@@ -4362,7 +4362,8 @@ export function mount(host) {
    * Come into the tab.
    *
    * `from` is the viewer's own view where it is on one of the families this kernel draws,
-   * and the frame is carried over: its coordinates are already exact decimal text, so
+   * and has moved since the tab last took the canvas (the page decides that; `null`
+   * otherwise), and the frame is carried over: its coordinates are already exact decimal text, so
    * nothing is lost crossing the floor. Anywhere else the tab opens at the last deep view
    * it had, or at the Mandelbrot home, and says which families deep draws.
    *
