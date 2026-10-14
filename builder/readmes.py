@@ -86,7 +86,7 @@ def _readmes(with_checkout: bool) -> dict[str, Path]:
     return found
 
 
-def problems(*, with_checkout: bool) -> list[str]:
+def problems(*, with_checkout: bool, with_artifacts: bool = True) -> list[str]:
     """Every README link that does not parse, is not canonical, or is not its seat's."""
     found: list[str] = []
     readmes = _readmes(with_checkout)
@@ -114,8 +114,13 @@ def problems(*, with_checkout: bool) -> list[str]:
                 f"opens as {answer['canonical']}"
             )
 
-    if with_checkout:
-        found += _seats(readmes, texts)
+    if with_checkout and with_artifacts:
+        # Reported rather than raised when the configured checkout cannot answer, as
+        # `coloring` and `library` do.
+        try:
+            found += _seats(readmes, texts)
+        except (renders.EngineError, picks.PickError, seats.SeatError, OSError) as error:
+            found.append(f"the strip seats' links could not be asked next door — {error}")
     return found
 
 

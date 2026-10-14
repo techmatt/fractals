@@ -604,7 +604,11 @@ in the exit summary. `caps` joins them only for a seat panel whose recipe the le
 door alone holds, and there is none today: all 107 are in `article/figure-recipes.jsonl`.
 Pillow's absence is the same shape, for pixel sizes, and node's for the whole of `caps`,
 which asks the permalink contract through `emit.mjs`. Never a crash
-before the other checks, and never a silent pass. The one command that needs the checkout
+before the other checks, and never a silent pass. A checkout that is configured but has no
+generated tree — a fresh clone of the wallpaper project, with no candidate ledger — is its
+own named skip for the five that read the tree (`figures`' source keys, `seats`, `coloring`,
+and the next-door halves of `stamps` and `readmes`); `library`, `bake` and `repeats` read
+tracked files and still run. The one command that needs the checkout
 on the palette library page's behalf is `python -m builder palettes --library`, which
 rewrites the record and lands any missing strip.
 

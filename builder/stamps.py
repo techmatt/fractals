@@ -170,7 +170,12 @@ def problems(*, with_checkout: bool) -> list[str]:
             f"at {expected_base()} — the base is one address, and both spellings move together"
         )
     if with_checkout:
-        found += _next_door(base)
+        # A configured checkout that cannot answer — a fresh clone has no artifacts tree —
+        # is reported rather than raised, as `coloring` and `library` do.
+        try:
+            found += _next_door(base)
+        except (renders.EngineError, picks.PickError, seats.SeatError, OSError) as error:
+            found.append(f"the stamp writers could not be asked next door — {error}")
     return found
 
 

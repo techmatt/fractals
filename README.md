@@ -76,6 +76,13 @@ python -m builder build        # rewrite the generated pages
 python -m builder check        # hold the tree to what the builder would write
 ```
 
+`check` asks some questions of the [fractal-wallpapers](https://github.com/techmatt/fractal-wallpapers)
+checkout, and skips them by name until it is configured: `wallpapers_root = "C:/Code/fractal-wallpapers"`
+in an untracked `local.toml` here, or the `FRACTAL_WALLPAPERS_ROOT` variable. The ones that
+read that project's generated `artifacts/` tree stay skipped on a fresh clone of it, which
+has none. The node suites in [`explorer/README.md`](explorer/README.md) want node 22, as CI
+uses.
+
 [`builder/README.md`](builder/README.md) has every command and what each check holds;
 [`explorer/README.md`](explorer/README.md) has the explorer's wasm modules, its link format,
 and its test suites. [`CLAUDE.md`](CLAUDE.md) is the rules this repository is held to,

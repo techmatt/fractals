@@ -425,7 +425,7 @@ def check_figures() -> list[str]:
                         f"{name} is {actual[0]}x{actual[1]}"
                     )
     problems.extend(recipes.problems())
-    if figures.stores_available():
+    if figures.artifacts_available():
         problems.extend(figures.unresolved(registry))
     return problems
 
@@ -492,7 +492,7 @@ def check_seats() -> list[str]:
     The first needs no Pillow, which is why it is not behind the same gate.
     """
     problems: list[str] = []
-    if not figures.stores_available():
+    if not figures.artifacts_available():
         return problems
     registry = figures.load_all()
 
@@ -1049,7 +1049,7 @@ def check_coloring() -> list[str]:
     `builder/coloring.py` says what it asks and why. Nothing here without the checkout, and
     a configured one that cannot answer is reported rather than raised, as `library` does.
     """
-    if not figures.stores_available():
+    if not figures.artifacts_available():
         return []
     try:
         return coloring.problems()
@@ -1262,6 +1262,11 @@ def check_endings() -> list[str]:
 NO_CHECKOUT = "the fractal-wallpapers checkout is not configured here"
 NO_PILLOW = "Pillow is not installed here"
 
+#: A configured checkout whose generated tree is not here — a fresh clone of the wallpaper
+#: project has no candidate ledger. Also a state of the machine and not of the site, so a
+#: skip and never 170 problems naming keys a clone was never going to hold.
+NO_ARTIFACTS = "the fractal-wallpapers checkout has no artifacts tree here (no candidate ledger)"
+
 #: The third state of the machine that stops a check asking its question. A staged
 #: gallery's pictures stay out of history until a deploy, so a clone has the record and
 #: none of the files it names — which is not the site being wrong, and must not read as the check
@@ -1361,6 +1366,36 @@ def skips() -> tuple[Skip, ...]:
         )
         # Half: every record and page of this repository is read everywhere.
         found.append(Skip("repeats", "the links in fractal-wallpapers' README", NO_CHECKOUT))
+    elif not figures.artifacts_available():
+        # Configured, with nothing generated beside it: the checks that read the tree are
+        # the ones that cannot ask. `library`, `bake` and `repeats` read tracked files.
+        found.append(
+            Skip("figures", "every source key against the store its kind names", NO_ARTIFACTS)
+        )
+        found.append(
+            Skip(
+                "seats",
+                "every seat panel against the picture its gallery ships",
+                NO_ARTIFACTS,
+                whole=True,
+            )
+        )
+        found.append(
+            Skip(
+                "coloring",
+                "the site's wallpaper coloring against coloring_of on every seat",
+                NO_ARTIFACTS,
+                whole=True,
+            )
+        )
+        found.append(
+            Skip(
+                "stamps",
+                "the release writer's links and bytes against the explorer's own",
+                NO_ARTIFACTS,
+            )
+        )
+        found.append(Skip("readmes", "every strip seat's link against its recipe", NO_ARTIFACTS))
     if not images.available():
         found.append(Skip("figures", "each figure's size on disk", NO_PILLOW))
         found.append(Skip("assets", "each image's and each thumbnail's size on disk", NO_PILLOW))
@@ -1449,7 +1484,7 @@ def run_all() -> Report:
             "atlas": atlas_module.problems(),
             "agreement": agreement.problems(),
             "bake": check_bake(),
-            "stamps": stamps.problems(with_checkout=figures.stores_available()),
+            "stamps": stamps.problems(with_checkout=figures.artifacts_available()),
             "coloring": check_coloring(),
             # Every gallery here, staged or not: a staged record has no page, and its
             # files are held to it exactly as any other gallery's are once they are landed.
@@ -1466,7 +1501,10 @@ def run_all() -> Report:
             "formulas": formulas.problems(with_renderer=formulas.unaskable() is None),
             "go": go.problems(),
             "packs": packs.problems(with_checkout=figures.stores_available()),
-            "readmes": readmes.problems(with_checkout=figures.stores_available()),
+            "readmes": readmes.problems(
+                with_checkout=figures.stores_available(),
+                with_artifacts=figures.artifacts_available(),
+            ),
             "repeats": repeats.problems(with_checkout=figures.stores_available()),
             "deep": check_deep(),
         },

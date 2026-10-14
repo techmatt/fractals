@@ -1960,6 +1960,26 @@ def stores_available() -> bool:
     return True
 
 
+def artifacts_available() -> bool:
+    """Whether the checkout's regenerable tree is here too, judged by its candidate ledger.
+
+    A fresh clone of the wallpaper project is a configured checkout with no `artifacts/`
+    tree: the ledger every pick resolves through is generated, never tracked. That is a
+    state of the machine, so the checks that read the tree skip by name rather than
+    report every key they cannot find. An archive that is configured and unplugged is
+    not this state, and still answers `True`, so the read raises `ArchiveUnreachable`
+    out loud, as it always has.
+    """
+    from . import picks, renders
+
+    if not stores_available():
+        return False
+    try:
+        return renders.artifact(*picks.LEDGER).is_file()
+    except renders.ArchiveUnreachable:
+        return True
+
+
 def unresolved(registry: dict[str, Figure] | None = None) -> list[str]:
     """Every source key of every row that does not answer to the store its kind names.
 
