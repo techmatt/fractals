@@ -3264,7 +3264,10 @@ copies only, and no place twice. `builder/README.md`'s *Random dives* has the ru
   sample a pixel, no cap probe — without the settle wait, and a frame already drawn is left
   as it is. So does opening a `panel=deep` link, which is how the bug hunt's u1 finding
   closed: the canvas used to keep whatever was up when the tab took it, so the same link
-  drew a different raster on each load, and two loads now draw one. **With it off, the
+  drew a different raster on each load, and two loads now draw one. A quarter is not a frame
+  drawn *(explorer_review_ckpt163)*: leaving the tab during the full stage stops the pass
+  with the quarter up, and coming back used to leave that sixteenth standing under a final
+  bar, so entering goes on to the full stage now, off the kept quarter field. **With it off, the
   canvas is empty until something of this tab's own is drawn** — never the shallow picture
   it was entered over, nor a frame a link replaced. The screen is one sample a pixel
   whatever route came in (*The screen is one sample a pixel*, above).

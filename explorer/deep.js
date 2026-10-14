@@ -4377,8 +4377,12 @@ export function mount(host) {
     // interior_seam_deep_autorender_ckpt146: "never renders unasked" was never the
     // intent)*. The same pass a settled gesture starts — quarter, then full at one sample a
     // pixel, no cap probe — and no settle wait, because nothing is still moving. A frame
-    // already drawn is left as it is.
-    if (autoRender && running === null && pending() && refused() === null) {
+    // already drawn is left as it is, and **a quarter is not a frame drawn**: leaving the tab
+    // mid full stage stops the pass with the quarter of `view` up, so `pending()` is false,
+    // and coming back used to leave that sixteenth standing as the finished frame
+    // *(explorer_review_ckpt163)*. The quarter's field is kept, so the pass goes straight on
+    // to the full stage.
+    if (autoRender && running === null && (pending() || !drawnFull) && refused() === null) {
       render("screen", { auto: true });
     }
     // A picture retired while the tab was away is drawn again now (`retire`).
