@@ -820,8 +820,17 @@ function planeAt(px, py) {
  *  stops being what is on the screen: the note about it goes, and the grid's mark with
  *  it. Everything else about the picture — the mode, the map, the recipe — is still
  *  theirs and travels with them. The tone curve does not: it was a measurement of the
- *  picture that was on the screen, and the new one is measured when it is drawn. */
+ *  picture that was on the screen, and the new one is measured when it is drawn.
+ *
+ *  **Returns whether it moved: a geometry the double cannot hold is refused**
+ *  *(explorer_review_ckpt163)*. The contract reads a centre or a width near the double's
+ *  ceiling, `x=1.6e308&w=1e308`, and a pan from there summed to `Infinity`: the engine's own
+ *  words under the picture, an address that no longer named what the page tried to draw,
+ *  and no way back, since `Infinity` less a step is still `Infinity`. The caller says
+ *  `UNHELD` and the view stays as it was, as the Deep tab's `writable` refuses a centre a
+ *  link cannot spell. */
 function moveTo(x, y, w) {
+  if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(w) || !(w > 0)) return false;
   view = {
     ...view,
     x: link.coordinateOf(x),
@@ -830,7 +839,11 @@ function moveTo(x, y, w) {
     maxiter: heldCap(w),
   };
   changed();
+  return true;
 }
+
+const UNHELD =
+  "A move from here would take the view past the largest number this arithmetic holds, so it is not made.";
 
 /**
  * The cap a move to width `w` keeps: the view's own, while it is still more than the width
@@ -996,7 +1009,10 @@ function zoomAbout(px, py, factor) {
   );
   if (to === null) return false;
   const before = view;
-  moveTo(to.x, to.y, to.w);
+  if (!moveTo(to.x, to.y, to.w)) {
+    say(UNHELD);
+    return false;
+  }
   reproject(before);
   draw();
   return true;
@@ -1041,7 +1057,10 @@ function zoomToBox(px, py, across) {
   const to = outwardHeld(planeAt(px, py), width);
   if (to === null) return;
   const before = view;
-  moveTo(to.x, to.y, to.w);
+  if (!moveTo(to.x, to.y, to.w)) {
+    say(UNHELD);
+    return;
+  }
   reproject(before);
   draw();
 }
@@ -4842,12 +4861,14 @@ function release(event) {
     deep.pan(dx, dy);
     return;
   }
-  moveTo(
+  const moved = moveTo(
     view.x.value - (dx / grid.width) * view.w.value,
     view.y.value + (dy / grid.height) * planeHeight(),
     view.w.value,
   );
+  // Refused, the slid picture is drawn back where the view still is.
   draw();
+  if (!moved) say(UNHELD);
 }
 
 canvas.addEventListener("pointerup", release);
@@ -4882,7 +4903,10 @@ function pinchTo(held, to, factor) {
   );
   if (centre === null) return false;
   const before = view;
-  moveTo(centre.x, centre.y, centre.w);
+  if (!moveTo(centre.x, centre.y, centre.w)) {
+    say(UNHELD);
+    return false;
+  }
   reproject(before);
   draw();
   return true;
@@ -5168,11 +5192,15 @@ window.addEventListener("keydown", (event) => {
       return;
     }
     const before = view;
-    moveTo(
+    const moved = moveTo(
       view.x.value + step[0] * PAN_STEP * view.w.value,
       view.y.value + step[1] * PAN_STEP * planeHeight(),
       view.w.value,
     );
+    if (!moved) {
+      say(UNHELD);
+      return;
+    }
     reproject(before);
     draw();
     return;

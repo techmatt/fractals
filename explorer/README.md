@@ -1878,7 +1878,12 @@ deepest frame is therefore set by the guard and its eight guard digits, 1e-112
   dot it set to Rendering (`refuseMove`), which the older refusal had left up. A centre
   whose integer part is past what the kernel's `Fx::parse` holds (2^63, `x=1e19`) still
   reads, and the tab stops on the kernel's own sentence that it could not compute a
-  reference orbit.
+  reference orbit. **The ordinary explorer has the same edge in a double**
+  *(explorer_review_ckpt163)*: its contract reads `x=1.6e308&w=1e308`, and two arrow presses
+  summed the centre to `Infinity`, which put the engine's own words under the picture, left
+  the address on a frame the page was no longer drawing, and could not be panned back, since
+  `Infinity` less a step is still `Infinity`. `moveTo` now refuses a centre or width that is
+  not finite, says so in a sentence, and leaves the view and the address as they were.
 - **Find minibrots** greys an entry whose frame needs more than 120 digits with its guard,
   since `deep-render.js` trims a solved centre to `MAX_SCALE` and would otherwise open it
   a little off its own minibrot.
