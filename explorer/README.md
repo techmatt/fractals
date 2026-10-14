@@ -4441,11 +4441,17 @@ own, so a tile that carries one is wrapped in a `.tile-cell` beside it, since a 
 cannot hold a button. The atlas frame takes the mark through a `slotMark` option it knows
 nothing else about, and the atlas page passes none. Every mark carries its canonical link in
 `data-key`, so one query of the document re-dresses all of them when the list changes. A
-`storage` event from another tab of this page reads the list again.
+`storage` event from another tab of this page reads the list again. A change this tab could
+not store, because the browser's storage was full or refused it, gives way to that read
+*(explorer_review_ckpt163)*: the list becomes what storage holds, and the Saved tab's warning
+says the change is gone instead of still promising it is kept until the page is closed.
+Nothing is merged back, since which tab's change should win is not the list's to guess.
 
 **The tab.**
 - Tiles come newest first, each labelled with its mode and plane. A click opens the picture
-  as a gallery tile does, and × removes it.
+  as a gallery tile does, and × removes it, by the spelling the list holds it in, so a link
+  an older build saved (a `v=3` one, from before permalink v4) goes too
+  *(explorer_review_ckpt163)*.
 - Each tile is drawn from its link by the engine at the gallery's tile size, 316×178 at four
   samples a pixel. It uses a renderer pool of the tab's own, for the walk's reason: the
   viewer's renderer cancels whatever it was doing on every pan.

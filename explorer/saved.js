@@ -37,6 +37,11 @@ export const VERSION = 1;
  *  reaches it is told so, and nothing is evicted. */
 export const MAX = 5000;
 
+/** What `failed` says once another tab's write has replaced a change this one could not
+ *  store (`Saved.reload`). */
+export const GAVE_WAY =
+  "Another tab changed Saved, so the latest change in this one, which this browser could not store, is gone.";
+
 /** The items of a stored value, or `[]` for anything that is not one. */
 export function decode(text) {
   if (typeof text !== "string" || text === "") return [];
@@ -142,6 +147,15 @@ export class Saved {
     } catch {
       text = null;
     }
+    // **A change this tab could not store gives way to what another tab stored**
+    // *(explorer_review_ckpt163)*. The list is what storage holds from here, so a note
+    // saying the change is kept until the page is closed would be false over it: it says
+    // the change is gone instead, until a write succeeds. Nothing is merged back: which of
+    // two tabs' changes should win is not the list's to guess, and the conservative answer
+    // is the one storage already holds.
+    if (this.failed !== null && this.failed !== GAVE_WAY) {
+      this.failed = text === encode(this.items) ? null : GAVE_WAY;
+    }
     this.items = decode(text);
     this.index = new Set(this.items.map((item) => item.link));
     this.#tell();
@@ -174,9 +188,15 @@ export class Saved {
     return "added";
   }
 
-  /** Remove one link, by any spelling of it. */
+  /** Remove one link, by any spelling of it, or by the spelling it is stored in.
+   *
+   *  The second is a tile's ×, which carries the link as storage holds it, and **a list an
+   *  older build wrote holds that build's spelling** *(explorer_review_ckpt163)*: every link
+   *  saved before permalink v4 is a `v=3` one, whose canonical spelling is now `v=4`, so a
+   *  lookup by the canonical alone found nothing and the × did nothing. */
   remove(query) {
-    const key = this.canonical(query) ?? query;
+    const canonical = this.canonical(query);
+    const key = canonical !== null && this.index.has(canonical) ? canonical : query;
     if (!this.index.has(key)) return false;
     this.items = this.items.filter((item) => item.link !== key);
     this.index.delete(key);

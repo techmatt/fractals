@@ -7,7 +7,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { KEY, MAX, Saved, VERSION, decode, encode, parseImport, queryOf } from "./saved.js";
+import { GAVE_WAY, KEY, MAX, Saved, VERSION, decode, encode, parseImport, queryOf } from "./saved.js";
 
 /** `localStorage`'s surface over a Map, with a switch that makes it throw. */
 function shim(initial = null) {
@@ -68,6 +68,49 @@ test("a storage that throws on read or write never takes the list down", () => {
   saved.add("f=j");
   assert.equal(saved.failed, null);
   assert.equal(decode(storage.map.get(KEY)).length, 2);
+});
+
+test("another tab's write over a change this one could not store says the change is gone", () => {
+  const storage = shim(encode([{ link: "f=j", added: "a" }]));
+  const saved = store(storage);
+  storage.broken = true;
+  assert.equal(saved.add("f=m"), "added");
+  assert.match(saved.failed, /kept only until the page is closed/);
+  // Another tab removes `f=j`: its write lands in the shared storage, and this one reloads.
+  storage.broken = false;
+  storage.map.set(KEY, encode([]));
+  saved.reload();
+  assert.equal(saved.has("f=m"), false);
+  assert.equal(saved.failed, GAVE_WAY);
+  // A second write from elsewhere changes nothing about what this tab lost.
+  storage.map.set(KEY, encode([{ link: "f=k", added: "b" }]));
+  saved.reload();
+  assert.equal(saved.failed, GAVE_WAY);
+  // And a write of this tab's that lands clears it.
+  saved.add("f=m");
+  assert.equal(saved.failed, null);
+});
+
+test("a link stored in a spelling an older build wrote is removed by that spelling", () => {
+  // `x=1&f=m` canonicalizes to `f=m&x=1`, as a `v=3` link now canonicalizes to `v=4`.
+  const storage = shim(encode([{ link: "x=1&f=m", added: "a" }]));
+  const saved = store(storage);
+  assert.equal(saved.remove("x=1&f=m"), true);
+  assert.equal(saved.size, 0);
+  assert.deepEqual(decode(storage.map.get(KEY)), []);
+});
+
+test("a reload that finds this tab's own unstored list in storage clears the failure", () => {
+  const storage = shim();
+  const saved = store(storage);
+  storage.broken = true;
+  saved.add("f=m");
+  storage.broken = false;
+  // Another tab happened to store exactly this list.
+  storage.map.set(KEY, encode(saved.items));
+  saved.reload();
+  assert.equal(saved.failed, null);
+  assert.equal(saved.has("f=m"), true);
 });
 
 test("one picture is one entry, however its link was spelled", () => {
