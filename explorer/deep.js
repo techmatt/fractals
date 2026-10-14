@@ -1037,7 +1037,7 @@ export function mount(host) {
     // `dive` is a pass the Dive block started, whose bar and Cancel follow it too.
     // `probe` is kept so that a pass restarted (`retire`, `recapping`) comes back as the pass it
     // was: a link's arrival restarted with the probe on wrote an `n` the link never had.
-    running = { upto, auto, probe, dive, stage: "starting", started: performance.now(), done: 0 };
+    running = { upto, auto, probe, dive, grid, stage: "starting", started: performance.now(), done: 0 };
     finished = null;
     finishedSamples = 0;
     enterStage("starting", { live: false });
@@ -4903,7 +4903,15 @@ export function mount(host) {
     key: (px, py, out) => zoom(px, py, out ? KEY_ZOOM : 1 / KEY_ZOOM),
     repaint: paint,
     /** The canvas changed size: repainted, and the controls asked again, because whether
-     *  the frame still resolves in `f64` — Shallow mode's fade — is a question of the grid. */
+     *  the frame still resolves in `f64` — Shallow mode's fade — is a question of the grid.
+     *
+     *  **A screen pass still drawing is restarted at the new size** *(explorer_review_ckpt163)*.
+     *  A pass captures the grid when it starts, so one running through a rotation or a
+     *  narrower window landed at the old size and the frame rested scaled, under a link whose
+     *  fresh load at these metrics draws another raster. Restarted as `recapping` restarts one,
+     *  which reuses the reference orbit the pool holds. A finished picture stays up scaled, as
+     *  before: redrawing a deep frame on every window drag would cost minutes. A download, a
+     *  search, and a dive draw grids of their own and are left alone. */
     resized() {
       // A picture of the canvas at its old size is not one *As shown* can save at the new.
       if (!atCanvas(finished)) {
@@ -4912,6 +4920,18 @@ export function mount(host) {
       }
       paint();
       syncControls();
+      const grid = host.grid();
+      const was = running;
+      if (
+        was !== null &&
+        (was.upto === "screen" || was.upto === "preview") &&
+        was.dive !== true &&
+        (was.grid.width !== grid.width || was.grid.height !== grid.height)
+      ) {
+        stop();
+        disarm();
+        render(was.upto, { auto: was.auto, probe: was.probe });
+      }
     },
     stop,
     /** The document is going away: the deep pool goes with it.

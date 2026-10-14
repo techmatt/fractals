@@ -2361,6 +2361,16 @@ is not `finished` — a download at the canvas's size cannot save it — and is 
 quarter picture is. `resized` narrows the window after a finished pass and asks the usual
 question; it failed before the fix and passes after it.
 
+**A pass still drawing is restarted at the new size** *(explorer_review_ckpt163)*. A pass
+takes the grid when it starts, so one running through a rotation, a move to a phone's width,
+or a narrower window landed at the old size, and the frame rested scaled under a link whose
+fresh load at the new metrics draws another raster: 458,787 of 768,832 pixels apart after a
+desktop pass was emulated onto a 390×844 phone. `deep.resized` restarts a screen pass whose
+grid is not the canvas's, the way `recapping` restarts one, off the reference orbit the pool
+holds. A finished picture still stays up scaled, because redrawing a deep frame on every
+window drag would cost minutes, and a download, a search, and a dive draw grids of their own
+and are left alone.
+
 **The same sweep found four more, each a colour that did not reach the picture, or reached
 it late** *(explorer_recolor_race_ckpt162)*:
 
