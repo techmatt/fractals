@@ -3949,7 +3949,12 @@ export function mount(host) {
       next.maxiter = policyCap(read.w.value);
       next.capFrom = "width";
     }
-    if (deepLink.emit(next) === deepLink.emit(view)) return true;
+    // A box put back to the frame's own value moves nothing, and the refusal a junk entry
+    // left under it is no longer about anything on the page (explorer_review_ckpt163).
+    if (deepLink.emit(next) === deepLink.emit(view)) {
+      host.say("");
+      return true;
+    }
     view = next;
     moved();
     return true;
