@@ -91,6 +91,11 @@ const EXPLAINED = [
   // `value`, which the junk-typing cases in U2 and U6 do by design. A reader's keystrokes
   // never reach the page that way, so it is the harness talking (preclose_website_ckpt153).
   /^log\(rendering\/warning\): The specified value ".*" cannot be parsed, or is out of range\.$/,
+  // Chrome's notice on Windows, where it ignores `requestAdapter`'s `powerPreference`
+  // (crbug.com/369219127). `deep-gpu.js` asks for the high-performance adapter because a
+  // macOS or Linux dual-GPU machine honours it; here it is a browser notice and not a fault,
+  // and it was the only console line in the 828 trials of explorer_review_ckpt163's sweep.
+  /The powerPreference option is currently ignored when calling requestAdapter\(\) on Windows/,
 ];
 
 /** A page under the harness: the browser, the connection, and the witness log. */
