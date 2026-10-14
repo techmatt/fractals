@@ -4821,6 +4821,11 @@ export function mount(host) {
       const kept = heldFor(next);
       if (kept !== null) {
         putBack(next, kept);
+        // **And a quarter is not a frame drawn**, as `enter` has it (explorer_review_ckpt163):
+        // a step onto a frame held at its quarter puts that quarter up, and with Auto-render
+        // on it used to stay up as the frame, under a link whose fresh load draws the full
+        // pass. The quarter field is in the cache, so the pass goes straight to the full stage.
+        if (!kept.full && autoRender && refused() === null) render("screen", { probe: false });
         return;
       }
       const full = host.grid();

@@ -2262,7 +2262,13 @@ a held frame back instantly where the entry is one of them, recolours a full fie
 the cache where it is one of those, and only otherwise draws as a link does. The cache is no
 longer cleared by `open`: it is keyed on the set, the frame and the cap, so nothing in it can
 be taken for another picture. A link with no `n` is re-capped by the kernel before the
-lookup, because that is the cap the held field was drawn at.
+lookup, because that is the cap the held field was drawn at. **A step onto a frame held at
+its quarter goes on to draw it**, with Auto-render on *(explorer_review_ckpt163)*: the
+quarter is put back at once, and the pass goes straight to the full stage off its kept
+field, because a quarter is not a frame drawn (*Getting in and out* applies the same rule to
+entering the tab). Before, Ctrl+Z and Ctrl+Y onto a frame left mid full stage rested on the
+quarter under a link whose fresh load draws the full picture. Cancel's way back is left as it
+was: it puts the frame back as it was drawn, with no pass.
 
 Measured on the served page, at `x=-0.743643887037151 y=0.13182590420533 w=2e-11`: a palette
 change and its Ctrl+Z are both *recolored in* ~85 ms with no stage entered and no worker
