@@ -5442,7 +5442,11 @@ keyword — and is how a reader tells our comment from somebody else's.
 **Reading is metadata and never pixels.** A dropped file is parsed for the chunk or the
 segment, and what comes out goes through `openAny` — the same door the Saved tab's tiles
 use, with the same three branches and the same refusals, so a dropped deep link opens the
-Deep tab and a dropped Inflection link is refused by name. There is no inferring a view
+Deep tab and a dropped Inflection link is refused by name. **A dropped shallow link leaves
+the Deep tab** *(explorer_review_ckpt163)*, as a shallow link opened from any other panel
+does: dropped while Deep held the canvas, it used to be drawn by the viewer under the Deep
+tab's address and controls, or lost without a word mid-render. It is read first, so one the
+contract refuses is refused with the tab left where it was. There is no inferring a view
 from a picture: a file with nothing in it says *That picture carries no explorer link* and
 changes nothing. The Saved tab takes a drop too, and **keeps** it rather than opening it —
 eight bytes decide whether what landed is a picture or the JSON its Import box already

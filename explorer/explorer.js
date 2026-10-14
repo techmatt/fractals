@@ -3417,7 +3417,24 @@ function openAny(query, opts = {}) {
     say(INFLECTION_PAGED);
     return false;
   }
-  if (!link.isDeep(`?${query}`)) return openLink(query, opts);
+  if (!link.isDeep(`?${query}`)) {
+    // **A shallow link on the Deep tab leaves the tab** *(explorer_review_ckpt163)*, as every
+    // shallow arrival from every other panel already leaves it. A picture carrying one,
+    // dropped on the canvas while Deep held it, was drawn by the viewer under the Deep tab's
+    // address and controls, or dropped without a word mid-render. Read first, so a link the
+    // contract refuses leaves the tab where it is, with the refusal said.
+    if (deepOwns()) {
+      try {
+        link.parse(`?${query}`, contract);
+      } catch (error) {
+        say(error.message);
+        return false;
+      }
+      deep.detach();
+      showPanel(DEFAULT_PANEL);
+    }
+    return openLink(query, opts);
+  }
   // **And a deep link the contract refuses is refused here, before the tab is shown**, the
   // way `openLink` refuses a shallow one: a sentence under the canvas and the tab the
   // reader was on. Nothing behind these doors validated it — Saved re-reads storage another
