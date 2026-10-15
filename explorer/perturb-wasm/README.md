@@ -746,7 +746,7 @@ layout_ckpt141)*, and whoever instantiates it supplies it — `bench/perturb.mjs
 page's own planner with a function that does nothing, `deep-worker.js` with one that posts
 at most every 100 ms. A wasm call cannot be looked into, and a reference orbit at a million
 or a probe rung beside a parabolic point is seconds inside one export; the kernel's
-`src/progress.rs` is called every 4,096 orbit steps and once a probe or domain-walk cell,
+`fractal-wallpapers/perturbation/src/progress.rs` is called every 4,096 orbit steps and once a probe or domain-walk cell,
 so the page can tell a slow frame from a stranded pool. Natively it compiles to nothing,
 and every native test is unmoved. Measured on the rebuild: the orbits, fields and probe
 counts of four frames came back byte for byte what the module before it produced, in

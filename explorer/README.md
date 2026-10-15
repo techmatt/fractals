@@ -3637,11 +3637,11 @@ the CPU, checked in this order:
   ignored, so every frame after goes the way the one that gave up went. The cost is a cold
   first frame that may wait out the test, about 5 s here. The second machine, an Intel Arc
   140V, is where the bound's headroom was measured *(cleanup_ckpt163)*: a cold first visit
-  reached GPU-ready at about 22 s, 8 s inside it. That machine passed every gate with zero resets, and
-  its GPU was slower than its CPU on the 159-frame sample (below) and on downloads, and
-  faster only on very deep, heavy frames. A failed self-test is final for the page load, and
-  the box says so; no adapter or a refused device is asked again by later frames, up to
-  three times.
+  reached GPU-ready at about 22 s, 8 s inside it. That machine passed every gate with zero
+  resets, and its GPU was slower than its CPU on the 159-frame sample (below) and on
+  downloads, and faster only on very deep, heavy frames. A failed self-test is final for the
+  page load, and the box says so; no adapter or a refused device is asked again by later
+  frames, up to three times.
 - **Does not fit**: a degree past six, an orbit past the adapter's limits, or a single row
   of samples whose state (128 bytes a sample with the proof, 56 without) or output does not
   fit one binding. Anything bigger than that is cut into strips (below) rather than refused,
@@ -4817,7 +4817,7 @@ Committed beside the module, `engine.manifest.json` records what it was built fr
 | `crate` | `explorer/engine-wasm` |
 | `engine_version` | the engine crate's own version, read from its `Cargo.toml` |
 | `rustc` | the compiler, with its commit and date |
-| `wallpapers_commit` | the sibling checkout's `HEAD` at bake time |
+| `wallpapers_commit` | the sibling commit the modules were built from, moved only when the bytes or the kernel's tree moved (*Rebuilding*) |
 | `engine_changes` | every change this consumer has needed in the engine, one line each |
 | `raw_bytes` / `gzip_bytes` | the module's size in bytes, raw and gzipped |
 
@@ -6460,6 +6460,10 @@ So the main thread, which *Where a page's time goes* left as what was left, was 
 somebody else's layout. A long view gains little (`angle` about 12%: its passes are
 seconds of arithmetic); a cheap view and every recolour gain most.
 
+Browse's `.browse-tiles` is `flex: 1 1 0` for the same reason *(cleanup_ckpt163)*: layout
+over three preview opens of the general collection's thousand tiles went from about 160–250
+ms to about 90–110 ms.
+
 ### What a visitor downloads *(explorer_slim_ckpt131, 2026-09-18)*
 
 Audited against the live site's own headers: Pages sends gzip, at about level 6, and no
@@ -7667,8 +7671,9 @@ already public and matched, and the engine's fingerprint is unmoved.
   `smooth_mean_angle` 2.7x, and `smooth` 1.23x. Its `tia` lanes also differ by one f32
   unit of last place on up to 52 samples a frame, which the 8-bit shade absorbs. The old
   crate built with 1.98.1 does the same, so the cause is the toolchain rather than the
-  import. The bake was run as `RUSTUP_TOOLCHAIN=1.96.0 python -m builder explorer`, and
-  the manifest's `rustc` records it.
+  import. The bake was run as `RUSTUP_TOOLCHAIN=1.96.0 python -m builder explorer` then;
+  since cleanup_ckpt163 the bake sets it itself (*Rebuilding*), and the manifest's `rustc`
+  records it.
 
 ## The test suites
 
@@ -7802,6 +7807,10 @@ prompt that does not own the engine reverts both**, `git checkout` on `engine.wa
 `engine.manifest.json`, and reaches for `--palettes-only` first. Owning the engine here means the carve-out in `CLAUDE.md`: a
 zero-behaviour change to the sibling engine, made deliberately and named in
 `ENGINE_CHANGES`. Rebaking is not one of those and never was.
+
+**Rebake from a real path, never through a junction** *(cleanup_ckpt163)*: `remapped_paths()`
+remaps the resolved sibling path but cargo embeds the unresolved one, so `engine.wasm`'s bytes
+move (928,253 bytes, the one time it was seen) and, correctly, so does the pin.
 
 Which colormaps count as curated is the wallpaper project's own distinction: a map that
 arrived by mechanical conversion says so in its `source` line, and the rest were chosen.

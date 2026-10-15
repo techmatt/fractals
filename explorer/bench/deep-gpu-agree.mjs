@@ -10,11 +10,17 @@
 //
 // A GPU load whose Details line says the CPU drew it is a **named skip** with the GPU's own
 // reason, never a pass; a browser with no WebGPU adapter at all skips the whole run by name.
-// The frames are the stage-2 views past 1e-50 (A, B, C, and D, the degree-3 minibrot whose
-// interior the kernel's proof settles), the deep links the site publishes, one Mandelbrot
-// and one Julia set per degree 2 to 6, `random-dives#337`, a long tail of samples at
-// the cap, and the golden-mean Siegel boundary, the frame nearest the 1% line. They
-// live in `deep-gpu-frames.mjs`, which `deep-gpu-time.mjs` draws its larger sample from.
+// The frames are the stage-2 views past 1e-50 (A, B and C), the deep links the site
+// publishes, one Mandelbrot and one Julia set per degree 2 to 6, `random-dives#337`, a long
+// tail of samples at the cap, and the golden-mean Siegel boundary, the frame nearest the 1%
+// line. They live in `deep-gpu-frames.mjs`, which `deep-gpu-time.mjs` draws its larger
+// sample from. `FRAMES`' three D frames are swapped for structured ones at the same depths,
+// as `deep-same.mjs` swaps them *(preclose_ckpt163)*: D is stage 2's degree-3 minibrot
+// interior, one solid colour at screen size at 1e-60, 1e-80 and 1e-100 alike, so all three
+// were 0.00% visible on one hash and matched without testing anything. The ladder's busy
+// frames stand in: `B-1e-60`, and `A-1e-80` and `A-1e-100` where B is minutes on the CPU. A
+// run also names any two frames that came to one picture, since a frame that matches its
+// neighbour proves nothing about either.
 //
 //   node explorer/bench/deep-gpu-agree.mjs [--only=<name>,<name>] [--port=8000]
 //
@@ -24,12 +30,16 @@
 // which have no adapter; about twenty minutes, most of it the CPU loads.
 
 import { open, sleep } from "./cdp.mjs";
-import { FRAMES } from "./deep-gpu-frames.mjs";
+import { FRAMES, LADDER } from "./deep-gpu-frames.mjs";
 import { record } from "./output.mjs";
 import { ACCEPTABLE, MATCH, verdictOf, visible } from "./visible.mjs";
 
 const option = (name) => process.argv.find((arg) => arg.startsWith(`--${name}=`))?.split("=")[1];
 const only = option("only")?.split(",") ?? null;
+const STRUCTURED = { "D-1e-60": "B-1e-60", "D-1e-80": "A-1e-80", "D-1e-100": "A-1e-100" };
+const CASES = Object.entries(FRAMES).map(([name, link]) =>
+  name in STRUCTURED ? [STRUCTURED[name], LADDER[STRUCTURED[name]]] : [name, link],
+);
 const PORT = option("port") ?? process.env.PORT ?? "8000";
 const ORIGIN = `http://localhost:${PORT}/explorer/`;
 
@@ -165,7 +175,7 @@ try {
     return [i.vendor, i.architecture, i.description].filter(Boolean).join(" ") || "an adapter";
   })()`);
   if (adapter !== null) console.log(`adapter: ${adapter}`);
-  for (const [name, link] of Object.entries(FRAMES)) {
+  for (const [name, link] of CASES) {
     if (adapter === null) break;
     if (only !== null && !only.includes(name)) continue;
     const row = { name, link };
@@ -189,13 +199,14 @@ try {
     }
     // Times are the full pass's own off its stats line; the wall time from navigation to
     // rest is beside it.
-    if (cpu !== null) Object.assign(row, { cpuMs: cpu.fullMs, cpuWallMs: cpu.wallMs, cpuStats: cpu.stats });
-    if (gpu !== null) Object.assign(row, { gpuMs: gpu.fullMs, gpuWallMs: gpu.wallMs, gpuStats: gpu.stats, handed: gpu.handed });
+    if (cpu !== null) Object.assign(row, { cpuHash: cpu.hash, cpuMs: cpu.fullMs, cpuWallMs: cpu.wallMs, cpuStats: cpu.stats });
+    if (gpu !== null) Object.assign(row, { gpuHash: gpu.hash, gpuMs: gpu.fullMs, gpuWallMs: gpu.wallMs, gpuStats: gpu.stats, handed: gpu.handed });
     rows.push(row);
     const pct = (x) => (x === undefined ? "" : `${(100 * x).toFixed(2)}%`);
     console.log(
       `${name}: ${row.verdict}` +
         (row.visible !== undefined ? ` visible ${pct(row.visible)} moved ${pct(row.moved)}` : "") +
+        (row.cpuHash !== undefined ? ` · hash cpu ${row.cpuHash} gpu ${row.gpuHash ?? "-"}` : "") +
         (row.cpuMs != null ? ` · cpu ${row.cpuMs} ms` : "") +
         (row.gpuMs != null ? ` gpu ${row.gpuMs} ms` : "") +
         (row.handed ? ` (${row.handed} px to the CPU)` : "") +
@@ -225,4 +236,12 @@ console.log(
     (skipped.length ? ` (${skipped.join(", ")})` : "") +
     (past.length ? `; past 1%: ${past.join(", ")}` : ""),
 );
+const pictures = new Map();
+for (const row of rows) {
+  if (row.cpuHash === undefined) continue;
+  pictures.set(row.cpuHash, [...(pictures.get(row.cpuHash) ?? []), row.name]);
+}
+for (const [hash, names] of pictures) {
+  if (names.length > 1) console.log(`one picture (cpu ${hash}): ${names.join(", ")}`);
+}
 process.exit(failed > 0 ? 1 : 0);
