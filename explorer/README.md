@@ -3634,8 +3634,13 @@ the CPU, checked in this order:
   link a minute later the GPU's. `SETTLE_BOUND_MS` (30 s from the test's start) is a liveness
   bound only: a test still running at it is abandoned for the page load and its late answer
   ignored, so every frame after goes the way the one that gave up went. The cost is a cold
-  first frame that may wait out the test, about 5 s here. A failed self-test is final for the page load, and the box
-  says so; no adapter or a refused device is asked again by later frames, up to three times.
+  first frame that may wait out the test, about 5 s here. The second machine, an Intel Arc
+  140V, is where the bound's headroom was measured *(cleanup_ckpt163)*: a cold first visit
+  reached GPU-ready at about 22 s, 8 s inside it. That machine passed every gate with zero resets, and
+  its GPU was slower than its CPU on the 159-frame sample (below) and on downloads, and
+  faster only on very deep, heavy frames. A failed self-test is final for the page load, and
+  the box says so; no adapter or a refused device is asked again by later frames, up to
+  three times.
 - **Does not fit**: a degree past six, an orbit past the adapter's limits, or a single row
   of samples whose state (128 bytes a sample with the proof, 56 without) or output does not
   fit one binding. Anything bigger than that is cut into strips (below) rather than refused,

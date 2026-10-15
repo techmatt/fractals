@@ -1,6 +1,7 @@
 // A headless Chrome on the other end of a websocket, and nothing installed to get there.
 //
-// Node 24 has `WebSocket` in the global scope and Chrome speaks CDP over one, so a
+// Node has `WebSocket` in the global scope, unflagged since 22.0 and stable since 22.4, so
+// CI's node 22 has it as a local node 24 does; Chrome speaks CDP over one, so a
 // browser-driven harness in this repository needs no `node_modules` — which is the only
 // reason there is one in `bench/` at all. The three kernel harnesses beside this file
 // answer "what does the arithmetic cost"; a pool, a cancel and a canvas upload only exist
