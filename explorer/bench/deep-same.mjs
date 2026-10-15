@@ -17,11 +17,19 @@
 //                                     [--kernel=cpu|gpu|ticked] [--only=<name>,…] [--all]
 //
 // The frames are `deep-gpu-frames.mjs`'s `FRAMES`, less the two whose CPU full pass is
-// minutes unless `--all`. Exits 1 where any frame differs or never came to rest. It records
+// minutes unless `--all`, and with its three D frames swapped for structured ones at the same
+// depths *(cleanup_ckpt163)*. D is stage 2's minibrot interior: at screen size it is one
+// solid colour at 1e-60, 1e-80 and 1e-100 alike, so all three hashed 2530616773 on both
+// kernels and matched themselves without testing anything. The ladder's busy frames stand in,
+// each under a minute on the CPU and drawn on the GPU when ticked: `B-1e-60`, `A-1e-80` and
+// `A-1e-100` (`B-1e-80` is one of the two minutes-long frames already here behind `--all`,
+// and `B-1e-100` is longer still). A run also names any two frames that came to one picture,
+// since a frame that matches its neighbour proves nothing about either.
+// Exits 1 where any frame differs or never came to rest. It records
 // `artifacts/explorer-bench/deep-same-<mode>.json`. No part of `builder check` or CI.
 
 import { open, sleep } from "./cdp.mjs";
-import { FRAMES } from "./deep-gpu-frames.mjs";
+import { FRAMES, LADDER } from "./deep-gpu-frames.mjs";
 import { record } from "./output.mjs";
 
 const option = (name) => process.argv.find((arg) => arg.startsWith(`--${name}=`))?.split("=")[1];
@@ -31,7 +39,11 @@ const B = option("b") ?? "8001";
 const KERNEL = option("kernel") ?? (MODE === "paths" ? "ticked" : "cpu");
 const only = option("only")?.split(",") ?? null;
 const SLOW = new Set(["B-1e-80", "C-1e-80 Julia"]);
-const frames = Object.entries(FRAMES).filter(
+const STRUCTURED = { "D-1e-60": "B-1e-60", "D-1e-80": "A-1e-80", "D-1e-100": "A-1e-100" };
+const CASES = Object.entries(FRAMES).map(([name, link]) =>
+  name in STRUCTURED ? [STRUCTURED[name], LADDER[STRUCTURED[name]]] : [name, link],
+);
+const frames = CASES.filter(
   ([name]) => (only === null || only.includes(name)) && (process.argv.includes("--all") || only !== null || !SLOW.has(name)),
 );
 
@@ -124,5 +136,14 @@ for (const [name, link] of frames) {
   record(`deep-same-${MODE}.json`, { mode: MODE, kernel: KERNEL, a: A, b: B, rows });
 }
 console.log(`${rows.length - failed}/${rows.length} the same`);
+const pictures = new Map();
+for (const row of rows) {
+  if (row.a === null) continue;
+  const key = `${row.a.kernel} ${row.a.hash}`;
+  pictures.set(key, [...(pictures.get(key) ?? []), row.name]);
+}
+for (const [key, names] of pictures) {
+  if (names.length > 1) console.log(`one picture (${key}): ${names.join(", ")}`);
+}
 for (const page of Object.values(pages)) await page.close().catch(() => {});
 process.exit(failed > 0 ? 1 : 0);
