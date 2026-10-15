@@ -6414,6 +6414,45 @@ less of the win.
 anything about the colouring. Both are the cache's, both are unchanged here, and they are
 named so that a later reading does not mistake that spread for this change's.
 
+### The gallery's height, asked on every frame *(explorer_review_ckpt163, 2026-10-14)*
+
+**Most of the main thread under a shallow render was layout, and it was the gallery's.** A
+trace of the home view's warm render (the page up for four seconds, the general
+collection's thousand tiles built) had a 35 to 65 ms `BeginMainFrame` on every frame, 30 to
+48 ms of it style and layout of about 10,000 layout objects: 570 ms of layout in an
+0.8-second render. `.tiles` was `flex: 1 1 auto`, and a basis of `auto` in the side panel's
+column asks the grid for its content height, which is a layout of every tile, every time
+the column is laid out again: under a render that is every frame, for the progress line and
+the stat. A band's answer is placed on the main thread, so the pool waited on it too: the
+stats round trip that colours a stage measured 45 to 100 ms for 5 to 25 ms of the kept
+worker's work. With the box hidden the same render had 11 ms of layout. `flex: 1 1 0` has
+61, and is the same box: the column's height is definite and the grid takes what is left of
+it either way, and where the panel is as tall as what is in it, *stacked* sets `flex: none`.
+Every `.tiles` box, its scroll height, its first seven tiles, its neighbours, the side
+panel and the canvas's hash came out the same on the Gallery, Walk and Saved tabs at eight
+viewports from 390 × 844 to 1920 × 1055, emulated (24 of 24; Walk and Saved empty, as a
+fresh profile has them).
+
+Alternated, old and new, twice each, `page.mjs` at 1600 × 1000 (the Deep tab never lays the
+grid out, so its frames are untouched):
+
+| | old | new |
+| --- | --- | --- |
+| ladder, the twelve views' finished pictures, summed | 17,452 / 17,047 ms | **14,027 / 13,999 ms** |
+| … `home`, finished | 597 / 616 ms | **435 / 406 ms** |
+| … `spike`, finished | 876 / 773 ms | **386 / 386 ms** |
+| … `julia`, finished | 618 / 627 ms | **384 / 389 ms** |
+| … `angle`, finished | 4,615 / 4,841 ms | **4,124 / 4,044 ms** |
+| cold open, the finished picture | 795 / 731 ms | **532 / 560 ms** |
+| edit: a palette | 125 / 105 ms | **28 / 29 ms** |
+| edit: the phase | 104 / 74 ms | **36 / 31 ms** |
+| edit: a pan, first pixels / finished | 133 / 110, 590 / 532 ms | **22 / 22, 186 / 217 ms** |
+| edit: zoom in, first pixels / finished | 96 / 95, 551 / 514 ms | **24 / 10, 208 / 213 ms** |
+
+So the main thread, which *Where a page's time goes* left as what was left, was mostly
+somebody else's layout. A long view gains little (`angle` about 12%: its passes are
+seconds of arithmetic); a cheap view and every recolour gain most.
+
 ### What a visitor downloads *(explorer_slim_ckpt131, 2026-09-18)*
 
 Audited against the live site's own headers: Pages sends gzip, at about level 6, and no
