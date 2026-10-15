@@ -133,8 +133,11 @@ PALETTES_BLOB = EXPLORER_DIR / "palettes.bin"
 #: How the blob lays a map's colours out; `stops.js` refuses an index naming another.
 BLOB_LAYOUT = "planar-delta"
 #: One row of gradient per map, in index order — a picture of what the blob holds, for a
-#: person rather than for the page. Untracked, and nothing serves it.
-PALETTES_SWATCH = EXPLORER_DIR / "palettes-swatch.png"
+#: person rather than for the page. Nothing serves it, so it is written under the ignored
+#: `artifacts/` rather than beside the page, where it sat untracked until cleanup_ckpt163;
+#: the bake removes a copy still left at the old address.
+PALETTES_SWATCH = SITE_ROOT / "artifacts" / "explorer" / "palettes-swatch.png"
+_OLD_PALETTES_SWATCH = EXPLORER_DIR / "palettes-swatch.png"
 CATALOG_MODULE = EXPLORER_DIR / "catalog.js"
 WASM_MODULE = EXPLORER_DIR / "engine.wasm"
 MANIFEST = EXPLORER_DIR / "engine.manifest.json"
@@ -266,6 +269,13 @@ RECIPES_NAME = "recipes.jsonl"
 #: `curation.solve.DEFAULT_FINE_BAR`, transcribed: reading it would mean importing the
 #: wallpaper project's Python into this builder, which nothing here does.
 FINE_BAR = 0.030242
+
+#: The Rust toolchain every module here is built on, which the bake sets as
+#: `RUSTUP_TOOLCHAIN` for its own cargo and rustc rather than trusting the shell to: the
+#: same source on another rustc is other bytes, and on 1.98.1 a slower field pass
+#: (`explorer/README.md`, *The operator is the engine's*). Moving it is an edit here, made
+#: on purpose; a shell that exports any other toolchain is refused rather than obeyed.
+TOOLCHAIN = "1.96.0"
 
 #: The wasm target and the file cargo leaves the module at.
 WASM_TARGET = "wasm32-unknown-unknown"
@@ -929,16 +939,19 @@ def palettes_module_text() -> Baked:
 def write_palettes() -> Baked:
     """Bake the index into `palettes.js` and the control points into `palettes.bin`.
 
-    The swatch goes down beside them, which is neither committed nor served and is only
+    The swatch goes to `artifacts/`, which is neither committed nor served and is only
     how a person looks at a megabyte of binary.
     """
     made = palettes_module_text()
     PALETTES_MODULE.write_text(made.text, encoding="utf-8", newline="\n")
     PALETTES_BLOB.write_bytes(made.blob)
+    _OLD_PALETTES_SWATCH.unlink(missing_ok=True)
     # Pillow is the one thing here a machine may not have, and the swatch is the one
     # output nothing reads — so its absence is a missing picture and never a failed bake.
     with contextlib.suppress(ImportError):
-        PALETTES_SWATCH.write_bytes(swatch(baked()))
+        picture = swatch(baked())
+        PALETTES_SWATCH.parent.mkdir(parents=True, exist_ok=True)
+        PALETTES_SWATCH.write_bytes(picture)
     return made
 
 
@@ -1471,16 +1484,40 @@ def remapped_env(*extra: str) -> dict[str, str]:
         f"--remap-path-prefix={source}={target}" for source, target in remapped_paths().items()
     ]
     flags.extend(extra)
-    env = {key: value for key, value in os.environ.items() if key != "RUSTFLAGS"}
+    env = {key: value for key, value in toolchain_env().items() if key != "RUSTFLAGS"}
     env["CARGO_ENCODED_RUSTFLAGS"] = "\x1f".join(flags)
     return env
 
 
-def build_wasm() -> tuple[Path, int, int]:
-    """Compile the crate for wasm and copy the module in beside the page."""
+def toolchain_env() -> dict[str, str]:
+    """This process's environment with `RUSTUP_TOOLCHAIN` set to [`TOOLCHAIN`].
+
+    A shell that already names that toolchain, bare or with its host triple, is left as it
+    is; one that names any other is refused, because obeying it would bake bytes the
+    manifest's toolchain cannot reproduce.
+    """
+    env = dict(os.environ)
+    stated = env.get("RUSTUP_TOOLCHAIN")
+    if stated and stated != TOOLCHAIN and not stated.startswith(f"{TOOLCHAIN}-"):
+        raise ExplorerError(
+            f"RUSTUP_TOOLCHAIN is {stated}, and the explorer's modules are baked on "
+            f"{TOOLCHAIN} only — unset it, or move TOOLCHAIN in builder/explorer.py on purpose."
+        )
+    env["RUSTUP_TOOLCHAIN"] = stated or TOOLCHAIN
+    return env
+
+
+def build_wasm() -> tuple[Path, int, int, bool]:
+    """Compile the crate for wasm and copy the module in beside the page.
+
+    The last element is whether the module's bytes moved: whether what was built differs
+    from the module that was there, which is what `write_manifest` keeps the pin by.
+    """
     if not CRATE_DIR.is_dir():
         raise ExplorerError(f"no crate at {CRATE_DIR}")
     wallpapers_root()  # refuse early, with the message that names both ways to configure
+    _rustc_version()  # and refuse a toolchain that is not installed before compiling anything
+    before = WASM_MODULE.read_bytes() if WASM_MODULE.is_file() else None
     finished = subprocess.run(
         ["cargo", "build", "--target", WASM_TARGET, "--release"],
         cwd=CRATE_DIR,
@@ -1495,21 +1532,38 @@ def build_wasm() -> tuple[Path, int, int]:
         raise ExplorerError(f"cargo reported success and left no module at {built}")
     shutil.copyfile(built, WASM_MODULE)
     raw = WASM_MODULE.read_bytes()
-    return WASM_MODULE, len(raw), len(gzip.compress(raw, 9))
+    return WASM_MODULE, len(raw), len(gzip.compress(raw, 9)), raw != before
 
 
-def write_manifest(raw_bytes: int, gzip_bytes: int) -> Path:
-    """Record what the committed module was built from, and with what."""
+def write_manifest(raw_bytes: int, gzip_bytes: int, *, moved: bool = True) -> Path:
+    """Record what the committed module was built from, and with what.
+
+    **The pin follows the bytes** *(cleanup_ckpt163)*. `wallpapers_commit` moves to the
+    sibling's `HEAD` only when something it pins moved: `engine.wasm`'s bytes (`moved`), or
+    the `perturbation/` kernel's tree between the pin and `HEAD`, which is the step that
+    lets `--perturb` build a kernel committed since. Otherwise the pin and `built` are kept,
+    so a rebake of an unchanged tree rewrites nothing, and a sibling commit nobody built
+    from — a README, a fixture — never becomes the commit the modules claim. Following the
+    bytes rather than a flag asking for the move is the choice because the bytes are the
+    fact the pin states: a flag forgotten would either keep a pin that no longer rebuilds
+    the module or move one for nothing, and the bake can tell which on its own.
+    """
+    previous = load_manifest() or {}
+    kept = previous.get("wallpapers_commit")
+    if moved or not isinstance(kept, str) or not kept or _kernel_moved_since(kept):
+        commit, built = _wallpapers_commit(), date.today().isoformat()
+    else:
+        commit, built = kept, str(previous.get("built") or date.today().isoformat())
     manifest = {
         "schema": SCHEMA,
-        "built": date.today().isoformat(),
+        "built": built,
         "crate": CRATE_DIR.relative_to(SITE_ROOT).as_posix(),
         "engine_changes": list(ENGINE_CHANGES),
         "engine_version": _engine_version(),
         "gzip_bytes": gzip_bytes,
         "raw_bytes": raw_bytes,
         "rustc": _rustc_version(),
-        "wallpapers_commit": _wallpapers_commit(),
+        "wallpapers_commit": commit,
     }
     MANIFEST.write_text(
         json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n"
@@ -1539,6 +1593,7 @@ def build_perturb(*, pinned: bool = True) -> list[tuple[Path, int, int, tuple[st
     wallpapers_root()  # refuse early, with the message that names both ways to configure
     if pinned and (problem := perturb_pin_problem(worktree=True)):
         raise ExplorerError(problem)
+    _rustc_version()  # refuse a toolchain that is not installed before compiling anything
     built_modules = []
     for module, target_dir, flags in PERTURB_BUILDS:
         env = remapped_env(*flags)
@@ -1554,10 +1609,19 @@ def build_perturb(*, pinned: bool = True) -> list[tuple[Path, int, int, tuple[st
         built = PERTURB_CRATE_DIR.joinpath(target_dir, *PERTURB_ARTIFACT[1:])
         if not built.is_file():
             raise ExplorerError(f"cargo reported success and left no module at {built}")
+        before = module.read_bytes() if module.is_file() else None
         shutil.copyfile(built, module)
         raw = module.read_bytes()
+        _perturb_moved[module.name] = raw != before
         built_modules.append((module, len(raw), len(gzip.compress(raw, 9)), flags))
     return built_modules
+
+
+#: Whether each perturbation module's bytes moved in this process's last `build_perturb`,
+#: by file name, so that `write_perturb_manifest` keeps `built` across a rebake that
+#: changed nothing. A side table rather than a fifth element, because the tuples are
+#: `build_perturb`'s answer to callers that compare candidate builds too.
+_perturb_moved: dict[str, bool] = {}
 
 
 def write_perturb_manifest(built: list[tuple[Path, int, int, tuple[str, ...]]]) -> Path:
@@ -1573,11 +1637,19 @@ def write_perturb_manifest(built: list[tuple[Path, int, int, tuple[str, ...]]]) 
     not a second pin but a fingerprint: git's id for the `perturbation/` tree the modules
     were built from, so a pin that later moves past a changed kernel — `python -m builder
     explorer` with no `--perturb` after it — is caught by `manifest_notes` rather than
-    taken on trust.
+    taken on trust. `built` is kept from the manifest it replaces when neither module's bytes
+    moved, as the engine manifest keeps its own, so a rebake of an unchanged tree rewrites
+    nothing.
     """
+    previous = (
+        json.loads(PERTURB_MANIFEST.read_text(encoding="utf-8"))
+        if PERTURB_MANIFEST.is_file()
+        else {}
+    )
+    unmoved = all(_perturb_moved.get(module.name) is False for module, *_ in built)
     manifest = {
         "schema": PERTURB_SCHEMA,
-        "built": date.today().isoformat(),
+        "built": str(previous.get("built") if unmoved and previous.get("built") else date.today()),
         "crate": PERTURB_CRATE_DIR.relative_to(SITE_ROOT).as_posix(),
         "dependencies": [f"fractal-wallpapers/{PERTURB_KERNEL}"],
         "modules": {
@@ -1732,17 +1804,39 @@ def _engine_version() -> str:
     return found.group(1)
 
 
+def _kernel_moved_since(commit: str) -> bool:
+    """Whether `perturbation/` is another tree at the sibling's `HEAD` than at `commit`."""
+    finished = subprocess.run(
+        ["git", "diff", "--quiet", commit, "HEAD", "--", PERTURB_KERNEL],
+        cwd=wallpapers_root(),
+        capture_output=True,
+        text=True,
+    )
+    return finished.returncode != 0
+
+
 def _rustc_version() -> str:
-    finished = subprocess.run(["rustc", "--version"], capture_output=True, text=True)
+    """The rustc the bake compiles with, which is [`TOOLCHAIN`]'s or a refusal."""
+    finished = subprocess.run(
+        ["rustc", "--version"], capture_output=True, text=True, env=toolchain_env()
+    )
     if finished.returncode != 0:
-        raise ExplorerError("rustc is not on the path")
+        raise ExplorerError(
+            f"rustc {TOOLCHAIN} is not runnable here — `rustup toolchain install {TOOLCHAIN} "
+            f"--target {WASM_TARGET}`: {finished.stderr.strip()}"
+        )
     found = _RUSTC_VERSION.match(finished.stdout.strip())
-    return found.group(1) if found else finished.stdout.strip()
+    version = found.group(1) if found else finished.stdout.strip()
+    if not version.startswith(f"{TOOLCHAIN} "):
+        raise ExplorerError(f"RUSTUP_TOOLCHAIN={TOOLCHAIN} ran rustc {version}, not {TOOLCHAIN}.")
+    return version
 
 
 def bake(*, palettes_only: bool = False) -> list[str]:
     """Everything the explorer is generated from, in one pass."""
     written = []
+    if not palettes_only:
+        _rustc_version()  # a refused toolchain refuses before the first file is written
     made = write_palettes()
     written.append(
         f"{PALETTES_MODULE.relative_to(SITE_ROOT).as_posix()}  {made.count} palettes "
@@ -1753,16 +1847,18 @@ def bake(*, palettes_only: bool = False) -> list[str]:
     if PALETTES_SWATCH.is_file():
         written.append(
             f"{PALETTES_SWATCH.relative_to(SITE_ROOT).as_posix()}  "
-            f"{PALETTES_SWATCH.stat().st_size:,} bytes, untracked"
+            f"{PALETTES_SWATCH.stat().st_size:,} bytes, ignored"
         )
     path, modes = write_catalog()
     written.append(f"{path.relative_to(SITE_ROOT).as_posix()}  {modes} offered modes")
     if palettes_only:
         return written
-    path, raw_bytes, gzip_bytes = build_wasm()
+    path, raw_bytes, gzip_bytes, moved = build_wasm()
     written.append(
         f"{path.relative_to(SITE_ROOT).as_posix()}  {raw_bytes:,} bytes, {gzip_bytes:,} gzipped"
+        f"{'' if moved else ', unchanged'}"
     )
-    path = write_manifest(raw_bytes, gzip_bytes)
-    written.append(path.relative_to(SITE_ROOT).as_posix())
+    path = write_manifest(raw_bytes, gzip_bytes, moved=moved)
+    pin = (load_manifest() or {}).get("wallpapers_commit", "")
+    written.append(f"{path.relative_to(SITE_ROOT).as_posix()}  pinned at wallpapers {pin[:12]}")
     return written

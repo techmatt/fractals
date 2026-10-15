@@ -252,10 +252,11 @@ it in place, and what it writes is committed like any other change, under the 20
 **`palettes.bin` is not optional.** Served without the blob, the explorer's first fetch is a
 404 and the canvas stays empty, which is what Pages served until the deploy.
 
-**Two things stay untracked on purpose.** `explorer/palettes-swatch.png` is written beside
-the blob to look at and nothing serves it (`picker.js` says why it does not use it), so it is
-still named in `.git/info/exclude`. And so are the patterns that name what an older landing
-left behind — the gallery's 640 px `.jpg` copies and `thumbs/`, the atlas's `.jpg` slot
+**Two things stay untracked on purpose.** The palette swatch, a picture of the blob to look
+at, is served by nothing (`picker.js` says why it does not use it), so the bake writes it to
+the ignored `artifacts/explorer/palettes-swatch.png` *(cleanup_ckpt163)* and removes a copy
+still left at its old address beside the blob, which `.git/info/exclude` names. That file
+also names the patterns for what an older landing left behind — the gallery's 640 px `.jpg` copies and `thumbs/`, the atlas's `.jpg` slot
 pictures from before `website_webp_and_atlas_deprecate` (2026-09-21) re-encoded all 1,464 as
 WebP at 70 — so a tree still holding them cannot stage them by accident.
 

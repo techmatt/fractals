@@ -556,7 +556,8 @@ float functions they and the rule call (`powf`, `atan2`, `sin`, `cos`) that it d
 Selecting the two percentile ranks instead of sorting moved it by 309 bytes. The machine's
 default rustc is 1.98.1 now and builds this crate to 320,887 bytes; the committed module is
 built on 1.96.0, which is the toolchain CI pins from the engine's manifest, so a rebuild here
-is `RUSTUP_TOOLCHAIN=1.96.0 python -m builder explorer --perturb`.
+is `python -m builder explorer --perturb`, which sets `RUSTUP_TOOLCHAIN=1.96.0` itself and
+refuses any other (cleanup_ckpt163).
 
 ### 12. Copy or bulb, by the root *(dive_primitive_only_ckpt154, 2026-09-28)*
 

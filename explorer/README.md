@@ -223,7 +223,8 @@ popular.json          the picker's Popular 24, and why each map passed over was 
 stops.js              the blob's reader: a map's control points, by name
 palettes.js           generated: the index — name to kind, offer, random, offset, count
 palettes.bin          generated: every map's control points, sRGB8
-palettes-swatch.png   generated and UNTRACKED: a row of gradient per map, to look at
+                      (the swatch, a row of gradient per map to look at, goes to the
+                      ignored artifacts/explorer/palettes-swatch.png since cleanup_ckpt163)
 catalog.js            generated: the offered modes, their curves, the anchors' constants
 links.jsonl           generated: every figure and tile, as a link here or a reason not
 engine.wasm           generated: the engine, compiled
@@ -4327,8 +4328,9 @@ loop. The page fetches one, chosen once by a `WebAssembly.validate` probe holdin
 instruction (`deep-render.js`, `perturbModuleUrl`), so Safari 15.4 to 16.3 still has a
 Deep tab; the two draw the same bits, which `bench/perturb-parity.mjs` holds over the
 142 specs of `fractal-wallpapers/perturbation/tests/parity-specs.jsonl` and `deep.test.mjs` on four frames.
-Build it on the toolchain the manifest names (`RUSTUP_TOOLCHAIN=1.96.0`), or the bytes
-move for no reason in the source. It needs `cargo`, the `wasm32-unknown-unknown` target and
+It builds on the toolchain the manifest names, 1.96.0, which the bake sets for itself and
+refuses to be talked out of (*Rebuilding*), since on another the bytes move for no reason in
+the source. It needs `cargo`, the `wasm32-unknown-unknown` target and
 **the sibling checkout**, as the bare command does *(deep_seam_move_ckpt163)*: the kernel
 is `fractal-wallpapers/perturbation`, which the crate takes by path, so the build runs under
 the same remaps and moves with the parent directory as `engine.wasm` does (*The engine,
@@ -7773,22 +7775,31 @@ python -m builder links --write            # the link registry, from figure prov
 ```
 
 Needs the sibling checkout, `cargo`, and the `wasm32-unknown-unknown` target
-(`rustup target add wasm32-unknown-unknown`). ⚠ Read the manifest's `rustc` before a
-rebake. The module was last baked with 1.96.0 because 1.98.1 draws the heavy modes two
-to three and a half times slower (*The operator is the engine's*, above).
-`RUSTUP_TOOLCHAIN=<version>` in front of the command picks the toolchain. `engine-wasm/target/` is gitignored — it is
-the several hundred megabytes cargo needs to produce a file under a megabyte.
+(`rustup target add wasm32-unknown-unknown`), and **rustc 1.96.0 installed beside it**
+(`rustup toolchain install 1.96.0 --target wasm32-unknown-unknown`). The bake picks that
+toolchain itself *(cleanup_ckpt163)*: `builder/explorer.py`'s `TOOLCHAIN` is set as
+`RUSTUP_TOOLCHAIN` for its own cargo and rustc, whatever the machine's default, and a shell
+that exports any other toolchain is refused in one sentence before a file is written. It is
+1.96.0 because 1.98.1 draws the heavy modes two to three and a half times slower (*The
+operator is the engine's*, above); moving it is an edit to that constant, made on purpose.
+`engine-wasm/target/` is gitignored — it is the several hundred megabytes cargo needs to
+produce a file under a megabyte.
 
-**The bare command rebuilds the wasm every time, and that is why `--palettes-only`
-exists.** `explorer.bake` compiles the crate and rewrites `engine.manifest.json` unless
-that flag is passed, and the manifest is rewritten unconditionally: `built` is today's
-date and `wallpapers_commit` is whatever the sibling checkout's `HEAD` is at that moment.
-So a prompt that came to move a colormap and ran the bare command lands two files it did
-not come for — the manifest always, and `engine.wasm` too whenever the engine next door
-has moved since the last bake, which folds somebody else's engine change into a website
-commit under a message about palettes. **A prompt that does not own the engine reverts
-both**, `git checkout` on `engine.wasm` and `engine.manifest.json`, and reaches for
-`--palettes-only` first. Owning the engine here means the carve-out in `CLAUDE.md`: a
+**The bare command rebuilds the wasm every time, and the pin follows the bytes**
+*(cleanup_ckpt163)*. `explorer.bake` compiles the crate unless `--palettes-only` is passed,
+and then rewrites `engine.manifest.json`, but `wallpapers_commit` moves to the sibling
+checkout's `HEAD` only when something it pins moved: `engine.wasm`'s bytes, or the
+`perturbation/` kernel's tree between the pin and `HEAD` (the step that lets `--perturb`
+build a kernel committed since). Otherwise the pin and `built` are kept, so a rebake of an
+unchanged tree rewrites nothing, and a sibling commit nobody built from never becomes the
+commit the modules claim. That rule was chosen over a flag asking for the move because the
+bytes are the fact the pin states, and the bake can tell on its own whether they moved.
+`--perturb` keeps its manifest's `built` the same way when neither module moved. What still
+holds: a prompt that came to move a colormap and ran the bare command lands `engine.wasm`
+and the manifest whenever the engine next door has moved since the last bake, which folds
+somebody else's engine change into a website commit under a message about palettes. **A
+prompt that does not own the engine reverts both**, `git checkout` on `engine.wasm` and
+`engine.manifest.json`, and reaches for `--palettes-only` first. Owning the engine here means the carve-out in `CLAUDE.md`: a
 zero-behaviour change to the sibling engine, made deliberately and named in
 `ENGINE_CHANGES`. Rebaking is not one of those and never was.
 
