@@ -191,6 +191,16 @@ const RANDOM_TRIES = 4;
 const WIDEN = [1, 16, 256];
 
 /**
+ * **How a search that finds no copy in the view widens** *(minibrot_nearby_ckpt164)*: about
+ * the same centre, four times wider a step, until a frame holds a true copy, and never past
+ * the set's outermost frame. A boundary view away from every copy is the case: its whole grid
+ * falls in the atom domain of the one copy it decorates, a body bigger than the view and so
+ * not offered, and no cap shows anything else, since its cells escape long before they could.
+ * Sixteen a step took about as long and overshot, to copies thousands of times larger.
+ */
+const WIDEN_STEP = 4;
+
+/**
  * The narrowest frame a dive lands on: 1e-116, where a centre spelled to the guard's last
  * place still carries four digits below the frame's own decade *(gpu_deep_ship_ckpt162)*.
  *
@@ -2353,7 +2363,10 @@ export function mount(host) {
         (bulbs
           ? `No copy of the set in this view; ${found.length} satellite ` +
             `${found.length === 1 ? "bulb" : "bulbs"}, largest first.`
-          : `${found.length} found, largest first.`) +
+          : found.factor === undefined
+            ? `${found.length} found, largest first.`
+            : `${found.outside ? "Nearest minibrot is outside this view: " : ""}${found.length} found ` +
+              `searching out to ${exponent(found.frame.w.value)} across, nearest first.`) +
         (lost === 0
           ? ""
           : ` ${lost} of them ${lost === 1 ? "sits" : "sit"} deeper than a link can spell a ` +
@@ -2414,11 +2427,75 @@ export function mount(host) {
 
   /**
    * The minibrots in and around `target`, at a cap settled for the search alone — Find
-   * minibrots' search, and the Dive block's. `null` where a newer generation took over.
-   * `prefix` leads the Render line's words, and `phase` names the Dive block's share of its
-   * bar as the search moves from the probe to the walk.
+   * minibrots' search, and the Dive block's, so Here, Paste, Random and Keep diving's chained
+   * presses too. `null` where a newer generation took over. `prefix` leads the Render line's
+   * words, and `phase` names the Dive block's share of its bar as the search moves from the
+   * probe to the walk.
+   *
+   * **Inside the view, then wider** *(minibrot_nearby_ckpt164)*. The view is searched as it
+   * always was, and where that finds a copy inside the period budget (`withinBudget`) its list
+   * is the answer, unchanged. Where it does not, the search widens about the same centre,
+   * `WIDEN_STEP` times a step, until a frame holds a true copy, and answers with the copies
+   * nearest the centre, nearest first, at most `want` of them: the list carries the `frame`
+   * they were found in, which a dive's rung rule is asked against, its `factor`, and whether
+   * the nearest is `outside` the view. Past the set's outermost frame it gives up and answers
+   * the view's own list, bulbs or nothing, which on a boundary view it never reaches. `widen`
+   * false is the view alone, for a mapped landing's anchor, which is the nucleus nearest B.
    */
-  async function nucleiNear(deep, target, generation, { prefix = "", phase = null, budget, want, enough } = {}) {
+  async function nucleiNear(deep, target, generation, { widen = true, ...asked } = {}) {
+    const inside = await nucleiIn(deep, target, generation, asked);
+    if (inside === null || !widen || inside.some((one) => withinBudget(deep, one))) return inside;
+    const { prefix = "", want = 6 } = asked;
+    const bound = outermost()?.w ?? Infinity;
+    for (let factor = WIDEN_STEP; target.w.value * factor <= bound; factor *= WIDEN_STEP) {
+      const width = target.w.value * factor;
+      const wide = { ...target, w: deepLink.widthOf(width), maxiter: policyCap(width), capFrom: "width" };
+      const found = await nucleiIn(deep, wide, generation, {
+        ...asked,
+        prefix: `${prefix}nothing in view, searching ${exponent(width)} across · `,
+        want: Infinity,
+        enough: undefined,
+      });
+      if (found === null) return null;
+      const copies = found.filter((one) => one.kind === "copy");
+      if (copies.length === 0) continue;
+      const apart = (one) =>
+        Math.max(
+          Math.abs(fx.difference(one.x.dec, target.x.dec)),
+          Math.abs(fx.difference(one.y.dec, target.y.dec)),
+        );
+      const nearest = copies.sort((a, b) => apart(a) - apart(b)).slice(0, want);
+      nearest.unresolved = [...inside.unresolved, ...found.unresolved];
+      nearest.frame = wide;
+      nearest.factor = factor;
+      nearest.outside = !insideOf(nearest[0], target);
+      return nearest;
+    }
+    return inside;
+  }
+
+  /** Whether a found nucleus is a copy inside the search's **period budget**: the explicit
+   *  ceiling over the fewest periods any landing draws a copy at, a halfway landing's eight,
+   *  which is 250,000. Past it every landing is refused and an opened copy is drawn at under
+   *  eight periods, which `nuclei::TILE_PERIODS` measured as a black tile, so a view holding
+   *  only such copies widens to the cheaper ones round it. No cap is raised to look for more:
+   *  a view that finds nothing at its settled cap found nothing at 500,000 either. */
+  function withinBudget(deep, one) {
+    return one.kind === "copy" && one.period <= deepLink.CAP_LIMIT / deep.landingPeriods("halfway");
+  }
+
+  /** Whether a found nucleus's centre lies inside `of`'s frame. */
+  function insideOf(one, of) {
+    const across = of.w.value;
+    const down = (across * of.aspect.down) / of.aspect.across;
+    return (
+      Math.abs(fx.difference(one.x.dec, of.x.dec)) <= across / 2 &&
+      Math.abs(fx.difference(one.y.dec, of.y.dec)) <= down / 2
+    );
+  }
+
+  /** The minibrots in and around `target` alone, the first half of `nucleiNear`. */
+  async function nucleiIn(deep, target, generation, { prefix = "", phase = null, budget, want, enough } = {}) {
     const grid = host.grid();
     const shareOf = (step) => (step.total > 0 ? step.done / step.total : null);
     if (phase !== null) running.divePhase = phase.probe;
@@ -2880,7 +2957,8 @@ export function mount(host) {
     // into a period-`p` copy needs `p` times its own cap, which near a wallpaper's own narrow
     // frame is almost never there — its copies run to hundreds. The lower periods are the
     // larger copies round it, so the search widens about the same centre, `WIDEN` times at a
-    // step, and says so. A press with an earlier rung to step down from never widens.
+    // step, and says so. A press with an earlier rung to step down from never widens for the
+    // budget; a view holding no copy at all widens in `nucleiNear`, for every press.
     const widths = into !== null && rungs.length === 0 ? WIDEN : [1];
     let found = null;
     let searched = near;
@@ -2903,9 +2981,10 @@ export function mount(host) {
         enough: (list) => deep.pick(asked, list, rungs, periods).index != null,
       });
       if (found === null) return null;
-      picked = deep.pick(searched, found, rungs, periods);
+      picked = deep.pick(found.frame ?? searched, found, rungs, periods);
       if (!picked.ok) throw new Error(picked.why);
-      if (picked.refusal !== "over_budget") break;
+      // A search that widened has already looked past every frame left on this ladder.
+      if (picked.refusal !== "over_budget" || found.factor !== undefined) break;
     }
     const left = leftOutSaid(found);
     if (picked.index === null) {
@@ -2917,7 +2996,12 @@ export function mount(host) {
         grey: picked.refusal === "over_budget" && !from.random && b.mode !== "random" ? greyKey(action, b) : null,
       };
     }
-    if (searched !== near) where += `, searched ${count(searched.w.value / near.w.value)} times wider`;
+    const wide = found.frame ?? searched;
+    if (found.factor !== undefined) {
+      where += `${found.outside ? ", whose nearest minibrot is outside it" : ""}, searched out to ${exponent(wide.w.value)} across`;
+    } else if (wide !== near) {
+      where += `, searched ${count(wide.w.value / near.w.value)} times wider`;
+    }
     const copy = found[picked.index];
     const base = {
       degree,
@@ -2939,6 +3023,8 @@ export function mount(host) {
         around = await nucleiNear(deep, into, generation, {
           prefix: `around ${intoWords} · `,
           phase: { probe: "anchorProbe", search: "anchor" },
+          // An anchor is the nucleus nearest B, wherever the copy near A was found.
+          widen: false,
           budget: 24,
           want: 12,
         });
@@ -3123,7 +3209,7 @@ export function mount(host) {
     const copies = [];
     let refused = null;
     while (copies.length < SAVE_COUNT) {
-      const picked = deep.pick(from.near, offered, [], periods);
+      const picked = deep.pick(found.frame ?? from.near, offered, [], periods);
       if (!picked.ok) throw new Error(picked.why);
       if (picked.index === null) {
         refused = picked;
@@ -3155,7 +3241,9 @@ export function mount(host) {
       if (frame === null) continue;
       const said =
         `${planeWords(here)[0].toUpperCase()}${planeWords(here).slice(1)} · a period-${count(copy.period)} ` +
-        `copy ${exponent(copy.size)} across near ${from.where}, ${at + 1} of the ${copies.length} ` +
+        `copy ${exponent(copy.size)} across near ${from.where}` +
+        `${found.outside ? `, whose nearest minibrot is outside it, searched out to ${exponent(found.frame.w.value)} across` : ""}, ` +
+        `${at + 1} of the ${copies.length} ` +
         `largest · framed at its center · ${count(answer.cap)} iterations.`;
       landings.push({ frame, said, variant: `saved, ${at + 1} of ${copies.length}` });
     }

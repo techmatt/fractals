@@ -2969,6 +2969,60 @@ automatic million-iteration ceiling a tile is held to, so those tiles cannot res
 depth, about 1e-30, at which a centre stops fitting in a link. Below it this feature finds
 minibrots it can neither draw nor address, and says so rather than pretending.
 
+**Where the search looks, in order** *(minibrot_nearby_ckpt164)*. Minibrots are dense along
+the boundary, so every boundary view has one nearby, and the search now always returns one.
+`nucleiNear` in `deep.js` is the one search behind Find minibrots, the Dive block's *Search
+for minibrots near* (Here, Paste and Random), and Keep diving's chained presses:
+
+1. **Inside the view, as before.** The cap is settled for the search, the grid is walked,
+   and the seeds are solved and read. Where that finds a true copy whose period is inside the
+   **period budget, 250,000**, the list is the answer, unchanged: copies largest first. The
+   budget is `cap::EXPLICIT_CEILING` over a halfway landing's eight periods, the fewest any
+   landing draws. Past it every landing is refused, and an opened copy gets under eight
+   periods, which `nuclei::TILE_PERIODS` measured as a black tile.
+2. **If nothing is found, widen.** The search runs again about the same centre on a frame
+   four times wider (`WIDEN_STEP`), at that width's policy cap and settled as any search is,
+   until a frame holds a true copy. The answer is the copies nearest the centre, nearest
+   first, at most the list's usual count. The status line says *Nearest minibrot is outside
+   this view* and how far out the search went. A dive asks the rung rule against the frame
+   the copies were found in, so the dive pans to the copy and descends into it.
+3. **The bound is the set's outermost frame**, the zoom's own stop. Past it the search gives
+   up and answers what the view itself held: its bulbs, or *No minibrot was found in this
+   view*. On a boundary view that is never reached.
+
+A mapped landing's anchor search does not widen (`widen: false`): the anchor is the nucleus
+nearest B, and a copy far from B anchors nothing. `dive::pick`, `nuclei::classify` and the
+rule that an unresolved reading is never landed on are untouched. The native `nuclei::find`,
+which `builder/deep-gallery-native` descends by, keeps the view-only search.
+
+**Why the view alone found nothing.** On the reported link (8.3e-25, degree two) the whole
+64×36 grid fell in **one atom domain**, period 5,957, whose nucleus solves to a copy 9.2e-12
+across about 1e13 view widths away. That copy is the one the spiral decorates. It is bigger
+than the view, so the "contains the view" rule rightly drops it, and nothing else is seen.
+**It is not the cap**: raising it from 34,505 to 62,500 and to 500,000 changed nothing,
+because every cell is exterior and escapes after shadowing that copy's orbit, long before a
+deeper nucleus's index could win the argmin. Measured through the served page, step four:
+
+| view | what ended the old search | widened to | searches | nearest copy listed |
+|---|---|--:|--:|---|
+| reported link, 8.3e-25 | one domain, period 5,957, a body 1e13 widths off | 5.6e-17 | 14 | period 50,764, 3.2e-28 |
+| same centre, 1e-20 | the same domain | 1.6e-16 | 8 | period 26,418, 2.1e-26 |
+| same centre, 1e-35 | the same domain | 4.6e-17 | 32 | period 51,800, 2.1e-31 |
+| same centre, 1e-50 | the same domain | 5.2e-17 | 57 (9 s) | period 31,598, 2.7e-30 |
+| elephant valley, 1e-7 | one domain, period 32, a body 725 widths off | 1.0e-4 | 6 | period 768, 5.7e-9 |
+| Multibrot 3 spiral, 1e-24 | one domain, period 6,324, 7e7 widths off | 1.7e-17 | 13 | period 13,175, 3.4e-23 |
+| Multibrot 3 spiral, 1e-20 | one domain, period 1,953, 1.5e5 widths off | 1.6e-19 | 3 | period 5,952, 1.1e-26 |
+
+A dive from each (A on Here, B on None) lands at the centre of a true copy; Paste and
+Random land the same way, and Keep diving's chained presses widen and land. Where the
+nearest copy is larger than the view, which it is at 1e-50 and on the first Multibrot 3
+row, the landing frames that copy and so is wider than the view it was pressed from.
+
+At sixteen a step the searches took about as long (6 s against 9 s at 1e-50) and overshot:
+the reported link landed on copies near 1e-22 and elephant valley on its period-16 body. A
+view that already found a copy (c = i at 1e-9, seahorse valley at 1e-12) runs one search and
+lists what it listed before.
+
 ### The Dive block *(deep_dive_block_ckpt154, 2026-09-27; two slots since dive_slots_ckpt154, 2026-09-28)*
 
 At the top of the tab's left panel, two frames and an action:
@@ -2983,6 +3037,12 @@ searched and the view carried, without saying which, and it could not name a vie
 was not on. Now each frame is a slot of its own, and the engine under it is unchanged:
 `dive::pick`, `dive_land`, the twin solve, the widening, the cap and budget rules and New
 coloring are exactly what they were.
+
+**The search behind A is Find minibrots'**, inside the view and then wider about its centre
+until a frame holds a true copy *(minibrot_nearby_ckpt164)*. *Find minibrots*' *Where the
+search looks, in order* has it. A copy found outside the view is landed on like any other,
+the rung rule asked against the frame it was found in, and the status line names how far
+out the search went.
 
 - **A slot** is a thumbnail with its mode buttons beside it, the lit one the mode, and a word
   across the thumbnail's foot saying what it holds.
