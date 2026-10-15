@@ -5179,6 +5179,10 @@ const TYPING = new Set(["SELECT", "INPUT", "TEXTAREA", "BUTTON", "OPTION"]);
 const TEXT_FIELDS = new Set(["INPUT", "TEXTAREA"]);
 
 window.addEventListener("keydown", (event) => {
+  // **No key acts on a page with no studio**: the studio is hidden until boot shows it, and
+  // for good when the page refuses its link (`refuse`), and either way there is no view for
+  // a key to move. Every key below reads one, so they threw instead of doing nothing.
+  if (studio.hidden) return;
   // A letter means nothing to a button, so the toggles' keys still work with focus on one
   // — the button just pressed, most often.
   const target = event.target instanceof Element ? event.target.tagName : "";
