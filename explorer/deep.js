@@ -2195,6 +2195,27 @@ export function mount(host) {
   /** The preview tile: the staged gallery's own 316 px, at 16:9 and one sample a pixel. */
   const TILE = { width: 316, height: 178 };
 
+  /**
+   * **The fewest of its own periods a preview tile is drawn at** *(minibrot_drawable_ckpt164)*.
+   * A tile's cap is eight periods under the automatic million (`renderer.tileCap`), so past
+   * period 125,000 it gets fewer, and on a deep list of copies at periods 240,000 to 510,000
+   * that was two to four periods each — five solid black tiles at about 35 s apiece, and one
+   * that showed filaments round a black hole where the copy was. A tile under this many
+   * periods is not drawn: its well says so at no cost, and the entry still opens. Measured on
+   * ten copies from four lists, periods 6,263 to 371,606 (`README.md`'s *Too deep to
+   * preview*): at four periods eight came back solid black, at five two of the six on
+   * `tangle 1e-22` escaped under 3% of the tile, and at six every copy measured escaped 74%
+   * or more, its neighbourhood drawn round a disc where the copy's own outline arrives at
+   * eight.
+   */
+  const PREVIEW_PERIODS = 6;
+
+  /** Whether an entry's preview is worth drawing: its tile cap holds `PREVIEW_PERIODS` of
+   *  its period. */
+  function previewable(nucleus) {
+    return previewOf(nucleus.frame, nucleus).maxiter >= PREVIEW_PERIODS * nucleus.period;
+  }
+
   /** Seconds a tile of this many samples at this cap is expected to take, from the crate's
    *  own ns a sample-iteration, wasm's 5% over native, and the pool. The mean is 0.85 of
    *  the cap on the tiles `tests/measure.rs` measured, which is what a frame mostly inside
@@ -2363,9 +2384,17 @@ export function mount(host) {
           : ` ${lost} of them ${lost === 1 ? "sits" : "sit"} deeper than a link can spell a ` +
             "center for, so they are listed without one.") +
         left;
-      // The previews' own count, beside the note and kept up to date as each one lands.
+      // The previews' own count, beside the note and kept up to date as each one lands. An
+      // entry too deep to preview is counted apart and never drawn (`PREVIEW_PERIODS`).
       if (reachable.length > 0) {
-        previews = { list: found, reachable, tally: document.createElement("span"), landed: 0 };
+        const drawn = reachable.filter((one) => previewable(one));
+        previews = {
+          list: found,
+          reachable: drawn,
+          deep: reachable.length - drawn.length,
+          tally: document.createElement("span"),
+          landed: 0,
+        };
         els.minibrotNote.append(" ", previews.tally);
         tallied(previews);
       }
@@ -2378,28 +2407,29 @@ export function mount(host) {
       // that never came. One at a time is the order that puts the first picture up soonest —
       // a tile is a field over the whole pool, so two at once is each at half the speed —
       // and list order is largest first, the one a reader reads in.
-      for (const nucleus of reachable) {
+      const drawing = previews?.reachable ?? [];
+      for (const nucleus of drawing) {
         if (generation !== pass) return;
         const frame = previewOf(frameOf(nucleus, target), nucleus);
         const tile = previews.landed + 1;
         const estimate = tileSeconds(frame.maxiter);
         const began = performance.now();
         enterStage("tiles");
-        activity(`drawing previews · ${tile} of ${reachable.length}`, (tile - 1) / reachable.length);
+        activity(`drawing previews · ${tile} of ${drawing.length}`, (tile - 1) / drawing.length);
         tileProgress(nucleus, 0, null, estimate);
         const field = await deep.field(frame, TILE.width, TILE.height, {
           supersample: 1,
           period: nucleus.period,
           onStep: (step) => {
             if (generation !== pass) return;
-            activity(`drawing previews · ${tile} of ${reachable.length} · ${said_step(step)}`);
+            activity(`drawing previews · ${tile} of ${drawing.length} · ${said_step(step)}`);
             tileProgress(nucleus, 0, performance.now() - began, estimate);
           },
           onProgress: (done, elapsed) => {
             if (generation !== pass) return;
             activity(
-              `drawing previews · ${tile} of ${reachable.length} · ${Math.round(done * 100)}%`,
-              (tile - 1 + done) / reachable.length,
+              `drawing previews · ${tile} of ${drawing.length} · ${Math.round(done * 100)}%`,
+              (tile - 1 + done) / drawing.length,
             );
             tileProgress(nucleus, done, elapsed, estimate);
           },
@@ -2602,10 +2632,13 @@ export function mount(host) {
       well.className = "minibrot-tile";
       nucleus.entry = entry;
       aim(nucleus, base);
-      // Waiting its turn, and what its turn is expected to cost once it comes.
-      well.textContent = reachable
-        ? `preview waiting · about ${said_time(tileSeconds(previewOf(nucleus.frame, nucleus).maxiter))}`
-        : "past what a link can spell";
+      // Waiting its turn, and what its turn is expected to cost once it comes; or never
+      // drawn, because its tile cap holds too few of its periods to show anything.
+      well.textContent = !reachable
+        ? "past what a link can spell"
+        : previewable(nucleus)
+          ? `preview waiting · about ${said_time(tileSeconds(previewOf(nucleus.frame, nucleus).maxiter))}`
+          : "too deep to preview";
       entry.append(well);
 
       const said = document.createElement("span");
@@ -2682,9 +2715,13 @@ export function mount(host) {
     words.textContent = `${done > 0 ? `${Math.round(done * 100)}%` : "drawing"} · about ${said_time(left)} left`;
   }
 
-  /** The previews' count, beside the list's note. */
+  /** The previews' count, beside the list's note, and how many were too deep to draw. */
   function tallied(previews, end = "") {
-    previews.tally.textContent = `Previews: ${previews.landed} of ${previews.reachable.length}${end}.`;
+    const deep = previews.deep === 0 ? "" : ` · ${previews.deep} too deep`;
+    previews.tally.textContent =
+      previews.reachable.length === 0
+        ? `Previews: none${deep}.`
+        : `Previews: ${previews.landed} of ${previews.reachable.length}${end}${deep}.`;
   }
 
   /** A width as a reader reads it: one figure and a decade. */

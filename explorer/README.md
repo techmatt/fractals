@@ -2946,6 +2946,47 @@ leaving the tab drops the list and stops its search through `clearMinibrots`.
 Measured on that view (headless, twelve workers): every tile took 37 s to 41 s against the
 estimate's 35 s, the first one up 37 s after the list. The estimate stands.
 
+**Too deep to preview** *(minibrot_drawable_ckpt164)*. A tile's cap is eight periods under
+the automatic million, so past period 125,000 it gets fewer. On the reported degree-two
+view at 4.2e-21 the six copies (periods 243,466 to 506,153) got 2.0 to 4.1 periods each.
+Five tiles came back solid black after about 35 s apiece, and the sixth showed filaments
+round a black hole where the copy was. Raising the tile cap would not rescue them, since the
+explicit two million is still about five periods at twice the cost. **A tile whose cap holds
+fewer than `PREVIEW_PERIODS` (6) of its period is not drawn.** Its well says *too deep to
+preview* at no cost, the entry still opens where it says, its frame is the unmeasured
+`copyWidth`, and the note counts it apart: *Previews: 1 of 1 · 5 too deep*, or *Previews:
+none · 6 too deep*.
+
+Six is read off pictures. Each copy's tile frame was drawn natively (`fractal-engine
+render-link`, 316×178, one sample) at counts of its own period, and the share of the tile
+not in the body colour was read off it:
+
+| list | copy periods | 4 periods | 5 | 6 | 8 | 16 |
+|---|---|--:|--:|--:|--:|--:|
+| reported view, 4.2e-21 | 243,466 | 48% | 68% | 80% | 91% | — |
+| | 371,606 | 33% | 66% | — | — | — |
+| `tangle 1e-22` | 95,073 to 131,670 (six) | 0% (all six) | 0.2% to 34% | 74% to 89% | 97% to 98% | — |
+| gallery, 5e-19 | 6,263 | 0% | 53% | 85% | 96% | 99% |
+| gallery, 1.2e-20 | 25,380 | 0% | 75% | 94% | 98% | 99% |
+
+At four periods eight of the ten are solid black. At five, two of the tangle's six are black
+to within 3%, and the rest are a black disc several times the copy with its surroundings
+round it. At six every copy measured has its neighbourhood drawn round a smaller disc. The
+copy's own outline arrives at eight, which stays the tile's count wherever the cap allows,
+and settles by sixteen. The reported view lists all six as too deep.
+
+**The dive keeps its landings** *(minibrot_drawable_ckpt164)*. A landing's cap is
+`dive::cap_for`: its copy's period times the landing's count, 32 at the centre, 8 halfway
+and B's own cap for a mapped one. `dive::pick` refuses any copy whose count does not fit
+the explicit ceiling, so no landing is drawn at fewer than eight periods, above the
+preview's six, and none lands unsettled. On the reported view Dive into and the symmetry
+point both refuse. Copy 243,466 is the view's own copy (framed wider than half the view),
+and the nearest copy a step down, period 371,606, needs 11,891,392 iterations at its centre
+and 2,972,848 halfway. Keep diving makes the same press, so the same holds there. The
+search widens for the period budget (250,000, eight periods under the ceiling) as before.
+A copy clicked by hand in the list opens where it says, at `openCap`, however few periods
+that is.
+
 | view | nuclei found | link-reachable | biggest tile |
 |---|--:|--:|--:|
 | anchor 2e-11 | 36 domains, 6 kept | 6 of 6 | period 2,838 · **1 s** |
