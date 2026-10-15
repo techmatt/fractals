@@ -2979,13 +2979,49 @@ and settles by sixteen. The reported view lists all six as too deep.
 `dive::cap_for`: its copy's period times the landing's count, 32 at the centre, 8 halfway
 and B's own cap for a mapped one. `dive::pick` refuses any copy whose count does not fit
 the explicit ceiling, so no landing is drawn at fewer than eight periods, above the
-preview's six, and none lands unsettled. On the reported view Dive into and the symmetry
-point both refuse. Copy 243,466 is the view's own copy (framed wider than half the view),
+preview's six, and none lands unsettled. On the reported view the rung rule refuses every
+copy the view holds. Copy 243,466 is the view's own copy (framed wider than half the view),
 and the nearest copy a step down, period 371,606, needs 11,891,392 iterations at its centre
-and 2,972,848 halfway. Keep diving makes the same press, so the same holds there. The
-search widens for the period budget (250,000, eight periods under the ceiling) as before.
-A copy clicked by hand in the list opens where it says, at `openCap`, however few periods
-that is.
+and 2,972,848 halfway. Until dive_widen_on_refusal_ckpt164 that was the press's answer;
+the dive now looks further out, below. A copy clicked by hand in the list opens where it
+says, at `openCap`, however few periods that is.
+
+**A dive refused at every copy keeps widening** *(dive_widen_on_refusal_ckpt164)*. The
+search's own widening (step 2 below) runs only where the view holds no copy inside the
+period budget, and the reported view holds one, the copy the rung rule skips as the view's
+own. So when `dive::pick` refuses every copy offered for the chosen landing (centre,
+symmetry point or a mapped B), `landableOutside` in `deep.js` goes on about the same centre
+from the widest frame already searched, four times wider a step (`WIDEN_STEP`), at each
+width's policy cap. Each frame offers the rung rule only the copies outside the view that
+the earlier search did not list, nearest first, asked against the frame they were found
+in, and the first that `dive::cap_for` fits under the ceiling is the landing. Copies inside
+the view were all offered and refused already. Striking the earlier list matters too: the
+view's own copy can sit outside the frame, a view's width off on the reported link, and a
+wider frame would pass it as a step down. The status line says *whose nearest copy it can
+land on is outside this view, searched out to …*, in Find minibrots' words. Wider frames
+reach lower periods, so the search ends within a few steps. **The bound is the set's
+outermost frame**, as the search's own is. Past it the press keeps the refusal it had and
+adds *Nothing outside it could be landed on either, searched out to …*. Only a fresh press
+widens: a press with an earlier rung to step down from keeps its refusal, because a copy
+outside the last landing is a step sideways. Keep diving's first press from a view is the
+same press as Go, so it widens and lands too. A view where a dive already lands keeps its
+choice, because the widening starts only after a refusal. Measured through the served page,
+A on Here and B on None, each time including the draw at the landing's cap:
+
+| view | press | refused at first | searched out to | landed on | time |
+|---|---|---|--:|---|--:|
+| reported link, 4.2e-21 | dive into | period 371,606 needs 11,891,392 | 2.8e-16 | period 32,035, 2.4e-19, at its centre | 95 s |
+| reported link, 4.2e-21 | symmetry point | period 371,606 needs 2,972,848 | 2.7e-19 | period 230,652, 1.3e-22, at its symmetry point | 246 s |
+| reported link, 4.2e-21 | Keep diving | as dive into | 2.8e-16 | rung 1 as above, then rung 2 a step down from it, period 57,663 | 146 s |
+| `tangle 1e-28` | dive into | every copy over 62,500 periods | 1.7e-18 | period 61,281, 1.5e-29, at its centre | 101 s |
+| `tangle 1e-28` | B on Here (200,000) | period 90,057 needs 1.8e10 | 4.4 (the bound) | nothing: the refusal, and *Nothing outside it could be landed on either* | 42 s |
+
+The symmetry point on `tangle 1e-28` lands as it did before, through the search's own
+widening (no copy in the view inside the budget), so it is not in the table. The last row
+is the bound reached: a view carried at 200,000 iterations fits only a copy of period ten
+or less, and the search reaches the outermost frame in 42 s without one it may take.
+Before the strike of the earlier list, the symmetry point on the reported link landed on
+the view's own copy, 243,466, zoomed out to 5.7e-21.
 
 | view | nuclei found | link-reachable | biggest tile |
 |---|--:|--:|--:|

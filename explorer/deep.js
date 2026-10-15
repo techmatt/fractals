@@ -2539,6 +2539,61 @@ export function mount(host) {
     return inside;
   }
 
+  /**
+   * **A dive refused at every copy it was offered looks further out** *(dive_widen_on_refusal_ckpt164)*.
+   * `nucleiNear` widens only for a view holding no copy inside the period budget, and a view
+   * that does may still offer nothing a landing can take: on a deep, heavy frame the one copy
+   * inside the budget is the view's own, which the rung rule skips, and every copy a step down
+   * from it is past the ceiling. So the search goes on about `target`'s centre from `from`'s
+   * width, `WIDEN_STEP` times a step, and offers the rung rule — `accept`, asked against the
+   * frame searched — **only the copies outside `target` that were not `offered` already**,
+   * nearest first: every copy inside it and every one the earlier search listed was refused,
+   * the view's own among them, which a wider frame would otherwise pass as a step down. The
+   * view's own copy need not be inside the view: on the reported link its centre is a view's
+   * width off the frame. Wider frames reach lower periods, so a landing that fits
+   * comes within a few steps. The bound is the set's outermost frame, as `nucleiNear`'s is;
+   * past it the answer is `{ found: null }` and the press keeps the refusal it had.
+   * `null` where a newer generation took over.
+   */
+  async function landableOutside(deep, target, from, generation, { prefix = "", phase, budget, offered, accept }) {
+    const bound = outermost()?.w ?? Infinity;
+    const unresolved = [];
+    const apart = (one, of = target) =>
+      Math.max(
+        Math.abs(fx.difference(one.x.dec, of.x.dec)),
+        Math.abs(fx.difference(one.y.dec, of.y.dec)),
+      );
+    // Found again by a wider search, a copy solves to the same period within its own body.
+    const refused = offered.filter((one) => one.kind === "copy");
+    const seen = (one) => refused.some((was) => was.period === one.period && apart(one, was) <= was.size);
+    let searches = 0;
+    for (let width = from.w.value * WIDEN_STEP; width <= bound; width *= WIDEN_STEP) {
+      const wide = { ...target, w: deepLink.widthOf(width), maxiter: policyCap(width), capFrom: "width" };
+      const found = await nucleiIn(deep, wide, generation, {
+        prefix: `${prefix}nothing to land on in view, searching ${exponent(width)} across · `,
+        phase,
+        budget,
+        want: Infinity,
+      });
+      if (found === null) return null;
+      searches += 1;
+      unresolved.push(...found.unresolved);
+      const outside = found
+        .filter((one) => one.kind === "copy" && !insideOf(one, target) && !seen(one))
+        .sort((a, b) => apart(a) - apart(b));
+      if (outside.length === 0) continue;
+      const picked = accept(wide, outside);
+      if (!picked.ok) throw new Error(picked.why);
+      if (picked.index === null) continue;
+      outside.unresolved = unresolved;
+      outside.frame = wide;
+      log("dive widened past a refusal", { searches, width, period: outside[picked.index].period });
+      return { found: outside, picked, searches };
+    }
+    log("dive widened past a refusal and found nothing to land on", { searches, bound });
+    return { found: null, searches };
+  }
+
   /** Whether a found nucleus is a copy inside the search's **period budget**: the explicit
    *  ceiling over the fewest periods any landing draws a copy at, a halfway landing's eight,
    *  which is 250,000. Past it every landing is refused and an opened copy is drawn at under
@@ -3093,10 +3148,38 @@ export function mount(host) {
       // A search that widened has already looked past every frame left on this ladder.
       if (picked.refusal !== "over_budget" || found.factor !== undefined) break;
     }
+    // Refused at every copy it was offered, a fresh press keeps widening until it finds one it
+    // can land on (`landableOutside`). A press with an earlier rung never does: a copy outside
+    // the last landing is a step sideways, not a step down.
+    let past = false;
+    let beyond = null;
+    if (picked.index === null && rungs.length === 0) {
+      const further = await landableOutside(deep, near, found.frame ?? searched, generation, {
+        prefix,
+        phase: { probe: "probe", search: "search" },
+        budget: 24,
+        offered: found,
+        accept: (frame, list) => deep.pick(frame, list, rungs, periods),
+      });
+      if (further === null) return null;
+      if (further.found === null) {
+        beyond = outermost()?.w ?? null;
+      } else {
+        further.found.unresolved = [...(found.unresolved ?? []), ...further.found.unresolved];
+        found = further.found;
+        picked = further.picked;
+        searched = found.frame;
+        past = true;
+      }
+    }
     const left = leftOutSaid(found);
     if (picked.index === null) {
+      const gaveUp =
+        beyond === null
+          ? ""
+          : ` Nothing outside it could be landed on either, searched out to ${exponent(beyond)} across.`;
       return {
-        why: refusalSaid(picked, where, landing) + left,
+        why: refusalSaid(picked, where, landing) + gaveUp + left,
         refusal: picked.refusal,
         // The budget is this place's to fail only where the count is: a random wallpaper,
         // on either side, may fit where this one did not.
@@ -3104,7 +3187,10 @@ export function mount(host) {
       };
     }
     const wide = found.frame ?? searched;
-    if (found.factor !== undefined) {
+    if (past) {
+      const it = where === "this view" ? "this view" : "it";
+      where += `, whose nearest copy it can land on is outside ${it}, searched out to ${exponent(wide.w.value)} across`;
+    } else if (found.factor !== undefined) {
       where += `${found.outside ? ", whose nearest minibrot is outside it" : ""}, searched out to ${exponent(wide.w.value)} across`;
     } else if (wide !== near) {
       where += `, searched ${count(wide.w.value / near.w.value)} times wider`;
