@@ -5793,6 +5793,16 @@ single-threaded, which is unexplained. Deep perturbation costs Wasm 4–23% on o
 most of it the interior switch. The all-core gap is scaling, not the kernel: 1 to 12 threads
 is 9.2x and 10.4x natively against 7.5x and 9.6x in Chrome.
 
+**The video's final frame, under the two-sample kernel** *(place_deep_zoom_v5_ckpt164,
+2026-10-15)*. The number Deep zoom rendering quotes. `go/seahorse-end` at 1280x720, one sample
+a pixel, cap 63,534, CPU kernel: **5.4 to 5.9 s** from the press to the file over three
+Downloads in the page (`deep-gpu-downloads.mjs --frames=go:seahorse-end
+--cases=1280x720@1 --kernels=cpu`), 14.1 billion iterations, **15,297 a sample**. A Node pool
+of twelve workers on the committed modules, 8-row bands, switch off, gives the same: 5.2 to
+5.5 s with `perturb.wasm` and 9.0 to 9.2 s with `perturb-scalar.wasm` (1.7x); the switch on
+costs 9.2 s. Against Fraktaler 3's 100 s for the frame with its acceleration off, measured
+once on this machine and not re-run, that is about eighteen times the iterations a second.
+
 **Per family**, `smooth` at 1280x720, each family at **its own home view** — a family's
 home is the frame it comes back with when nobody names one, and holding nine families
 over one rectangle would mostly measure how much of each is off screen. One thread,

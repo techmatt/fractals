@@ -323,47 +323,67 @@
     <a href="https://fractalforums.org/fractal-mathematics-and-new-theories/28/another-solution-to-perturbation-glitches/4360">Zhuoran
     on fractalforums.org</a>. At that step the pixel takes its whole current value as a
     new offset and restarts from the beginning of the same reference orbit. With
-    rebasing, one reference orbit serves the entire frame. The fractal explorer draws
-    the multibrot families up to degree six, on both the parameter and dynamical planes,
-    using the smooth rendering mode. Its iteration cap follows the same depth rule as
-    the rest of the engine, up to a ceiling of a million, or two million when you set the count yourself, and a probe raises it when too
-    many samples reach it. In practice it works down to widths of about 10<sup>−30</sup>
-    close to a minibrot, where the ceiling on iterations runs out. Renderers that also
-    extend the exponent range of their offsets go hundreds of decades deeper.</p>
+    rebasing, one reference orbit serves the entire frame. A pixel that never escapes
+    can stop early as interior only when that can be proved: a small disk around its
+    orbit has to map back inside itself. Otherwise it runs to the iteration cap. The
+    fractal explorer draws the multibrot families up to degree six, on both the parameter
+    and dynamical planes, using the smooth rendering mode. Its iteration cap follows the
+    same depth rule as the rest of the engine, up to a ceiling of a million, or two
+    million when you set the count yourself, and a probe raises it when too many samples
+    reach it. Frames can go down to about 10<sup>−112</sup> wide. Close to a minibrot the
+    iteration ceiling usually runs out much sooner, around 10<sup>−30</sup>, because
+    every nested copy multiplies the period. Renderers that also extend the exponent
+    range of their offsets go far deeper.</p>
 
     <h2 id="rendering-speed">Rendering speed</h2>
 
-    <p>The fractal explorer renders deep frames on the CPU, in WebAssembly, across the
-    browser's worker threads. On one six-core desktop, the video's final frame takes
-    about 15 seconds at 1280 by 720 with one sample per pixel, averaging about fifteen
-    thousand iterations a sample. On the same machine,
+    <p>By default the fractal explorer renders deep frames on the CPU, in WebAssembly,
+    across the browser's worker threads. The inner loop is vectorized by hand, so each
+    thread advances two pixels at once, with a plain version for browsers without
+    WebAssembly SIMD. The same kernel lives in
+    <a href="https://github.com/techmatt/fractal-wallpapers/tree/main/perturbation">fractal-wallpapers</a>,
+    where it also draws Deep tab links from the command line. On one six-core desktop,
+    the video's final frame takes about 6 seconds at 1280 by 720 with one sample per
+    pixel, averaging about fifteen thousand iterations a sample. On the same machine,
     <a href="https://mathr.co.uk/web/fraktaler.html">Fraktaler 3</a>, a mature
     open-source deep-zoom renderer, takes about 50 seconds on the CPU with its
     acceleration on and about 100 without it. Compared like for like (CPU, doubles,
-    plain perturbation), the fractal explorer does about seven times as many iterations
-    per second. I think the reason is specialization rather than a better algorithm:
-    Fraktaler 3 interprets general formulas and tracks derivatives at every step, while
-    my kernel runs one fixed update. The two agree on more than 99.7% of pixels.</p>
+    plain perturbation), the fractal explorer does about eighteen times as many
+    iterations per second. I think the reason is specialization rather than a better
+    algorithm: Fraktaler 3 interprets general formulas and tracks derivatives at every
+    step, while my kernel runs one fixed update, two pixels at a time. The two agree on
+    more than 99.7% of pixels.</p>
 
     <p>GPUs are clearly faster at this kind of independent per-pixel work. On the same
     machine Fraktaler 3's GPU path draws the frame in under 3 seconds, in single
-    precision. Consumer GPUs are slow at doubles, and in double precision the same GPU
-    roughly ties the fractal explorer's CPU kernel, which is why the fast GPU renderers
-    work in single precision with extended-exponent tricks. I kept rendering on the CPU
-    for portability, and only used the GPU to evaluate the neural networks.</p>
+    precision. The browser's GPU interface, WebGPU, has no double precision at all, so
+    the explorer's GPU path stores every number as a pair of single-precision floats,
+    which recovers most of a double's precision at four to nine times the cost of single
+    precision. Plain single precision turned out to be limited by the length of
+    the orbit rather than the depth: over tens of thousands of iterations the rounding
+    error grows until the picture drifts, so it is only good enough for previews. The
+    GPU works in short bursts, so the rest of the screen never waits long on it and the
+    operating system never takes it for hung, and the CPU finishes the few pixels that
+    run longest. The GPU path is the GPU (experimental) box in the Deep tab, and it is
+    off by default. On my desktop it is faster than the CPU kernel on most deep frames,
+    but on a laptop's integrated GPU it was slower everywhere except very deep, heavy
+    frames.</p>
 
     <p>Deep-zoom renderers usually add
     <a href="https://mathr.co.uk/blog/2022-02-21_deep_zoom_theory_and_practice_again.html">bilinear
     approximation</a>, which skips many iterations at once by applying a precomputed
-    linear map. I built it into the fractal explorer and then took it back out, because
-    on the frames worth looking at it wasn't much faster, and it changed the picture. On
+    linear map. I left it out of the CPU kernel, because on the frames worth looking at
+    it wasn't much faster, and it changed the picture. On
     frames with visible structure it ranged from about 20% slower than plain
     perturbation to about 2.6 times faster. At every tolerance tried it also moved
     escape counts, and on some frames it moved the boundary of the interior, so the
     pictures stopped matching what the engine draws. It paid off handsomely only on
     frames that were almost entirely interior. Fraktaler 3 shows the same pattern on the
     video's final frame: its approximation buys a factor of about 1.3 to 2 and moves a
-    fifth of the pixels by more than one iteration.</p>
+    fifth of the pixels by more than one iteration. On the GPU path it does pay off on
+    very deep frames, and there it moves the picture no further than single-precision
+    arithmetic already does. It is used there only on frames narrower than about
+    10<sup>−30</sup>, and only while it skips at least 2% of the steps.</p>
 
     <h2 id="the-multibrots">The multibrots</h2>
 
