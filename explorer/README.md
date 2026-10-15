@@ -2804,7 +2804,8 @@ about thirteen of its periods and a blob. Now:
   measured (six gave 0.59 to 0.61, ten 0.30 to 0.37, sixteen 0.19 to 0.20). Since
   find_minibrots_bulbs_ckpt145 it is **measured**, below.
 - **A preview tile keeps its eight periods** (`previewOf` in `deep.js`): a tile is drawn
-  unasked under `TILE_BUDGET_MS`, and four times its cost would put most lists past it.
+  for every entry a list holds, and four times its cost would be four times the wait for
+  the last of them.
   The tile is the same frame at a quarter of the open cap.
 
 Checked on the served page (`scratch/find_minibrots/`): thirteen entries opened, eight in
@@ -2874,7 +2875,7 @@ then re-aimed (`aim` in `deep.js`) at the width that puts that at a quarter, and
 says the new width and cap. The measurement is refused, and the entry keeps its first
 width, where there is no interior near the centre, where the component reaches the tile's
 edge, or where it is under four rows. **The first width, and the one an entry keeps where
-its preview is never drawn** (over `TILE_BUDGET_MS`), is `renderer.copyWidth`: twelve sizes
+its preview is not drawn yet** (or was stopped), is `renderer.copyWidth`: twelve sizes
 times a per-degree factor, `nuclei::FALLBACK_BODIES`, calibrated by `tests/measure.rs`'s
 `what_a_copy_frame_holds` on four copies a degree:
 
@@ -2927,12 +2928,23 @@ shape what this tab can offer, and the third is the reason the list looks the wa
   resolves it, and the periods at these depths run to six figures, so a tile at 1e-22 is
   about **fifty seconds** where the anchor's at 2e-11 is **one**.
 
-So a tile is drawn on its own only while it is estimated under five seconds, which is
-`AUTO_PREVIEW_MS`'s ruling applied to a second place: nothing expensive starts unasked. An
-entry over the budget is still a full entry — it names its minibrot's period and body, says
-what a preview would cost, and **goes to the frame when clicked**, which is what the list is
-for. The picture is the preview, not the point. In practice tiles draw from about 2e-11
-down to the low 1e-14s and the deeper frames give a list without pictures.
+**Every preview is drawn, one at a time in list order** *(minibrot_preview_progress_ckpt164)*.
+A tile used to be drawn only while it was estimated under five seconds, `AUTO_PREVIEW_MS`'s
+ruling applied to a second place, and an entry over that budget kept a grey well saying
+what a preview would cost. Below about 1e-14 that was every entry, and it read as six
+previews that never came: Matt waited two minutes on a 4e-21 Multibrot 3 view whose six
+copies (periods 240,000 to 510,000) each said "about 35 s". Pressing Find minibrots is the
+asking that ruling waits for, so the list now draws every reachable tile, largest first,
+each a field over the whole pool — one at a time puts the first picture up soonest, since
+two at once is each at half the speed. A tile being drawn carries the Render line's own bar
+and time left (`report`'s rule: the bands it has finished, and the estimate only before
+there are enough of them); a tile waiting its turn says so with its estimate; the note
+counts *Previews: n of m*. The search holds `running` until the last tile lands, so Cancel
+stops it where it is (the wells left say *preview stopped*), and a move, a new search, or
+leaving the tab drops the list and stops its search through `clearMinibrots`.
+
+Measured on that view (headless, twelve workers): every tile took 37 s to 41 s against the
+estimate's 35 s, the first one up 37 s after the list. The estimate stands.
 
 | view | nuclei found | link-reachable | biggest tile |
 |---|--:|--:|--:|
@@ -2964,10 +2976,15 @@ met. Measured through the page after the change: the committed `tangle 1e-22` li
 **6**, and the anchor at 2e-11 still lists its 6
 (`PORT=8014 node explorer/bench/hunt/probe-minibrots.mjs`).
 
-**Both walls land in the same place.** Eight periods of a nucleus past 125,000 is over the
-automatic million-iteration ceiling a tile is held to, so those tiles cannot resolve either — and that is the same view
-depth, about 1e-30, at which a centre stops fitting in a link. Below it this feature finds
-minibrots it can neither draw nor address, and says so rather than pretending.
+**The two walls no longer land in the same place.** Eight periods of a nucleus past 125,000
+is over the automatic million-iteration ceiling a tile is held to, so those tiles are drawn
+at fewer than eight periods — on the measured frames that begins about a 1e-30 view, and a
+busy view reaches it sooner. A centre used to stop fitting in a link at that same depth,
+under the 64-character cap; since the 128-character deep coordinate (gpu_deep_ship_ckpt162)
+the link wall is a 1e-112 frame, which a degree-two view reaches at about 1e-56. Between the
+two this feature finds minibrots it can address but previews short of eight periods; below
+the second it finds ones it can neither draw nor address, and says so rather than
+pretending.
 
 **Where the search looks, in order** *(minibrot_nearby_ckpt164)*. Minibrots are dense along
 the boundary, so every boundary view has one nearby, and the search now always returns one.

@@ -2192,25 +2192,6 @@ export function mount(host) {
    */
   let minibrotSide = "deep";
 
-  /**
-   * How long a preview tile may be estimated to take before it is drawn on its own.
-   *
-   * **Five seconds, and the reason it exists at all is a measurement.** A tile is drawn at
-   * eight periods of its own nucleus — below that a minibrot's neighbourhood is a flat
-   * black rectangle, which `perturb-wasm`'s `nuclei::TILE_PERIODS` is the table for — and
-   * the periods at these depths run to six figures. So a tile of a period-95,000 minibrot
-   * is about forty seconds, and one of the audit anchor's period-2,838 minibrot is under
-   * three: the same feature is cheap at 2e-11 and expensive at 1e-22, and which one a
-   * reader is in is not something a constant can know.
-   *
-   * This is `AUTO_PREVIEW_MS`'s ruling applied to a second place — nothing expensive
-   * starts without being asked — and it is why an entry over the budget is still a full
-   * entry: it names its minibrot, says what a preview would cost, and **goes to the frame
-   * when clicked**, which is what the list is for. The picture is the preview, not the
-   * point.
-   */
-  const TILE_BUDGET_MS = 5000;
-
   /** The preview tile: the staged gallery's own 316 px, at 16:9 and one sample a pixel. */
   const TILE = { width: 316, height: 178 };
 
@@ -2255,8 +2236,8 @@ export function mount(host) {
   }
 
   /** The frame an entry's preview tile is drawn at: the entry's own, at the tile's eight
-   *  periods rather than the open frame's thirty-two. A preview is drawn unasked, and four
-   *  times its cost would put most of a list past `TILE_BUDGET_MS`. */
+   *  periods rather than the open frame's thirty-two. A list draws one for every entry, and
+   *  four times the cost each would be four times the wait for the last of them. */
   function previewOf(frame, nucleus) {
     return { ...frame, maxiter: renderer.tileCap(nucleus.period, frame.w.value) };
   }
@@ -2270,6 +2251,11 @@ export function mount(host) {
 
   function clearMinibrots() {
     if (minibrots === null) return;
+    // **A list's previews go with it** *(minibrot_preview_progress_ckpt164)*: the search
+    // that is still drawing them stops, through `stop` as any cancel does, rather than
+    // drawing on into entries nobody can see. Every path that drops a list comes here — a
+    // move, a new search, the tab or the viewer let go of.
+    if (running?.upto === "minibrots" && running.list === minibrots) stop();
     minibrots = null;
     minibrotSide = "deep";
     els.minibrotList.replaceChildren();
@@ -2283,7 +2269,8 @@ export function mount(host) {
    *
    * Three phases: the atom-domain walk over the pool, the Newton solves over the pool, and
    * then the tiles one at a time — which is the order the ranking forces, since *largest
-   * first* cannot be known until every solve is in.
+   * first* cannot be known until every solve is in. The search holds `running` until the
+   * last tile lands, so Cancel, a move and a new search each end it the way they end a pass.
    *
    * **The viewer's own Find minibrots is this search** *(explorer_shallow_deep_parity_ckpt144)*:
    * `from` is its view, carried across the floor exactly as entering the tab carries it,
@@ -2298,6 +2285,9 @@ export function mount(host) {
     if (!MINIBROT_DEGREES.has(target.degree ?? 2)) return;
     const side = from === null ? "deep" : "shallow";
     const generation = ++pass;
+    /** The previews' progress once there is a list to draw them for: `{ list, reachable,
+     *  tally, landed }`. */
+    let previews = null;
     readLog();
     running = {
       upto: "minibrots",
@@ -2349,6 +2339,7 @@ export function mount(host) {
 
       minibrots = found;
       minibrotSide = side;
+      running.list = found;
       show(found, target, pick);
       // **The unreachable ones are said rather than hidden.** A `dv` centre spells a frame
       // down to about 1e-112 (the 120-digit guard and eight guard digits; 1e-54 while the
@@ -2372,25 +2363,59 @@ export function mount(host) {
           : ` ${lost} of them ${lost === 1 ? "sits" : "sit"} deeper than a link can spell a ` +
             "center for, so they are listed without one.") +
         left;
+      // The previews' own count, beside the note and kept up to date as each one lands.
+      if (reachable.length > 0) {
+        previews = { list: found, reachable, tally: document.createElement("span"), landed: 0 };
+        els.minibrotNote.append(" ", previews.tally);
+        tallied(previews);
+      }
 
-      let tile = 0;
+      // **Every preview is drawn, one at a time in list order, each with the whole pool**
+      // *(minibrot_preview_progress_ckpt164)*. Pressing Find minibrots is the asking that
+      // `AUTO_PREVIEW_MS`'s ruling waits for, so no tile is left undrawn for its cost: the
+      // list used to skip any tile estimated past five seconds and leave its well saying
+      // what it would cost, which on a deep view was every tile, and read as six previews
+      // that never came. One at a time is the order that puts the first picture up soonest —
+      // a tile is a field over the whole pool, so two at once is each at half the speed —
+      // and list order is largest first, the one a reader reads in.
       for (const nucleus of reachable) {
         if (generation !== pass) return;
-        tile += 1;
         const frame = previewOf(frameOf(nucleus, target), nucleus);
-        if (tileSeconds(frame.maxiter) * 1000 > TILE_BUDGET_MS) continue;
+        const tile = previews.landed + 1;
+        const estimate = tileSeconds(frame.maxiter);
+        const began = performance.now();
         enterStage("tiles");
         activity(`drawing previews · ${tile} of ${reachable.length}`, (tile - 1) / reachable.length);
+        tileProgress(nucleus, 0, null, estimate);
         const field = await deep.field(frame, TILE.width, TILE.height, {
           supersample: 1,
           period: nucleus.period,
           onStep: (step) => {
-            if (generation === pass) {
-              activity(`drawing previews · ${tile} of ${reachable.length} · ${said_step(step)}`);
-            }
+            if (generation !== pass) return;
+            activity(`drawing previews · ${tile} of ${reachable.length} · ${said_step(step)}`);
+            tileProgress(nucleus, 0, performance.now() - began, estimate);
+          },
+          onProgress: (done, elapsed) => {
+            if (generation !== pass) return;
+            activity(
+              `drawing previews · ${tile} of ${reachable.length} · ${Math.round(done * 100)}%`,
+              (tile - 1 + done) / reachable.length,
+            );
+            tileProgress(nucleus, done, elapsed, estimate);
           },
         });
         if (field === null || generation !== pass) return;
+        log("preview landed", {
+          period: nucleus.period,
+          cap: frame.maxiter,
+          estimateS: Number(estimate.toFixed(2)),
+          wallS: Number(((performance.now() - began) / 1000).toFixed(2)),
+          bandsS: Number((field.elapsed / 1000).toFixed(2)),
+          orbitMs: deep.timing?.orbitMs ?? null,
+          ran: field.ran,
+          saved: field.saved,
+          workers: deep.workerCount,
+        });
         // **A copy is framed by the body its preview holds** — the interior component
         // through the tile's centre, measured on the lanes before they are coloured — and
         // not by the size estimate, which gives a copy's scale and not its extent. The
@@ -2409,10 +2434,20 @@ export function mount(host) {
         const shaded = await deep.shade(field, frame, {}, { derive: false });
         if (shaded === null || generation !== pass) return;
         paintTile(nucleus, shaded.image);
+        previews.landed += 1;
+        tallied(previews);
       }
     } catch (error) {
       host.say(String(error.message ?? error));
     } finally {
+      // A list still up whose previews did not all land — Cancel, or a failure — says so in
+      // each well that will not fill, rather than leaving it waiting or half a bar.
+      if (previews !== null && minibrots === previews.list && previews.landed < previews.reachable.length) {
+        for (const nucleus of previews.reachable) {
+          if (!nucleus.painted) nucleus.node.textContent = "preview stopped";
+        }
+        tallied(previews, ", stopped");
+      }
       if (generation === pass) {
         running = null;
         watch();
@@ -2567,12 +2602,10 @@ export function mount(host) {
       well.className = "minibrot-tile";
       nucleus.entry = entry;
       aim(nucleus, base);
-      const seconds = tileSeconds(previewOf(nucleus.frame, nucleus).maxiter);
-      well.textContent = !reachable
-        ? "past what a link can spell"
-        : seconds * 1000 > TILE_BUDGET_MS
-          ? `a preview here is about ${said_time(seconds)}`
-          : "";
+      // Waiting its turn, and what its turn is expected to cost once it comes.
+      well.textContent = reachable
+        ? `preview waiting · about ${said_time(tileSeconds(previewOf(nucleus.frame, nucleus).maxiter))}`
+        : "past what a link can spell";
       entry.append(well);
 
       const said = document.createElement("span");
@@ -2615,6 +2648,43 @@ export function mount(host) {
     canvas.height = image.height;
     canvas.getContext("2d").putImageData(image, 0, 0);
     nucleus.node.replaceChildren(canvas);
+    nucleus.painted = true;
+  }
+
+  /**
+   * The tile being drawn: the Render line's own bar and its own sentence, in the well
+   * *(minibrot_preview_progress_ckpt164)*. `done` is the share of the bands landed and
+   * `elapsed` the milliseconds since they started, `null` before anything has been asked.
+   * **Time left is `report`'s rule** — the bands this tile has finished, and nothing else —
+   * once there are enough of them to say it; before that, the estimate less the time spent.
+   */
+  function tileProgress(nucleus, done, elapsed, estimate) {
+    let bar = nucleus.node.querySelector(".deep-bar");
+    let words = nucleus.node.querySelector(".minibrot-progress-said");
+    if (bar === null) {
+      const box = document.createElement("span");
+      box.className = "minibrot-progress";
+      bar = document.createElement("span");
+      bar.className = "deep-bar";
+      bar.dataset.state = "rendering";
+      bar.setAttribute("aria-hidden", "true");
+      const fill = document.createElement("span");
+      fill.className = "deep-bar-fill";
+      bar.append(fill);
+      words = document.createElement("span");
+      words.className = "minibrot-progress-said";
+      box.append(bar, words);
+      nucleus.node.replaceChildren(box);
+    }
+    bar.style.setProperty("--done", String(done));
+    const spent = (elapsed ?? 0) / 1000;
+    const left = done > 0.02 ? ((elapsed / done) * (1 - done)) / 1000 : Math.max(1, estimate - spent);
+    words.textContent = `${done > 0 ? `${Math.round(done * 100)}%` : "drawing"} · about ${said_time(left)} left`;
+  }
+
+  /** The previews' count, beside the list's note. */
+  function tallied(previews, end = "") {
+    previews.tally.textContent = `Previews: ${previews.landed} of ${previews.reachable.length}${end}.`;
   }
 
   /** A width as a reader reads it: one figure and a decade. */

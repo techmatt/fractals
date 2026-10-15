@@ -1944,6 +1944,18 @@ canvas.palette-final {
   overflow: hidden;
 }
 .minibrot-tile canvas { display: block; width: 100%; height: auto; }
+/* The tile being drawn: the Render line's bar and its sentence, stacked in the well
+   *(minibrot_preview_progress_ckpt164)*. The bar is `.deep-bar` itself, run to most of the
+   well's width so that a share of it reads at a tile's size. */
+.minibrot-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  width: 100%;
+}
+.minibrot-progress .deep-bar { width: 70%; }
+.minibrot-progress-said { font-variant-numeric: tabular-nums; }
 
 .minibrot-said { font-size: 0.7rem; font-variant-numeric: tabular-nums; }
 
