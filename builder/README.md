@@ -1264,6 +1264,13 @@ disagreement about a page that is fine. Percent-encode the parenthesis in the ma
 `article/prose.jsonl` says which master belongs to which page, and may
 record *sanctioned divergences*: the master's words, the page's words, and why the page
 is deliberately different. A page with no row is one whose HTML is its own master.
+Comparing raw bytes across the HTML/markdown boundary means nothing; every verbatim
+comparison here strips tags and collapses whitespace first.
+
+**A table has a rule of its own.** A master spells it `[TABLE: a | b | c]`, then its rows,
+then `[/TABLE]`. The head comes out on both sides, because a `<th>`'s words are the page's
+own, and the cells compare with a space between them so that a wrong number cannot hide
+inside a right one.
 
 **A display formula is TeX, on both sides.** Anything set off on a line of its own is a
 `$$ … $$` block in the master, on its own line, and on the page it is
