@@ -6,33 +6,19 @@ where, how to serve it, and how it relates to the companion repository. That com
 `C:\Code\fractal-wallpapers` here; the article links into it per section, and nothing is
 copied across without being rewritten to read as prose.
 
-**It is read-only from here, with one carve-out** *(Matt, 2026-08-21; widened
-2026-09-20)*. A website prompt may make **minimal engine changes that serve the wasm
-consumer**, and only where every one of these holds:
+**It is read-only from here, and a website item never commits into it**
+*(Matt, 2026-11-04)*. When a page needs an engine seam — a widened visibility, a `cfg`, a
+new function the wasm consumer calls — the item says so in its report's `blocks:` line with
+the exact change wanted, and that change becomes a separate `fractal-wallpapers` item. Once
+it has landed there, the website side names the new engine commit in
+`engine.manifest.json` when it rebuilds the wasm, so that a committed wasm nobody can
+rebuild is never how this ends.
 
-- **zero behaviour, measured** — the pipeline's renders are byte-identical after the change
-  and it is the prompt's job to have shown that, not to have argued it;
-- **widening, or adding when the prompt says so** — visibility, inlining and `cfg` need no
-  permission beyond this rule; a **new signature** — a function, a trait impl, a derive —
-  needs the website prompt's own brief to have asked for the seam, and nothing else in the
-  engine may move to make room for it. A prompt that finds it wants one it was not sent for
-  says so and stops;
-- **no new dependency and no new feature** in the default build;
-- **the engine's tests and the native anchor unmoved**;
-- **committed in `fractal-wallpapers` by explicit file path only** — never `git add -A`,
-  never `git commit -a`, because another prompt may be running in that repository;
-- **named in `engine.manifest.json`**, so that a committed wasm nobody can rebuild is
-  never how this ends.
+Running `builder check` streams records that wallpapers work rewrites, so beside a
+wallpapers merge or a pool-holding run it can read a transient red (`builder/README.md` has
+it); that red is the neighbour's, not this page's.
 
-**A website prompt holds the lock on that repository only when it builds the wasm or
-commits into it.** The carve-out commits by explicit file path precisely so that it does not
-need the lock. Running `builder check` locks nothing but makes a prompt **pool-adjacent**:
-never beside a wallpapers merge or a pool-holding leg, because `check` streams records that
-work rewrites (`builder/README.md` has the transient red it produces). A prompt's header says
-which of the two it is.
-
-Everything else in that repository stays read-only to a website prompt: its code and its
-records are read, and a change to either is somebody else's prompt. **Running its CLI is
+Its code and its records are read, and a change to either is a wallpapers item. **Running its CLI is
 reading** — `builder/renders.py` shells `fractal-engine` to draw a figure's panels, and
 every byte of that lands in this repository's ignored `artifacts/`, never next door. The
 render cache defaults to `artifacts/renders/` and `FRACTAL_WEBSITE_RENDER_CACHE` moves it,
@@ -40,7 +26,7 @@ which is the only knob involved.
 
 ⚠ **That binary is the release build in the checkout next door, and nothing rebuilds it for
 you.** `renders.py` runs `engine/target/release/fractal-engine` as it finds it, so after any
-edit to the engine crate — the carve-out's included — rebuild it with `cargo build --release`
+edit to the engine crate — a wallpapers item's included — rebuild it with `cargo build --release`
 before a maker draws. A stale binary does not look stale: it refuses a family it has never
 heard of, `phoenix_m` for one, which reads as a bug in the maker asking for it.
 
@@ -563,13 +549,13 @@ and `catalog.js` and never rebuilds either module, so a `perturb.wasm` that no l
 matches its crate is a green check. **The picture kernel itself is the sibling's**
 *(deep_seam_move_ckpt163)*: `fractal-wallpapers/perturbation`, which `perturb-wasm` wraps
 and `engine.manifest.json`'s one `wallpapers_commit` pins for all three modules. An edit
-there is a lock on both repositories and owes both perturb modules, in this order: a
-candidate build from the uncommitted kernel (`explorer.build_perturb(pinned=False)`, from
-Python — the one way past the pin check, and it writes no manifest) held old against new
-by `explorer/bench/perturb-parity.mjs` before anything is committed; then commit it in the
-sibling, `python -m builder explorer` so the pin moves, `--perturb` — which refuses a
-kernel that is not the pinned tree — and `perturb-parity.mjs` again on the modules this
-repository commits. `fractal-wallpapers/perturbation/README.md`'s *Running it* has the
+there is a wallpapers item, never a website one, and it owes both perturb modules, in this
+order: a candidate build from the uncommitted kernel (`explorer.build_perturb(pinned=False)`,
+from Python — the one way past the pin check, and it writes no manifest) held old against
+new by `explorer/bench/perturb-parity.mjs` before anything is committed; then, once the
+wallpapers item has committed it, a website item runs `python -m builder explorer` so the
+pin moves, `--perturb` — which refuses a kernel that is not the pinned tree — and
+`perturb-parity.mjs` again on the modules this repository commits. `fractal-wallpapers/perturbation/README.md`'s *Running it* has the
 steps, and `builder check` notes perturb modules built from another kernel than the pin's. **A formatting commit in `engine-wasm` rebuilds its
 module and compares too**, and reports whichever it got. `explorer/README.md`'s
 *Rebuilding* has the measurements behind both.
@@ -626,45 +612,24 @@ The store is `votes/events.jsonl` under the Drive-synced folder
 (`C:\Code\fractal-drive-sync\votes\` on this machine), outside this public repository
 and append-only. `builder/README.md` has the rest.
 
-## Staging a prompt
-
-**"stage `<prompt>.md`" means prepare it, not run it** *(Matt, 2026-09-02)*. It exists so
-a second prompt can be thought through while a first one still holds this repository, and
-that is the whole of the rule: a staging run costs the live prompt nothing.
-
-- **Read the named prompt and everything it points at**, and run read-only commands
-  freely — `git log`, `builder check`, a served page, whatever answers the question.
-- **Produce a concrete plan**: what changes, in which files, in what order, what gets
-  measured, which steps get backgrounded.
-- **Dirty nothing.** No edit to a tracked file, no new file anywhere in the checkout,
-  nothing staged and nothing committed. Notes and scratch scripts go to the session's
-  scratchpad directory outside the repository — not to `scratch/`, which is inside it.
-- **Touch no running work**: no render leg, no training run, no pool-holding process, no
-  slow lane. The live prompt owns those, and a staging run that starts one has already
-  broken the only promise it makes.
-- **Expect `git status` to come back dirty, and leave every file in it alone.** Those
-  changes belong to the prompt that is still running.
-- **Stop at the plan.** Say it is ready and that the tree is not yours. The lock is handed
-  over explicitly; `git status` going clean on its own is not the handover, and neither is
-  the other prompt looking finished.
-
-A staged plan is not completed prompt work, so the commit rule under **Rules** does not
-reach it — there is nothing to commit until the prompt is actually run.
-
 ## Standing prompt contract
 
-Each prompt in this project ends the same way:
+Work arrives as a conductor item, and conductor's preamble owns the report's path and its
+header lines. Each item ends the same way:
 
-- Write the final report to `scratch/<prompt_name>_report.md`. **~60 lines is a soft
-  target** — write it once, allow at most one trim pass, and never iterate to squeeze
-  under the line. Going over is fine; padding and re-editing are not.
-- Report findings, numbers, decisions, and surprises only. No process narration, no
-  restating the prompt back.
-- Then copy the report to `C:\Code\fractal-drive-sync\reports\`.
-- **Say where the report landed, in the last line of the console reply** — the copied
-  path, spelled out: `Report written to fractal-drive-sync/reports/<name>_report.md`.
-  The report is the deliverable, and a reply that summarizes it without naming it
-  leaves the reader hunting for the file.
+- **Write the report where the preamble says, with its header.** ~60 lines is a soft
+  target: write it once, and never iterate to squeeze under the line.
+- **Findings, decisions, and surprises only.** No process narration, no restating the
+  prompt back. Tests are mentioned only for a red the item could not fix.
+- **End the console reply with `Report written to <path>`**, the path spelled out.
+- **Commit to the branch you are on.**
+- **Times are local, on a 12-hour clock** (`5:40pm`).
+- **A step over ~30 seconds runs in the background**, with a completion waiter on the
+  real process — its pid, its log line, or the file it writes last — never on a launcher
+  wrapper that returns before the work does.
+- **LF line endings** in every file written.
+- **An operational fact learned while working goes into the README it belongs to**, never
+  only into a report.
 
 ## Rules
 
@@ -675,17 +640,12 @@ Each prompt in this project ends the same way:
   through. "We just changed that" is not a reason to keep it, and neither is "that would
   undo last week's work". The converse is not a licence to churn: a draft is still held to
   every convention above, and a change still has to be argued for on the article's terms.
-- Commit to `main` only.
-- **Completed prompt work is committed, without being asked.** Finishing a prompt means
-  the work is on `main` — no branches, no PRs, no waiting for approval, in this repo as
-  in every repo of this project. The only exception is a very good reason not to, and
-  that reason belongs in the report.
-- **Commit with a pathspec (`git commit -- <paths>`), never a bare `git commit` after
-  staging**, because another prompt may have staged files in the same index.
-- **No commit ≥20 MB** — single blob or aggregate — without Matt's explicit prior
-  confirmation. This repo carries images, so the aggregate half of that gate is the
-  one that will bite: check the total added size of an image drop before staging it,
-  not after.
+- **Completed work is committed, without being asked**, to the branch the item is on. The
+  only exception is a very good reason not to, and that reason belongs in the report.
+- **No commit ≥20 MB** — single blob or aggregate. This repo carries images, so the
+  aggregate half is the one that will bite: check the total added size of an image drop
+  before staging it, not after. An oversize drop is a branch, not a stop: leave it
+  uncommitted, commit the rest, and name the drop and its size in the report.
 - **The gallery and library assets are tracked** *(Matt, 2026-09-26)*. The Gallery tab's
   tiles, the atlas slot pictures, the Deep tab's tiles, `explorer/palettes.bin` and the
   Walk tab's judges are committed beside the records that name them, so what Pages serves
@@ -693,9 +653,8 @@ Each prompt in this project ends the same way:
   tracked diff**, and it is committed like any other: it is subject to the 20 MB gate
   above, and a tile the record stops naming is a deletion to commit, not a file to forget.
   `builder/README.md`'s *What was staged* has the set and its sizes.
-- **Prompts never land in the repo.** They live in
-  `C:\Code\fractal-drive-sync\prompts\`; a working copy in this directory stays
-  untracked.
+- **Prompts never land in the repo.** They arrive as conductor items; a working copy in
+  this directory stays untracked.
 - **Estimate before starting anything long.** If a step will take more than a couple
   of minutes — an image conversion pass, a full builder run — say what it will cost
   first and run it in the background rather than blocking on it.
