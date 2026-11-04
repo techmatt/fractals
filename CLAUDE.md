@@ -112,6 +112,9 @@ Matt marks up a Google-Docs copy of a page and an item applies the marks. **Read
   `pages.topbar`. `builder/README.md`'s *The contents rail is derived, never kept* has the
   rest. The site bar's *GitHub* is this repository (`pages.SITE_REPO`); every mention of the
   code that drew a picture links `pages.CODE_REPO`.
+- **The page is Wikipedia's shape.** The rail shows above one breakpoint and not at all below
+  it (never folded into a control), since every page's site bar and previous/next line reach
+  everything. The measure caps text only; figures run the full column.
 - **A page may hang off a section without being one.** `article/` holds exactly the fourteen
   ratified sections; a page belonging to one lives in its own directory and names itself with
   a slash in the registries (`palettes/make-your-own.html`).
