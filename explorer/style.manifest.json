@@ -1,0 +1,40 @@
+{
+  "built": "2026-11-05",
+  "bundle": {
+    "colormaps": 9,
+    "file": "custom-modes.json",
+    "modes": [
+      "brass-foam",
+      "lacquer-lobes",
+      "silk-waves",
+      "glass-whorl",
+      "arch-tunnel",
+      "ribbon-foam",
+      "gilt-orbs",
+      "steel-blades",
+      "soft-petals"
+    ],
+    "schema": 1,
+    "sha256": "91eb4208c4a7a4df2cdb17b33f846a85472aa7c28ad8aab118e245673dae4b89"
+  },
+  "crate": "explorer/style-wasm",
+  "dependencies": [
+    "fractal-wallpapers/style-wasm"
+  ],
+  "modules": {
+    "style.wasm": {
+      "gzip_bytes": 269657,
+      "raw_bytes": 825941,
+      "rustflags": ""
+    }
+  },
+  "pinned_by": "engine.manifest.json wallpapers_commit",
+  "rustc": "1.96.0 (ac68faa20 2026-05-25)",
+  "schema": 1,
+  "trees": {
+    "data/palettes": "afe259c415bc3753ace4da695703f70f36358846",
+    "data/styles": "7e384b6ad20c36390e93add329a14a58d4183927",
+    "engine": "aa03e0b504198bbcdf87b074a82bdff39e7f8c0a",
+    "style-wasm": "70280abc0ba594aa0df9af56c21ba3acc6b36576"
+  }
+}

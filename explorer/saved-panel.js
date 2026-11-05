@@ -74,6 +74,7 @@ export function mount(host) {
    *  of it and tells a reader nothing: what makes it worth keeping is the depth. */
   function describeView(view) {
     if (view.deep) return `deep · ${view.said}`;
+    if (view.custom) return `custom · ${view.custom.name} · ${planeName(view.family)}`;
     return `${view.mode} · ${planeName(view.family)}`;
   }
 
@@ -122,6 +123,10 @@ export function mount(host) {
       // perturbation kernel and a wait of seconds to minutes a tile, so the tab labels it
       // and the click opens it where it can be drawn.
       if (view.deep) tile.classList.add("is-deep");
+      // **Nor a custom (experimental) one**: its picture is `style.wasm`'s, a minute of a
+      // pool's time on the slowest modes, so the tile is labelled as a deep one is and the
+      // click opens it where it is drawn.
+      if (view.custom) tile.classList.add("is-deep");
     } catch (error) {
       label.textContent = "cannot be read";
       tile.title = String(error.message ?? error);
@@ -195,8 +200,8 @@ export function mount(host) {
         } catch {
           continue;
         }
-        // A deep entry has no tile to draw: see `cell`.
-        if (view.deep) continue;
+        // A deep or custom entry has no tile to draw: see `cell`.
+        if (view.deep || view.custom) continue;
         const pictures = await pool();
         let url = null;
         try {
@@ -423,7 +428,8 @@ export function mount(host) {
         // A deep picture is left out for the reason its tile is: this path draws through
         // the ordinary renderer, which cannot resolve one. Download from the Deep tab is
         // not offered at all yet, so leaving it out is honest rather than a gap.
-        if (view.deep) continue;
+        // A custom-mode picture likewise: the ordinary renderer would draw its engine mode.
+        if (view.deep || view.custom) continue;
         entries.push({ link, view });
       } catch {
         // Unreadable links are left out and counted at the end.

@@ -158,6 +158,16 @@ def _parser() -> argparse.ArgumentParser:
         ),
     )
     baked.add_argument(
+        "--style",
+        action="store_true",
+        help=(
+            "rebuild explorer/style.wasm — the custom (experimental) render mode's compositor "
+            "— its manifest, and explorer/custom-modes.json, the published custom modes, and "
+            "nothing else; needs cargo and the sibling checkout at the commit "
+            "engine.manifest.json pins"
+        ),
+    )
+    baked.add_argument(
         "--names",
         action="store_true",
         help=(
@@ -898,6 +908,21 @@ def _do_explorer(options: argparse.Namespace) -> int:
                 f"{gzip_bytes:,} gzipped{note}"
             )
         path = explorer_module.write_perturb_manifest(built)
+        print(f"wrote {path.relative_to(SITE_ROOT).as_posix()}")
+        return 0
+    if options.style:
+        # Its own branch for the same reason as `--perturb`.
+        path, raw_bytes, gzip_bytes, moved = explorer_module.build_style()
+        print(
+            f"wrote {path.relative_to(SITE_ROOT).as_posix()}  {raw_bytes:,} bytes, "
+            f"{gzip_bytes:,} gzipped{'' if moved else ', unchanged'}"
+        )
+        record = explorer_module.custom_modes()
+        print(
+            f"wrote {explorer_module.CUSTOM_MODES.relative_to(SITE_ROOT).as_posix()}  "
+            f"{len(record['modes'])} modes, {len(record['colormaps'])} maps"
+        )
+        path = explorer_module.write_style_manifest(raw_bytes, gzip_bytes, moved=moved)
         print(f"wrote {path.relative_to(SITE_ROOT).as_posix()}")
         return 0
     if options.random:

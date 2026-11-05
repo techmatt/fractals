@@ -1,0 +1,32 @@
+[package]
+name = "style"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+# The custom (experimental) render mode's compositor, as a raw wasm module of its own:
+# `style.wasm`. Separate from `engine-wasm` and `perturb-wasm` for the reason those two are
+# separate: nothing in here is linked into the shallow path's module, so the shallow
+# picture cannot be slowed or re-bytes by it.
+[lib]
+crate-type = ["cdylib"]
+
+# **One dependency: the sibling's style module.** `fractal-wallpapers/style-wasm` is the
+# engine's own `style::measure` and `style::tile` behind its raw exports, with the three
+# rules `style render` lays on a style file (`with_knobs`, `projected`, the mirror rule),
+# so the page draws the pipeline's picture of a published mode. A path dependency and not
+# a git one, as `engine-wasm` takes the engine, and pinned the same way: by
+# `engine.manifest.json`'s one `wallpapers_commit`. This crate adds nothing; `src/lib.rs`
+# only links it, so the exports are that crate's `#[no_mangle]` functions.
+[dependencies]
+style-wasm = { path = "../../../fractal-wallpapers/style-wasm" }
+
+# The sibling crate's own release profile, transcribed: a dependency's `[profile]` is
+# ignored, and none of these settings changes an `f64`, so the module draws the native
+# engine's numbers (`fractal-wallpapers/style-wasm/Cargo.toml`).
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = "symbols"

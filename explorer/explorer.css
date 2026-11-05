@@ -1748,6 +1748,17 @@ canvas.palette-final {
 .deep-cell-render { contain: inline-size; }
 .shallow-cell-mode #params { display: contents; }
 
+/* The custom (experimental) render mode's rows *(custom_modes_explorer)*: the mode, Matched
+   palette and Auto tone, then the knobs, then the example locations, each a wrapping row of
+   the same contained cell. */
+.custom-examples .custom-lead { color: var(--well-ink-dim); }
+/* Matched palette on: the map is the mode's own, so the picker is shown and not offered. A
+   container rule rather than a flag per swatch, because the picker rebuilds its rows on
+   every tab and filter change. */
+.palette-group.is-held #palette-tabs,
+.palette-group.is-held #palette-search,
+.palette-group.is-held #palette-list { opacity: 0.45; pointer-events: none; }
+
 /* Render, Auto-render and the bar, on one row. What the pass is doing is the bar's hover
    title, and the live region a screen reader hears is clipped out of the layout: the
    stage name and the time left used to take a line of their own while a pass ran, which

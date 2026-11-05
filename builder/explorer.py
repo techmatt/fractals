@@ -167,6 +167,20 @@ PERTURB_SCALAR_MODULE = EXPLORER_DIR / "perturb-scalar.wasm"
 PERTURB_MANIFEST = EXPLORER_DIR / "perturb.manifest.json"
 PERTURB_CRATE_DIR = EXPLORER_DIR / "perturb-wasm"
 
+#: The third module, its manifest, and the record it draws from: the **custom
+#: (experimental)** render mode. `style-wasm` links the sibling's `style-wasm/` crate whole
+#: (the engine's own `style::measure` and `style::tile` behind raw exports), so the page
+#: draws a published custom mode's pipeline picture; its own crate so that nothing in it is
+#: linked into `engine.wasm`. `custom-modes.json` is the sibling's `style bundle`, written
+#: by `--style` beside the module and committed whole: every published mode, its knobs, its
+#: example locations and every map they name. Pinned by the engine manifest's one
+#: `wallpapers_commit`, as the perturbation modules are. `docs/custom-modes.md` has the
+#: whole path from a reference image to a mode live here.
+STYLE_MODULE = EXPLORER_DIR / "style.wasm"
+STYLE_MANIFEST = EXPLORER_DIR / "style.manifest.json"
+STYLE_CRATE_DIR = EXPLORER_DIR / "style-wasm"
+CUSTOM_MODES = EXPLORER_DIR / "custom-modes.json"
+
 #: The wallpaper project's shipped anchors, relative to its checkout root. Three rows,
 #: one per family that has constants to remember — a known-good quadratic Julia `c` and
 #: Ushiki's Phoenix pair — and they are what the explorer opens a dynamical plane at.
@@ -298,15 +312,31 @@ PERTURB_SCHEMA = 3
 #: Where the perturbation modules' kernel lives in the sibling checkout, relative to its root.
 PERTURB_KERNEL = "perturbation"
 
+#: What `style.wasm` is compiled from in the sibling checkout: the module crate and the
+#: engine it links. Either moving since the pin moves the pin (`write_manifest`), since
+#: LTO can leave `engine.wasm`'s bytes unmoved by an engine change only this module sees.
+STYLE_SOURCES = ("style-wasm", "engine")
+
+#: What `style bundle` reads next door, so `--style` refuses a worktree whose records are
+#: not the ones the pin holds: a bundle from uncommitted catalog edits is a record nobody
+#: can rebuild. A commit to them moves the pin as a source's does.
+STYLE_RECORDS = ("data/styles", "data/palettes")
+
+STYLE_ARTIFACT = ("target", WASM_TARGET, "release", "style.wasm")
+
+#: The style manifest's schema.
+STYLE_SCHEMA = 1
+
 #: The manifest's schema, in the same spirit as every JSONL record here.
 SCHEMA = 1
 
-#: Every change this consumer has needed in the sibling engine, one line each. CLAUDE.md
-#: allows a website prompt a zero-behaviour engine change — visibility, inlining, `cfg` —
-#: only on condition that it is named here, because a committed module nobody can rebuild
-#: from the sibling checkout is a dead end. Typed rather than derived: nothing in the
-#: sibling repository marks a commit as one of these, and a list that guessed would be
-#: worse than no list. A change lands here in the same commit that bakes it in.
+#: Every change this consumer has needed in the sibling engine, one line each. Website items
+#: no longer change the engine (an engine seam is a wallpapers item, CLAUDE.md); these are the
+#: changes earlier website items made under a rule since retired, each named here because a
+#: committed module nobody can rebuild from the sibling checkout is a dead end. Typed
+#: rather than derived: nothing in the sibling repository marks a commit as one of these,
+#: and a list that guessed would be worse than no list. A change landed here in the same
+#: commit that baked it in.
 ENGINE_CHANGES = [
     "coloring::composite, coloring::modulate and direct_trap::Painter::trace are pub: "
     "visibility only, no signature moved, engine tests unmoved.",
@@ -333,8 +363,8 @@ ENGINE_CHANGES = [
     "over a Field. Each of the three is now its own measure followed by its own _samples "
     "over one band that is the whole field, so the pipeline's arithmetic is unmoved and "
     "the engine's 217 tests are unmoved with it. This is a signature added rather than a "
-    "visibility widened, which the carve-out in CLAUDE.md allows where the prompt was sent "
-    "to make the seam; explorer_shade_pool_ckpt136 was.",
+    "visibility widened, which website items could then make where the prompt was sent to "
+    "make the seam (they no longer change the engine); explorer_shade_pool_ckpt136 was.",
     "family::Family::PhoenixM, family::PHOENIX_PLANE and spec::FamilySpec::PhoenixM are "
     "new: the Phoenix recurrence over its parameter plane, spec kind `phoenix_m`, for the "
     "Phoenix tab; phoenix_tab_ckpt140 was sent for the seam. It is not render-only, "
@@ -371,8 +401,9 @@ ENGINE_CHANGES = [
     "that the cycle carries into itself, or by an exact (bitwise) repeat of the loop's state, "
     "tested every sixteenth step; field::sweep_row sets it only where every field of the pass "
     "reads an escape, so a stopped sample writes the NaN it would have written at the cap. A "
-    "new member and a new type and function, which the carve-out allows where the prompt "
-    "asked for the seam; interior_seam_deep_autorender_ckpt146 did. 540 pipeline renders and "
+    "new member and a new type and function, which website items could then make where the "
+    "prompt asked for the seam (they no longer change the engine); "
+    "interior_seam_deep_autorender_ckpt146 did. 540 pipeline renders and "
     "1,656 edge frames (the cardioid, the bulb, each Multibrot disk and each Julia disk's rim, "
     "widths 1e-2 to 1e-9, two caps) byte-identical through `fractal-wallpapers identity`; the "
     "fingerprint unmoved (5d97e76bb16be71d / cbd9bc03a0f33e1c); engine tests 229 unmoved plus "
@@ -1540,8 +1571,9 @@ def write_manifest(raw_bytes: int, gzip_bytes: int, *, moved: bool = True) -> Pa
 
     **The pin follows the bytes** *(cleanup_ckpt163)*. `wallpapers_commit` moves to the
     sibling's `HEAD` only when something it pins moved: `engine.wasm`'s bytes (`moved`), or
-    the `perturbation/` kernel's tree between the pin and `HEAD`, which is the step that
-    lets `--perturb` build a kernel committed since. Otherwise the pin and `built` are kept,
+    the `perturbation/` kernel's tree or `style.wasm`'s sources (`STYLE_SOURCES`) between
+    the pin and `HEAD`, which is the step that lets `--perturb` and `--style` build what was
+    committed since. Otherwise the pin and `built` are kept,
     so a rebake of an unchanged tree rewrites nothing, and a sibling commit nobody built
     from — a README, a fixture — never becomes the commit the modules claim. Following the
     bytes rather than a flag asking for the move is the choice because the bytes are the
@@ -1670,6 +1702,133 @@ def write_perturb_manifest(built: list[tuple[Path, int, int, tuple[str, ...]]]) 
     return PERTURB_MANIFEST
 
 
+def build_style() -> tuple[Path, int, int, bool]:
+    """Compile `style.wasm`, copy it in beside the page, and write `custom-modes.json`.
+
+    The module is the sibling's `style-wasm/` crate linked whole, built under the same
+    toolchain and remaps as the other two; the record is that checkout's own `style bundle`,
+    written straight to `CUSTOM_MODES` (running its CLI is reading). Both are refused unless
+    the sibling's sources and style records are the trees the engine manifest pins
+    (`style_pin_problem`), so one `wallpapers_commit` stays true of all four files. Returns
+    `(path, raw bytes, gzip bytes, moved)`.
+    """
+    if not STYLE_CRATE_DIR.is_dir():
+        raise ExplorerError(f"no crate at {STYLE_CRATE_DIR}")
+    wallpapers_root()  # refuse early, with the message that names both ways to configure
+    if problem := style_pin_problem(worktree=True):
+        raise ExplorerError(problem)
+    _rustc_version()
+    finished = subprocess.run(
+        ["cargo", "build", "--target", WASM_TARGET, "--release"],
+        cwd=STYLE_CRATE_DIR,
+        capture_output=True,
+        text=True,
+        env=remapped_env(),
+    )
+    if finished.returncode != 0:
+        raise ExplorerError(f"cargo build failed:\n{finished.stderr.strip()}")
+    built = STYLE_CRATE_DIR.joinpath(*STYLE_ARTIFACT)
+    if not built.is_file():
+        raise ExplorerError(f"cargo reported success and left no module at {built}")
+    before = STYLE_MODULE.read_bytes() if STYLE_MODULE.is_file() else None
+    shutil.copyfile(built, STYLE_MODULE)
+    raw = STYLE_MODULE.read_bytes()
+    renders.cli("style", "bundle", "--out", str(CUSTOM_MODES.resolve()))
+    return STYLE_MODULE, len(raw), len(gzip.compress(raw, 9)), raw != before
+
+
+def custom_modes() -> dict:
+    """The committed bundle, as the page reads it."""
+    return json.loads(CUSTOM_MODES.read_text(encoding="utf-8"))
+
+
+def write_style_manifest(raw_bytes: int, gzip_bytes: int, *, moved: bool) -> Path:
+    """Record what `style.wasm` and `custom-modes.json` were built from.
+
+    The perturbation manifest's shape: no pin of its own (`pinned_by` names the engine
+    manifest's), and `trees` git's id at the pin of every sibling tree the two files are
+    built from (`STYLE_SOURCES` and `STYLE_RECORDS`), which `manifest_notes` holds to the
+    pin: a pin moved past an engine or catalog change with no `--style` after it is noted.
+    The bundle is summarized by its modes, its maps and its sha256, so a hand edit to the
+    committed record reads as one. `built` is
+    kept when neither the module's nor the bundle's bytes moved.
+    """
+    previous = (
+        json.loads(STYLE_MANIFEST.read_text(encoding="utf-8")) if STYLE_MANIFEST.is_file() else {}
+    )
+    bundle = CUSTOM_MODES.read_bytes()
+    record = custom_modes()
+    digest = hashlib.sha256(bundle).hexdigest()
+    unmoved = not moved and (previous.get("bundle") or {}).get("sha256") == digest
+    manifest = {
+        "schema": STYLE_SCHEMA,
+        "built": str(previous.get("built") if unmoved and previous.get("built") else date.today()),
+        "crate": STYLE_CRATE_DIR.relative_to(SITE_ROOT).as_posix(),
+        "dependencies": ["fractal-wallpapers/style-wasm"],
+        "modules": {
+            STYLE_MODULE.name: {"gzip_bytes": gzip_bytes, "raw_bytes": raw_bytes, "rustflags": ""}
+        },
+        "bundle": {
+            "file": CUSTOM_MODES.name,
+            "schema": record.get("schema"),
+            "modes": [mode["name"] for mode in record.get("modes", [])],
+            "colormaps": len(record.get("colormaps", {})),
+            "sha256": digest,
+        },
+        "trees": {path: _source_tree(path) for path in (*STYLE_SOURCES, *STYLE_RECORDS)},
+        "pinned_by": f"{MANIFEST.name} wallpapers_commit",
+        "rustc": _rustc_version(),
+    }
+    STYLE_MANIFEST.write_text(
+        json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n"
+    )
+    return STYLE_MANIFEST
+
+
+def style_pin_problem(*, worktree: bool) -> str | None:
+    """Why `style.wasm`'s sources or the bundle's records are not the pinned ones, or `None`.
+
+    The same rule as `perturb_pin_problem`, over `STYLE_SOURCES` and `STYLE_RECORDS`: the
+    bundle is written from the sibling's worktree, so its catalog, style files, keeps and
+    maps must be the pin's trees with nothing uncommitted.
+    """
+    manifest = load_manifest()
+    built_from = manifest.get("wallpapers_commit") if manifest else None
+    if not isinstance(built_from, str) or not built_from:
+        return f"{MANIFEST.name} names no wallpapers commit to pin style.wasm by"
+    root = wallpapers_root()
+    paths = [*STYLE_SOURCES, *STYLE_RECORDS]
+    present = subprocess.run(
+        ["git", "cat-file", "-e", f"{built_from}:{STYLE_SOURCES[0]}"],
+        cwd=root,
+        capture_output=True,
+        text=True,
+    )
+    against = [built_from] if worktree else [built_from, "HEAD"]
+    moved = subprocess.run(
+        ["git", "diff", "--quiet", *against, "--", *paths],
+        cwd=root,
+        capture_output=True,
+        text=True,
+    )
+    stray = subprocess.run(
+        ["git", "status", "--porcelain", "--", *paths],
+        cwd=root,
+        capture_output=True,
+        text=True,
+    )
+    clean = not (worktree and stray.stdout.strip())
+    if present.returncode == 0 and moved.returncode == 0 and clean:
+        return None
+    where = "the sibling checkout's worktree" if worktree else "its HEAD"
+    return (
+        f"style.wasm is pinned at wallpapers {built_from[:12]} ({MANIFEST.name}), and "
+        f"{', '.join(f'`{path}/`' for path in paths)} in {where} is not that tree — commit "
+        "it there, rebuild engine.wasm with `python -m builder explorer` so the pin moves, "
+        "then `python -m builder explorer --style`"
+    )
+
+
 def load_manifest() -> dict | None:
     """The committed manifest, or `None` where the module has never been built."""
     if not MANIFEST.is_file():
@@ -1721,6 +1880,24 @@ def manifest_notes() -> list[str]:
                 f"explorer: perturb.wasm was built from kernel tree {str(built)[:12]}, and the "
                 f"pin's is {pinned[:12]} — rebuild with `python -m builder explorer --perturb`"
             )
+    if finished.returncode == 0 and STYLE_MODULE.is_file():
+        if not STYLE_MANIFEST.is_file():
+            notes.append("explorer: style.wasm has no manifest")
+        elif problem := style_pin_problem(worktree=False):
+            notes.append(f"explorer: {problem}")
+        else:
+            built = json.loads(STYLE_MANIFEST.read_text(encoding="utf-8")).get("trees") or {}
+            moved = [
+                path
+                for path in (*STYLE_SOURCES, *STYLE_RECORDS)
+                if built.get(path) != _source_tree(path)
+            ]
+            if moved:
+                notes.append(
+                    f"explorer: style.wasm and custom-modes.json were built from another "
+                    f"{', '.join(f'{path}/' for path in moved)} than the pin's — rebuild with "
+                    "`python -m builder explorer --style`"
+                )
     return notes
 
 
@@ -1783,6 +1960,20 @@ def _kernel_tree() -> str:
     return finished.stdout.strip()
 
 
+def _source_tree(path: str) -> str:
+    """Git's id for `path` at the engine manifest's pin, in the sibling checkout."""
+    manifest = load_manifest() or {}
+    finished = subprocess.run(
+        ["git", "rev-parse", f"{manifest.get('wallpapers_commit')}:{path}"],
+        cwd=wallpapers_root(),
+        capture_output=True,
+        text=True,
+    )
+    if finished.returncode != 0:
+        raise ExplorerError(f"the pinned commit has no {path}/: {finished.stderr.strip()}")
+    return finished.stdout.strip()
+
+
 def _wallpapers_commit() -> str:
     finished = subprocess.run(
         ["git", "rev-parse", "HEAD"],
@@ -1805,9 +1996,25 @@ def _engine_version() -> str:
 
 
 def _kernel_moved_since(commit: str) -> bool:
-    """Whether `perturbation/` is another tree at the sibling's `HEAD` than at `commit`."""
+    """Whether a source of the other two modules is another tree at `HEAD` than at `commit`.
+
+    `perturbation/` for the perturbation modules, and `style-wasm/` and `engine/` for
+    `style.wasm` (`STYLE_SOURCES`), and the style records `custom-modes.json` is written from
+    (`STYLE_RECORDS`): a change only the style module or the bundle sees can leave
+    `engine.wasm`'s bytes where they were, and the pin still has to reach it.
+    """
     finished = subprocess.run(
-        ["git", "diff", "--quiet", commit, "HEAD", "--", PERTURB_KERNEL],
+        [
+            "git",
+            "diff",
+            "--quiet",
+            commit,
+            "HEAD",
+            "--",
+            PERTURB_KERNEL,
+            *STYLE_SOURCES,
+            *STYLE_RECORDS,
+        ],
         cwd=wallpapers_root(),
         capture_output=True,
         text=True,

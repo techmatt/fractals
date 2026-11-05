@@ -449,6 +449,21 @@
             <select id="mode" aria-labelledby="head-mode"></select>
             <span class="group" id="params"></span>
           </div>
+          <div class="bar custom-bar" id="custom-bar" hidden>
+            <select id="custom-mode" aria-label="Custom mode"></select>
+            <span class="group">
+              <input type="checkbox" id="custom-matched" class="flag" checked>
+              <label for="custom-matched">Matched palette</label>
+            </span>
+            <span class="group">
+              <input type="checkbox" id="custom-autotone" class="flag" checked>
+              <label for="custom-autotone">Auto tone</label>
+            </span>
+            <button type="button" id="custom-reset">Reset settings</button>
+          </div>
+          <div class="bar custom-knobs" id="custom-knobs" hidden></div>
+          <div class="bar custom-examples" id="custom-examples" hidden></div>
+          <p class="help" id="custom-note"></p>
         </div>
       </section>
 

@@ -352,11 +352,17 @@ export function install(context) {
     say,
     setBusy,
     deep = null,
+    custom: customMode = null,
   } = context;
 
   /** Whether this row is about the Deep tab's picture rather than the viewer's. */
   function onDeep() {
     return deep !== null && deep.owns();
+  }
+
+  /** Whether the viewer is in a custom (experimental) mode, drawn by its own pool. */
+  function onCustom() {
+    return !onDeep() && customMode !== null && customMode.owns();
   }
 
   const sizePicker = document.getElementById("download-size");
@@ -491,6 +497,22 @@ export function install(context) {
       refuse("too large", refusal);
       return;
     }
+    if (onCustom()) {
+      // **Priced off the screen's own last pass, and nothing else** *(custom_modes_explorer)*:
+      // the modes run 14 to 93 s a 1280x800 frame on one thread, and no table here knows
+      // them. A download measures the whole picture and tiles it again, so it costs about
+      // the screen pass's exact half twice, scaled by samples.
+      const known = customMode.measured();
+      enable(true);
+      if (known === null) {
+        estimateLine.textContent = "time unknown";
+        estimateLine.title = "Let the picture on the screen finish, and this is estimated from it.";
+        return;
+      }
+      estimateLine.textContent = saidShort((known.seconds * width * height * supersample * supersample) / known.samples);
+      estimateLine.title = SHAPE_TIP;
+      return;
+    }
     // The module's own answer, at the size actually being asked for. Worth asking here
     // and not only at the press, because a supersample samples a grid `ss` times finer: a
     // deep view the canvas still resolves in `f64` can be one this download does not.
@@ -567,6 +589,10 @@ export function install(context) {
    *  named rather than read, and a deep download lands under the same
    *  `family_mode_palette_size` a shallow one does — `multibrot3_smooth_…` at degree three. */
   function naming() {
+    if (onCustom()) {
+      const view = currentView();
+      return { family: view.family, mode: `custom-${view.custom.name}`, palette: customMode.palette() };
+    }
     if (!onDeep()) return currentView();
     const view = deep.view();
     return {
@@ -617,6 +643,43 @@ export function install(context) {
     }
   }
 
+  /**
+   * **A custom (experimental) mode's download**, through the pool the screen draws with:
+   * the exact picture at the row's size, measured whole and tiled. Progress on the button,
+   * as a shallow download's is.
+   */
+  async function downloadCustom(go, width, height, query) {
+    const { format } = go;
+    running = { cancelled: false, stop: null, go };
+    const mine = running;
+    go.button.classList.add("is-running");
+    go.button.title = "Rendering. Press to cancel.";
+    lock(true, go);
+    progress(0);
+    setBusy(true);
+    const started = performance.now();
+    try {
+      const picture = await customMode.picture(width, height, {
+        supersample,
+        onProgress: (done) => {
+          if (!mine.cancelled) progress(done);
+        },
+      });
+      if (mine.cancelled) {
+        say("Download cancelled.");
+        finish();
+        return;
+      }
+      const name = fileNameOf(picture.name, width, height, format.extension);
+      await save(picture.image, name, format, query);
+      say(`Saved ${name} in ${((performance.now() - started) / 1000).toFixed(1)} s.`);
+      finish();
+    } catch (error) {
+      say(mine.cancelled || error?.name === "Cancelled" ? "Download cancelled." : String(error.message ?? error));
+      finish();
+    }
+  }
+
   async function download(go) {
     const { format } = go;
     const deepRow = onDeep();
@@ -643,6 +706,11 @@ export function install(context) {
 
     if (deepRow) {
       await downloadDeep(go, width, height);
+      return;
+    }
+
+    if (onCustom()) {
+      await downloadCustom(go, width, height, query);
       return;
     }
 
@@ -735,6 +803,7 @@ export function install(context) {
       // Whichever renderer is drawing it. The Deep tab's `stop` is the same one its own
       // Cancel presses, so the two ways out of a deep download are one way out.
       if (onDeep()) deep.cancel();
+      else if (onCustom()) customMode.cancel();
       else renderer.cancel();
       running.stop?.();
     });

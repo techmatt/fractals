@@ -5,8 +5,8 @@ artifacts/
 # No absolute path is committed here, so the one that exists is untracked.
 local.toml
 
-# Prompt working copies. Prompts live in C:\Code\fractal-drive-sync\prompts and
-# never land in this repo; a copy dropped here for a session stays untracked.
+# Prompt working copies. A prompt never lands in this repo; a copy dropped here for a
+# session stays untracked.
 #
 # **Written as a deny-list of the two markdown files the root is allowed to have**, and
 # that is the point of it: this used to read `/website_*.md`, which caught the naming one
@@ -19,12 +19,13 @@ local.toml
 !/CLAUDE.md
 !/README.md
 
-# The Rust crates' build trees. `engine.wasm` and `perturb.wasm` beside the page are
-# the committed artifacts; these are the several hundred megabytes cargo needs to
-# produce them. The third is the Deep tab gallery's native crate, which commits no binary.
-# The fourth is the native model of the Deep tab's GPU kernel, which commits none either.
+# The Rust crates' build trees. `engine.wasm`, `perturb.wasm` and `style.wasm` beside the
+# page are the committed artifacts; these are the several hundred megabytes cargo needs to
+# produce them. Then the Deep tab gallery's native crate, which commits no binary, and the
+# native model of the Deep tab's GPU kernel, which commits none either.
 explorer/engine-wasm/target/
 explorer/perturb-wasm/target/
+explorer/style-wasm/target/
 builder/deep-gallery-native/target/
 explorer/deep-gpu-model/target/
 

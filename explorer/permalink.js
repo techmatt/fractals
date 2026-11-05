@@ -61,9 +61,10 @@
 // mean "taken from this view" — the page measures the view and derives the value —
 // rather than the catalog's constant. See "What version 3 changed" below.
 //
-// Emit order: v · f · cx · cy · px · py · zx · zy · m · the mode's parameters · curve · x ·
-// y · w · n · a · p · then the shade parameters, in the order the engine's own palette
-// recipe declares them · level.
+// Emit order: v · f · cx · cy · px · py · zx · zy · m · the mode's parameters · curve ·
+// custom · knobs · matched · autotone · x · y · w · n · a · p · then the shade parameters,
+// in the order the engine's own palette recipe declares them · level. Under `custom` the
+// four before it (m, parameters, curve) and level are never written: see `CUSTOM_KEY`.
 //
 // ## What version 3 changed, and why it is a 3
 //
@@ -508,6 +509,124 @@ export function readCap(text) {
   return value;
 }
 
+/**
+ * The **custom (experimental)** render mode's four keys *(custom_modes_explorer)*.
+ *
+ * `custom` names a published custom mode by its public name (`brass-foam`), one of
+ * `context.customs` — the page's `custom-modes.json`, so a link naming one this page does
+ * not carry is refused by name. `knobs` is that mode's knob settings, `name:value` pairs
+ * in the mode's own knob order, a knob at its default left out; `matched=0` is Matched
+ * palette off (the link's `p` then colours it), and `autotone=0` is Auto tone off (the
+ * mode's tone pass dropped). Absent, each is the default, so every link before them reads
+ * as it did: a widening, not a version.
+ *
+ * **The mode's picture is the custom mode's, whatever `m` says**, so under `custom` the
+ * engine mode's keys (`m`, its parameters, `curve`, `level`) are read, held to their own
+ * rules, and dropped, and never emitted: one spelling per picture. `p` and the shade keys
+ * stay, because the palette is independent of the mode and is what Matched palette off
+ * draws with; `n`, `a` and the coordinates mean what they always mean.
+ */
+export const CUSTOM_KEY = "custom";
+export const KNOBS_KEY = "knobs";
+export const MATCHED_KEY = "matched";
+export const AUTOTONE_KEY = "autotone";
+export const PROJECTION_KEY = "projection";
+const CUSTOM_KEYS = [CUSTOM_KEY, KNOBS_KEY, MATCHED_KEY, AUTOTONE_KEY, PROJECTION_KEY];
+
+/** `name:number` pairs, comma-separated: a custom mode's knobs, or a place's projection. */
+function pairsOf(text, words) {
+  const out = [];
+  for (const pair of text.split(",")) {
+    const colon = pair.indexOf(":");
+    if (colon === -1) {
+      throw new PermalinkError(`Each ${words} is written as name:number, not ${pair}.`);
+    }
+    out.push([pair.slice(0, colon), pair.slice(colon + 1), pair]);
+  }
+  return out;
+}
+
+/** A custom mode's state on a view, or `null`: what `custom` and its three keys say. */
+function readCustom(params, context) {
+  const name = params.get(CUSTOM_KEY);
+  if (name === null) {
+    for (const key of CUSTOM_KEYS.slice(1)) {
+      if (params.has(key)) {
+        throw new PermalinkError(`This link sets the ${wordsFor(key)} but names no custom render mode.`);
+      }
+    }
+    return null;
+  }
+  const mode = context.customs?.get(name);
+  if (mode === undefined) {
+    throw new PermalinkError(`This link names a custom render mode the explorer doesn't know: ${name}.`);
+  }
+  const knobs = {};
+  const seen = new Set();
+  const text = params.get(KNOBS_KEY);
+  for (const [key, number, pair] of text ? pairsOf(text, wordsFor(KNOBS_KEY)) : []) {
+    const knob = mode.knobs.find((each) => each.name === key);
+    if (knob === undefined) {
+      throw new PermalinkError(`The ${name} custom mode has no setting called ${key}.`);
+    }
+    if (seen.has(key)) throw new PermalinkError(`This link sets ${knob.label} twice.`);
+    seen.add(key);
+    const value = finite(number, `${knob.label} setting`);
+    const [low, high] = knob.range;
+    if (!(value >= low && value <= high)) {
+      throw new PermalinkError(`The ${knob.label} setting has to be between ${low} and ${high}, not ${number} (${pair}).`);
+    }
+    if (value !== knob.default) knobs[key] = value;
+  }
+  // A place's own projection members, as a location record carries them (a log-polar
+  // tunnel's `twist` and `ring`), laid over the mode's by the module.
+  let projection = null;
+  const placed = params.get(PROJECTION_KEY);
+  if (placed !== null) {
+    if (!mode.projection) {
+      throw new PermalinkError(`The ${name} custom mode draws through no projection, and this link places one.`);
+    }
+    projection = {};
+    for (const [key, number] of pairsOf(placed, wordsFor(PROJECTION_KEY))) {
+      // A letter first: `__proto__` would otherwise pass and set no member at all.
+      if (!/^[a-z][a-z_]{0,23}$/.test(key) || Object.hasOwn(projection, key)) {
+        throw new PermalinkError(`The projection names ${key} more than once or in a way it can't: ${placed}.`);
+      }
+      projection[key] = finite(number, `projection's ${key}`);
+    }
+  }
+  const matchedText = params.get(MATCHED_KEY);
+  const tonedText = params.get(AUTOTONE_KEY);
+  return {
+    name,
+    knobs,
+    matched: matchedText === null ? true : flag(matchedText, wordsFor(MATCHED_KEY)),
+    autotone: tonedText === null ? true : flag(tonedText, wordsFor(AUTOTONE_KEY)),
+    projection,
+  };
+}
+
+/** A view's custom-mode keys, in emit order; none for an engine mode. */
+function emitCustom(custom, context) {
+  if (!custom) return [];
+  const parts = [`${CUSTOM_KEY}=${encode(custom.name)}`];
+  const knobs = context.customs?.get(custom.name)?.knobs ?? [];
+  const set = knobs
+    .filter((knob) => custom.knobs[knob.name] !== undefined && custom.knobs[knob.name] !== knob.default)
+    .map((knob) => `${knob.name}:${number(custom.knobs[knob.name])}`);
+  if (set.length > 0) parts.push(`${KNOBS_KEY}=${encodeCurve(set.join(","))}`);
+  if (custom.matched === false) parts.push(`${MATCHED_KEY}=0`);
+  if (custom.autotone === false) parts.push(`${AUTOTONE_KEY}=0`);
+  if (custom.projection) {
+    // By name, so one place has one spelling whatever order a link gave its members in.
+    const members = Object.keys(custom.projection)
+      .sort()
+      .map((key) => `${key}:${number(custom.projection[key])}`);
+    parts.push(`${PROJECTION_KEY}=${encodeCurve(members.join(","))}`);
+  }
+  return parts;
+}
+
 /** The largest side an aspect may name. An aspect is a shape, not a resolution. */
 const ASPECT_LIMIT = 10000;
 
@@ -574,6 +693,11 @@ const KEY_WORDS = {
   collection: ["gallery collection", "gallery collections"],
   modes: ["mode filter", "mode filters"],
   hue: ["hue filter", "hue filters"],
+  custom: ["custom render mode", "custom render modes"],
+  knobs: ["custom mode setting", "custom mode settings"],
+  matched: ["Matched palette setting", "Matched palette settings"],
+  autotone: ["Auto tone setting", "Auto tone settings"],
+  projection: ["custom mode projection", "custom mode projections"],
 };
 
 /** A key as a reader would say it: `"width"` for `w`. A key this table does not know is
@@ -1035,7 +1159,7 @@ export function parse(search, context) {
   const wanted = MODE_PARAMETERS[mode] ?? [];
   const known = new Set([
     "v", "f", "m", CURVE_KEY, "x", "y", "w", CAP_KEY, "a", "p", LEVEL_KEY.key,
-    ...CONSTANTS[family], ...wanted, ...SHADE_KEYS.map((spec) => spec.key),
+    ...CONSTANTS[family], ...wanted, ...SHADE_KEYS.map((spec) => spec.key), ...CUSTOM_KEYS,
   ]);
   for (const key of seen) {
     // `n` arrived with v4, so an older link that spells it spells a key its own version
@@ -1122,7 +1246,16 @@ export function parse(search, context) {
   const levelText = params.get(LEVEL_KEY.key);
   const level = levelUnder(shade, levelText === null ? LEVEL_KEY.fallback : LEVEL_KEY.read(levelText));
 
-  return { version: VERSION, family, constants, mode, params: values, curve, x, y, w, maxiter, aspect, palette, shade, level };
+  // Under `custom` the engine mode's keys were read and held above, and are dropped here:
+  // see `CUSTOM_KEY`.
+  const custom = readCustom(params, context);
+  if (custom !== null) {
+    return {
+      version: VERSION, family, constants, mode: MODES[0], params: {}, curve: null, x, y, w, maxiter,
+      aspect, palette, shade, level: LEVEL_KEY.fallback, custom,
+    };
+  }
+  return { version: VERSION, family, constants, mode, params: values, curve, x, y, w, maxiter, aspect, palette, shade, level, custom };
 }
 
 /** A view nobody has said anything about: this family, this mode, at home. */
@@ -1143,6 +1276,7 @@ export function fresh(family, mode, context) {
     palette: context.defaultPalette,
     shade: defaultShade(),
     level: LEVEL_KEY.fallback,
+    custom: null,
   };
 }
 
@@ -1160,14 +1294,19 @@ export function emit(view, context) {
   if (view.family !== FAMILIES[0]) parts.push(`f=${encode(view.family)}`);
   // Never conditional: see the contract note at the top of this file.
   for (const key of CONSTANTS[view.family]) parts.push(`${key}=${encode(view.constants[key].text)}`);
-  if (view.mode !== MODES[0]) parts.push(`m=${encode(view.mode)}`);
-  for (const key of MODE_PARAMETERS[view.mode] ?? []) {
-    const value = view.params[key];
-    if (value !== undefined) parts.push(`${key}=${encode(number(value))}`);
+  // Absent on a view built before the key existed, which is an engine mode.
+  const custom = view.custom ?? null;
+  if (custom === null) {
+    if (view.mode !== MODES[0]) parts.push(`m=${encode(view.mode)}`);
+    for (const key of MODE_PARAMETERS[view.mode] ?? []) {
+      const value = view.params[key];
+      if (value !== undefined) parts.push(`${key}=${encode(number(value))}`);
+    }
+    // Absent on a view built before the key existed, which is the mode's own curve.
+    const curve = heldCurve(view.mode, view.curve ?? null, context);
+    if (curve !== null) parts.push(`${CURVE_KEY}=${readCurve(curve)}`);
   }
-  // Absent on a view built before the key existed, which is the mode's own curve.
-  const curve = heldCurve(view.mode, view.curve ?? null, context);
-  if (curve !== null) parts.push(`${CURVE_KEY}=${readCurve(curve)}`);
+  parts.push(...emitCustom(custom, context));
   for (const key of ["x", "y", "w"]) {
     if (view[key].text !== home[key].text) parts.push(`${key}=${encode(view[key].text)}`);
   }
@@ -1189,7 +1328,7 @@ export function emit(view, context) {
   // Last, because it is the last thing that happens to a colour — see the note at
   // the top. `view.level` is absent on a view built before this key existed, which
   // is the same thing as the operator not having acted. None under `absolute`.
-  const level = levelUnder(view.shade, view.level ?? LEVEL_KEY.fallback);
+  const level = custom === null ? levelUnder(view.shade, view.level ?? LEVEL_KEY.fallback) : LEVEL_KEY.fallback;
   if (!LEVEL_KEY.same(level, LEVEL_KEY.fallback)) {
     parts.push(`${LEVEL_KEY.key}=${encodeCurve(LEVEL_KEY.write(level))}`);
   }

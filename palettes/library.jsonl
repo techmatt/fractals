@@ -18,6 +18,7 @@
 {"schema": 1, "kind": "palette", "name": "Ember Rose Ramp", "cyclic": true, "hue": "rose", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "Ember Triad", "cyclic": true, "hue": "rose", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "emergence", "cyclic": true, "hue": "rose", "source": "extracted"}
+{"schema": 1, "kind": "palette", "name": "field_lines", "cyclic": false, "hue": "rose", "source": "converted"}
 {"schema": 1, "kind": "palette", "name": "Formica Neon", "cyclic": true, "hue": "rose", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "Foxglove & Iron", "cyclic": true, "hue": "rose", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "Furnace Rose", "cyclic": true, "hue": "rose", "source": "authored"}
@@ -121,6 +122,7 @@
 {"schema": 1, "kind": "palette", "name": "Ember in Smoke", "cyclic": true, "hue": "red", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "Ember Rising", "cyclic": true, "hue": "red", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "Ember Terracotta", "cyclic": true, "hue": "red", "source": "authored"}
+{"schema": 1, "kind": "palette", "name": "ember_rose", "cyclic": false, "hue": "red", "source": "converted"}
 {"schema": 1, "kind": "palette", "name": "Ensign", "cyclic": true, "hue": "red", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "Faded Salon", "cyclic": true, "hue": "red", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "Fire, One Cobalt Chip", "cyclic": true, "hue": "red", "source": "authored"}
@@ -162,6 +164,7 @@
 {"schema": 1, "kind": "palette", "name": "Rust & Rainlight", "cyclic": true, "hue": "red", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "Rust to Olive", "cyclic": true, "hue": "red", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "Rust to Plum", "cyclic": true, "hue": "red", "source": "authored"}
+{"schema": 1, "kind": "palette", "name": "shaded_blades", "cyclic": false, "hue": "red", "source": "converted"}
 {"schema": 1, "kind": "palette", "name": "Sherbet Flare", "cyclic": true, "hue": "red", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "sholmes", "cyclic": true, "hue": "red", "source": "extracted"}
 {"schema": 1, "kind": "palette", "name": "Sixties Poster", "cyclic": true, "hue": "red", "source": "authored"}
@@ -201,10 +204,12 @@
 {"schema": 1, "kind": "palette", "name": "blue_orange", "cyclic": false, "hue": "orange", "source": "converted"}
 {"schema": 1, "kind": "palette", "name": "Boho Cloth", "cyclic": true, "hue": "orange", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "Boho Dust", "cyclic": true, "hue": "orange", "source": "authored"}
+{"schema": 1, "kind": "palette", "name": "bronze_packing", "cyclic": false, "hue": "orange", "source": "converted"}
 {"schema": 1, "kind": "palette", "name": "Burnished Deep", "cyclic": true, "hue": "orange", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "Burnt Boulevard", "cyclic": true, "hue": "orange", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "cet_linear_wyor_100_45_c55", "cyclic": false, "hue": "orange", "source": "converted"}
 {"schema": 1, "kind": "palette", "name": "chronoscope-25", "cyclic": true, "hue": "orange", "source": "extracted"}
+{"schema": 1, "kind": "palette", "name": "citadel_gold", "cyclic": true, "hue": "orange", "source": "converted"}
 {"schema": 1, "kind": "palette", "name": "cmr.copper_s", "cyclic": true, "hue": "orange", "source": "converted"}
 {"schema": 1, "kind": "palette", "name": "cmr.ember", "cyclic": false, "hue": "orange", "source": "converted"}
 {"schema": 1, "kind": "palette", "name": "cmr.iceburn", "cyclic": false, "hue": "orange", "source": "converted"}
@@ -276,12 +281,14 @@
 {"schema": 1, "kind": "palette", "name": "ragnetic_field", "cyclic": true, "hue": "orange", "source": "extracted"}
 {"schema": 1, "kind": "palette", "name": "re-entry-25", "cyclic": true, "hue": "orange", "source": "extracted"}
 {"schema": 1, "kind": "palette", "name": "red-octavo-25", "cyclic": true, "hue": "orange", "source": "extracted"}
+{"schema": 1, "kind": "palette", "name": "ribbon_packing", "cyclic": false, "hue": "orange", "source": "converted"}
 {"schema": 1, "kind": "palette", "name": "rite-of-passage-25", "cyclic": true, "hue": "orange", "source": "extracted"}
 {"schema": 1, "kind": "palette", "name": "riven-25", "cyclic": true, "hue": "orange", "source": "extracted"}
 {"schema": 1, "kind": "palette", "name": "roundabout", "cyclic": true, "hue": "orange", "source": "extracted"}
 {"schema": 1, "kind": "palette", "name": "Rust Against Petrol", "cyclic": true, "hue": "orange", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "Rust Kiln", "cyclic": true, "hue": "orange", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "scarlet-admiral-25", "cyclic": true, "hue": "orange", "source": "extracted"}
+{"schema": 1, "kind": "palette", "name": "seahorse_halo", "cyclic": true, "hue": "orange", "source": "converted"}
 {"schema": 1, "kind": "palette", "name": "shadalu", "cyclic": true, "hue": "orange", "source": "extracted"}
 {"schema": 1, "kind": "palette", "name": "Sixties Cellar", "cyclic": true, "hue": "orange", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "solipstic", "cyclic": true, "hue": "orange", "source": "extracted"}
@@ -358,6 +365,8 @@
 {"schema": 1, "kind": "palette", "name": "Forge Ascent", "cyclic": true, "hue": "yellow", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "gedoo", "cyclic": true, "hue": "yellow", "source": "extracted"}
 {"schema": 1, "kind": "palette", "name": "Gilded Moss", "cyclic": true, "hue": "yellow", "source": "authored"}
+{"schema": 1, "kind": "palette", "name": "gilded_orbs", "cyclic": false, "hue": "yellow", "source": "converted"}
+{"schema": 1, "kind": "palette", "name": "glossy_lobes", "cyclic": false, "hue": "yellow", "source": "converted"}
 {"schema": 1, "kind": "palette", "name": "glowdon", "cyclic": true, "hue": "yellow", "source": "extracted"}
 {"schema": 1, "kind": "palette", "name": "Gold Cliff Sage", "cyclic": true, "hue": "yellow", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "Gold Field, Blood Spark", "cyclic": true, "hue": "yellow", "source": "authored"}
@@ -375,6 +384,7 @@
 {"schema": 1, "kind": "palette", "name": "Khaki Cathedral", "cyclic": true, "hue": "yellow", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "lander", "cyclic": true, "hue": "yellow", "source": "extracted"}
 {"schema": 1, "kind": "palette", "name": "Lavender Bleach", "cyclic": true, "hue": "yellow", "source": "authored"}
+{"schema": 1, "kind": "palette", "name": "lit_petals", "cyclic": true, "hue": "yellow", "source": "converted"}
 {"schema": 1, "kind": "palette", "name": "magnificat-25", "cyclic": true, "hue": "yellow", "source": "extracted"}
 {"schema": 1, "kind": "palette", "name": "Memphis Chalkline", "cyclic": true, "hue": "yellow", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "metal-emblem-25", "cyclic": true, "hue": "yellow", "source": "extracted"}
@@ -471,6 +481,7 @@
 {"schema": 1, "kind": "palette", "name": "unfolding-creation-25", "cyclic": true, "hue": "lime", "source": "extracted"}
 {"schema": 1, "kind": "palette", "name": "Verdant Triad", "cyclic": true, "hue": "lime", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "viridis", "cyclic": false, "hue": "lime", "source": "converted"}
+{"schema": 1, "kind": "palette", "name": "yas", "cyclic": false, "hue": "lime", "source": "converted"}
 {"schema": 1, "kind": "palette", "name": "abstract-3d-wallpapers", "cyclic": true, "hue": "green", "source": "extracted"}
 {"schema": 1, "kind": "palette", "name": "ahli", "cyclic": true, "hue": "green", "source": "extracted"}
 {"schema": 1, "kind": "palette", "name": "Aster Bloom", "cyclic": true, "hue": "green", "source": "authored"}
@@ -511,11 +522,13 @@
 {"schema": 1, "kind": "palette", "name": "Emerald Furnace", "cyclic": true, "hue": "green", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "Fern Drift", "cyclic": true, "hue": "green", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "Fern Ladder", "cyclic": true, "hue": "green", "source": "authored"}
+{"schema": 1, "kind": "palette", "name": "floating_on_dreams", "cyclic": false, "hue": "green", "source": "converted"}
 {"schema": 1, "kind": "palette", "name": "Forest Bloom", "cyclic": true, "hue": "green", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "Forest Kiln", "cyclic": true, "hue": "green", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "Forest to Foam", "cyclic": true, "hue": "green", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "freedor", "cyclic": true, "hue": "green", "source": "extracted"}
 {"schema": 1, "kind": "palette", "name": "gist_rainbow", "cyclic": false, "hue": "green", "source": "converted"}
+{"schema": 1, "kind": "palette", "name": "glow_filaments", "cyclic": false, "hue": "green", "source": "converted"}
 {"schema": 1, "kind": "palette", "name": "Green Against Oxblood", "cyclic": true, "hue": "green", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "Green and Magenta", "cyclic": true, "hue": "green", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "Green Fire, Black Ash", "cyclic": true, "hue": "green", "source": "authored"}
@@ -530,6 +543,7 @@
 {"schema": 1, "kind": "palette", "name": "Jade in Amethyst Light", "cyclic": true, "hue": "green", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "Jungle Canopy", "cyclic": true, "hue": "green", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "Jungle Floor", "cyclic": true, "hue": "green", "source": "authored"}
+{"schema": 1, "kind": "palette", "name": "leaf_veins", "cyclic": false, "hue": "green", "source": "converted"}
 {"schema": 1, "kind": "palette", "name": "Malachite & Rose", "cyclic": true, "hue": "green", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "Malachite and Rose", "cyclic": true, "hue": "green", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "Mint & Wine Air", "cyclic": true, "hue": "green", "source": "authored"}
@@ -628,6 +642,7 @@
 {"schema": 1, "kind": "palette", "name": "Teal Family, Amber Spark", "cyclic": true, "hue": "teal", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "Teal Flare, Amber Fall", "cyclic": true, "hue": "teal", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "Teal, Magenta, Gold", "cyclic": true, "hue": "teal", "source": "authored"}
+{"schema": 1, "kind": "palette", "name": "teal_filaments", "cyclic": false, "hue": "teal", "source": "converted"}
 {"schema": 1, "kind": "palette", "name": "ten-leaf-clover-25", "cyclic": true, "hue": "teal", "source": "extracted"}
 {"schema": 1, "kind": "palette", "name": "Three Hues, Kept Apart", "cyclic": true, "hue": "teal", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "Three-Metal", "cyclic": true, "hue": "teal", "source": "authored"}
@@ -685,6 +700,7 @@
 {"schema": 1, "kind": "palette", "name": "sleeper-25", "cyclic": true, "hue": "cyan", "source": "extracted"}
 {"schema": 1, "kind": "palette", "name": "Steel & Coals", "cyclic": true, "hue": "cyan", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "Struck Flint", "cyclic": true, "hue": "cyan", "source": "authored"}
+{"schema": 1, "kind": "palette", "name": "teal_tunnel", "cyclic": false, "hue": "cyan", "source": "converted"}
 {"schema": 1, "kind": "palette", "name": "Three-Point Fire-Ice", "cyclic": true, "hue": "cyan", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "Tidewater, No Sky", "cyclic": true, "hue": "cyan", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "to-the-bone-25", "cyclic": true, "hue": "cyan", "source": "extracted"}
@@ -771,6 +787,7 @@
 {"schema": 1, "kind": "palette", "name": "Smoke & Madder", "cyclic": true, "hue": "azure", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "smooth-sailing-25", "cyclic": true, "hue": "azure", "source": "extracted"}
 {"schema": 1, "kind": "palette", "name": "spirit-of-the-dream-25", "cyclic": true, "hue": "azure", "source": "extracted"}
+{"schema": 1, "kind": "palette", "name": "star_eye", "cyclic": false, "hue": "azure", "source": "converted"}
 {"schema": 1, "kind": "palette", "name": "Steel and Straw", "cyclic": true, "hue": "azure", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "summer-dusk-25", "cyclic": true, "hue": "azure", "source": "extracted"}
 {"schema": 1, "kind": "palette", "name": "the_light_fantastic", "cyclic": true, "hue": "azure", "source": "extracted"}

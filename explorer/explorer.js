@@ -49,6 +49,8 @@ import * as juliaPreview from "./julia-preview.js";
 import * as screensaver from "./screensaver.js";
 import * as browse from "./browse.js";
 import * as dives from "./dives.js";
+import * as customUi from "./custom.js";
+import { contractOf } from "./style.js";
 import { Trail } from "./undo.js";
 import { heldOut, stopOf } from "./outermost.js";
 import { tracker } from "./pointers.js";
@@ -244,6 +246,20 @@ const holdGroup = document.getElementById("hold-group");
 const holdToggle = document.getElementById("hold-toggle");
 const fitGroup = document.getElementById("fit-group");
 const fitButton = document.getElementById("shade-fit");
+/** The custom (experimental) render mode's controls, which `custom.js` owns. */
+const customElements = {
+  bar: document.getElementById("custom-bar"),
+  picker: document.getElementById("custom-mode"),
+  matched: document.getElementById("custom-matched"),
+  autotone: document.getElementById("custom-autotone"),
+  reset: document.getElementById("custom-reset"),
+  knobs: document.getElementById("custom-knobs"),
+  examples: document.getElementById("custom-examples"),
+  note: document.getElementById("custom-note"),
+};
+/** `custom.js`'s handle, once the published modes are read; `null` where they could not be,
+ *  and then the mode select offers no custom entry. */
+let customs = null;
 /** Named here and not only at the mount, because a download has to grey it: it used to be
  *  swept with the shade bar it sat in, and beside Julia here there is no sweep over it
  *  *(explorer_controls_ckpt140)*. */
@@ -555,6 +571,7 @@ function setBusy(on) {
     control.disabled = on;
   }
   shadeReset.disabled = on;
+  customs?.sync();
   syncToggles();
   // Released, neither the fold nor the reset is simply enabled again: whether the fold
   // may be touched is the current map's business, whether there is anything to reset is
@@ -741,6 +758,29 @@ const DEEP_SHAPE = { ok: true, direct: false, levels: true };
  */
 function tinting() {
   return deep !== null && deep.owns() ? deep.view() : view;
+}
+
+/** Whether the viewer is drawing a custom (experimental) mode, and not the Deep tab. */
+function customOn() {
+  return view?.custom != null && !deepOwns();
+}
+
+/** Whether the palette is the custom mode's own (Matched palette), so no palette control
+ *  reaches the picture. */
+function paletteHeld() {
+  return customOn() && view.custom.matched !== false;
+}
+
+/** A palette control pressed while a custom mode's picture would ignore it: said, refused. */
+function heldPalette({ map = false } = {}) {
+  if (!customOn()) return false;
+  if (map && !paletteHeld()) return false;
+  say(
+    paletteHeld()
+      ? "Matched palette is on, so this custom mode draws with its own map. Turn it off to choose a palette."
+      : "A custom mode takes only the palette and Reverse; its own layers set the rest.",
+  );
+  return true;
 }
 
 /** And the plan those controls read, for whichever view that is. */
@@ -1573,6 +1613,7 @@ function stopDrawing() {
   drawing += 1;
   wantsLive = false;
   renderer?.cancel();
+  customs?.cancel();
   colouring.stop?.();
   colouring = {};
   // A pass deriving a curve holds Copy until it lands, and this one never will.
@@ -1621,12 +1662,15 @@ async function drawPass() {
   walkLayers = null;
   holdCopy(false);
   renderer.cancel();
+  customs?.cancel();
   colouring.stop?.();
   colouring = {};
   finished = null;
   showState("rendering");
   say("");
   panel?.describe();
+
+  if (customOn()) return drawCustom(pass);
 
   const shape = planOf(view);
   if (!shape.ok) {
@@ -1890,6 +1934,88 @@ async function drawPass() {
   }
 }
 
+/**
+ * One pass of a custom (experimental) mode: `style.js`'s three steps on its own pool.
+ *
+ * A quarter-size picture first, stretched; then full-size tiles against that preview's
+ * balance, each composited as it lands; then the tone measure at the picture's own size and
+ * the tiles again, which are the pipeline's picture. Every hook checks the pass is still
+ * current, and a newer pass cancels the pool, so a pan or a knob never waits on the old one.
+ */
+async function drawCustom(pass) {
+  measure = null;
+  const mode = customs.modeOf(view.custom);
+  stat(`${mode.name}: starting…`);
+  let pool;
+  try {
+    pool = await customs.started();
+  } catch (error) {
+    if (pass !== drawing) return;
+    say(`The custom render modes could not start: ${error.message ?? error}`);
+    showState("stopped");
+    return;
+  }
+  if (pass !== drawing) return;
+  const { width, height } = grid;
+  const maxiter = ownCap(view.maxiter ?? null, view.w.value) ?? renderer.maxiter(view.w.value);
+  const request = customs.request(view, width, height, maxiter);
+  const size = `${width}×${height}`;
+  try {
+    const drawn = await pool.draw(request, {
+      preview: true,
+      hooks: {
+        preview: (rgba, w, h) => {
+          if (pass !== drawing) return;
+          stretch(new ImageData(rgba, w, h));
+          settle({ remember: false });
+        },
+        tile: (tile, rgba) => {
+          if (pass !== drawing) return;
+          compose((context) => context.putImageData(new ImageData(rgba, tile.width, tile.height), tile.x, tile.y));
+        },
+        stage: (name) => {
+          if (pass !== drawing) return;
+          if (name === "sharpening") {
+            showState("sharpening");
+            stat(`${mode.name}: ${size}, at the preview's balance, on ${pool.size} workers…`);
+          } else if (name === "measuring") {
+            stat(`${mode.name}: ${size}, measuring the tone at full size…`);
+          } else if (name === "final") {
+            stat(`${mode.name}: ${size}, the exact picture…`);
+          }
+        },
+        progress: (done) => {
+          if (pass === drawing) showProgress(done);
+        },
+      },
+    });
+    if (pass !== drawing) return;
+    finished = new ImageData(drawn.picture, drawn.width, drawn.height);
+    present(finished);
+    showState("final");
+    const seconds = drawn.timing.total / 1000;
+    customMeasured = { key: link.emit(view, contract), samples: width * height * SAMPLES_OF_CUSTOM, seconds, workers: pool.size };
+    stat(
+      `${mode.name}: ${size} at ${SAMPLES_OF_CUSTOM}× on ${pool.size} workers · ${seconds.toFixed(1)} s ` +
+        `(measure ${(drawn.timing.measure / 1000).toFixed(1)} s, tiles ${(drawn.timing.tiles / 1000).toFixed(1)} s)`,
+    );
+    // The timing harness's seam (`bench/custom-speed.mjs`), as `__viewer` is the shallow pass's.
+    (globalThis.__customTimings ??= []).push({ mode: mode.name, size, workers: pool.size, timing: drawn.timing });
+    settle();
+    panel?.describe();
+  } catch (error) {
+    if (error?.name === "Cancelled" || pass !== drawing) return;
+    say(`This custom mode could not draw here: ${error.message ?? error}`);
+    showState("stopped");
+  }
+}
+
+/** Samples a custom pass draws per output pixel, for the download estimate. */
+const SAMPLES_OF_CUSTOM = FINAL_SUPERSAMPLE * FINAL_SUPERSAMPLE;
+
+/** What the last finished custom pass cost, for the download row's estimate. */
+let customMeasured = null;
+
 /** Whether every pixel of a picture is the same colour: a trap that painted nothing. */
 function uniform(image) {
   const data = image.data;
@@ -1917,7 +2043,8 @@ function updateReadout() {
   const cap = held ?? renderer.maxiter(view.w.value);
   const level = view.level === null ? "" : `  ·  levels by ${view.level.operator}`;
   readout.textContent =
-    `${bothNamesOf(view.palette)}  ·  ${view.mode}  ·  ` +
+    `${customOn() ? (view.custom.matched !== false ? "matched map" : bothNamesOf(view.palette)) : bothNamesOf(view.palette)}` +
+    `  ·  ${customOn() ? `custom: ${view.custom.name}` : view.mode}  ·  ` +
     `${view.aspect.across}:${view.aspect.down}  ·  ${cap} iterations ` +
     `${held === null ? "at this width" : "held by this view"}${level}`;
   syncCoordinates();
@@ -2269,6 +2396,7 @@ function syncCoordinates() {
  */
 function buildParams() {
   paramStrip.replaceChildren();
+  if (customOn()) return;
   for (const key of link.MODE_PARAMETERS[view.mode] ?? []) {
     const control = modeParams.CONTROLS[key];
     const group = document.createElement("span");
@@ -2892,7 +3020,7 @@ function switched(subject, next) {
 /** The Fit button and `f`: Absolute refitted to the frame on the screen. Under Leveled it is
  *  the switch, which fits. */
 function pressFit() {
-  if (locked()) return;
+  if (locked() || heldPalette()) return;
   const subject = tinting();
   if (subject.shade.scale !== "absolute") {
     setShade("scale", "absolute");
@@ -2993,8 +3121,16 @@ function landRefit() {
 fitButton.addEventListener("click", pressFit);
 
 /** Show what the recipe now says, in every control that carries a piece of it. */
+/** Whether `syncShade` last held the shade row for a custom mode, so the first sync after
+ *  it releases what it held: nothing else here enables a control the sweep disabled. */
+let shadeHeld = false;
+
 function syncShade() {
   const subject = tinting();
+  if (shadeHeld && !customOn() && !busy) {
+    shadeHeld = false;
+    for (const control of shadeBar.querySelectorAll("input, select, button:not(.why)")) control.disabled = false;
+  }
   anchorPeriod();
   for (const control of shade.CONTROLS) {
     const held = shadeWidgets.get(control.key);
@@ -3034,7 +3170,7 @@ function syncShade() {
   // leaving them to find out from a link that will not open.
   const fold = shadeWidgets.get("mirror");
   const cyclic = PALETTES.get(subject.palette).cyclic;
-  fold.box.disabled = busy || cyclic;
+  fold.box.disabled = busy || cyclic || customOn();
   fold.box.title = cyclic
     ? `${shownName(subject.palette)} already loops back to its first color, so there is no seam to mirror.`
     : SHADE_TIPS.mirror;
@@ -3044,7 +3180,7 @@ function syncShade() {
   // either way — and the chip says why it is resting.
   const flip = shadeWidgets.get("reverse");
   const same = symmetric(subject);
-  flip.box.disabled = busy || same;
+  flip.box.disabled = busy || same || paletteHeld();
   flip.box.title = same
     ? `${shownName(subject.palette)} reads the same in both directions, so Reverse would not change it.`
     : "";
@@ -3085,6 +3221,26 @@ function syncShade() {
   paletteGroup.dataset.scale = subject.shade.scale;
   shadeNote.textContent = plan.direct ? `${inert} have no effect in this render mode.` : "";
 
+  // **A custom mode colours through its own layers** *(custom_modes_explorer)*: under
+  // Matched palette its own map too, so no palette control reaches it; off, the map and
+  // Reverse do, and nothing else of the row.
+  const custom = customOn();
+  paletteGroup.classList.toggle("is-held", paletteHeld());
+  if (custom) {
+    for (const control of shadeBar.querySelectorAll("input, select, button:not(.why)")) {
+      if (control !== flip.box) control.disabled = true;
+    }
+    shadeReset.disabled = true;
+    shadeNote.textContent = paletteHeld()
+      ? "Matched palette is on: this custom mode draws with its own map, and no palette control reaches it."
+      : "This custom mode takes the palette and Reverse; its own layers set everything else.";
+    shadeHeld = true;
+  }
+  // The header's three follow too: `syncToggles` is not run when the Deep tab takes or
+  // gives back the canvas, and these sit in the palette group, which Deep keeps.
+  randomPhaseButton.disabled = newColoringButton.disabled = busy || custom;
+  randomPaletteButton.disabled = busy || paletteHeld();
+
   syncLevel();
 }
 
@@ -3101,10 +3257,21 @@ function syncFinal() {
   paletteShown.textContent = shownName(subject.palette);
   let pixels;
   try {
-    pixels = renderer.ramp(subject, paletteStrip.width, {
-      direct: tintedShape().direct === true,
-      stops: curvedFor(subject),
-    });
+    if (customOn()) {
+      // The map as the custom mode is handed it: its own under Matched palette, else the
+      // reader's, reversed by Reverse and by nothing else. The mode's own palette layers
+      // run it through cycles and phases of their own, which a strip cannot show.
+      const own = paletteHeld() ? customs.stripMap() : null;
+      if (own !== null) paletteShown.textContent = own.shown;
+      const plain = { ...subject, shade: { ...shade.defaultShade(), reverse: own === null && subject.shade.reverse }, level: null };
+      const map = own === null ? stopsOf(subject.palette) : { kind: own.map.kind, stops: own.map.stops };
+      pixels = renderer.ramp(plain, paletteStrip.width, { stops: map });
+    } else {
+      pixels = renderer.ramp(subject, paletteStrip.width, {
+        direct: tintedShape().direct === true,
+        stops: curvedFor(subject),
+      });
+    }
   } catch {
     return;
   }
@@ -3188,7 +3355,7 @@ function syncLevel() {
   const plan = tintedShape();
   const levels = plan.levels === true;
   levelToggle.checked = levels && levelOn;
-  levelToggle.disabled = busy || !levels;
+  levelToggle.disabled = busy || !levels || customOn();
   // **Not there at all under the absolute scale** *(Matt, palette_absolute_tidy_ckpt144)*:
   // Autolevel fits the picture to itself, which is what that scale exists not to do. Hidden
   // rather than disabled, as the row hides Gamma there, and its tick is kept for Leveled.
@@ -3197,10 +3364,10 @@ function syncLevel() {
   // shown doing nothing, because there the stretch already refits the scale to every frame
   // *(palette_hold_ckpt145)*. Its tick is UI state and is kept either way.
   holdGroup.hidden = tinting().shade.scale !== "absolute";
-  holdToggle.disabled = busy;
+  holdToggle.disabled = busy || customOn();
   // Fit is Absolute's too: under Leveled the switch is the fit, and `f` presses it.
   fitGroup.hidden = tinting().shade.scale !== "absolute";
-  fitButton.disabled = busy;
+  fitButton.disabled = busy || customOn();
 }
 
 /**
@@ -3214,9 +3381,21 @@ function syncLevel() {
  */
 function syncModes() {
   const wanted = listedModes(view.mode);
+  // **The custom (experimental) entry is appended here and never listed** by `listedModes`,
+  // which is the Walk tab's roster too: a walk draws engine modes only.
+  const options = customs === null ? wanted : [...wanted, customUi.CUSTOM_OPTION];
   const showing = [...modePicker.options].map((option) => option.value);
-  if (wanted.join() !== showing.join()) fill(modePicker, wanted, IDENTITIES);
-  modePicker.value = view.mode;
+  if (options.join() !== showing.join()) {
+    fill(modePicker, wanted, IDENTITIES);
+    if (customs !== null) {
+      const option = document.createElement("option");
+      option.value = customUi.CUSTOM_OPTION;
+      option.textContent = customUi.CUSTOM_LABEL;
+      option.title = "The wallpaper project's published custom modes, drawn by its own compositor.";
+      modePicker.append(option);
+    }
+  }
+  modePicker.value = view.custom ? customUi.CUSTOM_OPTION : view.mode;
 }
 
 /** What the Mode select lists, in its order, with `extra` listed too if it is a mode the
@@ -3237,6 +3416,7 @@ function rebuild() {
   palettes?.show(view.palette);
   buildConstants();
   buildParams();
+  customs?.sync();
   syncPlane();
   syncToggles();
   shapeStage();
@@ -3593,7 +3773,12 @@ function enterScreensaver({ every = null, first = null } = {}) {
   saverFilters = population;
   juliaCard?.hide();
   // The viewer's pass stops: the layer covers it, and the pool is the screensaver's now.
+  // A custom pass is stopped outright: `drawing` moves, so nothing of it lands under the layer.
   renderer.cancel();
+  if (customOn()) {
+    drawing += 1;
+    customs?.cancel();
+  }
   studio.inert = true;
   document.querySelector(".studio-bar").inert = true;
   saver.enter(population.seats, { every, first });
@@ -4165,6 +4350,7 @@ function showWalk(next, layers, cells = null) {
   syncShade();
   drawing += 1;
   renderer.cancel();
+  customs?.cancel();
   colouring.stop?.();
   colouring = {};
   finished = null;
@@ -4356,6 +4542,9 @@ const DEEP_FAMILIES = new Set([
 ]);
 
 function carryable() {
+  // **A custom (experimental) mode is not the Deep tab's** *(custom_modes_explorer)*: it is
+  // `f64`-only and its picture is another module's, so the tab opens on its own home.
+  if (view.custom) return null;
   return DEEP_FAMILIES.has(view.family) ? view : null;
 }
 
@@ -5005,6 +5194,7 @@ let hoverAt = null;
 function previewable() {
   return (
     view !== null &&
+    !view.custom &&
     view.family in JULIA_OF &&
     !busy &&
     !deepOwns() &&
@@ -5264,6 +5454,8 @@ function carried(onto) {
     palette: view.palette,
     shade: view.shade,
     level: view.level,
+    // The custom mode goes with the reader; a place's own projection does not.
+    custom: view.custom ? { ...view.custom, projection: null } : null,
   };
 }
 
@@ -5410,8 +5602,9 @@ function syncToggles() {
   juliaButton.disabled = busy || !hasJulia;
 
   for (const button of [randomPaletteButton, randomPhaseButton, newColoringButton]) {
-    button.disabled = busy;
+    button.disabled = busy || customOn();
   }
+  randomPaletteButton.disabled = busy || paletteHeld();
 
   // The tool zooms the viewer, and the Deep tab's viewer is the same canvas — so it is
   // live in both, and greyed only while a download owns the pool.
@@ -5704,6 +5897,7 @@ function juliaBack() {
  * such list — draws from everything, which is what this button did before the list existed.
  */
 function randomPalette() {
+  if (heldPalette({ map: true })) return;
   const drawable = [...PALETTES].filter(([, map]) => map.random).map(([name]) => name);
   const names = (drawable.length > 0 ? drawable : [...PALETTES.keys()]).filter(
     (name) => name !== tinting().palette,
@@ -5713,6 +5907,7 @@ function randomPalette() {
 
 /** A random phase, at the slider's own three decimals. */
 function randomPhase() {
+  if (heldPalette()) return;
   setShade("phase", String(Number(Math.random().toFixed(3))));
 }
 
@@ -5774,6 +5969,22 @@ const TOGGLE_KEYS = {
 /** A new mode keeps the place and drops the parameters, because they belonged to
  *  the mode that is being left. The texture is the one exception — see `heldWeight`. */
 modePicker.addEventListener("change", () => {
+  if (modePicker.value === customUi.CUSTOM_OPTION) {
+    if (locked()) {
+      syncModes();
+      return;
+    }
+    // The first published mode, or the one this view was last in.
+    const name = lastCustom ?? customs.modes.keys().next().value;
+    setCustom({ name, knobs: {}, matched: true, autotone: true, projection: null });
+    return;
+  }
+  // Leaving the custom mode is choosing an engine one: the view drops it and goes on below.
+  if (view.custom) {
+    lastCustom = view.custom.name;
+    view = { ...view, custom: null };
+    customs?.sync();
+  }
   const mode = modePicker.value;
   // Where a seat sits at this place in the mode being switched to, the switch is back to
   // that seat's picture, parameters and all; anywhere else a trap opens at what its seats
@@ -5801,10 +6012,27 @@ modePicker.addEventListener("change", () => {
   draw();
 });
 
+/** The custom mode the reader was last in, which choosing the entry again returns to. */
+let lastCustom = null;
+
+/** Write a custom-mode state onto the view and draw it; `null` leaves the mode. */
+function setCustom(custom) {
+  if (locked()) return;
+  view = { ...view, custom };
+  changed();
+  syncModes();
+  customs?.sync();
+  buildParams();
+  syncShade();
+  syncToggles();
+  panel?.describe();
+  draw();
+}
+
 /** A map, picked out of the strip. The recipe travels with the reader, except where
  *  the new map refuses a piece of it, and in Deep where it asks for a fold. */
 function pickPalette(name) {
-  if (locked()) return;
+  if (locked() || heldPalette({ map: true })) return;
   const subject = tinting();
   const mirror = mirrorFor(name, subject.shade.mirror);
   const changes = { palette: name };
@@ -5845,7 +6073,7 @@ function mirrorFor(name, was) {
  * — the guard's sentence where it lengthened the period — or nothing where it drew nothing.
  */
 async function newColoring(options = {}) {
-  if (locked()) return;
+  if (locked() || heldPalette()) return;
   // **One draw at a time, and one more after it for every press made meanwhile**
   // *(explorer_recolor_race_ckpt162)*. Each press asks a worker for the rule, and the worker
   // answers in order: five presses of `n` 80 ms apart queued five rules and drew only the
@@ -6305,6 +6533,7 @@ function giveBack() {
     () => saver?.stop(),
     () => browser?.stop(),
     () => renderer?.stop(),
+    () => customs?.stop(),
   ];
   for (const ask of asked) {
     // One owner throwing must not keep the rest of them alive. There is no reader left to
@@ -6380,12 +6609,15 @@ async function main() {
   // was the only reason the first frame waited on the gallery record, and that record was
   // 605 KB on the wire for 3 KB of what the select needs. The header carries the roster
   // and is under 2 KB; the rows come after the first frame, a collection at a time.
-  const [started, , record, names, listed] = await Promise.all([
+  const [started, , record, names, listed, published] = await Promise.all([
     Renderer.start(new URL("./engine.wasm", import.meta.url)),
     fetchStops(new URL("./palettes.bin", import.meta.url)),
     gallery.load(import.meta.url).catch((error) => error),
     json(new URL("./palette-names.json", import.meta.url)),
     json(new URL("./popular.json", import.meta.url)),
+    // The custom (experimental) modes: 80 KB, read before any link, since a link may name
+    // one. The module itself waits until a custom mode first draws.
+    json(new URL("./custom-modes.json", import.meta.url)),
   ]);
   renderer = started;
   paletteNames = shownNames(names);
@@ -6405,7 +6637,20 @@ async function main() {
     // The width policy, which is what an absent `n` means: a view whose held cap is the
     // width's own emits none, so it is the string it always was (permalink v4).
     cap: (width) => renderer.maxiter(width),
+    customs: published ? contractOf(published) : new Map(),
   };
+  if (published) {
+    customs = customUi.install(published, {
+      view: () => view,
+      setCustom,
+      openLink: (query) => openLink(query),
+      locked,
+      busy: () => busy,
+      say,
+      stopsOf,
+      elements: customElements,
+    });
+  }
 
   // What the deep contract needs, which is the shallow one's palette set and two numbers
   // neither contract owns: where the Mandelbrot set comes home to, and what cap a width
@@ -6526,6 +6771,36 @@ async function main() {
     // asked through `deep` rather than captured, because the tab is mounted lazily and may
     // not exist when this is installed; `owns` answering false is what keeps the row the
     // viewer's until it does.
+    // **A custom (experimental) mode downloads through its own pool** at any size, by the
+    // same three calls as the screen less the preview: the exact picture, measured whole.
+    custom: {
+      owns: () => customOn(),
+      // Only the pass of this very view: another mode's or knob's time is not this one's.
+      measured: () => (customMeasured?.key === link.emit(view, contract) ? customMeasured : null),
+      // The map a file is named by: the mode's own under Matched palette.
+      palette: () => (view.custom.matched !== false ? customs.modeOf(view.custom).palette : view.palette),
+      picture: async (width, height, { supersample, onProgress }) => {
+        const pool = await customs.started();
+        const maxiter = ownCap(view.maxiter ?? null, view.w.value) ?? renderer.maxiter(view.w.value);
+        const request = customs.request(view, width, height, maxiter, supersample);
+        try {
+          const drawn = await pool.draw(request, { preview: false, hooks: { progress: onProgress } });
+          return {
+            image: new ImageData(drawn.picture, drawn.width, drawn.height),
+            name: {
+              family: view.family,
+              mode: `custom-${view.custom.name}`,
+              palette: view.custom.matched !== false ? customs.modeOf(view.custom).palette : view.palette,
+            },
+          };
+        } finally {
+          // The screen's pass was cancelled by this one, finished or not; it is drawn again
+          // once the row is free.
+          if (finished === null) setTimeout(() => draw(), 0);
+        }
+      },
+      cancel: () => customs?.cancel(),
+    },
     deep: {
       owns: () => deepOwns(),
       view: () => deep.view(),

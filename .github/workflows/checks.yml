@@ -19,12 +19,13 @@
 # The node suites run on node's own runner with nothing installed: there is no package.json
 # here and there is not going to be one. Several instantiate the committed wasm modules.
 #
-# `crates` proves the four Rust crates compile, on the toolchain the manifests record
+# `crates` proves the five Rust crates compile, on the toolchain the manifests record
 # rather than on stable (explorer/README.md has why 1.98.1 is not neutral). It is the one
 # job that is not a bare clone: `engine-wasm` depends on the wallpapers engine by path, and
-# `perturb-wasm` and `deep-gpu-model` on its picture kernel (`perturbation/`), so that
-# repository is checked out beside this one at the commit `engine.manifest.json` names —
-# the one pin for all three modules. It never replaces a committed `.wasm`. It records each
+# `perturb-wasm` and `deep-gpu-model` on its picture kernel (`perturbation/`), and
+# `style-wasm` on its style module (`style-wasm/`), so that repository is checked out
+# beside this one at the commit `engine.manifest.json` names — the one pin for all four
+# modules. It never replaces a committed `.wasm`. It records each
 # built module's hash beside the committed one and asserts nothing about them: this job
 # builds without `builder/explorer.py`'s path remaps, and even with them a path dependency's
 # location enters cargo's `-C metadata` hash, so a module rebuilds to its committed bytes
@@ -72,7 +73,7 @@ jobs:
         with:
           node-version: "22"
       # CLAUDE.md's second line, verbatim, so the suite list lives in one spelling here.
-      - name: the twenty-one JavaScript suites
+      - name: the twenty-two JavaScript suites
         run: >-
           node --test explorer/permalink.test.mjs explorer/bands.test.mjs
           explorer/level.test.mjs explorer/derive.test.mjs explorer/stops.test.mjs
@@ -80,7 +81,7 @@ jobs:
           explorer/stamp.test.mjs explorer/deep-fx.test.mjs explorer/deep-link.test.mjs
           explorer/deep.test.mjs explorer/deep-gpu.test.mjs explorer/screensaver.test.mjs explorer/hold.test.mjs
           explorer/fit.test.mjs explorer/dives.test.mjs explorer/aliasing.test.mjs explorer/period-range.test.mjs
-          explorer/pointers.test.mjs
+          explorer/pointers.test.mjs explorer/style.test.mjs
           atlas/atlas.test.mjs
 
   crates:
@@ -114,10 +115,10 @@ jobs:
           toolchain: ${{ steps.pin.outputs.rustc }}
           targets: wasm32-unknown-unknown
           components: rustfmt
-      # Five: the four here, and the picture kernel `perturb-wasm` wraps, which the
+      # Six: the five here, and the picture kernel `perturb-wasm` wraps, which the
       # wallpapers CI formats too — listed here so a website-side edit to it is caught
       # wherever it is made.
-      - name: rustfmt, all four crates and the kernel they wrap
+      - name: rustfmt, all five crates and the kernel they wrap
         working-directory: fractal-website
         run: |
           (cd ../fractal-wallpapers/perturbation && cargo fmt --check)
@@ -125,6 +126,7 @@ jobs:
           (cd explorer/engine-wasm && cargo fmt --check)
           (cd builder/deep-gallery-native && cargo fmt --check)
           (cd explorer/deep-gpu-model && cargo fmt --check)
+          (cd explorer/style-wasm && cargo fmt --check)
       - name: build engine-wasm
         working-directory: fractal-website/explorer/engine-wasm
         run: cargo build --release --target wasm32-unknown-unknown
@@ -138,6 +140,9 @@ jobs:
         run: cargo build --release --target wasm32-unknown-unknown --target-dir target/simd128
         env:
           RUSTFLAGS: -C target-feature=+simd128
+      - name: build style-wasm
+        working-directory: fractal-website/explorer/style-wasm
+        run: cargo build --release --target wasm32-unknown-unknown
       - name: build the native Deep gallery maker
         working-directory: fractal-website/builder/deep-gallery-native
         run: cargo build --release
@@ -154,7 +159,8 @@ jobs:
           for pair in \
             "engine.wasm explorer/engine.wasm explorer/engine-wasm/target/wasm32-unknown-unknown/release/explorer_engine_wasm.wasm" \
             "perturb.wasm explorer/perturb.wasm explorer/perturb-wasm/target/simd128/wasm32-unknown-unknown/release/perturb.wasm" \
-            "perturb-scalar.wasm explorer/perturb-scalar.wasm explorer/perturb-wasm/target/wasm32-unknown-unknown/release/perturb.wasm"; do
+            "perturb-scalar.wasm explorer/perturb-scalar.wasm explorer/perturb-wasm/target/wasm32-unknown-unknown/release/perturb.wasm" \
+            "style.wasm explorer/style.wasm explorer/style-wasm/target/wasm32-unknown-unknown/release/style.wasm"; do
             set -- $pair
             node -e '
               const fs = require("fs"), crypto = require("crypto");

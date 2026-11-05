@@ -68,6 +68,8 @@ python -m builder phoenix-points   choose the Phoenix tab's starting points from
                             staged gallery's Phoenix seats; draw each whole set's tile and
                             its plane frame through the committed wasm; write the record
 python -m builder explorer [--palettes-only]  bake the explorer's palettes, wasm, manifest
+                            (--perturb: the Deep tab's modules; --style: style.wasm and
+                            custom-modes.json, the custom modes; each its own branch)
 python -m builder links [--write]   derive every picture's explorer link from its
                             provenance, or the reason it has none
 python -m builder serve [--port N]  preview the committed tree at http://localhost:8000/
@@ -830,7 +832,7 @@ page to the later one moved no claim any earlier figure makes.
 ## The palette library has a record, the way a gallery does
 
 `palettes/all-palettes.html` is a thousand rows of the same shape, so it is generated
-rather than written. What it is generated *from* is `palettes/library.jsonl` — **1,021 rows,
+rather than written. What it is generated *from* is `palettes/library.jsonl` — **1,038 rows,
 one per palette**, carrying the four facts the page is made of and nothing else: the name,
 which is the strip's file name and the key everything else addresses it by; whether the
 map closes on the colour it opened with, which is the alt text and, in a render, the fold;
@@ -843,7 +845,7 @@ reads every map onto three pinned reference fields and writes a row for each cod
 the map comes out *dominant* in, with that cell's mean share and the hue family it rolls up
 to. A map's hue is the family of its largest such row — the colour it actually puts most of
 a picture in — and the sections are the codebook's twelve hues in the wheel's own order:
-rose, red, orange, yellow, lime, green, teal, cyan, azure, blue, purple, magenta. All 1,021
+rose, red, orange, yellow, lime, green, teal, cyan, azure, blue, purple, magenta. All 1,038
 maps carry at least one cell and no map ties for its largest, so every map lands in exactly
 one section and none needs a bucket for the colourless; `_uncarried` is the check that says
 so if that ever stops being true. Inside a section the maps are in the order of the name
@@ -852,7 +854,7 @@ the page shows, case folded.
 What this replaced was a sixteen-way hierarchical clustering of a 96-number descriptor,
 which grouped maps by a distance nothing on the page could show, and a `<details>` fold
 that hid 78 near-duplicate maps under the 823 that led them, of the 901 the library held
-that day. **The page shows all 1,021 of today's in
+that day. **The page shows all 1,038 of today's in
 their own right now** — the near-duplicate reading is the pipeline's business, where it
 narrows the pool a run draws from, and it was never a thing a reader of a library page
 wanted done to it.

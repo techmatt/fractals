@@ -1,0 +1,9478 @@
+{
+ "schema": 1,
+ "modes": [
+  {
+   "name": "brass-foam",
+   "style": "bronze_packing",
+   "palette": "bronze_packing",
+   "variant": "current",
+   "what": "Discs packed inside discs: a new disc channel read at the step an orbit enters it, with metallic rims, nested beads and gold star-flowers from the set's interior.",
+   "knobs": [
+    {
+     "name": "disc_size",
+     "label": "Bubble size",
+     "what": "the largest bubble, as a share of the frame width; smaller packs more, finer bubbles",
+     "default": 0.12,
+     "range": [
+      0.06,
+      0.16
+     ],
+     "set": [
+      "/layers/2/channel/bubble/largest",
+      "/layers/3/channel/bubble/largest",
+      "/layers/4/channel/bubble/largest",
+      "/layers/5/channel/bubble/largest",
+      "/layers/6/channel/bubble/largest",
+      "/layers/7/channel/bubble/largest",
+      "/layers/8/channel/bubble/largest",
+      "/layers/9/channel/bubble/largest",
+      "/layers/10/channel/bubble/largest",
+      "/layers/11/channel/bubble/largest",
+      "/layers/2/warp/channel/bubble/largest"
+     ]
+    },
+    {
+     "name": "shine",
+     "label": "Metal shine",
+     "what": "how bright the specular glint on each disc's dome is",
+     "default": 0.5,
+     "range": [
+      0.2,
+      0.9
+     ],
+     "set": [
+      "/layers/4/light/specular"
+     ]
+    },
+    {
+     "name": "rim_glow",
+     "label": "Rim glow",
+     "what": "the bright metallic ring round every disc",
+     "default": 1.0,
+     "range": [
+      0.4,
+      1.0
+     ],
+     "set": [
+      "/layers/6/opacity"
+     ]
+    },
+    {
+     "name": "star_rays",
+     "label": "Star rays",
+     "what": "the six-pointed star cut into each disc",
+     "default": 0.3,
+     "range": [
+      0.0,
+      0.6
+     ],
+     "set": [
+      "/layers/11/opacity"
+     ]
+    }
+   ],
+   "stack": {
+    "name": "bronze_packing",
+    "interior": {
+     "palette": 0.8
+    },
+    "layers": [
+     {
+      "kind": "palette",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "palette": {
+       "transfer": {
+        "kind": "rank"
+       },
+       "gamma": 1.0
+      }
+     },
+     {
+      "kind": "palette",
+      "channel": {
+       "inside": {
+        "iterations": 1000
+       }
+      },
+      "palette": {
+       "transfer": {
+        "kind": "rank"
+       },
+       "gamma": 0.6,
+       "cycles": 1.0
+      }
+     },
+     {
+      "kind": "palette",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.3,
+        "hit": 1,
+        "read": "step",
+        "spacing": 1.0,
+        "escaped": true,
+        "largest": 0.12
+       }
+      },
+      "palette": {
+       "transfer": {
+        "kind": "rank"
+       },
+       "gamma": 1.0
+      },
+      "warp": {
+       "channel": {
+        "bubble": {
+         "center": [
+          0.5,
+          0.5
+         ],
+         "radius": 0.3,
+         "hit": 1,
+         "read": "height",
+         "spacing": 1.0,
+         "escaped": true,
+         "largest": 0.12
+        }
+       },
+       "amount": -0.3
+      }
+     },
+     {
+      "kind": "palette",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.3,
+        "hit": 2,
+        "read": "height",
+        "spacing": 1.0,
+        "escaped": true,
+        "largest": 0.12
+       }
+      },
+      "palette": {
+       "transfer": {
+        "kind": "rank"
+       },
+       "gamma": 1.0
+      },
+      "opacity": 0.35
+     },
+     {
+      "kind": "light",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.3,
+        "hit": 1,
+        "read": "height",
+        "spacing": 1.0,
+        "escaped": true,
+        "largest": 0.12
+       }
+      },
+      "light": {
+       "period": 2.0,
+       "rings": 0.4,
+       "slope": 0.0,
+       "ambient": 0.6,
+       "diffuse": 0.5,
+       "specular": 0.5,
+       "shininess": 40.0,
+       "rim": 0.6,
+       "rim_power": 4.0,
+       "highlight": {
+        "palette": 0.97
+       }
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.3,
+        "hit": 1,
+        "read": "height",
+        "spacing": 1.0,
+        "escaped": true,
+        "largest": 0.12
+       },
+       "invert": true
+      },
+      "power": 6.0,
+      "color": {
+       "palette": 0.0
+      },
+      "blend": "multiply",
+      "opacity": 0.8
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.3,
+        "hit": 1,
+        "read": "height",
+        "spacing": 1.0,
+        "escaped": true,
+        "largest": 0.12
+       },
+       "invert": true
+      },
+      "power": 40.0,
+      "color": {
+       "palette": 0.92
+      },
+      "blend": "add",
+      "opacity": 1.0
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.3,
+        "hit": 1,
+        "read": "height",
+        "spacing": 1.0,
+        "escaped": true,
+        "largest": 0.12
+       }
+      },
+      "power": 30.0,
+      "color": {
+       "palette": 0.97
+      },
+      "blend": "screen",
+      "opacity": 0.8
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.3,
+        "hit": 2,
+        "read": "height",
+        "spacing": 1.0,
+        "escaped": true,
+        "largest": 0.12
+       },
+       "invert": true
+      },
+      "power": 30.0,
+      "color": {
+       "palette": 0.92
+      },
+      "blend": "screen",
+      "opacity": 0.3
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.3,
+        "hit": 2,
+        "read": "height",
+        "spacing": 1.0,
+        "escaped": true,
+        "largest": 0.12
+       }
+      },
+      "power": 30.0,
+      "color": {
+       "palette": 0.97
+      },
+      "blend": "screen",
+      "opacity": 0.7
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.3,
+        "hit": 1,
+        "read": "step",
+        "spacing": 1.0,
+        "escaped": true,
+        "largest": 0.12
+       }
+      },
+      "power": 3.0,
+      "color": {
+       "palette": 0.97
+      },
+      "blend": "screen",
+      "opacity": 0.5
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.3,
+        "hit": 1,
+        "read": "angle",
+        "spacing": 1.0,
+        "escaped": true,
+        "largest": 0.12
+       }
+      },
+      "sheet": {
+       "bands": 6.0,
+       "rank": false,
+       "edge": 0.04,
+       "fill": 0.0
+      },
+      "color": {
+       "palette": 0.9
+      },
+      "blend": "screen",
+      "opacity": 0.3
+     }
+    ],
+    "tone": {
+     "median": 0.321,
+     "p10": 0.099
+    }
+   },
+   "shown": [
+    {
+     "keep": "style_bronze_packing_r1/shortlist/00_julia-multibrot6_9cf619af",
+     "caption": "julia multibrot6 · matched map",
+     "location": {
+      "schema": 1,
+      "name": "00_julia-multibrot6_9cf619af",
+      "family": {
+       "c": [
+        "0.6768149646310875",
+        "0.03142641012857843"
+       ],
+       "degree": 6,
+       "kind": "julia"
+      },
+      "viewport": {
+       "center_re": "0.6976021029860747",
+       "center_im": "0.16697627061124376",
+       "width": "0.0006634180709363431"
+      },
+      "maxiter": 18571,
+      "note": "final139_general seat 848 (threads, julia:multibrot6)"
+     },
+     "colormap": "bronze_packing",
+     "stack": {
+      "name": "bronze_packing",
+      "interior": {
+       "palette": 0.8
+      },
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         },
+         "gamma": 1.0
+        }
+       },
+       {
+        "kind": "palette",
+        "channel": {
+         "inside": {
+          "iterations": 1000
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         },
+         "gamma": 0.6,
+         "cycles": 1.0
+        }
+       },
+       {
+        "kind": "palette",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 1,
+          "read": "step",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         },
+         "gamma": 1.0
+        },
+        "warp": {
+         "channel": {
+          "bubble": {
+           "center": [
+            0.5,
+            0.5
+           ],
+           "radius": 0.3,
+           "hit": 1,
+           "read": "height",
+           "spacing": 1.0,
+           "escaped": true,
+           "largest": 0.12
+          }
+         },
+         "amount": -0.3
+        }
+       },
+       {
+        "kind": "palette",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 2,
+          "read": "height",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         },
+         "gamma": 1.0
+        },
+        "opacity": 0.35
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 1,
+          "read": "height",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         }
+        },
+        "light": {
+         "period": 2.0,
+         "rings": 0.4,
+         "slope": 0.0,
+         "ambient": 0.6,
+         "diffuse": 0.5,
+         "specular": 0.5,
+         "shininess": 40.0,
+         "rim": 0.6,
+         "rim_power": 4.0,
+         "highlight": {
+          "palette": 0.97
+         }
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 1,
+          "read": "height",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         },
+         "invert": true
+        },
+        "power": 6.0,
+        "color": {
+         "palette": 0.0
+        },
+        "blend": "multiply",
+        "opacity": 0.8
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 1,
+          "read": "height",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         },
+         "invert": true
+        },
+        "power": 40.0,
+        "color": {
+         "palette": 0.92
+        },
+        "blend": "add",
+        "opacity": 1.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 1,
+          "read": "height",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         }
+        },
+        "power": 30.0,
+        "color": {
+         "palette": 0.97
+        },
+        "blend": "screen",
+        "opacity": 0.8
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 2,
+          "read": "height",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         },
+         "invert": true
+        },
+        "power": 30.0,
+        "color": {
+         "palette": 0.92
+        },
+        "blend": "screen",
+        "opacity": 0.3
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 2,
+          "read": "height",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         }
+        },
+        "power": 30.0,
+        "color": {
+         "palette": 0.97
+        },
+        "blend": "screen",
+        "opacity": 0.7
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 1,
+          "read": "step",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         }
+        },
+        "power": 3.0,
+        "color": {
+         "palette": 0.97
+        },
+        "blend": "screen",
+        "opacity": 0.5
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 1,
+          "read": "angle",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         }
+        },
+        "sheet": {
+         "bands": 6.0,
+         "rank": false,
+         "edge": 0.04,
+         "fill": 0.0
+        },
+        "color": {
+         "palette": 0.9
+        },
+        "blend": "screen",
+        "opacity": 0.3
+       }
+      ],
+      "tone": {
+       "median": 0.321,
+       "p10": 0.05
+      }
+     }
+    },
+    {
+     "keep": "style_bronze_packing_r1/shortlist/02_julia-multibrot3_b4307aa3",
+     "caption": "julia multibrot3 · matched map",
+     "location": {
+      "schema": 1,
+      "name": "02_julia-multibrot3_b4307aa3",
+      "family": {
+       "c": [
+        "0.118076218180586",
+        "0.7935778714194577"
+       ],
+       "degree": 3,
+       "kind": "julia"
+      },
+      "viewport": {
+       "center_re": "-0.7999937459218279",
+       "center_im": "-0.2685633247535766",
+       "width": "0.1788914760514211"
+      },
+      "maxiter": 8881,
+      "note": "final139_general seat 500 (smooth_stripe, julia:multibrot3)"
+     },
+     "colormap": "bronze_packing",
+     "stack": {
+      "name": "bronze_packing",
+      "interior": {
+       "palette": 0.8
+      },
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         },
+         "gamma": 1.0
+        }
+       },
+       {
+        "kind": "palette",
+        "channel": {
+         "inside": {
+          "iterations": 1000
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         },
+         "gamma": 0.6,
+         "cycles": 1.0
+        }
+       },
+       {
+        "kind": "palette",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 1,
+          "read": "step",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         },
+         "gamma": 1.0
+        },
+        "warp": {
+         "channel": {
+          "bubble": {
+           "center": [
+            0.5,
+            0.5
+           ],
+           "radius": 0.3,
+           "hit": 1,
+           "read": "height",
+           "spacing": 1.0,
+           "escaped": true,
+           "largest": 0.12
+          }
+         },
+         "amount": -0.3
+        }
+       },
+       {
+        "kind": "palette",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 2,
+          "read": "height",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         },
+         "gamma": 1.0
+        },
+        "opacity": 0.35
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 1,
+          "read": "height",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         }
+        },
+        "light": {
+         "period": 2.0,
+         "rings": 0.4,
+         "slope": 0.0,
+         "ambient": 0.6,
+         "diffuse": 0.5,
+         "specular": 0.5,
+         "shininess": 40.0,
+         "rim": 0.6,
+         "rim_power": 4.0,
+         "highlight": {
+          "palette": 0.97
+         }
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 1,
+          "read": "height",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         },
+         "invert": true
+        },
+        "power": 6.0,
+        "color": {
+         "palette": 0.0
+        },
+        "blend": "multiply",
+        "opacity": 0.8
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 1,
+          "read": "height",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         },
+         "invert": true
+        },
+        "power": 40.0,
+        "color": {
+         "palette": 0.92
+        },
+        "blend": "add",
+        "opacity": 1.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 1,
+          "read": "height",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         }
+        },
+        "power": 30.0,
+        "color": {
+         "palette": 0.97
+        },
+        "blend": "screen",
+        "opacity": 0.8
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 2,
+          "read": "height",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         },
+         "invert": true
+        },
+        "power": 30.0,
+        "color": {
+         "palette": 0.92
+        },
+        "blend": "screen",
+        "opacity": 0.3
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 2,
+          "read": "height",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         }
+        },
+        "power": 30.0,
+        "color": {
+         "palette": 0.97
+        },
+        "blend": "screen",
+        "opacity": 0.7
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 1,
+          "read": "step",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         }
+        },
+        "power": 3.0,
+        "color": {
+         "palette": 0.97
+        },
+        "blend": "screen",
+        "opacity": 0.5
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 1,
+          "read": "angle",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         }
+        },
+        "sheet": {
+         "bands": 6.0,
+         "rank": false,
+         "edge": 0.04,
+         "fill": 0.0
+        },
+        "color": {
+         "palette": 0.9
+        },
+        "blend": "screen",
+        "opacity": 0.3
+       }
+      ],
+      "tone": {
+       "median": 0.321,
+       "p10": 0.05
+      }
+     }
+    },
+    {
+     "keep": "style_bronze_packing_r1/shortlist/05_julia-multibrot3_c8f1fd60",
+     "caption": "julia multibrot3 · matched map",
+     "location": {
+      "schema": 1,
+      "name": "05_julia-multibrot3_c8f1fd60",
+      "family": {
+       "c": [
+        "0.15672426598054978",
+        "0.8134251857082828"
+       ],
+       "degree": 3,
+       "kind": "julia"
+      },
+      "viewport": {
+       "center_re": "-0.2741353766303502",
+       "center_im": "0.15108303238335868",
+       "width": "0.00023772125105866196"
+      },
+      "maxiter": 20348,
+      "note": "final139_general seat 160 (smooth_mean_angle, julia:multibrot3)"
+     },
+     "colormap": "bronze_packing",
+     "stack": {
+      "name": "bronze_packing",
+      "interior": {
+       "palette": 0.8
+      },
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         },
+         "gamma": 1.0
+        }
+       },
+       {
+        "kind": "palette",
+        "channel": {
+         "inside": {
+          "iterations": 1000
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         },
+         "gamma": 0.6,
+         "cycles": 1.0
+        }
+       },
+       {
+        "kind": "palette",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 1,
+          "read": "step",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         },
+         "gamma": 1.0
+        },
+        "warp": {
+         "channel": {
+          "bubble": {
+           "center": [
+            0.5,
+            0.5
+           ],
+           "radius": 0.3,
+           "hit": 1,
+           "read": "height",
+           "spacing": 1.0,
+           "escaped": true,
+           "largest": 0.12
+          }
+         },
+         "amount": -0.3
+        }
+       },
+       {
+        "kind": "palette",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 2,
+          "read": "height",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         },
+         "gamma": 1.0
+        },
+        "opacity": 0.35
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 1,
+          "read": "height",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         }
+        },
+        "light": {
+         "period": 2.0,
+         "rings": 0.4,
+         "slope": 0.0,
+         "ambient": 0.6,
+         "diffuse": 0.5,
+         "specular": 0.5,
+         "shininess": 40.0,
+         "rim": 0.6,
+         "rim_power": 4.0,
+         "highlight": {
+          "palette": 0.97
+         }
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 1,
+          "read": "height",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         },
+         "invert": true
+        },
+        "power": 6.0,
+        "color": {
+         "palette": 0.0
+        },
+        "blend": "multiply",
+        "opacity": 0.8
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 1,
+          "read": "height",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         },
+         "invert": true
+        },
+        "power": 40.0,
+        "color": {
+         "palette": 0.92
+        },
+        "blend": "add",
+        "opacity": 1.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 1,
+          "read": "height",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         }
+        },
+        "power": 30.0,
+        "color": {
+         "palette": 0.97
+        },
+        "blend": "screen",
+        "opacity": 0.8
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 2,
+          "read": "height",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         },
+         "invert": true
+        },
+        "power": 30.0,
+        "color": {
+         "palette": 0.92
+        },
+        "blend": "screen",
+        "opacity": 0.3
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 2,
+          "read": "height",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         }
+        },
+        "power": 30.0,
+        "color": {
+         "palette": 0.97
+        },
+        "blend": "screen",
+        "opacity": 0.7
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 1,
+          "read": "step",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         }
+        },
+        "power": 3.0,
+        "color": {
+         "palette": 0.97
+        },
+        "blend": "screen",
+        "opacity": 0.5
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 1,
+          "read": "angle",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         }
+        },
+        "sheet": {
+         "bands": 6.0,
+         "rank": false,
+         "edge": 0.04,
+         "fill": 0.0
+        },
+        "color": {
+         "palette": 0.9
+        },
+        "blend": "screen",
+        "opacity": 0.3
+       }
+      ],
+      "tone": {
+       "median": 0.321,
+       "p10": 0.05
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "lacquer-lobes",
+   "style": "glossy_lobes",
+   "palette": "glossy_lobes",
+   "variant": "current",
+   "what": "Soft lit blue lobes (the disc grid, lit as one dome each) between gold star webs from the strip trap, with halo and sparkle.",
+   "knobs": [
+    {
+     "name": "light_angle",
+     "label": "Light direction",
+     "what": "where the light comes from, in degrees round the frame (135 is the upper left)",
+     "default": 135.0,
+     "range": [
+      45.0,
+      225.0
+     ],
+     "set": [
+      "/layers/*/light/azimuth"
+     ]
+    },
+    {
+     "name": "gloss",
+     "label": "Gloss",
+     "what": "the highlight on each blue lobe",
+     "default": 0.9,
+     "range": [
+      0.4,
+      1.0
+     ],
+     "set": [
+      "/layers/2/light/specular",
+      "/layers/5/light/specular"
+     ]
+    },
+    {
+     "name": "web_width",
+     "label": "Web width",
+     "what": "how wide the gold star-web strands are",
+     "default": 0.1,
+     "range": [
+      0.06,
+      0.12
+     ],
+     "set": [
+      "/layers/7/channel/bubble/radius",
+      "/layers/8/channel/bubble/radius",
+      "/layers/9/channel/bubble/radius",
+      "/layers/10/channel/bubble/radius"
+     ]
+    },
+    {
+     "name": "sparkle",
+     "label": "Sparkle",
+     "what": "the star points of light along the set",
+     "default": 1.0,
+     "range": [
+      0.0,
+      1.0
+     ],
+     "set": [
+      "/layers/13/opacity",
+      {
+       "path": "/layers/14/opacity",
+       "scale": 0.6
+      }
+     ]
+    }
+   ],
+   "stack": {
+    "name": "glossy_lobes",
+    "interior": {
+     "rgb": "#1b3260"
+    },
+    "tone": {
+     "median": 0.339,
+     "p10": 0.093
+    },
+    "layers": [
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "power": 0.01,
+      "color": {
+       "rgb": "#0f2248"
+      },
+      "opacity": 1.0
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "inside": {
+        "iterations": 1000
+       }
+      },
+      "power": 0.01,
+      "color": {
+       "rgb": "#4a80d4"
+      },
+      "opacity": 1.0
+     },
+     {
+      "kind": "light",
+      "channel": {
+       "inside": {
+        "iterations": 1000
+       }
+      },
+      "light": {
+       "bands": 1.0,
+       "rings": 1.0,
+       "slope": 0.0,
+       "azimuth": 135.0,
+       "elevation": 55.0,
+       "ambient": 0.9,
+       "diffuse": 0.5,
+       "specular": 0.9,
+       "shininess": 20.0,
+       "rim": 0.2,
+       "rim_power": 3.0,
+       "highlight": {
+        "rgb": "#d6e8ff"
+       }
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "inside": {
+        "iterations": 1000
+       },
+       "invert": true
+      },
+      "power": 6.0,
+      "color": {
+       "rgb": "#9cc4ff"
+      },
+      "blend": "screen",
+      "opacity": 0.4
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.3,
+        "read": "height",
+        "escaped": true,
+        "largest": 0.35,
+        "spacing": 1.0,
+        "smallest": 0.02
+       }
+      },
+      "power": 0.01,
+      "color": {
+       "rgb": "#4a80d4"
+      },
+      "opacity": 1.0
+     },
+     {
+      "kind": "light",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.3,
+        "read": "height",
+        "escaped": true,
+        "largest": 0.35,
+        "spacing": 1.0,
+        "smallest": 0.02
+       }
+      },
+      "light": {
+       "period": 2.0,
+       "rings": 1.0,
+       "slope": 0.0,
+       "azimuth": 135.0,
+       "elevation": 55.0,
+       "ambient": 0.9,
+       "diffuse": 0.5,
+       "specular": 0.9,
+       "shininess": 20.0,
+       "rim": 0.2,
+       "rim_power": 3.0,
+       "highlight": {
+        "rgb": "#d6e8ff"
+       }
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.3,
+        "read": "height",
+        "escaped": true,
+        "largest": 0.35,
+        "spacing": 1.0,
+        "smallest": 0.02
+       },
+       "invert": true
+      },
+      "power": 6.0,
+      "color": {
+       "rgb": "#9cc4ff"
+      },
+      "blend": "screen",
+      "opacity": 0.4
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.1,
+        "read": "height",
+        "spacing": 2.0,
+        "escaped": true,
+        "largest": 0.2,
+        "smallest": 0.015,
+        "shape": "strip",
+        "tilt": 60.0
+       }
+      },
+      "power": 0.01,
+      "color": {
+       "palette": 0.84
+      },
+      "opacity": 0.9
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.1,
+        "read": "step",
+        "spacing": 2.0,
+        "escaped": true,
+        "largest": 0.2,
+        "smallest": 0.015,
+        "shape": "strip",
+        "tilt": 60.0
+       }
+      },
+      "power": 2.0,
+      "color": {
+       "palette": 1.0
+      },
+      "opacity": 0.8
+     },
+     {
+      "kind": "light",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.1,
+        "read": "across",
+        "spacing": 2.0,
+        "escaped": true,
+        "largest": 0.2,
+        "smallest": 0.015,
+        "shape": "strip",
+        "tilt": 60.0
+       }
+      },
+      "light": {
+       "bands": 1.0,
+       "rings": 1.0,
+       "slope": 0.5,
+       "azimuth": 135.0,
+       "elevation": 45.0,
+       "ambient": 0.75,
+       "diffuse": 0.5,
+       "specular": 0.5,
+       "shininess": 12.0,
+       "rim": 0.0,
+       "rim_power": 3.0,
+       "highlight": {
+        "palette": 0.88
+       }
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.1,
+        "read": "height",
+        "spacing": 2.0,
+        "escaped": true,
+        "largest": 0.2,
+        "smallest": 0.015,
+        "shape": "strip",
+        "tilt": 60.0
+       },
+       "invert": true
+      },
+      "power": 10.0,
+      "color": {
+       "palette": 0.9
+      },
+      "blend": "screen",
+      "opacity": 0.8
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "de"
+       }
+      },
+      "falloff": 0.01,
+      "color": {
+       "palette": 0.8
+      },
+      "blend": "screen",
+      "opacity": 0.4
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "de"
+       }
+      },
+      "falloff": 0.0002,
+      "color": {
+       "palette": 0.9
+      },
+      "blend": "screen",
+      "opacity": 0.5
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.06,
+        "spacing": 1.0,
+        "read": "height",
+        "escaped": true,
+        "largest": 0.004
+       }
+      },
+      "power": 12.0,
+      "color": {
+       "rgb": "#fff4d6"
+      },
+      "blend": "add",
+      "opacity": 1.0,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        },
+        "invert": true
+       },
+       "power": 3.0
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.06,
+        "spacing": 1.0,
+        "read": "height",
+        "escaped": true,
+        "largest": 0.004
+       }
+      },
+      "power": 16.0,
+      "color": {
+       "rgb": "#cfe2ff"
+      },
+      "blend": "add",
+      "opacity": 0.6,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "power": 2.0
+      }
+     }
+    ]
+   },
+   "shown": [
+    {
+     "keep": "style_glossy_lobes_r1/locations/locations__01_julia-multibrot6_d70c928f_glossy_lobes",
+     "caption": "julia multibrot6",
+     "location": {
+      "schema": 1,
+      "name": "julia-multibrot6_d70c928f",
+      "family": {
+       "c": [
+        "0.6941350542063319",
+        "-0.6649522467286209"
+       ],
+       "degree": 6,
+       "kind": "julia"
+      },
+      "viewport": {
+       "center_re": "-0.15128615317625144",
+       "center_im": "0.41725198804251845",
+       "width": "0.00031903470996085383"
+      },
+      "maxiter": 19838,
+      "note": "final139_general seat 722 (smooth, julia:multibrot6)",
+      "gallery": {
+       "record": "final139_general",
+       "seat": 722,
+       "key": "d70c928f5417e54a",
+       "p_spiral": 0.071239
+      },
+      "ink": 0.26637
+     },
+     "colormap": "glossy_lobes",
+     "stack": {
+      "name": "glossy_lobes",
+      "interior": {
+       "rgb": "#1b3260"
+      },
+      "tone": {
+       "median": 0.339,
+       "p10": 0.093
+      },
+      "layers": [
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "power": 0.01,
+        "color": {
+         "rgb": "#0f2248"
+        },
+        "opacity": 1.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "inside": {
+          "iterations": 1000
+         }
+        },
+        "power": 0.01,
+        "color": {
+         "rgb": "#4a80d4"
+        },
+        "opacity": 1.0
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "inside": {
+          "iterations": 1000
+         }
+        },
+        "light": {
+         "bands": 1.0,
+         "rings": 1.0,
+         "slope": 0.0,
+         "azimuth": 135.0,
+         "elevation": 55.0,
+         "ambient": 0.9,
+         "diffuse": 0.5,
+         "specular": 0.9,
+         "shininess": 20.0,
+         "rim": 0.2,
+         "rim_power": 3.0,
+         "highlight": {
+          "rgb": "#d6e8ff"
+         }
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "inside": {
+          "iterations": 1000
+         },
+         "invert": true
+        },
+        "power": 6.0,
+        "color": {
+         "rgb": "#9cc4ff"
+        },
+        "blend": "screen",
+        "opacity": 0.4
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "read": "height",
+          "escaped": true,
+          "largest": 0.35,
+          "spacing": 1.0,
+          "smallest": 0.02
+         }
+        },
+        "power": 0.01,
+        "color": {
+         "rgb": "#4a80d4"
+        },
+        "opacity": 1.0
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "read": "height",
+          "escaped": true,
+          "largest": 0.35,
+          "spacing": 1.0,
+          "smallest": 0.02
+         }
+        },
+        "light": {
+         "period": 2.0,
+         "rings": 1.0,
+         "slope": 0.0,
+         "azimuth": 135.0,
+         "elevation": 55.0,
+         "ambient": 0.9,
+         "diffuse": 0.5,
+         "specular": 0.9,
+         "shininess": 20.0,
+         "rim": 0.2,
+         "rim_power": 3.0,
+         "highlight": {
+          "rgb": "#d6e8ff"
+         }
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "read": "height",
+          "escaped": true,
+          "largest": 0.35,
+          "spacing": 1.0,
+          "smallest": 0.02
+         },
+         "invert": true
+        },
+        "power": 6.0,
+        "color": {
+         "rgb": "#9cc4ff"
+        },
+        "blend": "screen",
+        "opacity": 0.4
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.1,
+          "read": "height",
+          "spacing": 2.0,
+          "escaped": true,
+          "largest": 0.2,
+          "smallest": 0.015,
+          "shape": "strip",
+          "tilt": 60.0
+         }
+        },
+        "power": 0.01,
+        "color": {
+         "palette": 0.84
+        },
+        "opacity": 0.9
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.1,
+          "read": "step",
+          "spacing": 2.0,
+          "escaped": true,
+          "largest": 0.2,
+          "smallest": 0.015,
+          "shape": "strip",
+          "tilt": 60.0
+         }
+        },
+        "power": 2.0,
+        "color": {
+         "palette": 1.0
+        },
+        "opacity": 0.8
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.1,
+          "read": "across",
+          "spacing": 2.0,
+          "escaped": true,
+          "largest": 0.2,
+          "smallest": 0.015,
+          "shape": "strip",
+          "tilt": 60.0
+         }
+        },
+        "light": {
+         "bands": 1.0,
+         "rings": 1.0,
+         "slope": 0.5,
+         "azimuth": 135.0,
+         "elevation": 45.0,
+         "ambient": 0.75,
+         "diffuse": 0.5,
+         "specular": 0.5,
+         "shininess": 12.0,
+         "rim": 0.0,
+         "rim_power": 3.0,
+         "highlight": {
+          "palette": 0.88
+         }
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.1,
+          "read": "height",
+          "spacing": 2.0,
+          "escaped": true,
+          "largest": 0.2,
+          "smallest": 0.015,
+          "shape": "strip",
+          "tilt": 60.0
+         },
+         "invert": true
+        },
+        "power": 10.0,
+        "color": {
+         "palette": 0.9
+        },
+        "blend": "screen",
+        "opacity": 0.8
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "falloff": 0.01,
+        "color": {
+         "palette": 0.8
+        },
+        "blend": "screen",
+        "opacity": 0.4
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "falloff": 0.0002,
+        "color": {
+         "palette": 0.9
+        },
+        "blend": "screen",
+        "opacity": 0.5
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.06,
+          "spacing": 1.0,
+          "read": "height",
+          "escaped": true,
+          "largest": 0.004
+         }
+        },
+        "power": 12.0,
+        "color": {
+         "rgb": "#fff4d6"
+        },
+        "blend": "add",
+        "opacity": 1.0,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          },
+          "invert": true
+         },
+         "power": 3.0
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.06,
+          "spacing": 1.0,
+          "read": "height",
+          "escaped": true,
+          "largest": 0.004
+         }
+        },
+        "power": 16.0,
+        "color": {
+         "rgb": "#cfe2ff"
+        },
+        "blend": "add",
+        "opacity": 0.6,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "power": 2.0
+        }
+       }
+      ]
+     }
+    },
+    {
+     "keep": "style_glossy_lobes_r1/locations/locations__02_multibrot5_538fb4d6_glossy_lobes",
+     "caption": "multibrot5",
+     "location": {
+      "schema": 1,
+      "name": "multibrot5_538fb4d6",
+      "family": {
+       "kind": "multibrot",
+       "degree": 5
+      },
+      "viewport": {
+       "center_re": "0.6271376848243562",
+       "center_im": "0.5247130774816203",
+       "width": "0.0000007732895616692143"
+      },
+      "maxiter": 30264,
+      "note": "final139_general seat 186 (stripe, multibrot5)",
+      "gallery": {
+       "record": "final139_general",
+       "seat": 186,
+       "key": "538fb4d6cd2a1a69",
+       "p_spiral": 0.012459
+      },
+      "ink": 0.23338
+     },
+     "colormap": "glossy_lobes",
+     "stack": {
+      "name": "glossy_lobes",
+      "interior": {
+       "rgb": "#1b3260"
+      },
+      "tone": {
+       "median": 0.339,
+       "p10": 0.093
+      },
+      "layers": [
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "power": 0.01,
+        "color": {
+         "rgb": "#0f2248"
+        },
+        "opacity": 1.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "inside": {
+          "iterations": 1000
+         }
+        },
+        "power": 0.01,
+        "color": {
+         "rgb": "#4a80d4"
+        },
+        "opacity": 1.0
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "inside": {
+          "iterations": 1000
+         }
+        },
+        "light": {
+         "bands": 1.0,
+         "rings": 1.0,
+         "slope": 0.0,
+         "azimuth": 135.0,
+         "elevation": 55.0,
+         "ambient": 0.9,
+         "diffuse": 0.5,
+         "specular": 0.9,
+         "shininess": 20.0,
+         "rim": 0.2,
+         "rim_power": 3.0,
+         "highlight": {
+          "rgb": "#d6e8ff"
+         }
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "inside": {
+          "iterations": 1000
+         },
+         "invert": true
+        },
+        "power": 6.0,
+        "color": {
+         "rgb": "#9cc4ff"
+        },
+        "blend": "screen",
+        "opacity": 0.4
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "read": "height",
+          "escaped": true,
+          "largest": 0.35,
+          "spacing": 1.0,
+          "smallest": 0.02
+         }
+        },
+        "power": 0.01,
+        "color": {
+         "rgb": "#4a80d4"
+        },
+        "opacity": 1.0
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "read": "height",
+          "escaped": true,
+          "largest": 0.35,
+          "spacing": 1.0,
+          "smallest": 0.02
+         }
+        },
+        "light": {
+         "period": 2.0,
+         "rings": 1.0,
+         "slope": 0.0,
+         "azimuth": 135.0,
+         "elevation": 55.0,
+         "ambient": 0.9,
+         "diffuse": 0.5,
+         "specular": 0.9,
+         "shininess": 20.0,
+         "rim": 0.2,
+         "rim_power": 3.0,
+         "highlight": {
+          "rgb": "#d6e8ff"
+         }
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "read": "height",
+          "escaped": true,
+          "largest": 0.35,
+          "spacing": 1.0,
+          "smallest": 0.02
+         },
+         "invert": true
+        },
+        "power": 6.0,
+        "color": {
+         "rgb": "#9cc4ff"
+        },
+        "blend": "screen",
+        "opacity": 0.4
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.1,
+          "read": "height",
+          "spacing": 2.0,
+          "escaped": true,
+          "largest": 0.2,
+          "smallest": 0.015,
+          "shape": "strip",
+          "tilt": 60.0
+         }
+        },
+        "power": 0.01,
+        "color": {
+         "palette": 0.84
+        },
+        "opacity": 0.9
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.1,
+          "read": "step",
+          "spacing": 2.0,
+          "escaped": true,
+          "largest": 0.2,
+          "smallest": 0.015,
+          "shape": "strip",
+          "tilt": 60.0
+         }
+        },
+        "power": 2.0,
+        "color": {
+         "palette": 1.0
+        },
+        "opacity": 0.8
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.1,
+          "read": "across",
+          "spacing": 2.0,
+          "escaped": true,
+          "largest": 0.2,
+          "smallest": 0.015,
+          "shape": "strip",
+          "tilt": 60.0
+         }
+        },
+        "light": {
+         "bands": 1.0,
+         "rings": 1.0,
+         "slope": 0.5,
+         "azimuth": 135.0,
+         "elevation": 45.0,
+         "ambient": 0.75,
+         "diffuse": 0.5,
+         "specular": 0.5,
+         "shininess": 12.0,
+         "rim": 0.0,
+         "rim_power": 3.0,
+         "highlight": {
+          "palette": 0.88
+         }
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.1,
+          "read": "height",
+          "spacing": 2.0,
+          "escaped": true,
+          "largest": 0.2,
+          "smallest": 0.015,
+          "shape": "strip",
+          "tilt": 60.0
+         },
+         "invert": true
+        },
+        "power": 10.0,
+        "color": {
+         "palette": 0.9
+        },
+        "blend": "screen",
+        "opacity": 0.8
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "falloff": 0.01,
+        "color": {
+         "palette": 0.8
+        },
+        "blend": "screen",
+        "opacity": 0.4
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "falloff": 0.0002,
+        "color": {
+         "palette": 0.9
+        },
+        "blend": "screen",
+        "opacity": 0.5
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.06,
+          "spacing": 1.0,
+          "read": "height",
+          "escaped": true,
+          "largest": 0.004
+         }
+        },
+        "power": 12.0,
+        "color": {
+         "rgb": "#fff4d6"
+        },
+        "blend": "add",
+        "opacity": 1.0,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          },
+          "invert": true
+         },
+         "power": 3.0
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.06,
+          "spacing": 1.0,
+          "read": "height",
+          "escaped": true,
+          "largest": 0.004
+         }
+        },
+        "power": 16.0,
+        "color": {
+         "rgb": "#cfe2ff"
+        },
+        "blend": "add",
+        "opacity": 0.6,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "power": 2.0
+        }
+       }
+      ]
+     }
+    },
+    {
+     "keep": "style_glossy_lobes_r1/locations/locations__09_mandelbrot_c7223dda_glossy_lobes",
+     "caption": "mandelbrot",
+     "location": {
+      "schema": 1,
+      "name": "mandelbrot_c7223dda",
+      "family": {
+       "kind": "mandelbrot"
+      },
+      "viewport": {
+       "center_re": "-0.055981091728619654",
+       "center_im": "0.6706003361423615",
+       "width": "0.0000008056597797234061"
+      },
+      "maxiter": 30193,
+      "note": "final139_general seat 849 (threads, mandelbrot)",
+      "gallery": {
+       "record": "final139_general",
+       "seat": 849,
+       "key": "c7223dda86ae5631",
+       "p_spiral": 0.043994
+      },
+      "ink": 0.25059
+     },
+     "colormap": "glossy_lobes",
+     "stack": {
+      "name": "glossy_lobes",
+      "interior": {
+       "rgb": "#1b3260"
+      },
+      "tone": {
+       "median": 0.339,
+       "p10": 0.093
+      },
+      "layers": [
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "power": 0.01,
+        "color": {
+         "rgb": "#0f2248"
+        },
+        "opacity": 1.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "inside": {
+          "iterations": 1000
+         }
+        },
+        "power": 0.01,
+        "color": {
+         "rgb": "#4a80d4"
+        },
+        "opacity": 1.0
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "inside": {
+          "iterations": 1000
+         }
+        },
+        "light": {
+         "bands": 1.0,
+         "rings": 1.0,
+         "slope": 0.0,
+         "azimuth": 135.0,
+         "elevation": 55.0,
+         "ambient": 0.9,
+         "diffuse": 0.5,
+         "specular": 0.9,
+         "shininess": 20.0,
+         "rim": 0.2,
+         "rim_power": 3.0,
+         "highlight": {
+          "rgb": "#d6e8ff"
+         }
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "inside": {
+          "iterations": 1000
+         },
+         "invert": true
+        },
+        "power": 6.0,
+        "color": {
+         "rgb": "#9cc4ff"
+        },
+        "blend": "screen",
+        "opacity": 0.4
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "read": "height",
+          "escaped": true,
+          "largest": 0.35,
+          "spacing": 1.0,
+          "smallest": 0.02
+         }
+        },
+        "power": 0.01,
+        "color": {
+         "rgb": "#4a80d4"
+        },
+        "opacity": 1.0
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "read": "height",
+          "escaped": true,
+          "largest": 0.35,
+          "spacing": 1.0,
+          "smallest": 0.02
+         }
+        },
+        "light": {
+         "period": 2.0,
+         "rings": 1.0,
+         "slope": 0.0,
+         "azimuth": 135.0,
+         "elevation": 55.0,
+         "ambient": 0.9,
+         "diffuse": 0.5,
+         "specular": 0.9,
+         "shininess": 20.0,
+         "rim": 0.2,
+         "rim_power": 3.0,
+         "highlight": {
+          "rgb": "#d6e8ff"
+         }
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "read": "height",
+          "escaped": true,
+          "largest": 0.35,
+          "spacing": 1.0,
+          "smallest": 0.02
+         },
+         "invert": true
+        },
+        "power": 6.0,
+        "color": {
+         "rgb": "#9cc4ff"
+        },
+        "blend": "screen",
+        "opacity": 0.4
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.1,
+          "read": "height",
+          "spacing": 2.0,
+          "escaped": true,
+          "largest": 0.2,
+          "smallest": 0.015,
+          "shape": "strip",
+          "tilt": 60.0
+         }
+        },
+        "power": 0.01,
+        "color": {
+         "palette": 0.84
+        },
+        "opacity": 0.9
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.1,
+          "read": "step",
+          "spacing": 2.0,
+          "escaped": true,
+          "largest": 0.2,
+          "smallest": 0.015,
+          "shape": "strip",
+          "tilt": 60.0
+         }
+        },
+        "power": 2.0,
+        "color": {
+         "palette": 1.0
+        },
+        "opacity": 0.8
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.1,
+          "read": "across",
+          "spacing": 2.0,
+          "escaped": true,
+          "largest": 0.2,
+          "smallest": 0.015,
+          "shape": "strip",
+          "tilt": 60.0
+         }
+        },
+        "light": {
+         "bands": 1.0,
+         "rings": 1.0,
+         "slope": 0.5,
+         "azimuth": 135.0,
+         "elevation": 45.0,
+         "ambient": 0.75,
+         "diffuse": 0.5,
+         "specular": 0.5,
+         "shininess": 12.0,
+         "rim": 0.0,
+         "rim_power": 3.0,
+         "highlight": {
+          "palette": 0.88
+         }
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.1,
+          "read": "height",
+          "spacing": 2.0,
+          "escaped": true,
+          "largest": 0.2,
+          "smallest": 0.015,
+          "shape": "strip",
+          "tilt": 60.0
+         },
+         "invert": true
+        },
+        "power": 10.0,
+        "color": {
+         "palette": 0.9
+        },
+        "blend": "screen",
+        "opacity": 0.8
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "falloff": 0.01,
+        "color": {
+         "palette": 0.8
+        },
+        "blend": "screen",
+        "opacity": 0.4
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "falloff": 0.0002,
+        "color": {
+         "palette": 0.9
+        },
+        "blend": "screen",
+        "opacity": 0.5
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.06,
+          "spacing": 1.0,
+          "read": "height",
+          "escaped": true,
+          "largest": 0.004
+         }
+        },
+        "power": 12.0,
+        "color": {
+         "rgb": "#fff4d6"
+        },
+        "blend": "add",
+        "opacity": 1.0,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          },
+          "invert": true
+         },
+         "power": 3.0
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.06,
+          "spacing": 1.0,
+          "read": "height",
+          "escaped": true,
+          "largest": 0.004
+         }
+        },
+        "power": 16.0,
+        "color": {
+         "rgb": "#cfe2ff"
+        },
+        "blend": "add",
+        "opacity": 0.6,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "power": 2.0
+        }
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "silk-waves",
+   "style": "floating_on_dreams",
+   "palette": "floating_on_dreams",
+   "variant": "current",
+   "what": "Lit layered waves: the first style; smooth bands lit as ring-banded surfaces with glow streaks.",
+   "knobs": [
+    {
+     "name": "waves",
+     "label": "Wave count",
+     "what": "how many lit waves the outside of the set is cut into",
+     "default": 24.0,
+     "range": [
+      12.0,
+      36.0
+     ],
+     "set": [
+      "/layers/3/light/bands"
+     ]
+    },
+    {
+     "name": "light_angle",
+     "label": "Light direction",
+     "what": "where the light comes from, in degrees round the frame (135 is the upper left)",
+     "default": 135.0,
+     "range": [
+      45.0,
+      225.0
+     ],
+     "set": [
+      "/layers/*/light/azimuth"
+     ]
+    },
+    {
+     "name": "gloss",
+     "label": "Gloss",
+     "what": "the highlight along every wave crest",
+     "default": 0.9,
+     "range": [
+      0.4,
+      1.0
+     ],
+     "set": [
+      "/layers/2/light/specular",
+      "/layers/3/light/specular"
+     ]
+    },
+    {
+     "name": "streaks",
+     "label": "Glow streaks",
+     "what": "the white streaks of light threaded through the waves",
+     "default": 0.6,
+     "range": [
+      0.0,
+      0.9
+     ],
+     "set": [
+      "/layers/4/opacity"
+     ]
+    },
+    {
+     "name": "brightness",
+     "label": "Brightness",
+     "what": "the frame's median lightness, which the tone pass holds the picture to",
+     "default": 0.686,
+     "range": [
+      0.6,
+      0.74
+     ],
+     "set": [
+      "/tone/median"
+     ]
+    }
+   ],
+   "stack": {
+    "name": "floating_on_dreams",
+    "interior": {
+     "palette": 1.0
+    },
+    "tone": {
+     "median": 0.686,
+     "p10": 0.506
+    },
+    "layers": [
+     {
+      "kind": "palette",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "palette": {
+       "transfer": {
+        "kind": "rank"
+       }
+      }
+     },
+     {
+      "kind": "palette",
+      "channel": {
+       "inside": {
+        "iterations": 1000
+       }
+      }
+     },
+     {
+      "kind": "light",
+      "channel": {
+       "inside": {
+        "iterations": 1000
+       }
+      },
+      "light": {
+       "bands": 6.0,
+       "rings": 0.8,
+       "slope": 0.4,
+       "azimuth": 135.0,
+       "elevation": 50.0,
+       "ambient": 0.42,
+       "diffuse": 0.6,
+       "specular": 0.9,
+       "shininess": 60.0,
+       "rim": 0.25,
+       "rim_power": 3.0
+      }
+     },
+     {
+      "kind": "light",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       },
+       "transform": "sqrt"
+      },
+      "light": {
+       "bands": 24.0,
+       "rings": 0.75,
+       "slope": 0.3,
+       "azimuth": 135.0,
+       "elevation": 50.0,
+       "ambient": 0.45,
+       "diffuse": 0.6,
+       "specular": 0.9,
+       "shininess": 50.0,
+       "rim": 0.25,
+       "rim_power": 3.0
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "threads",
+        "sigma": 0.05
+       }
+      },
+      "power": 1.5,
+      "color": {
+       "rgb": "#ffffff"
+      },
+      "blend": "screen",
+      "opacity": 0.6
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "inside": {
+        "iterations": 1000
+       }
+      },
+      "power": 4.0,
+      "color": {
+       "rgb": "#ffffff"
+      },
+      "blend": "screen",
+      "opacity": 0.85
+     },
+     {
+      "kind": "pattern",
+      "checker": {
+       "per_iteration": 1.0,
+       "sectors": 2
+      },
+      "color": {
+       "palette": 0.35
+      },
+      "blend": "multiply",
+      "opacity": 0.12,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "smooth"
+        },
+        "transform": "sqrt"
+       },
+       "invert": true,
+       "power": 2.0
+      }
+     }
+    ]
+   },
+   "shown": [
+    {
+     "keep": "style_floating_r1/shortlist/00_d5_julia_ten_spokes",
+     "caption": "d5 julia, ten spokes",
+     "location": {
+      "schema": 1,
+      "name": "d5_julia_ten_spokes",
+      "family": {
+       "kind": "julia",
+       "degree": 5,
+       "c": [
+        "0.7238315265432981",
+        "0.4047946727626354"
+       ]
+      },
+      "viewport": {
+       "center_re": "0",
+       "center_im": "0",
+       "width": "0.8"
+      },
+      "maxiter": 25000,
+      "symmetry": "5-fold exact (10 spokes)",
+      "source": "julia-plane, c = multibrot5 dot 97 minibrot nucleus",
+      "note": "round disc at centre, ten spokes each a chain of round bulbs ending in small rosettes",
+      "preview": "out/style/shortlist/jm5_97_a.png"
+     },
+     "colormap": "floating_on_dreams",
+     "stack": {
+      "name": "floating_on_dreams",
+      "interior": {
+       "palette": 1.0
+      },
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         }
+        }
+       },
+       {
+        "kind": "palette",
+        "channel": {
+         "inside": {
+          "iterations": 1000
+         }
+        }
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "inside": {
+          "iterations": 1000
+         }
+        },
+        "light": {
+         "bands": 6.0,
+         "rings": 0.8,
+         "slope": 0.4,
+         "azimuth": 135.0,
+         "elevation": 50.0,
+         "ambient": 0.42,
+         "diffuse": 0.6,
+         "specular": 0.9,
+         "shininess": 60.0,
+         "rim": 0.25,
+         "rim_power": 3.0
+        }
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         },
+         "transform": "sqrt"
+        },
+        "light": {
+         "bands": 24.0,
+         "rings": 0.75,
+         "slope": 0.3,
+         "azimuth": 135.0,
+         "elevation": 50.0,
+         "ambient": 0.45,
+         "diffuse": 0.6,
+         "specular": 0.9,
+         "shininess": 50.0,
+         "rim": 0.25,
+         "rim_power": 3.0
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "threads",
+          "sigma": 0.05
+         }
+        },
+        "power": 1.5,
+        "color": {
+         "rgb": "#ffffff"
+        },
+        "blend": "screen",
+        "opacity": 0.6
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "inside": {
+          "iterations": 1000
+         }
+        },
+        "power": 4.0,
+        "color": {
+         "rgb": "#ffffff"
+        },
+        "blend": "screen",
+        "opacity": 0.85
+       },
+       {
+        "kind": "pattern",
+        "checker": {
+         "per_iteration": 1.0,
+         "sectors": 2
+        },
+        "color": {
+         "palette": 0.35
+        },
+        "blend": "multiply",
+        "opacity": 0.12,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "smooth"
+          },
+          "transform": "sqrt"
+         },
+         "invert": true,
+         "power": 2.0
+        }
+       }
+      ]
+     }
+    },
+    {
+     "keep": "style_floating_r1/shortlist/06_d5_julia_bulb_ring",
+     "caption": "d5 julia, bulb ring",
+     "location": {
+      "schema": 1,
+      "name": "d5_julia_bulb_ring",
+      "family": {
+       "kind": "julia",
+       "degree": 5,
+       "c": [
+        "0.5850984939103108189061634407",
+        "0.8772204520633576375481566487"
+       ]
+      },
+      "viewport": {
+       "center_re": "0",
+       "center_im": "0",
+       "width": "0.55"
+      },
+      "maxiter": 32000,
+      "symmetry": "5-fold exact",
+      "source": "julia-plane, c = multibrot5 dot 77 minibrot nucleus",
+      "note": "central disc with a ring of five pairs of round satellite bulbs; softest, most 'bubble' look",
+      "preview": "out/style/shortlist/jm5_77_b.png"
+     },
+     "colormap": "floating_on_dreams",
+     "stack": {
+      "name": "floating_on_dreams",
+      "interior": {
+       "palette": 1.0
+      },
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         }
+        }
+       },
+       {
+        "kind": "palette",
+        "channel": {
+         "inside": {
+          "iterations": 1000
+         }
+        }
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "inside": {
+          "iterations": 1000
+         }
+        },
+        "light": {
+         "bands": 6.0,
+         "rings": 0.8,
+         "slope": 0.4,
+         "azimuth": 135.0,
+         "elevation": 50.0,
+         "ambient": 0.42,
+         "diffuse": 0.6,
+         "specular": 0.9,
+         "shininess": 60.0,
+         "rim": 0.25,
+         "rim_power": 3.0
+        }
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         },
+         "transform": "sqrt"
+        },
+        "light": {
+         "bands": 24.0,
+         "rings": 0.75,
+         "slope": 0.3,
+         "azimuth": 135.0,
+         "elevation": 50.0,
+         "ambient": 0.45,
+         "diffuse": 0.6,
+         "specular": 0.9,
+         "shininess": 50.0,
+         "rim": 0.25,
+         "rim_power": 3.0
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "threads",
+          "sigma": 0.05
+         }
+        },
+        "power": 1.5,
+        "color": {
+         "rgb": "#ffffff"
+        },
+        "blend": "screen",
+        "opacity": 0.6
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "inside": {
+          "iterations": 1000
+         }
+        },
+        "power": 4.0,
+        "color": {
+         "rgb": "#ffffff"
+        },
+        "blend": "screen",
+        "opacity": 0.85
+       },
+       {
+        "kind": "pattern",
+        "checker": {
+         "per_iteration": 1.0,
+         "sectors": 2
+        },
+        "color": {
+         "palette": 0.35
+        },
+        "blend": "multiply",
+        "opacity": 0.12,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "smooth"
+          },
+          "transform": "sqrt"
+         },
+         "invert": true,
+         "power": 2.0
+        }
+       }
+      ]
+     }
+    },
+    {
+     "keep": "style_floating_r1/shortlist/07_m2_eight_beaded_arms",
+     "caption": "m2, eight beaded arms",
+     "location": {
+      "schema": 1,
+      "name": "m2_eight_beaded_arms",
+      "family": {
+       "kind": "mandelbrot",
+       "degree": 2
+      },
+      "viewport": {
+       "center_re": "0.27032010319836614",
+       "center_im": "-0.486064138034032",
+       "width": "0.0000000408493"
+      },
+      "maxiter": 35356,
+      "symmetry": "~8-fold",
+      "source": "mandelbrot dot 42, mandelbrot slot as framed",
+      "note": "minibrot with eight arms of evenly spaced beads, spiral rosettes in the corners",
+      "preview": "out/style/shortlist/mandelbrot_42.png"
+     },
+     "colormap": "floating_on_dreams",
+     "stack": {
+      "name": "floating_on_dreams",
+      "interior": {
+       "palette": 1.0
+      },
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         }
+        }
+       },
+       {
+        "kind": "palette",
+        "channel": {
+         "inside": {
+          "iterations": 1000
+         }
+        }
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "inside": {
+          "iterations": 1000
+         }
+        },
+        "light": {
+         "bands": 6.0,
+         "rings": 0.8,
+         "slope": 0.4,
+         "azimuth": 135.0,
+         "elevation": 50.0,
+         "ambient": 0.42,
+         "diffuse": 0.6,
+         "specular": 0.9,
+         "shininess": 60.0,
+         "rim": 0.25,
+         "rim_power": 3.0
+        }
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         },
+         "transform": "sqrt"
+        },
+        "light": {
+         "bands": 24.0,
+         "rings": 0.75,
+         "slope": 0.3,
+         "azimuth": 135.0,
+         "elevation": 50.0,
+         "ambient": 0.45,
+         "diffuse": 0.6,
+         "specular": 0.9,
+         "shininess": 50.0,
+         "rim": 0.25,
+         "rim_power": 3.0
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "threads",
+          "sigma": 0.05
+         }
+        },
+        "power": 1.5,
+        "color": {
+         "rgb": "#ffffff"
+        },
+        "blend": "screen",
+        "opacity": 0.6
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "inside": {
+          "iterations": 1000
+         }
+        },
+        "power": 4.0,
+        "color": {
+         "rgb": "#ffffff"
+        },
+        "blend": "screen",
+        "opacity": 0.85
+       },
+       {
+        "kind": "pattern",
+        "checker": {
+         "per_iteration": 1.0,
+         "sectors": 2
+        },
+        "color": {
+         "palette": 0.35
+        },
+        "blend": "multiply",
+        "opacity": 0.12,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "smooth"
+          },
+          "transform": "sqrt"
+         },
+         "invert": true,
+         "power": 2.0
+        }
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "glass-whorl",
+   "style": "yas",
+   "palette": "yas",
+   "variant": "current",
+   "what": "Radial colour lit from within: translucent stacked sheets with bright rims, hue falling away from a core.",
+   "knobs": [
+    {
+     "name": "swirl",
+     "label": "Swirl",
+     "what": "how far the colour bends along the arms instead of falling away in rings",
+     "default": 0.3,
+     "range": [
+      0.1,
+      0.5
+     ],
+     "set": [
+      "/layers/0/warp/amount"
+     ]
+    },
+    {
+     "name": "core_glow",
+     "label": "Core glow",
+     "what": "the warm light at the centre",
+     "default": 0.2,
+     "range": [
+      0.0,
+      0.4
+     ],
+     "set": [
+      "/layers/1/opacity"
+     ]
+    },
+    {
+     "name": "sheets",
+     "label": "Glass sheets",
+     "what": "the translucent stacked sheets and their bright rims",
+     "default": 0.4,
+     "range": [
+      0.2,
+      0.6
+     ],
+     "set": [
+      "/layers/5/opacity",
+      {
+       "path": "/layers/6/opacity",
+       "scale": 0.75
+      }
+     ]
+    },
+    {
+     "name": "brightness",
+     "label": "Brightness",
+     "what": "the frame's median lightness, which the tone pass holds the picture to",
+     "default": 0.36,
+     "range": [
+      0.3,
+      0.44
+     ],
+     "set": [
+      "/tone/median"
+     ]
+    }
+   ],
+   "stack": {
+    "name": "yas",
+    "interior": {
+     "palette": 0.0
+    },
+    "tone": {
+     "median": 0.36,
+     "p10": 0.2
+    },
+    "layers": [
+     {
+      "kind": "palette",
+      "channel": {
+       "radial": {}
+      },
+      "palette": {
+       "gamma": 0.8
+      },
+      "warp": {
+       "channel": {
+        "field": {
+         "kind": "smooth"
+        }
+       },
+       "amount": 0.3
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "radial": {}
+      },
+      "power": 4.0,
+      "color": {
+       "rgb": "#fff2d8"
+      },
+      "blend": "screen",
+      "opacity": 0.2
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "de"
+       },
+       "transform": "sqrt"
+      },
+      "power": 1.0,
+      "color": {
+       "rgb": "#000000"
+      },
+      "blend": "normal",
+      "opacity": 0.35
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "field": {
+        "kind": "de"
+       },
+       "transform": "sqrt",
+       "invert": true
+      },
+      "sheet": {
+       "bands": 1.0,
+       "edge": 0.12,
+       "fill": 0.0,
+       "rank": false
+      },
+      "blend": "add",
+      "opacity": 0.35
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "field": {
+        "kind": "trap_cross"
+       },
+       "invert": true
+      },
+      "sheet": {
+       "bands": 1.0,
+       "edge": 0.03,
+       "fill": 0.0,
+       "rank": false
+      },
+      "blend": "add",
+      "opacity": 0.45
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "field": {
+        "kind": "de"
+       }
+      },
+      "sheet": {
+       "bands": 5.0,
+       "edge": 0.08,
+       "fill": 0.25
+      },
+      "blend": "add",
+      "opacity": 0.4
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "sheet": {
+       "bands": 4.0,
+       "phase": 0.5,
+       "edge": 0.08,
+       "fill": 0.2
+      },
+      "blend": "add",
+      "opacity": 0.3
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "field": {
+        "kind": "curvature"
+       }
+      },
+      "sheet": {
+       "bands": 30.0,
+       "edge": 0.05,
+       "fill": 0.0
+      },
+      "blend": "screen",
+      "opacity": 0.15
+     }
+    ]
+   },
+   "shown": [
+    {
+     "keep": "style_yas_r1/shortlist/09_m2_seahorse_tail_spiral",
+     "caption": "m2 seahorse tail spiral",
+     "location": {
+      "schema": 1,
+      "name": "m2_seahorse_tail_spiral",
+      "family": {
+       "kind": "mandelbrot",
+       "degree": 2
+      },
+      "viewport": {
+       "center_re": "-0.7451635",
+       "center_im": "0.112591",
+       "width": "0.0012"
+      },
+      "maxiter": 6000,
+      "symmetry": "1-arm log spiral",
+      "source": "hand-framed by re-centring on the spiral eye in a preview",
+      "note": "classic seahorse tail: one loose logarithmic spiral of beads coiling into an empty eye; most dark space",
+      "preview": "out/yas/locs/prev/m2_seahorse_tail_spiral_style.png"
+     },
+     "colormap": "yas",
+     "stack": {
+      "name": "yas",
+      "interior": {
+       "palette": 0.0
+      },
+      "tone": {
+       "median": 0.36,
+       "p10": 0.2
+      },
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "radial": {}
+        },
+        "palette": {
+         "gamma": 0.8
+        },
+        "warp": {
+         "channel": {
+          "field": {
+           "kind": "smooth"
+          }
+         },
+         "amount": 0.3
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "radial": {}
+        },
+        "power": 4.0,
+        "color": {
+         "rgb": "#fff2d8"
+        },
+        "blend": "screen",
+        "opacity": 0.2
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         },
+         "transform": "sqrt"
+        },
+        "power": 1.0,
+        "color": {
+         "rgb": "#000000"
+        },
+        "blend": "normal",
+        "opacity": 0.35
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "de"
+         },
+         "transform": "sqrt",
+         "invert": true
+        },
+        "sheet": {
+         "bands": 1.0,
+         "edge": 0.12,
+         "fill": 0.0,
+         "rank": false
+        },
+        "blend": "add",
+        "opacity": 0.35
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "trap_cross"
+         },
+         "invert": true
+        },
+        "sheet": {
+         "bands": 1.0,
+         "edge": 0.03,
+         "fill": 0.0,
+         "rank": false
+        },
+        "blend": "add",
+        "opacity": 0.45
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "sheet": {
+         "bands": 5.0,
+         "edge": 0.08,
+         "fill": 0.25
+        },
+        "blend": "add",
+        "opacity": 0.4
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "sheet": {
+         "bands": 4.0,
+         "phase": 0.5,
+         "edge": 0.08,
+         "fill": 0.2
+        },
+        "blend": "add",
+        "opacity": 0.3
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "curvature"
+         }
+        },
+        "sheet": {
+         "bands": 30.0,
+         "edge": 0.05,
+         "fill": 0.0
+        },
+        "blend": "screen",
+        "opacity": 0.15
+       }
+      ]
+     }
+    },
+    {
+     "keep": "style_yas_r1/shortlist/03_d4_julia_seven_arm_rosette",
+     "caption": "d4 julia, seven-arm rosette",
+     "location": {
+      "schema": 1,
+      "name": "d4_julia_seven_arm_rosette",
+      "family": {
+       "kind": "julia",
+       "degree": 4,
+       "c": [
+        "0.5813908968716722",
+        "0.04335873650854592"
+       ]
+      },
+      "viewport": {
+       "center_re": "0.6141503475910278",
+       "center_im": "0.22241677111817412",
+       "width": "0.5"
+      },
+      "maxiter": 8000,
+      "symmetry": "7-arm whirl",
+      "source": "julia-plane d4, c = root of the 1/7 bulb + 0.03 along the main component's boundary tangent, framed on the repelling fixed point",
+      "note": "quartic Julia, seven curling arms of rosette clusters around a small dark star core",
+      "preview": "out/yas/locs/prev/d4_julia_seven_arm_rosette_style.png"
+     },
+     "colormap": "yas",
+     "stack": {
+      "name": "yas",
+      "interior": {
+       "palette": 0.0
+      },
+      "tone": {
+       "median": 0.36,
+       "p10": 0.2
+      },
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "radial": {}
+        },
+        "palette": {
+         "gamma": 0.8
+        },
+        "warp": {
+         "channel": {
+          "field": {
+           "kind": "smooth"
+          }
+         },
+         "amount": 0.3
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "radial": {}
+        },
+        "power": 4.0,
+        "color": {
+         "rgb": "#fff2d8"
+        },
+        "blend": "screen",
+        "opacity": 0.2
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         },
+         "transform": "sqrt"
+        },
+        "power": 1.0,
+        "color": {
+         "rgb": "#000000"
+        },
+        "blend": "normal",
+        "opacity": 0.35
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "de"
+         },
+         "transform": "sqrt",
+         "invert": true
+        },
+        "sheet": {
+         "bands": 1.0,
+         "edge": 0.12,
+         "fill": 0.0,
+         "rank": false
+        },
+        "blend": "add",
+        "opacity": 0.35
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "trap_cross"
+         },
+         "invert": true
+        },
+        "sheet": {
+         "bands": 1.0,
+         "edge": 0.03,
+         "fill": 0.0,
+         "rank": false
+        },
+        "blend": "add",
+        "opacity": 0.45
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "sheet": {
+         "bands": 5.0,
+         "edge": 0.08,
+         "fill": 0.25
+        },
+        "blend": "add",
+        "opacity": 0.4
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "sheet": {
+         "bands": 4.0,
+         "phase": 0.5,
+         "edge": 0.08,
+         "fill": 0.2
+        },
+        "blend": "add",
+        "opacity": 0.3
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "curvature"
+         }
+        },
+        "sheet": {
+         "bands": 30.0,
+         "edge": 0.05,
+         "fill": 0.0
+        },
+        "blend": "screen",
+        "opacity": 0.15
+       }
+      ]
+     }
+    },
+    {
+     "keep": "style_yas_r1/shortlist/04_m2_julia_ten_arm_rosette_whirl",
+     "caption": "m2 julia, ten-arm whirl",
+     "location": {
+      "schema": 1,
+      "name": "m2_julia_ten_arm_rosette_whirl",
+      "family": {
+       "kind": "julia",
+       "degree": 2,
+       "c": [
+        "0.3379862030829289",
+        "0.060691955502401314"
+       ]
+      },
+      "viewport": {
+       "center_re": "0.4027837770418081",
+       "center_im": "0.31214931857876255",
+       "width": "0.25"
+      },
+      "maxiter": 10000,
+      "symmetry": "10-arm whirl (q=10)",
+      "source": "julia-plane d2, c = root of the 1/10 bulb + 0.01 along the main component's boundary tangent, framed on the repelling fixed point",
+      "note": "ten arms of round rosettes swirling into a bright beaded core; loosest, most 'bubble' arms",
+      "preview": "out/yas/locs/prev/m2_julia_ten_arm_rosette_whirl_style.png"
+     },
+     "colormap": "yas",
+     "stack": {
+      "name": "yas",
+      "interior": {
+       "palette": 0.0
+      },
+      "tone": {
+       "median": 0.36,
+       "p10": 0.2
+      },
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "radial": {}
+        },
+        "palette": {
+         "gamma": 0.8
+        },
+        "warp": {
+         "channel": {
+          "field": {
+           "kind": "smooth"
+          }
+         },
+         "amount": 0.3
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "radial": {}
+        },
+        "power": 4.0,
+        "color": {
+         "rgb": "#fff2d8"
+        },
+        "blend": "screen",
+        "opacity": 0.2
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         },
+         "transform": "sqrt"
+        },
+        "power": 1.0,
+        "color": {
+         "rgb": "#000000"
+        },
+        "blend": "normal",
+        "opacity": 0.35
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "de"
+         },
+         "transform": "sqrt",
+         "invert": true
+        },
+        "sheet": {
+         "bands": 1.0,
+         "edge": 0.12,
+         "fill": 0.0,
+         "rank": false
+        },
+        "blend": "add",
+        "opacity": 0.35
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "trap_cross"
+         },
+         "invert": true
+        },
+        "sheet": {
+         "bands": 1.0,
+         "edge": 0.03,
+         "fill": 0.0,
+         "rank": false
+        },
+        "blend": "add",
+        "opacity": 0.45
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "sheet": {
+         "bands": 5.0,
+         "edge": 0.08,
+         "fill": 0.25
+        },
+        "blend": "add",
+        "opacity": 0.4
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "sheet": {
+         "bands": 4.0,
+         "phase": 0.5,
+         "edge": 0.08,
+         "fill": 0.2
+        },
+        "blend": "add",
+        "opacity": 0.3
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "curvature"
+         }
+        },
+        "sheet": {
+         "bands": 30.0,
+         "edge": 0.05,
+         "fill": 0.0
+        },
+        "blend": "screen",
+        "opacity": 0.15
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "arch-tunnel",
+   "style": "teal_tunnel",
+   "palette": "teal_tunnel",
+   "variant": "current",
+   "what": "Log-polar tunnel: bevelled arches shrinking ring by ring to a vanishing point, navy cells between teal arms.",
+   "knobs": [
+    {
+     "name": "turns",
+     "label": "Arm count",
+     "what": "how many times the plane wraps round the tunnel: more turns, more and narrower arms",
+     "default": 5.0,
+     "range": [
+      3.0,
+      6.0
+     ],
+     "set": [
+      "/projection/log_polar/turns"
+     ]
+    },
+    {
+     "name": "light_angle",
+     "label": "Light direction",
+     "what": "where the light comes from, in degrees round the frame (135 is the upper left)",
+     "default": 135.0,
+     "range": [
+      45.0,
+      225.0
+     ],
+     "set": [
+      "/layers/*/light/azimuth"
+     ]
+    },
+    {
+     "name": "arch_glow",
+     "label": "Arch glow",
+     "what": "the light edging each arch",
+     "default": 0.7,
+     "range": [
+      0.3,
+      0.9
+     ],
+     "set": [
+      "/layers/3/opacity"
+     ]
+    },
+    {
+     "name": "brightness",
+     "label": "Brightness",
+     "what": "the frame's median lightness, which the tone pass holds the picture to",
+     "default": 0.271,
+     "range": [
+      0.22,
+      0.33
+     ],
+     "set": [
+      "/tone/median"
+     ]
+    }
+   ],
+   "stack": {
+    "name": "teal_tunnel",
+    "projection": {
+     "log_polar": {
+      "turns": 5,
+      "center": [
+       0.36,
+       0.45
+      ]
+     }
+    },
+    "interior": {
+     "palette": 0.0
+    },
+    "tone": {
+     "median": 0.271,
+     "p10": 0.075
+    },
+    "layers": [
+     {
+      "kind": "palette",
+      "channel": {
+       "field": {
+        "kind": "de"
+       },
+       "invert": true
+      },
+      "palette": {
+       "transfer": {
+        "kind": "rank"
+       },
+       "gamma": 1.6
+      }
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "field": {
+        "kind": "de"
+       },
+       "invert": true
+      },
+      "sheet": {
+       "bands": 1.0,
+       "edge": 0.3,
+       "fill": 0.0
+      },
+      "color": {
+       "palette": 0.62
+      },
+      "blend": "normal",
+      "opacity": 0.85
+     },
+     {
+      "kind": "light",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "light": {
+       "period": 1.0,
+       "rings": 0.95,
+       "slope": 0.0,
+       "azimuth": 135.0,
+       "elevation": 50.0,
+       "ambient": 0.45,
+       "diffuse": 0.6,
+       "specular": 0.9,
+       "shininess": 30.0,
+       "rim": 0.3,
+       "rim_power": 3.0,
+       "highlight": {
+        "palette": 0.95
+       }
+      }
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "sheet": {
+       "period": 1.0,
+       "phase": 0.5,
+       "edge": 0.1,
+       "fill": 0.0
+      },
+      "color": {
+       "palette": 0.8
+      },
+      "blend": "screen",
+      "opacity": 0.7
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "field": {
+        "kind": "de"
+       },
+       "invert": true
+      },
+      "sheet": {
+       "bands": 1.0,
+       "edge": 0.02,
+       "fill": 0.0
+      },
+      "color": {
+       "palette": 1.0
+      },
+      "blend": "add",
+      "opacity": 0.9
+     }
+    ]
+   },
+   "shown": [
+    {
+     "keep": "style_teal_tunnel_r1/variants/turns3",
+     "caption": "variant: three turns",
+     "location": {
+      "schema": 1,
+      "name": "j_dendrite_alpha",
+      "family": {
+       "kind": "julia",
+       "degree": 2,
+       "c": [
+        "0.0",
+        "1.0"
+       ]
+      },
+      "viewport": {
+       "center_re": "-0.30024259022012045",
+       "center_im": "0.6248105338438266",
+       "width": "0.6"
+      },
+      "maxiter": 3000,
+      "projection": {
+       "log_polar": {
+        "twist": -0.23153,
+        "ring": 5.0
+       }
+      },
+      "multiplier": [
+       1.38641,
+       115.666
+      ],
+      "source": "quadratic Julia set at its alpha fixed point; lambda = 2z; twist is the residual turn of 3 repeats over their e-folds",
+      "note": "dendrite Julia (c = i) at its alpha point: three arms, fifteen at five turns, arches between"
+     },
+     "colormap": "teal_tunnel",
+     "stack": {
+      "name": "teal_tunnel_turns3",
+      "projection": {
+       "log_polar": {
+        "turns": 3,
+        "center": [
+         0.36,
+         0.45
+        ]
+       }
+      },
+      "interior": {
+       "palette": 0.0
+      },
+      "tone": {
+       "median": 0.271,
+       "p10": 0.075
+      },
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "field": {
+          "kind": "de"
+         },
+         "invert": true
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         },
+         "gamma": 1.6
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "de"
+         },
+         "invert": true
+        },
+        "sheet": {
+         "bands": 1.0,
+         "edge": 0.3,
+         "fill": 0.0
+        },
+        "color": {
+         "palette": 0.62
+        },
+        "blend": "normal",
+        "opacity": 0.85
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "light": {
+         "period": 1.0,
+         "rings": 0.95,
+         "slope": 0.0,
+         "azimuth": 135.0,
+         "elevation": 50.0,
+         "ambient": 0.45,
+         "diffuse": 0.6,
+         "specular": 0.9,
+         "shininess": 30.0,
+         "rim": 0.3,
+         "rim_power": 3.0,
+         "highlight": {
+          "palette": 0.95
+         }
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "sheet": {
+         "period": 1.0,
+         "phase": 0.5,
+         "edge": 0.1,
+         "fill": 0.0
+        },
+        "color": {
+         "palette": 0.8
+        },
+        "blend": "screen",
+        "opacity": 0.7
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "de"
+         },
+         "invert": true
+        },
+        "sheet": {
+         "bands": 1.0,
+         "edge": 0.02,
+         "fill": 0.0
+        },
+        "color": {
+         "palette": 1.0
+        },
+        "blend": "add",
+        "opacity": 0.9
+       }
+      ]
+     }
+    },
+    {
+     "keep": "style_teal_tunnel_r1/shortlist/09_m_seed4",
+     "caption": "mandelbrot seed4",
+     "location": {
+      "schema": 1,
+      "name": "m_seed4",
+      "family": {
+       "kind": "mandelbrot",
+       "degree": 2
+      },
+      "viewport": {
+       "center_re": "-0.0172659900544564",
+       "center_im": "1.0130368060126522",
+       "width": "0.02"
+      },
+      "maxiter": 4000,
+      "projection": {
+       "log_polar": {
+        "twist": 0.074,
+        "ring": 2.0
+       }
+      },
+      "multiplier": [
+       2.90417,
+       -25.48
+      ],
+      "source": "Misiurewicz point M(17,1) by Newton from (-0.017+1.0128j); lambda the cycle multiplier; twist the residual turn of 12 repeats over their e-folds",
+      "note": "Mandelbrot M near -0.017 + 1.013i: two-arm branch, broad open cells"
+     },
+     "colormap": "teal_tunnel",
+     "stack": {
+      "name": "teal_tunnel",
+      "projection": {
+       "log_polar": {
+        "turns": 5,
+        "center": [
+         0.36,
+         0.45
+        ]
+       }
+      },
+      "interior": {
+       "palette": 0.0
+      },
+      "tone": {
+       "median": 0.271,
+       "p10": 0.075
+      },
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "field": {
+          "kind": "de"
+         },
+         "invert": true
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         },
+         "gamma": 1.6
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "de"
+         },
+         "invert": true
+        },
+        "sheet": {
+         "bands": 1.0,
+         "edge": 0.3,
+         "fill": 0.0
+        },
+        "color": {
+         "palette": 0.62
+        },
+        "blend": "normal",
+        "opacity": 0.85
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "light": {
+         "period": 1.0,
+         "rings": 0.95,
+         "slope": 0.0,
+         "azimuth": 135.0,
+         "elevation": 50.0,
+         "ambient": 0.45,
+         "diffuse": 0.6,
+         "specular": 0.9,
+         "shininess": 30.0,
+         "rim": 0.3,
+         "rim_power": 3.0,
+         "highlight": {
+          "palette": 0.95
+         }
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "sheet": {
+         "period": 1.0,
+         "phase": 0.5,
+         "edge": 0.1,
+         "fill": 0.0
+        },
+        "color": {
+         "palette": 0.8
+        },
+        "blend": "screen",
+        "opacity": 0.7
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "de"
+         },
+         "invert": true
+        },
+        "sheet": {
+         "bands": 1.0,
+         "edge": 0.02,
+         "fill": 0.0
+        },
+        "color": {
+         "palette": 1.0
+        },
+        "blend": "add",
+        "opacity": 0.9
+       }
+      ]
+     }
+    },
+    {
+     "keep": "style_teal_tunnel_r1/shortlist/01_j_dendrite_beta",
+     "caption": "dendrite julia β",
+     "location": {
+      "schema": 1,
+      "name": "j_dendrite_beta",
+      "family": {
+       "kind": "julia",
+       "degree": 2,
+       "c": [
+        "0.0",
+        "1.0"
+       ]
+      },
+      "viewport": {
+       "center_re": "1.3002425902201205",
+       "center_im": "-0.6248105338438266",
+       "width": "0.6"
+      },
+      "maxiter": 3000,
+      "projection": {
+       "log_polar": {
+        "twist": 0.07139,
+        "ring": 3.0,
+        "turns": 8
+       }
+      },
+      "multiplier": [
+       2.88515,
+       -25.666
+      ],
+      "source": "quadratic Julia set at its beta fixed point; lambda = 2z; twist is the residual turn of 12 repeats over their e-folds",
+      "note": "dendrite Julia at its beta point (the end of the 0 ray), eight turns: one arm per turn, wide sweeping cells"
+     },
+     "colormap": "teal_tunnel",
+     "stack": {
+      "name": "teal_tunnel",
+      "projection": {
+       "log_polar": {
+        "turns": 5,
+        "center": [
+         0.36,
+         0.45
+        ]
+       }
+      },
+      "interior": {
+       "palette": 0.0
+      },
+      "tone": {
+       "median": 0.271,
+       "p10": 0.075
+      },
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "field": {
+          "kind": "de"
+         },
+         "invert": true
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         },
+         "gamma": 1.6
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "de"
+         },
+         "invert": true
+        },
+        "sheet": {
+         "bands": 1.0,
+         "edge": 0.3,
+         "fill": 0.0
+        },
+        "color": {
+         "palette": 0.62
+        },
+        "blend": "normal",
+        "opacity": 0.85
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "light": {
+         "period": 1.0,
+         "rings": 0.95,
+         "slope": 0.0,
+         "azimuth": 135.0,
+         "elevation": 50.0,
+         "ambient": 0.45,
+         "diffuse": 0.6,
+         "specular": 0.9,
+         "shininess": 30.0,
+         "rim": 0.3,
+         "rim_power": 3.0,
+         "highlight": {
+          "palette": 0.95
+         }
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "sheet": {
+         "period": 1.0,
+         "phase": 0.5,
+         "edge": 0.1,
+         "fill": 0.0
+        },
+        "color": {
+         "palette": 0.8
+        },
+        "blend": "screen",
+        "opacity": 0.7
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "de"
+         },
+         "invert": true
+        },
+        "sheet": {
+         "bands": 1.0,
+         "edge": 0.02,
+         "fill": 0.0
+        },
+        "color": {
+         "palette": 1.0
+        },
+        "blend": "add",
+        "opacity": 0.9
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "ribbon-foam",
+   "style": "ribbon_packing",
+   "palette": "ribbon_packing",
+   "variant": "current",
+   "what": "bronze_packing plus glossy blue crescent ribbons: the same disc grid read at two scales.",
+   "knobs": [
+    {
+     "name": "disc_size",
+     "label": "Bubble size",
+     "what": "the largest bubble, as a share of the frame width; smaller packs more, finer bubbles",
+     "default": 0.12,
+     "range": [
+      0.06,
+      0.16
+     ],
+     "set": [
+      "/layers/2/channel/bubble/largest",
+      "/layers/3/channel/bubble/largest",
+      "/layers/4/channel/bubble/largest",
+      "/layers/5/channel/bubble/largest",
+      "/layers/6/channel/bubble/largest",
+      "/layers/7/channel/bubble/largest",
+      "/layers/8/channel/bubble/largest",
+      "/layers/9/channel/bubble/largest",
+      "/layers/10/channel/bubble/largest",
+      "/layers/11/channel/bubble/largest",
+      "/layers/2/warp/channel/bubble/largest"
+     ]
+    },
+    {
+     "name": "ribbon_gloss",
+     "label": "Ribbon gloss",
+     "what": "the highlight along each blue ribbon",
+     "default": 0.9,
+     "range": [
+      0.4,
+      1.0
+     ],
+     "set": [
+      "/layers/13/light/specular"
+     ]
+    },
+    {
+     "name": "star_rays",
+     "label": "Star rays",
+     "what": "the six-pointed star cut into each disc",
+     "default": 0.3,
+     "range": [
+      0.0,
+      0.6
+     ],
+     "set": [
+      "/layers/11/opacity"
+     ]
+    },
+    {
+     "name": "brightness",
+     "label": "Brightness",
+     "what": "the frame's median lightness, which the tone pass holds the picture to",
+     "default": 0.287,
+     "range": [
+      0.24,
+      0.34
+     ],
+     "set": [
+      "/tone/median"
+     ]
+    }
+   ],
+   "stack": {
+    "name": "ribbon_packing",
+    "interior": {
+     "palette": 0.8
+    },
+    "layers": [
+     {
+      "kind": "palette",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "palette": {
+       "transfer": {
+        "kind": "rank"
+       },
+       "gamma": 1.0
+      }
+     },
+     {
+      "kind": "palette",
+      "channel": {
+       "inside": {
+        "iterations": 1000
+       }
+      },
+      "palette": {
+       "transfer": {
+        "kind": "rank"
+       },
+       "gamma": 0.6,
+       "cycles": 1.0
+      }
+     },
+     {
+      "kind": "palette",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.3,
+        "hit": 1,
+        "read": "step",
+        "spacing": 1.0,
+        "escaped": true,
+        "largest": 0.12
+       }
+      },
+      "palette": {
+       "transfer": {
+        "kind": "rank"
+       },
+       "gamma": 1.0,
+       "cycles": 0.5,
+       "phase": 0.35
+      },
+      "warp": {
+       "channel": {
+        "bubble": {
+         "center": [
+          0.5,
+          0.5
+         ],
+         "radius": 0.3,
+         "hit": 1,
+         "read": "height",
+         "spacing": 1.0,
+         "escaped": true,
+         "largest": 0.12
+        }
+       },
+       "amount": -0.3
+      }
+     },
+     {
+      "kind": "palette",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.3,
+        "hit": 2,
+        "read": "height",
+        "spacing": 1.0,
+        "escaped": true,
+        "largest": 0.12
+       }
+      },
+      "palette": {
+       "transfer": {
+        "kind": "rank"
+       },
+       "gamma": 1.0
+      },
+      "opacity": 0.5
+     },
+     {
+      "kind": "light",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.3,
+        "hit": 1,
+        "read": "height",
+        "spacing": 1.0,
+        "escaped": true,
+        "largest": 0.12
+       }
+      },
+      "light": {
+       "period": 2.0,
+       "rings": 0.4,
+       "slope": 0.0,
+       "ambient": 0.6,
+       "diffuse": 0.5,
+       "specular": 0.5,
+       "shininess": 40.0,
+       "rim": 0.6,
+       "rim_power": 4.0,
+       "highlight": {
+        "palette": 0.97
+       }
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.3,
+        "hit": 1,
+        "read": "height",
+        "spacing": 1.0,
+        "escaped": true,
+        "largest": 0.12
+       },
+       "invert": true
+      },
+      "power": 6.0,
+      "color": {
+       "palette": 0.0
+      },
+      "blend": "multiply",
+      "opacity": 0.8
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.3,
+        "hit": 1,
+        "read": "height",
+        "spacing": 1.0,
+        "escaped": true,
+        "largest": 0.12
+       },
+       "invert": true
+      },
+      "power": 40.0,
+      "color": {
+       "palette": 0.92
+      },
+      "blend": "add",
+      "opacity": 1.0
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.3,
+        "hit": 1,
+        "read": "height",
+        "spacing": 1.0,
+        "escaped": true,
+        "largest": 0.12
+       }
+      },
+      "power": 30.0,
+      "color": {
+       "palette": 0.97
+      },
+      "blend": "screen",
+      "opacity": 0.8
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.3,
+        "hit": 2,
+        "read": "height",
+        "spacing": 1.0,
+        "escaped": true,
+        "largest": 0.12
+       },
+       "invert": true
+      },
+      "power": 30.0,
+      "color": {
+       "palette": 0.92
+      },
+      "blend": "screen",
+      "opacity": 0.3
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.3,
+        "hit": 2,
+        "read": "height",
+        "spacing": 1.0,
+        "escaped": true,
+        "largest": 0.12
+       }
+      },
+      "power": 30.0,
+      "color": {
+       "palette": 0.97
+      },
+      "blend": "screen",
+      "opacity": 0.7
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.3,
+        "hit": 1,
+        "read": "step",
+        "spacing": 1.0,
+        "escaped": true,
+        "largest": 0.12
+       }
+      },
+      "power": 3.0,
+      "color": {
+       "palette": 0.97
+      },
+      "blend": "screen",
+      "opacity": 0.5
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.3,
+        "hit": 1,
+        "read": "angle",
+        "spacing": 1.0,
+        "escaped": true,
+        "largest": 0.12
+       }
+      },
+      "sheet": {
+       "bands": 6.0,
+       "rank": false,
+       "edge": 0.04,
+       "fill": 0.0
+      },
+      "color": {
+       "palette": 0.9
+      },
+      "blend": "screen",
+      "opacity": 0.3
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.3,
+        "hit": 1,
+        "read": "crescent",
+        "spacing": 1.0,
+        "escaped": true,
+        "largest": 1.5,
+        "shift": [
+         0.11,
+         0.06
+        ]
+       }
+      },
+      "power": 0.02,
+      "color": {
+       "rgb": "#2458b0"
+      },
+      "blend": "normal",
+      "opacity": 1.0
+     },
+     {
+      "kind": "light",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.3,
+        "hit": 1,
+        "read": "crescent",
+        "spacing": 1.0,
+        "escaped": true,
+        "largest": 1.5,
+        "shift": [
+         0.11,
+         0.06
+        ]
+       }
+      },
+      "light": {
+       "bands": 1.0,
+       "rings": 1.0,
+       "slope": 0.0,
+       "ambient": 0.55,
+       "diffuse": 0.6,
+       "specular": 0.9,
+       "shininess": 24.0,
+       "rim": 0.3,
+       "rim_power": 3.0,
+       "highlight": {
+        "rgb": "#a8dcff"
+       }
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.3,
+        "hit": 1,
+        "read": "crescent",
+        "spacing": 1.0,
+        "escaped": true,
+        "largest": 1.5,
+        "shift": [
+         0.11,
+         0.06
+        ]
+       },
+       "invert": true
+      },
+      "power": 14.0,
+      "color": {
+       "rgb": "#0a1440"
+      },
+      "blend": "multiply",
+      "opacity": 0.85
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.3,
+        "hit": 1,
+        "read": "crescent",
+        "spacing": 1.0,
+        "escaped": true,
+        "largest": 1.5,
+        "shift": [
+         0.11,
+         0.06
+        ]
+       }
+      },
+      "power": 40.0,
+      "color": {
+       "rgb": "#a8dcff"
+      },
+      "blend": "screen",
+      "opacity": 0.6
+     }
+    ],
+    "tone": {
+     "median": 0.287,
+     "p10": 0.086
+    }
+   },
+   "shown": [
+    {
+     "keep": "style_ribbon_packing_r1/locations/locations__01_julia-multibrot6_11c49c17_ribbon_packing",
+     "caption": "julia multibrot6",
+     "location": {
+      "schema": 1,
+      "name": "julia-multibrot6_11c49c17",
+      "family": {
+       "c": [
+        "0.49648863714754576",
+        "0.6424121866849467"
+       ],
+       "degree": 6,
+       "kind": "julia"
+      },
+      "viewport": {
+       "center_re": "-0.17221804062026275",
+       "center_im": "-0.16128570270985873",
+       "width": "0.0005931495533038052"
+      },
+      "maxiter": 18765,
+      "note": "final139_general seat 697 (threads, julia:multibrot6)",
+      "gallery": {
+       "record": "final139_general",
+       "seat": 697,
+       "key": "11c49c1740e2b6d2",
+       "p_spiral": 0.026716
+      }
+     },
+     "colormap": "ribbon_packing",
+     "stack": {
+      "name": "ribbon_packing",
+      "interior": {
+       "palette": 0.8
+      },
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         },
+         "gamma": 1.0
+        }
+       },
+       {
+        "kind": "palette",
+        "channel": {
+         "inside": {
+          "iterations": 1000
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         },
+         "gamma": 0.6,
+         "cycles": 1.0
+        }
+       },
+       {
+        "kind": "palette",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 1,
+          "read": "step",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         },
+         "gamma": 1.0,
+         "cycles": 0.5,
+         "phase": 0.35
+        },
+        "warp": {
+         "channel": {
+          "bubble": {
+           "center": [
+            0.5,
+            0.5
+           ],
+           "radius": 0.3,
+           "hit": 1,
+           "read": "height",
+           "spacing": 1.0,
+           "escaped": true,
+           "largest": 0.12
+          }
+         },
+         "amount": -0.3
+        }
+       },
+       {
+        "kind": "palette",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 2,
+          "read": "height",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         },
+         "gamma": 1.0
+        },
+        "opacity": 0.5
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 1,
+          "read": "height",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         }
+        },
+        "light": {
+         "period": 2.0,
+         "rings": 0.4,
+         "slope": 0.0,
+         "ambient": 0.6,
+         "diffuse": 0.5,
+         "specular": 0.5,
+         "shininess": 40.0,
+         "rim": 0.6,
+         "rim_power": 4.0,
+         "highlight": {
+          "palette": 0.97
+         }
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 1,
+          "read": "height",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         },
+         "invert": true
+        },
+        "power": 6.0,
+        "color": {
+         "palette": 0.0
+        },
+        "blend": "multiply",
+        "opacity": 0.8
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 1,
+          "read": "height",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         },
+         "invert": true
+        },
+        "power": 40.0,
+        "color": {
+         "palette": 0.92
+        },
+        "blend": "add",
+        "opacity": 1.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 1,
+          "read": "height",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         }
+        },
+        "power": 30.0,
+        "color": {
+         "palette": 0.97
+        },
+        "blend": "screen",
+        "opacity": 0.8
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 2,
+          "read": "height",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         },
+         "invert": true
+        },
+        "power": 30.0,
+        "color": {
+         "palette": 0.92
+        },
+        "blend": "screen",
+        "opacity": 0.3
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 2,
+          "read": "height",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         }
+        },
+        "power": 30.0,
+        "color": {
+         "palette": 0.97
+        },
+        "blend": "screen",
+        "opacity": 0.7
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 1,
+          "read": "step",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         }
+        },
+        "power": 3.0,
+        "color": {
+         "palette": 0.97
+        },
+        "blend": "screen",
+        "opacity": 0.5
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 1,
+          "read": "angle",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         }
+        },
+        "sheet": {
+         "bands": 6.0,
+         "rank": false,
+         "edge": 0.04,
+         "fill": 0.0
+        },
+        "color": {
+         "palette": 0.9
+        },
+        "blend": "screen",
+        "opacity": 0.3
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 1,
+          "read": "crescent",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 1.5,
+          "shift": [
+           0.11,
+           0.06
+          ]
+         }
+        },
+        "power": 0.02,
+        "color": {
+         "rgb": "#2458b0"
+        },
+        "blend": "normal",
+        "opacity": 1.0
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 1,
+          "read": "crescent",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 1.5,
+          "shift": [
+           0.11,
+           0.06
+          ]
+         }
+        },
+        "light": {
+         "bands": 1.0,
+         "rings": 1.0,
+         "slope": 0.0,
+         "ambient": 0.55,
+         "diffuse": 0.6,
+         "specular": 0.9,
+         "shininess": 24.0,
+         "rim": 0.3,
+         "rim_power": 3.0,
+         "highlight": {
+          "rgb": "#a8dcff"
+         }
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 1,
+          "read": "crescent",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 1.5,
+          "shift": [
+           0.11,
+           0.06
+          ]
+         },
+         "invert": true
+        },
+        "power": 14.0,
+        "color": {
+         "rgb": "#0a1440"
+        },
+        "blend": "multiply",
+        "opacity": 0.85
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 1,
+          "read": "crescent",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 1.5,
+          "shift": [
+           0.11,
+           0.06
+          ]
+         }
+        },
+        "power": 40.0,
+        "color": {
+         "rgb": "#a8dcff"
+        },
+        "blend": "screen",
+        "opacity": 0.6
+       }
+      ],
+      "tone": {
+       "median": 0.287,
+       "p10": 0.086
+      }
+     }
+    },
+    {
+     "keep": "style_ribbon_packing_r1/locations/locations__07_julia-multibrot6_9aa8f703_ribbon_packing",
+     "caption": "julia multibrot6",
+     "location": {
+      "schema": 1,
+      "name": "julia-multibrot6_9aa8f703",
+      "family": {
+       "c": [
+        "0.6768149646310875",
+        "0.03142641012857843"
+       ],
+       "degree": 6,
+       "kind": "julia"
+      },
+      "viewport": {
+       "center_re": "0.6993069016588973",
+       "center_im": "0.1673702288735897",
+       "width": "0.004423909185375784"
+      },
+      "maxiter": 15286,
+      "note": "final139_general seat 579 (threads, julia:multibrot6)",
+      "gallery": {
+       "record": "final139_general",
+       "seat": 579,
+       "key": "9aa8f70377eb76c6",
+       "p_spiral": 0.067185
+      }
+     },
+     "colormap": "ribbon_packing",
+     "stack": {
+      "name": "ribbon_packing",
+      "interior": {
+       "palette": 0.8
+      },
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         },
+         "gamma": 1.0
+        }
+       },
+       {
+        "kind": "palette",
+        "channel": {
+         "inside": {
+          "iterations": 1000
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         },
+         "gamma": 0.6,
+         "cycles": 1.0
+        }
+       },
+       {
+        "kind": "palette",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 1,
+          "read": "step",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         },
+         "gamma": 1.0,
+         "cycles": 0.5,
+         "phase": 0.35
+        },
+        "warp": {
+         "channel": {
+          "bubble": {
+           "center": [
+            0.5,
+            0.5
+           ],
+           "radius": 0.3,
+           "hit": 1,
+           "read": "height",
+           "spacing": 1.0,
+           "escaped": true,
+           "largest": 0.12
+          }
+         },
+         "amount": -0.3
+        }
+       },
+       {
+        "kind": "palette",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 2,
+          "read": "height",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         },
+         "gamma": 1.0
+        },
+        "opacity": 0.5
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 1,
+          "read": "height",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         }
+        },
+        "light": {
+         "period": 2.0,
+         "rings": 0.4,
+         "slope": 0.0,
+         "ambient": 0.6,
+         "diffuse": 0.5,
+         "specular": 0.5,
+         "shininess": 40.0,
+         "rim": 0.6,
+         "rim_power": 4.0,
+         "highlight": {
+          "palette": 0.97
+         }
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 1,
+          "read": "height",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         },
+         "invert": true
+        },
+        "power": 6.0,
+        "color": {
+         "palette": 0.0
+        },
+        "blend": "multiply",
+        "opacity": 0.8
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 1,
+          "read": "height",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         },
+         "invert": true
+        },
+        "power": 40.0,
+        "color": {
+         "palette": 0.92
+        },
+        "blend": "add",
+        "opacity": 1.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 1,
+          "read": "height",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         }
+        },
+        "power": 30.0,
+        "color": {
+         "palette": 0.97
+        },
+        "blend": "screen",
+        "opacity": 0.8
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 2,
+          "read": "height",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         },
+         "invert": true
+        },
+        "power": 30.0,
+        "color": {
+         "palette": 0.92
+        },
+        "blend": "screen",
+        "opacity": 0.3
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 2,
+          "read": "height",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         }
+        },
+        "power": 30.0,
+        "color": {
+         "palette": 0.97
+        },
+        "blend": "screen",
+        "opacity": 0.7
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 1,
+          "read": "step",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         }
+        },
+        "power": 3.0,
+        "color": {
+         "palette": 0.97
+        },
+        "blend": "screen",
+        "opacity": 0.5
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 1,
+          "read": "angle",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.12
+         }
+        },
+        "sheet": {
+         "bands": 6.0,
+         "rank": false,
+         "edge": 0.04,
+         "fill": 0.0
+        },
+        "color": {
+         "palette": 0.9
+        },
+        "blend": "screen",
+        "opacity": 0.3
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 1,
+          "read": "crescent",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 1.5,
+          "shift": [
+           0.11,
+           0.06
+          ]
+         }
+        },
+        "power": 0.02,
+        "color": {
+         "rgb": "#2458b0"
+        },
+        "blend": "normal",
+        "opacity": 1.0
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 1,
+          "read": "crescent",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 1.5,
+          "shift": [
+           0.11,
+           0.06
+          ]
+         }
+        },
+        "light": {
+         "bands": 1.0,
+         "rings": 1.0,
+         "slope": 0.0,
+         "ambient": 0.55,
+         "diffuse": 0.6,
+         "specular": 0.9,
+         "shininess": 24.0,
+         "rim": 0.3,
+         "rim_power": 3.0,
+         "highlight": {
+          "rgb": "#a8dcff"
+         }
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 1,
+          "read": "crescent",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 1.5,
+          "shift": [
+           0.11,
+           0.06
+          ]
+         },
+         "invert": true
+        },
+        "power": 14.0,
+        "color": {
+         "rgb": "#0a1440"
+        },
+        "blend": "multiply",
+        "opacity": 0.85
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "hit": 1,
+          "read": "crescent",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 1.5,
+          "shift": [
+           0.11,
+           0.06
+          ]
+         }
+        },
+        "power": 40.0,
+        "color": {
+         "rgb": "#a8dcff"
+        },
+        "blend": "screen",
+        "opacity": 0.6
+       }
+      ],
+      "tone": {
+       "median": 0.287,
+       "p10": 0.086
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "gilt-orbs",
+   "style": "gilded_orbs",
+   "palette": "gilded_orbs",
+   "variant": "current",
+   "what": "Engraved gold filigree with jewel orbs, warm haze and sparkle; built from existing pieces.",
+   "knobs": [
+    {
+     "name": "orb_size",
+     "label": "Orb size",
+     "what": "the blue jewel orbs' size; larger draws more and bigger orbs over the filigree",
+     "default": 0.12,
+     "range": [
+      0.08,
+      0.3
+     ],
+     "set": [
+      "/layers/12/channel/bubble/radius",
+      "/layers/13/channel/bubble/radius",
+      "/layers/14/channel/bubble/radius",
+      "/layers/15/channel/bubble/radius",
+      "/layers/16/channel/bubble/radius",
+      {
+       "path": "/layers/12/channel/bubble/largest",
+       "scale": 0.5555555555555556,
+       "offset": 0.08333333333333333
+      },
+      {
+       "path": "/layers/13/channel/bubble/largest",
+       "scale": 0.5555555555555556,
+       "offset": 0.08333333333333333
+      },
+      {
+       "path": "/layers/14/channel/bubble/largest",
+       "scale": 0.5555555555555556,
+       "offset": 0.08333333333333333
+      },
+      {
+       "path": "/layers/15/channel/bubble/largest",
+       "scale": 0.5555555555555556,
+       "offset": 0.08333333333333333
+      },
+      {
+       "path": "/layers/16/channel/bubble/largest",
+       "scale": 0.5555555555555556,
+       "offset": 0.08333333333333333
+      }
+     ]
+    },
+    {
+     "name": "filigree",
+     "label": "Filigree lines",
+     "what": "the fine engraved lines in the gold",
+     "default": 0.4,
+     "range": [
+      0.15,
+      0.6
+     ],
+     "set": [
+      "/layers/2/opacity"
+     ]
+    },
+    {
+     "name": "haze",
+     "label": "Warm haze",
+     "what": "the soft glow round the set",
+     "default": 0.5,
+     "range": [
+      0.2,
+      0.7
+     ],
+     "set": [
+      "/layers/4/opacity"
+     ]
+    },
+    {
+     "name": "sparkle",
+     "label": "Sparkle",
+     "what": "the star points of light along the set",
+     "default": 1.0,
+     "range": [
+      0.0,
+      1.0
+     ],
+     "set": [
+      "/layers/6/opacity"
+     ]
+    },
+    {
+     "name": "light_angle",
+     "label": "Light direction",
+     "what": "where the light comes from, in degrees round the frame (135 is the upper left)",
+     "default": 135.0,
+     "range": [
+      45.0,
+      225.0
+     ],
+     "set": [
+      "/layers/*/light/azimuth"
+     ]
+    }
+   ],
+   "stack": {
+    "name": "gilded_orbs",
+    "interior": {
+     "rgb": "#132650"
+    },
+    "tone": {
+     "median": 0.231,
+     "p10": 0.061
+    },
+    "layers": [
+     {
+      "kind": "palette",
+      "channel": {
+       "field": {
+        "kind": "de"
+       },
+       "invert": true
+      },
+      "palette": {
+       "transfer": {
+        "kind": "rank"
+       },
+       "gamma": 1.8
+      }
+     },
+     {
+      "kind": "light",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "light": {
+       "period": 1.0,
+       "rings": 0.8,
+       "slope": 0.0,
+       "azimuth": 135.0,
+       "elevation": 45.0,
+       "ambient": 0.6,
+       "diffuse": 0.55,
+       "specular": 0.35,
+       "shininess": 30.0,
+       "rim": 0.3,
+       "rim_power": 3.0,
+       "highlight": {
+        "palette": 0.9
+       }
+      }
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "sheet": {
+       "period": 0.25,
+       "edge": 0.12,
+       "fill": 0.0
+      },
+      "color": {
+       "palette": 0.85
+      },
+      "blend": "screen",
+      "opacity": 0.4
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "tia"
+       },
+       "invert": true
+      },
+      "power": 2.0,
+      "color": {
+       "palette": 0.0
+      },
+      "blend": "multiply",
+      "opacity": 0.5
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "de"
+       }
+      },
+      "falloff": 0.03,
+      "color": {
+       "palette": 0.85
+      },
+      "blend": "screen",
+      "opacity": 0.5
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "de"
+       }
+      },
+      "falloff": 0.0002,
+      "color": {
+       "palette": 0.9
+      },
+      "blend": "screen",
+      "opacity": 0.35
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.06,
+        "spacing": 1.0,
+        "read": "height",
+        "escaped": true,
+        "largest": 0.004
+       }
+      },
+      "power": 12.0,
+      "color": {
+       "rgb": "#fff4d6"
+      },
+      "blend": "add",
+      "opacity": 1.0,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        },
+        "invert": true
+       },
+       "power": 3.0
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "inside": {
+        "iterations": 1000
+       }
+      },
+      "power": 0.01,
+      "color": {
+       "rgb": "#2f62b4"
+      },
+      "opacity": 1.0
+     },
+     {
+      "kind": "light",
+      "channel": {
+       "inside": {
+        "iterations": 1000
+       }
+      },
+      "light": {
+       "bands": 6.0,
+       "rings": 0.55,
+       "slope": 0.35,
+       "azimuth": 135.0,
+       "elevation": 50.0,
+       "ambient": 0.55,
+       "diffuse": 0.55,
+       "specular": 0.9,
+       "shininess": 60.0,
+       "rim": 0.4,
+       "rim_power": 3.0,
+       "highlight": {
+        "rgb": "#d8ecff"
+       }
+      }
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "inside": {
+        "iterations": 1000
+       }
+      },
+      "sheet": {
+       "bands": 6.0,
+       "rank": false,
+       "edge": 0.14,
+       "fill": 0.0
+      },
+      "color": {
+       "rgb": "#e2c27a"
+      },
+      "blend": "normal",
+      "opacity": 0.8
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "inside": {
+        "iterations": 1000
+       },
+       "invert": true
+      },
+      "power": 8.0,
+      "color": {
+       "rgb": "#0a0d18"
+      },
+      "blend": "normal",
+      "opacity": 0.85
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "inside": {
+        "iterations": 1000
+       }
+      },
+      "power": 8.0,
+      "color": {
+       "rgb": "#d8ecff"
+      },
+      "blend": "screen",
+      "opacity": 0.3
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.12,
+        "read": "height",
+        "escaped": true,
+        "largest": 0.15
+       }
+      },
+      "power": 0.01,
+      "color": {
+       "rgb": "#2f62b4"
+      },
+      "opacity": 1.0
+     },
+     {
+      "kind": "light",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.12,
+        "read": "height",
+        "escaped": true,
+        "largest": 0.15
+       }
+      },
+      "light": {
+       "bands": 5.0,
+       "rings": 0.55,
+       "slope": 0.35,
+       "azimuth": 135.0,
+       "elevation": 50.0,
+       "ambient": 0.55,
+       "diffuse": 0.55,
+       "specular": 0.9,
+       "shininess": 60.0,
+       "rim": 0.4,
+       "rim_power": 3.0,
+       "highlight": {
+        "rgb": "#d8ecff"
+       }
+      }
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.12,
+        "read": "height",
+        "escaped": true,
+        "largest": 0.15
+       }
+      },
+      "sheet": {
+       "bands": 5.0,
+       "rank": false,
+       "edge": 0.14,
+       "fill": 0.0
+      },
+      "color": {
+       "rgb": "#e2c27a"
+      },
+      "blend": "normal",
+      "opacity": 0.8
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.12,
+        "read": "height",
+        "escaped": true,
+        "largest": 0.15
+       },
+       "invert": true
+      },
+      "power": 8.0,
+      "color": {
+       "rgb": "#0a0d18"
+      },
+      "blend": "normal",
+      "opacity": 0.85
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.12,
+        "read": "height",
+        "escaped": true,
+        "largest": 0.15
+       }
+      },
+      "power": 8.0,
+      "color": {
+       "rgb": "#d8ecff"
+      },
+      "blend": "screen",
+      "opacity": 0.9
+     }
+    ]
+   },
+   "shown": [
+    {
+     "keep": "style_gilded_orbs_r1/locations/locations__05_mandelbrot_c0061186_gilded_orbs",
+     "caption": "mandelbrot",
+     "location": {
+      "schema": 1,
+      "name": "mandelbrot_c0061186",
+      "family": {
+       "kind": "mandelbrot"
+      },
+      "viewport": {
+       "center_re": "-0.7767907846064299",
+       "center_im": "-0.1372515161929569",
+       "width": "0.0000002956239531100003"
+      },
+      "maxiter": 31929,
+      "note": "final139_general seat 874 (threads, mandelbrot)",
+      "gallery": {
+       "record": "final139_general",
+       "seat": 874,
+       "key": "c0061186ec4222e7",
+       "p_spiral": 0.018534
+      },
+      "ink": 0.1177
+     },
+     "colormap": "gilded_orbs",
+     "stack": {
+      "name": "gilded_orbs",
+      "interior": {
+       "rgb": "#132650"
+      },
+      "tone": {
+       "median": 0.231,
+       "p10": 0.061
+      },
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "field": {
+          "kind": "de"
+         },
+         "invert": true
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         },
+         "gamma": 1.8
+        }
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "light": {
+         "period": 1.0,
+         "rings": 0.8,
+         "slope": 0.0,
+         "azimuth": 135.0,
+         "elevation": 45.0,
+         "ambient": 0.6,
+         "diffuse": 0.55,
+         "specular": 0.35,
+         "shininess": 30.0,
+         "rim": 0.3,
+         "rim_power": 3.0,
+         "highlight": {
+          "palette": 0.9
+         }
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "sheet": {
+         "period": 0.25,
+         "edge": 0.12,
+         "fill": 0.0
+        },
+        "color": {
+         "palette": 0.85
+        },
+        "blend": "screen",
+        "opacity": 0.4
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "tia"
+         },
+         "invert": true
+        },
+        "power": 2.0,
+        "color": {
+         "palette": 0.0
+        },
+        "blend": "multiply",
+        "opacity": 0.5
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "falloff": 0.03,
+        "color": {
+         "palette": 0.85
+        },
+        "blend": "screen",
+        "opacity": 0.5
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "falloff": 0.0002,
+        "color": {
+         "palette": 0.9
+        },
+        "blend": "screen",
+        "opacity": 0.35
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.06,
+          "spacing": 1.0,
+          "read": "height",
+          "escaped": true,
+          "largest": 0.004
+         }
+        },
+        "power": 12.0,
+        "color": {
+         "rgb": "#fff4d6"
+        },
+        "blend": "add",
+        "opacity": 1.0,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          },
+          "invert": true
+         },
+         "power": 3.0
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "inside": {
+          "iterations": 1000
+         }
+        },
+        "power": 0.01,
+        "color": {
+         "rgb": "#2f62b4"
+        },
+        "opacity": 1.0
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "inside": {
+          "iterations": 1000
+         }
+        },
+        "light": {
+         "bands": 6.0,
+         "rings": 0.55,
+         "slope": 0.35,
+         "azimuth": 135.0,
+         "elevation": 50.0,
+         "ambient": 0.55,
+         "diffuse": 0.55,
+         "specular": 0.9,
+         "shininess": 60.0,
+         "rim": 0.4,
+         "rim_power": 3.0,
+         "highlight": {
+          "rgb": "#d8ecff"
+         }
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "inside": {
+          "iterations": 1000
+         }
+        },
+        "sheet": {
+         "bands": 6.0,
+         "rank": false,
+         "edge": 0.14,
+         "fill": 0.0
+        },
+        "color": {
+         "rgb": "#e2c27a"
+        },
+        "blend": "normal",
+        "opacity": 0.8
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "inside": {
+          "iterations": 1000
+         },
+         "invert": true
+        },
+        "power": 8.0,
+        "color": {
+         "rgb": "#0a0d18"
+        },
+        "blend": "normal",
+        "opacity": 0.85
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "inside": {
+          "iterations": 1000
+         }
+        },
+        "power": 8.0,
+        "color": {
+         "rgb": "#d8ecff"
+        },
+        "blend": "screen",
+        "opacity": 0.3
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.12,
+          "read": "height",
+          "escaped": true,
+          "largest": 0.15
+         }
+        },
+        "power": 0.01,
+        "color": {
+         "rgb": "#2f62b4"
+        },
+        "opacity": 1.0
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.12,
+          "read": "height",
+          "escaped": true,
+          "largest": 0.15
+         }
+        },
+        "light": {
+         "bands": 5.0,
+         "rings": 0.55,
+         "slope": 0.35,
+         "azimuth": 135.0,
+         "elevation": 50.0,
+         "ambient": 0.55,
+         "diffuse": 0.55,
+         "specular": 0.9,
+         "shininess": 60.0,
+         "rim": 0.4,
+         "rim_power": 3.0,
+         "highlight": {
+          "rgb": "#d8ecff"
+         }
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.12,
+          "read": "height",
+          "escaped": true,
+          "largest": 0.15
+         }
+        },
+        "sheet": {
+         "bands": 5.0,
+         "rank": false,
+         "edge": 0.14,
+         "fill": 0.0
+        },
+        "color": {
+         "rgb": "#e2c27a"
+        },
+        "blend": "normal",
+        "opacity": 0.8
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.12,
+          "read": "height",
+          "escaped": true,
+          "largest": 0.15
+         },
+         "invert": true
+        },
+        "power": 8.0,
+        "color": {
+         "rgb": "#0a0d18"
+        },
+        "blend": "normal",
+        "opacity": 0.85
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.12,
+          "read": "height",
+          "escaped": true,
+          "largest": 0.15
+         }
+        },
+        "power": 8.0,
+        "color": {
+         "rgb": "#d8ecff"
+        },
+        "blend": "screen",
+        "opacity": 0.9
+       }
+      ]
+     }
+    },
+    {
+     "keep": "style_gilded_orbs_r1/formulations/f_many_orbs__01_multibrot3_1ec297e1_gilded_orbs",
+     "caption": "variant: many orbs",
+     "location": {
+      "schema": 1,
+      "name": "multibrot3_1ec297e1",
+      "family": {
+       "kind": "multibrot",
+       "degree": 3
+      },
+      "viewport": {
+       "center_re": "0.4398699881452183",
+       "center_im": "0.016620335607234894",
+       "width": "0.00003340303017629088"
+      },
+      "maxiter": 23745,
+      "note": "final139_general seat 194 (threads, multibrot3)",
+      "gallery": {
+       "record": "final139_general",
+       "seat": 194,
+       "key": "1ec297e128cc1556",
+       "p_spiral": 0.001535
+      },
+      "ink": 0.10524
+     },
+     "colormap": "gilded_orbs",
+     "stack": {
+      "name": "gilded_orbs",
+      "interior": {
+       "rgb": "#132650"
+      },
+      "tone": {
+       "median": 0.231,
+       "p10": 0.061
+      },
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "field": {
+          "kind": "de"
+         },
+         "invert": true
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         },
+         "gamma": 1.8
+        }
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "light": {
+         "period": 1.0,
+         "rings": 0.8,
+         "slope": 0.0,
+         "azimuth": 135.0,
+         "elevation": 45.0,
+         "ambient": 0.6,
+         "diffuse": 0.55,
+         "specular": 0.35,
+         "shininess": 30.0,
+         "rim": 0.3,
+         "rim_power": 3.0,
+         "highlight": {
+          "palette": 0.9
+         }
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "sheet": {
+         "period": 0.25,
+         "edge": 0.12,
+         "fill": 0.0
+        },
+        "color": {
+         "palette": 0.85
+        },
+        "blend": "screen",
+        "opacity": 0.4
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "tia"
+         },
+         "invert": true
+        },
+        "power": 2.0,
+        "color": {
+         "palette": 0.0
+        },
+        "blend": "multiply",
+        "opacity": 0.5
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "falloff": 0.03,
+        "color": {
+         "palette": 0.85
+        },
+        "blend": "screen",
+        "opacity": 0.5
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "falloff": 0.0002,
+        "color": {
+         "palette": 0.9
+        },
+        "blend": "screen",
+        "opacity": 0.35
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.06,
+          "spacing": 1.0,
+          "read": "height",
+          "escaped": true,
+          "largest": 0.004
+         }
+        },
+        "power": 12.0,
+        "color": {
+         "rgb": "#fff4d6"
+        },
+        "blend": "add",
+        "opacity": 1.0,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          },
+          "invert": true
+         },
+         "power": 3.0
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "inside": {
+          "iterations": 1000
+         }
+        },
+        "power": 0.01,
+        "color": {
+         "rgb": "#2f62b4"
+        },
+        "opacity": 1.0
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "inside": {
+          "iterations": 1000
+         }
+        },
+        "light": {
+         "bands": 6.0,
+         "rings": 0.55,
+         "slope": 0.35,
+         "azimuth": 135.0,
+         "elevation": 50.0,
+         "ambient": 0.55,
+         "diffuse": 0.55,
+         "specular": 0.9,
+         "shininess": 60.0,
+         "rim": 0.4,
+         "rim_power": 3.0,
+         "highlight": {
+          "rgb": "#d8ecff"
+         }
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "inside": {
+          "iterations": 1000
+         }
+        },
+        "sheet": {
+         "bands": 6.0,
+         "rank": false,
+         "edge": 0.14,
+         "fill": 0.0
+        },
+        "color": {
+         "rgb": "#e2c27a"
+        },
+        "blend": "normal",
+        "opacity": 0.8
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "inside": {
+          "iterations": 1000
+         },
+         "invert": true
+        },
+        "power": 8.0,
+        "color": {
+         "rgb": "#0a0d18"
+        },
+        "blend": "normal",
+        "opacity": 0.85
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "inside": {
+          "iterations": 1000
+         }
+        },
+        "power": 8.0,
+        "color": {
+         "rgb": "#d8ecff"
+        },
+        "blend": "screen",
+        "opacity": 0.3
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "read": "height",
+          "escaped": true,
+          "largest": 0.25
+         }
+        },
+        "power": 0.01,
+        "color": {
+         "rgb": "#2f62b4"
+        },
+        "opacity": 1.0
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "read": "height",
+          "escaped": true,
+          "largest": 0.25
+         }
+        },
+        "light": {
+         "bands": 5.0,
+         "rings": 0.55,
+         "slope": 0.35,
+         "azimuth": 135.0,
+         "elevation": 50.0,
+         "ambient": 0.55,
+         "diffuse": 0.55,
+         "specular": 0.9,
+         "shininess": 60.0,
+         "rim": 0.4,
+         "rim_power": 3.0,
+         "highlight": {
+          "rgb": "#d8ecff"
+         }
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "read": "height",
+          "escaped": true,
+          "largest": 0.25
+         }
+        },
+        "sheet": {
+         "bands": 5.0,
+         "rank": false,
+         "edge": 0.14,
+         "fill": 0.0
+        },
+        "color": {
+         "rgb": "#e2c27a"
+        },
+        "blend": "normal",
+        "opacity": 0.8
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "read": "height",
+          "escaped": true,
+          "largest": 0.25
+         },
+         "invert": true
+        },
+        "power": 8.0,
+        "color": {
+         "rgb": "#0a0d18"
+        },
+        "blend": "normal",
+        "opacity": 0.85
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "read": "height",
+          "escaped": true,
+          "largest": 0.25
+         }
+        },
+        "power": 8.0,
+        "color": {
+         "rgb": "#d8ecff"
+        },
+        "blend": "screen",
+        "opacity": 0.9
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "steel-blades",
+   "style": "shaded_blades",
+   "palette": "shaded_blades",
+   "variant": "lune_blades",
+   "what": "Smoothly shaded lune blades (the bubble's crescent, read at entry) over a hair of light along the set.",
+   "knobs": [
+    {
+     "name": "blade_size",
+     "label": "Blade size",
+     "what": "the largest lune blade, as a share of the frame width; never larger than kept, or big blades hide the fine ones",
+     "default": 0.3,
+     "range": [
+      0.15,
+      0.3
+     ],
+     "set": [
+      "/layers/*/channel/bubble/largest",
+      "/layers/*/mask/channel/bubble/largest"
+     ]
+    },
+    {
+     "name": "fine_detail",
+     "label": "Finest blade",
+     "what": "the smallest blade drawn, as a share of the frame width; below it the set's own filigree shows",
+     "default": 0.006,
+     "range": [
+      0.003,
+      0.009
+     ],
+     "set": [
+      "/layers/*/channel/bubble/smallest",
+      "/layers/*/mask/channel/bubble/smallest"
+     ]
+    },
+    {
+     "name": "light_angle",
+     "label": "Light direction",
+     "what": "where the light comes from, in degrees round the frame (135 is the upper left)",
+     "default": 135.0,
+     "range": [
+      45.0,
+      225.0
+     ],
+     "set": [
+      "/layers/*/light/azimuth"
+     ]
+    },
+    {
+     "name": "sheen",
+     "label": "Metal sheen",
+     "what": "the brushed-metal highlight across each blade",
+     "default": 0.5,
+     "range": [
+      0.2,
+      0.8
+     ],
+     "set": [
+      "/layers/4/light/specular"
+     ]
+    }
+   ],
+   "stack": {
+    "name": "shaded_blades",
+    "interior": {
+     "rgb": "#0b0a0d"
+    },
+    "layers": [
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "power": 0.01,
+      "color": {
+       "rgb": "#0b0a0d"
+      },
+      "opacity": 1.0
+     },
+     {
+      "kind": "palette",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "palette": {
+       "transfer": {
+        "kind": "rank"
+       },
+       "gamma": 1.0
+      },
+      "opacity": 0.35
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "de"
+       }
+      },
+      "falloff": 0.0002,
+      "color": {
+       "palette": 0.9
+      },
+      "blend": "screen",
+      "opacity": 0.5
+     },
+     {
+      "kind": "palette",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.45,
+        "hit": 1,
+        "read": "step",
+        "spacing": 1.0,
+        "escaped": true,
+        "largest": 0.3,
+        "smallest": 0.006,
+        "shift": [
+         0.5,
+         0.2
+        ]
+       }
+      },
+      "palette": {
+       "transfer": {
+        "kind": "rank"
+       },
+       "gamma": 1.0,
+       "cycles": 3.0,
+       "phase": 0.0
+      },
+      "mask": {
+       "channel": {
+        "bubble": {
+         "center": [
+          0.5,
+          0.5
+         ],
+         "radius": 0.45,
+         "hit": 1,
+         "read": "crescent",
+         "spacing": 1.0,
+         "escaped": true,
+         "largest": 0.3,
+         "smallest": 0.006,
+         "shift": [
+          0.5,
+          0.2
+         ]
+        }
+       },
+       "power": 0.001
+      }
+     },
+     {
+      "kind": "light",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.45,
+        "hit": 1,
+        "read": "crescent",
+        "spacing": 1.0,
+        "escaped": true,
+        "largest": 0.3,
+        "smallest": 0.006,
+        "shift": [
+         0.5,
+         0.2
+        ]
+       }
+      },
+      "light": {
+       "bands": 1.0,
+       "rings": 1.0,
+       "slope": 1.0,
+       "azimuth": 135.0,
+       "elevation": 40.0,
+       "ambient": 0.45,
+       "diffuse": 0.75,
+       "specular": 0.5,
+       "shininess": 12.0,
+       "rim": 0.0,
+       "rim_power": 3.0
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.45,
+        "hit": 1,
+        "read": "crescent",
+        "spacing": 1.0,
+        "escaped": true,
+        "largest": 0.3,
+        "smallest": 0.006,
+        "shift": [
+         0.5,
+         0.2
+        ]
+       },
+       "invert": true
+      },
+      "power": 10.0,
+      "color": {
+       "rgb": "#060508"
+      },
+      "blend": "normal",
+      "opacity": 0.5
+     }
+    ],
+    "tone": {
+     "median": 0.273,
+     "p10": 0.029
+    }
+   },
+   "shown": [
+    {
+     "keep": "style_shaded_blades_r1/formulations/f_lune_blades__00_multibrot3_1ec297e1_shaded_blades",
+     "caption": "variant: lune blades",
+     "location": {
+      "schema": 1,
+      "name": "multibrot3_1ec297e1",
+      "family": {
+       "kind": "multibrot",
+       "degree": 3
+      },
+      "viewport": {
+       "center_re": "0.4398699881452183",
+       "center_im": "0.016620335607234894",
+       "width": "0.00003340303017629088"
+      },
+      "maxiter": 23745,
+      "note": "final139_general seat 194 (threads, multibrot3)",
+      "gallery": {
+       "record": "final139_general",
+       "seat": 194,
+       "key": "1ec297e128cc1556",
+       "p_spiral": 0.001535
+      },
+      "ink": 0.10524
+     },
+     "colormap": "shaded_blades",
+     "stack": {
+      "name": "v_lune_blades",
+      "interior": {
+       "rgb": "#0b0a0d"
+      },
+      "layers": [
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "power": 0.01,
+        "color": {
+         "rgb": "#0b0a0d"
+        },
+        "opacity": 1.0
+       },
+       {
+        "kind": "palette",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         },
+         "gamma": 1.0
+        },
+        "opacity": 0.35
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "falloff": 0.0002,
+        "color": {
+         "palette": 0.9
+        },
+        "blend": "screen",
+        "opacity": 0.5
+       },
+       {
+        "kind": "palette",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.45,
+          "hit": 1,
+          "read": "step",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.3,
+          "smallest": 0.006,
+          "shift": [
+           0.5,
+           0.2
+          ]
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         },
+         "gamma": 1.0,
+         "cycles": 3.0,
+         "phase": 0.0
+        },
+        "mask": {
+         "channel": {
+          "bubble": {
+           "center": [
+            0.5,
+            0.5
+           ],
+           "radius": 0.45,
+           "hit": 1,
+           "read": "crescent",
+           "spacing": 1.0,
+           "escaped": true,
+           "largest": 0.3,
+           "smallest": 0.006,
+           "shift": [
+            0.5,
+            0.2
+           ]
+          }
+         },
+         "power": 0.001
+        }
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.45,
+          "hit": 1,
+          "read": "crescent",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.3,
+          "smallest": 0.006,
+          "shift": [
+           0.5,
+           0.2
+          ]
+         }
+        },
+        "light": {
+         "bands": 1.0,
+         "rings": 1.0,
+         "slope": 1.0,
+         "azimuth": 135.0,
+         "elevation": 40.0,
+         "ambient": 0.45,
+         "diffuse": 0.75,
+         "specular": 0.5,
+         "shininess": 12.0,
+         "rim": 0.0,
+         "rim_power": 3.0
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.45,
+          "hit": 1,
+          "read": "crescent",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.3,
+          "smallest": 0.006,
+          "shift": [
+           0.5,
+           0.2
+          ]
+         },
+         "invert": true
+        },
+        "power": 10.0,
+        "color": {
+         "rgb": "#060508"
+        },
+        "blend": "normal",
+        "opacity": 0.5
+       }
+      ],
+      "tone": {
+       "median": 0.273,
+       "p10": 0.029
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "soft-petals",
+   "style": "lit_petals",
+   "palette": "lit_petals",
+   "variant": "soft",
+   "what": "Smoothly lit petals with jewelled edges, on a wrap-around palette.",
+   "knobs": [
+    {
+     "name": "petal_depth",
+     "label": "Petal depth",
+     "what": "escape steps per lit petal: more makes fewer, broader petals",
+     "default": 3.0,
+     "range": [
+      2.0,
+      4.0
+     ],
+     "set": [
+      "/layers/1/light/period"
+     ]
+    },
+    {
+     "name": "jewels",
+     "label": "Jewels",
+     "what": "the cycled jewel colours crusting the petal edges",
+     "default": 0.9,
+     "range": [
+      0.4,
+      1.0
+     ],
+     "set": [
+      "/layers/2/opacity"
+     ]
+    },
+    {
+     "name": "light_angle",
+     "label": "Light direction",
+     "what": "where the light comes from, in degrees round the frame (135 is the upper left)",
+     "default": 135.0,
+     "range": [
+      45.0,
+      225.0
+     ],
+     "set": [
+      "/layers/*/light/azimuth"
+     ]
+    },
+    {
+     "name": "brightness",
+     "label": "Brightness",
+     "what": "the frame's median lightness, which the tone pass holds the picture to",
+     "default": 0.323,
+     "range": [
+      0.28,
+      0.38
+     ],
+     "set": [
+      "/tone/median"
+     ]
+    }
+   ],
+   "stack": {
+    "name": "lit_petals",
+    "interior": {
+     "rgb": "#12303a"
+    },
+    "layers": [
+     {
+      "kind": "palette",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "palette": {
+       "transfer": {
+        "kind": "rank"
+       },
+       "gamma": 1.0,
+       "cycles": 1.0
+      }
+     },
+     {
+      "kind": "light",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "light": {
+       "period": 3.0,
+       "rings": 0.0,
+       "slope": 1.0,
+       "azimuth": 135.0,
+       "elevation": 40.0,
+       "ambient": 0.45,
+       "diffuse": 0.75,
+       "specular": 0.25,
+       "shininess": 14.0,
+       "rim": 0.15,
+       "rim_power": 3.0,
+       "highlight": {
+        "rgb": "#fff2d0"
+       }
+      }
+     },
+     {
+      "kind": "palette",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "palette": {
+       "transfer": {
+        "kind": "rank"
+       },
+       "cycles": 3.0,
+       "phase": 0.0
+      },
+      "opacity": 0.9,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        },
+        "invert": true
+       },
+       "power": 25.0
+      }
+     },
+     {
+      "kind": "light",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "light": {
+       "period": 1.0,
+       "rings": 0.0,
+       "slope": 1.0,
+       "azimuth": 135.0,
+       "elevation": 40.0,
+       "ambient": 0.45,
+       "diffuse": 0.75,
+       "specular": 0.5,
+       "shininess": 14.0,
+       "rim": 0.15,
+       "rim_power": 3.0,
+       "highlight": {
+        "rgb": "#fff2d0"
+       }
+      },
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        },
+        "invert": true
+       },
+       "power": 25.0
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "de"
+       }
+      },
+      "falloff": 0.0003,
+      "color": {
+       "rgb": "#1a0c10"
+      },
+      "blend": "multiply",
+      "opacity": 0.4
+     }
+    ],
+    "tone": {
+     "median": 0.323,
+     "p10": 0.12
+    }
+   },
+   "shown": [
+    {
+     "keep": "style_lit_petals_r1/formulations/f_soft__01_julia-mandelbrot_17e354d3_lit_petals",
+     "caption": "variant: soft",
+     "location": {
+      "schema": 1,
+      "name": "julia-mandelbrot_17e354d3",
+      "family": {
+       "c": [
+        "-1.2517612129804818",
+        "0.038979112285470574"
+       ],
+       "degree": 2,
+       "kind": "julia"
+      },
+      "viewport": {
+       "center_re": "1.0192054988872936",
+       "center_im": "-0.005539516535256361",
+       "width": "0.4951839999554471"
+      },
+      "maxiter": 7118,
+      "note": "final139_general seat 163 (smooth, julia:mandelbrot)",
+      "gallery": {
+       "record": "final139_general",
+       "seat": 163,
+       "key": "17e354d3a344983c",
+       "p_spiral": 0.033018
+      }
+     },
+     "colormap": "lit_petals",
+     "stack": {
+      "name": "v_soft",
+      "interior": {
+       "rgb": "#12303a"
+      },
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         },
+         "gamma": 1.0,
+         "cycles": 1.0
+        }
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "light": {
+         "period": 3.0,
+         "rings": 0.0,
+         "slope": 1.0,
+         "azimuth": 135.0,
+         "elevation": 40.0,
+         "ambient": 0.45,
+         "diffuse": 0.75,
+         "specular": 0.25,
+         "shininess": 14.0,
+         "rim": 0.15,
+         "rim_power": 3.0,
+         "highlight": {
+          "rgb": "#fff2d0"
+         }
+        }
+       },
+       {
+        "kind": "palette",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         },
+         "cycles": 3.0,
+         "phase": 0.0
+        },
+        "opacity": 0.9,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          },
+          "invert": true
+         },
+         "power": 25.0
+        }
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "light": {
+         "period": 1.0,
+         "rings": 0.0,
+         "slope": 1.0,
+         "azimuth": 135.0,
+         "elevation": 40.0,
+         "ambient": 0.45,
+         "diffuse": 0.75,
+         "specular": 0.5,
+         "shininess": 14.0,
+         "rim": 0.15,
+         "rim_power": 3.0,
+         "highlight": {
+          "rgb": "#fff2d0"
+         }
+        },
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          },
+          "invert": true
+         },
+         "power": 25.0
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "falloff": 0.0003,
+        "color": {
+         "rgb": "#1a0c10"
+        },
+        "blend": "multiply",
+        "opacity": 0.4
+       }
+      ],
+      "tone": {
+       "median": 0.323,
+       "p10": 0.12
+      }
+     }
+    },
+    {
+     "keep": "style_lit_petals_r1/locations/locations__02_julia-mandelbrot_17e354d3_lit_petals",
+     "caption": "julia–mandelbrot",
+     "location": {
+      "schema": 1,
+      "name": "julia-mandelbrot_17e354d3",
+      "family": {
+       "c": [
+        "-1.2517612129804818",
+        "0.038979112285470574"
+       ],
+       "degree": 2,
+       "kind": "julia"
+      },
+      "viewport": {
+       "center_re": "1.0192054988872936",
+       "center_im": "-0.005539516535256361",
+       "width": "0.4951839999554471"
+      },
+      "maxiter": 7118,
+      "note": "final139_general seat 163 (smooth, julia:mandelbrot)",
+      "gallery": {
+       "record": "final139_general",
+       "seat": 163,
+       "key": "17e354d3a344983c",
+       "p_spiral": 0.033018
+      }
+     },
+     "colormap": "lit_petals",
+     "stack": {
+      "name": "lit_petals",
+      "interior": {
+       "rgb": "#12303a"
+      },
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         },
+         "gamma": 1.0,
+         "cycles": 1.0
+        }
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "light": {
+         "period": 3.0,
+         "rings": 1.0,
+         "slope": 0.0,
+         "azimuth": 135.0,
+         "elevation": 40.0,
+         "ambient": 0.45,
+         "diffuse": 0.75,
+         "specular": 0.25,
+         "shininess": 14.0,
+         "rim": 0.15,
+         "rim_power": 3.0,
+         "highlight": {
+          "rgb": "#fff2d0"
+         }
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "sheet": {
+         "period": 3.0,
+         "edge": 0.06,
+         "fill": 0.0
+        },
+        "color": {
+         "rgb": "#2a1418"
+        },
+        "blend": "multiply",
+        "opacity": 0.35
+       },
+       {
+        "kind": "palette",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         },
+         "cycles": 3.0,
+         "phase": 0.0
+        },
+        "opacity": 0.9,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          },
+          "invert": true
+         },
+         "power": 25.0
+        }
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "light": {
+         "period": 1.0,
+         "rings": 1.0,
+         "slope": 0.0,
+         "azimuth": 135.0,
+         "elevation": 40.0,
+         "ambient": 0.45,
+         "diffuse": 0.75,
+         "specular": 0.5,
+         "shininess": 14.0,
+         "rim": 0.15,
+         "rim_power": 3.0,
+         "highlight": {
+          "rgb": "#fff2d0"
+         }
+        },
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          },
+          "invert": true
+         },
+         "power": 25.0
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "falloff": 0.0003,
+        "color": {
+         "rgb": "#1a0c10"
+        },
+        "blend": "multiply",
+        "opacity": 0.4
+       }
+      ],
+      "tone": {
+       "median": 0.323,
+       "p10": 0.12
+      }
+     }
+    },
+    {
+     "keep": "style_lit_petals_r1/locations/locations__08_julia-mandelbrot_06abe945_lit_petals",
+     "caption": "julia–mandelbrot",
+     "location": {
+      "schema": 1,
+      "name": "julia-mandelbrot_06abe945",
+      "family": {
+       "c": [
+        "-0.75979921213082943251559944387997563",
+        "-0.084519262497371513929408867580943368"
+       ],
+       "degree": 2,
+       "kind": "julia"
+      },
+      "viewport": {
+       "center_re": "-0.5160781614056555",
+       "center_im": "0.032401650985769956",
+       "width": "0.02058145031651321"
+      },
+      "maxiter": 12624,
+      "note": "final139_general seat 568 (tia, julia:mandelbrot)",
+      "gallery": {
+       "record": "final139_general",
+       "seat": 568,
+       "key": "06abe945a486b272",
+       "p_spiral": 0.01224
+      }
+     },
+     "colormap": "lit_petals",
+     "stack": {
+      "name": "lit_petals",
+      "interior": {
+       "rgb": "#12303a"
+      },
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         },
+         "gamma": 1.0,
+         "cycles": 1.0
+        }
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "light": {
+         "period": 3.0,
+         "rings": 1.0,
+         "slope": 0.0,
+         "azimuth": 135.0,
+         "elevation": 40.0,
+         "ambient": 0.45,
+         "diffuse": 0.75,
+         "specular": 0.25,
+         "shininess": 14.0,
+         "rim": 0.15,
+         "rim_power": 3.0,
+         "highlight": {
+          "rgb": "#fff2d0"
+         }
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "sheet": {
+         "period": 3.0,
+         "edge": 0.06,
+         "fill": 0.0
+        },
+        "color": {
+         "rgb": "#2a1418"
+        },
+        "blend": "multiply",
+        "opacity": 0.35
+       },
+       {
+        "kind": "palette",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         },
+         "cycles": 3.0,
+         "phase": 0.0
+        },
+        "opacity": 0.9,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          },
+          "invert": true
+         },
+         "power": 25.0
+        }
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "light": {
+         "period": 1.0,
+         "rings": 1.0,
+         "slope": 0.0,
+         "azimuth": 135.0,
+         "elevation": 40.0,
+         "ambient": 0.45,
+         "diffuse": 0.75,
+         "specular": 0.5,
+         "shininess": 14.0,
+         "rim": 0.15,
+         "rim_power": 3.0,
+         "highlight": {
+          "rgb": "#fff2d0"
+         }
+        },
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          },
+          "invert": true
+         },
+         "power": 25.0
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "falloff": 0.0003,
+        "color": {
+         "rgb": "#1a0c10"
+        },
+        "blend": "multiply",
+        "opacity": 0.4
+       }
+      ],
+      "tone": {
+       "median": 0.323,
+       "p10": 0.12
+      }
+     }
+    }
+   ]
+  }
+ ],
+ "colormaps": {
+  "bronze_packing": {
+   "schema": 1,
+   "name": "bronze_packing",
+   "kind": "sequential",
+   "source": "bronze_packing, authored as 10 control points (brown-black through copper, bronze and gold to a warm cream) as the albedo of the bronze_packing style, its hues read off the reference by lightness twentile and its top half pushed warmer and more saturated than the reference's mean, since the style's lights supply the near-whites and its tone pass sets the frame's key.",
+   "stops": [
+    [
+     0.0,
+     [
+      6,
+      4,
+      2
+     ]
+    ],
+    [
+     0.12,
+     [
+      22,
+      13,
+      7
+     ]
+    ],
+    [
+     0.25,
+     [
+      48,
+      27,
+      13
+     ]
+    ],
+    [
+     0.38,
+     [
+      86,
+      48,
+      21
+     ]
+    ],
+    [
+     0.5,
+     [
+      126,
+      74,
+      32
+     ]
+    ],
+    [
+     0.62,
+     [
+      170,
+      102,
+      42
+     ]
+    ],
+    [
+     0.74,
+     [
+      208,
+      136,
+      54
+     ]
+    ],
+    [
+     0.86,
+     [
+      236,
+      178,
+      88
+     ]
+    ],
+    [
+     0.94,
+     [
+      248,
+      216,
+      150
+     ]
+    ],
+    [
+     1.0,
+     [
+      255,
+      247,
+      224
+     ]
+    ]
+   ]
+  },
+  "floating_on_dreams": {
+   "schema": 1,
+   "name": "floating_on_dreams",
+   "kind": "sequential",
+   "source": "floating_on_dreams, authored as 12 OKLCH control points (pale aqua-white through teal and sea green to lime, the greens warmed towards lime) as the albedo of the floating_on_dreams style, measured off its reference image and fitted under the style's lighting.",
+   "stops": [
+    [
+     0.0,
+     [
+      202,
+      228,
+      225
+     ]
+    ],
+    [
+     0.08,
+     [
+      173,
+      212,
+      205
+     ]
+    ],
+    [
+     0.17,
+     [
+      136,
+      190,
+      178
+     ]
+    ],
+    [
+     0.27,
+     [
+      99,
+      164,
+      147
+     ]
+    ],
+    [
+     0.37,
+     [
+      69,
+      137,
+      116
+     ]
+    ],
+    [
+     0.46,
+     [
+      59,
+      122,
+      96
+     ]
+    ],
+    [
+     0.55,
+     [
+      80,
+      137,
+      98
+     ]
+    ],
+    [
+     0.64,
+     [
+      115,
+      153,
+      99
+     ]
+    ],
+    [
+     0.73,
+     [
+      138,
+      171,
+      104
+     ]
+    ],
+    [
+     0.82,
+     [
+      163,
+      190,
+      99
+     ]
+    ],
+    [
+     0.91,
+     [
+      188,
+      208,
+      98
+     ]
+    ],
+    [
+     1.0,
+     [
+      214,
+      225,
+      128
+     ]
+    ]
+   ]
+  },
+  "gilded_orbs": {
+   "schema": 1,
+   "name": "gilded_orbs",
+   "kind": "sequential",
+   "source": "gilded_orbs, authored as 10 control points (near-black umber through bronze and old gold to a warm pale gold) as the albedo of the gilded_orbs style: the reference's warm pixels read by lightness decile, each pushed more saturated and the top end held below white, since the style's lights and glows supply the near-whites. The orbs' blue is the style's own paint, not the map's.",
+   "stops": [
+    [
+     0.0,
+     [
+      10,
+      8,
+      5
+     ]
+    ],
+    [
+     0.12,
+     [
+      27,
+      21,
+      12
+     ]
+    ],
+    [
+     0.25,
+     [
+      47,
+      37,
+      20
+     ]
+    ],
+    [
+     0.38,
+     [
+      73,
+      57,
+      30
+     ]
+    ],
+    [
+     0.5,
+     [
+      104,
+      81,
+      40
+     ]
+    ],
+    [
+     0.62,
+     [
+      140,
+      108,
+      52
+     ]
+    ],
+    [
+     0.74,
+     [
+      178,
+      139,
+      66
+     ]
+    ],
+    [
+     0.85,
+     [
+      205,
+      160,
+      80
+     ]
+    ],
+    [
+     0.93,
+     [
+      226,
+      188,
+      110
+     ]
+    ],
+    [
+     1.0,
+     [
+      242,
+      214,
+      156
+     ]
+    ]
+   ]
+  },
+  "glossy_lobes": {
+   "schema": 1,
+   "name": "glossy_lobes",
+   "kind": "sequential",
+   "source": "glossy_lobes, authored as 11 control points as the albedo of the glossy_lobes style: deep navy through slate blue (the reference's cool pixels by lightness decile) crossing a dark olive into old gold (its warm pixels), ending in a warm orange for the star cores, each stop a little more saturated than the reference's means; the gold stops sit near the reference's top warm deciles rather than below them, since the tone pass pins the median and a frame with navy gaps otherwise reads p90 low.",
+   "stops": [
+    [
+     0.0,
+     [
+      6,
+      14,
+      34
+     ]
+    ],
+    [
+     0.12,
+     [
+      10,
+      24,
+      54
+     ]
+    ],
+    [
+     0.24,
+     [
+      18,
+      36,
+      72
+     ]
+    ],
+    [
+     0.34,
+     [
+      34,
+      48,
+      74
+     ]
+    ],
+    [
+     0.44,
+     [
+      76,
+      74,
+      50
+     ]
+    ],
+    [
+     0.54,
+     [
+      124,
+      112,
+      60
+     ]
+    ],
+    [
+     0.64,
+     [
+      166,
+      146,
+      76
+     ]
+    ],
+    [
+     0.74,
+     [
+      198,
+      172,
+      92
+     ]
+    ],
+    [
+     0.84,
+     [
+      226,
+      196,
+      108
+     ]
+    ],
+    [
+     0.92,
+     [
+      236,
+      176,
+      96
+     ]
+    ],
+    [
+     1.0,
+     [
+      238,
+      142,
+      70
+     ]
+    ]
+   ]
+  },
+  "lit_petals": {
+   "schema": 1,
+   "name": "lit_petals",
+   "kind": "cyclic",
+   "source": "lit_petals, authored as 12 control points as the albedo of the lit_petals style, in the order the reference's rosette runs from its ground inwards: a deep saturated teal ground through sea-green into the cream and gold outer petals, then orange, maroon and plum inner petals and a teal heart that returns to the ground, so the map is cyclic and a jewel layer cycling it fast never meets a seam; the teal and cream stops are more saturated than the reference's pixels, since the petals' light and the tone pass both pull towards grey.",
+   "stops": [
+    [
+     0.0,
+     [
+      10,
+      58,
+      70
+     ]
+    ],
+    [
+     0.1,
+     [
+      26,
+      104,
+      112
+     ]
+    ],
+    [
+     0.19,
+     [
+      86,
+      150,
+      136
+     ]
+    ],
+    [
+     0.27,
+     [
+      228,
+      214,
+      150
+     ]
+    ],
+    [
+     0.36,
+     [
+      246,
+      220,
+      140
+     ]
+    ],
+    [
+     0.45,
+     [
+      232,
+      170,
+      74
+     ]
+    ],
+    [
+     0.54,
+     [
+      196,
+      104,
+      32
+     ]
+    ],
+    [
+     0.63,
+     [
+      140,
+      42,
+      20
+     ]
+    ],
+    [
+     0.72,
+     [
+      100,
+      18,
+      26
+     ]
+    ],
+    [
+     0.8,
+     [
+      66,
+      18,
+      50
+     ]
+    ],
+    [
+     0.89,
+     [
+      18,
+      82,
+      104
+     ]
+    ],
+    [
+     1.0,
+     [
+      10,
+      58,
+      70
+     ]
+    ]
+   ]
+  },
+  "ribbon_packing": {
+   "schema": 1,
+   "name": "ribbon_packing",
+   "kind": "sequential",
+   "source": "ribbon_packing, authored as 10 control points (deep violet-navy through plum and mauve to copper, orange-gold and a warm cream) as the albedo of the ribbon_packing style: the discs' plum and mauve read off the reference's warm pixels by lightness decile, the field's orange pushed warmer and more saturated than its mean (which the mauve discs grey), since the style's lights supply the near-whites. The ribbons' blue is the style's own paint, not the map's.",
+   "stops": [
+    [
+     0.0,
+     [
+      12,
+      9,
+      30
+     ]
+    ],
+    [
+     0.12,
+     [
+      32,
+      22,
+      50
+     ]
+    ],
+    [
+     0.25,
+     [
+      58,
+      40,
+      70
+     ]
+    ],
+    [
+     0.38,
+     [
+      90,
+      64,
+      94
+     ]
+    ],
+    [
+     0.5,
+     [
+      128,
+      94,
+      118
+     ]
+    ],
+    [
+     0.6,
+     [
+      160,
+      118,
+      120
+     ]
+    ],
+    [
+     0.7,
+     [
+      190,
+      120,
+      72
+     ]
+    ],
+    [
+     0.82,
+     [
+      226,
+      152,
+      60
+     ]
+    ],
+    [
+     0.92,
+     [
+      246,
+      202,
+      112
+     ]
+    ],
+    [
+     1.0,
+     [
+      255,
+      242,
+      214
+     ]
+    ]
+   ]
+  },
+  "shaded_blades": {
+   "schema": 1,
+   "name": "shaded_blades",
+   "kind": "sequential",
+   "source": "shaded_blades, authored as 11 control points as the albedo of the shaded_blades style: the reference's blades by lightness decile, warm and cool interleaved so a few cycles over the trap's entry step give neighbouring blades different hues (near-black, maroon, slate, copper, blue-grey, cream), each more saturated than the reference's means, since the light's sheen and the tone pass grey them, and its top end (cream and pale silver) held a step darker than the reference's, since the style's light supplies the sheen and a frame filled by one cream blade otherwise reads p90 high.",
+   "stops": [
+    [
+     0.0,
+     [
+      10,
+      8,
+      10
+     ]
+    ],
+    [
+     0.1,
+     [
+      52,
+      16,
+      24
+     ]
+    ],
+    [
+     0.2,
+     [
+      38,
+      50,
+      68
+     ]
+    ],
+    [
+     0.3,
+     [
+      112,
+      42,
+      36
+     ]
+    ],
+    [
+     0.4,
+     [
+      70,
+      88,
+      116
+     ]
+    ],
+    [
+     0.5,
+     [
+      176,
+      92,
+      54
+     ]
+    ],
+    [
+     0.6,
+     [
+      104,
+      118,
+      152
+     ]
+    ],
+    [
+     0.7,
+     [
+      214,
+      132,
+      86
+     ]
+    ],
+    [
+     0.8,
+     [
+      140,
+      154,
+      180
+     ]
+    ],
+    [
+     0.9,
+     [
+      206,
+      182,
+      140
+     ]
+    ],
+    [
+     1.0,
+     [
+      186,
+      194,
+      204
+     ]
+    ]
+   ]
+  },
+  "teal_tunnel": {
+   "schema": 1,
+   "name": "teal_tunnel",
+   "kind": "sequential",
+   "source": "teal_tunnel, authored as 10 control points (near-black navy through deep teal to bright cyan) as the albedo of the teal_tunnel style, read off its reference by lightness twentile and pulled darker at the low end, since the style's lights supply the band sheen and its tone pass sets the frame's key.",
+   "stops": [
+    [
+     0.0,
+     [
+      3,
+      10,
+      20
+     ]
+    ],
+    [
+     0.12,
+     [
+      6,
+      22,
+      38
+     ]
+    ],
+    [
+     0.25,
+     [
+      10,
+      38,
+      58
+     ]
+    ],
+    [
+     0.38,
+     [
+      14,
+      58,
+      78
+     ]
+    ],
+    [
+     0.5,
+     [
+      18,
+      82,
+      98
+     ]
+    ],
+    [
+     0.62,
+     [
+      24,
+      108,
+      118
+     ]
+    ],
+    [
+     0.74,
+     [
+      34,
+      134,
+      140
+     ]
+    ],
+    [
+     0.86,
+     [
+      60,
+      170,
+      172
+     ]
+    ],
+    [
+     0.94,
+     [
+      110,
+      210,
+      210
+     ]
+    ],
+    [
+     1.0,
+     [
+      190,
+      245,
+      240
+     ]
+    ]
+   ]
+  },
+  "yas": {
+   "schema": 1,
+   "name": "yas",
+   "kind": "sequential",
+   "source": "yas, authored as 10 control points (deep blue through blue-teal, teal and olive to gold and cream) as the albedo of the yas style, measured ring by ring off its reference image by distance from the core, from the brightest strands of each ring rather than its mean, since the style's tone pass sets the frame's lightness and the sheets carry the contrast.",
+   "stops": [
+    [
+     0.0,
+     [
+      22,
+      52,
+      78
+     ]
+    ],
+    [
+     0.12,
+     [
+      34,
+      82,
+      112
+     ]
+    ],
+    [
+     0.25,
+     [
+      48,
+      112,
+      122
+     ]
+    ],
+    [
+     0.38,
+     [
+      70,
+      134,
+      122
+     ]
+    ],
+    [
+     0.5,
+     [
+      98,
+      154,
+      128
+     ]
+    ],
+    [
+     0.62,
+     [
+      126,
+      166,
+      126
+     ]
+    ],
+    [
+     0.74,
+     [
+      168,
+      172,
+      118
+     ]
+    ],
+    [
+     0.86,
+     [
+      210,
+      190,
+      128
+     ]
+    ],
+    [
+     0.94,
+     [
+      236,
+      212,
+      148
+     ]
+    ],
+    [
+     1.0,
+     [
+      252,
+      244,
+      196
+     ]
+    ]
+   ]
+  }
+ }
+}

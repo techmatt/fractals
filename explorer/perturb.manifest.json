@@ -4,7 +4,7 @@
   "dependencies": [
     "fractal-wallpapers/perturbation"
   ],
-  "kernel_tree": "f26385857f82e2981b4125024f6fd24809ee7e7c",
+  "kernel_tree": "7af35733ee480277e2aca45b7f405ca74e137758",
   "modules": {
     "perturb-scalar.wasm": {
       "gzip_bytes": 163128,

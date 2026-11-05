@@ -232,8 +232,18 @@ engine.manifest.json  generated: what engine.wasm was built from
 perturb.wasm          generated: the perturbation kernel, compiled with wasm SIMD
 perturb-scalar.wasm   generated: the same without SIMD, for an engine that has none
 perturb.manifest.json generated: what the two were built from
+style.wasm            generated: the custom (experimental) modes' compositor, the
+                      wallpaper project's style module — see Custom modes
+custom-modes.json     generated: the published custom modes, that project's `style bundle`
+style.manifest.json   generated: what the two were built from
+style.js              the custom modes' worker pool, and a view as the module's request
+style-worker.js       one custom-mode worker: one style.wasm instance, one session
+custom.js             the custom modes' controls: the mode, Matched palette, Auto
+                      tone, the knobs, the example locations
+style.test.mjs        13 tests: the custom keys, the examples' settings, the request
 engine-wasm/          the crate that produces engine.wasm
 perturb-wasm/         the crate that produces perturb.wasm — see The Deep tab
+style-wasm/           the crate that produces style.wasm, linking the sibling's whole
 deep-gpu-model/       a native model of the Deep tab's GPU kernel, measured against
                       perturb; deep-gpu-wgsl.js is its port, and its bundles are the self-test
                       — its README
@@ -7839,11 +7849,51 @@ already public and matched, and the engine's fingerprint is unmoved.
   since cleanup_ckpt163 the bake sets it itself (*Rebuilding*), and the manifest's `rustc`
   records it.
 
+## Custom modes *(custom_modes_explorer, 2026-11-05)*
+
+The mode select's last entry, **custom (experimental)**, draws the wallpaper project's
+published custom modes with that project's own compositor, `style.wasm`, so a picture
+here is the pipeline's picture byte for byte. `docs/custom-modes.md` is the whole path
+from a reference image to a mode live here, and every problem the first one hit.
+
+- **The record is `custom-modes.json`**, the sibling's `style bundle` written by
+  `python -m builder explorer --style` beside `style.wasm`: each mode's public name, its
+  matched map, its knobs (label, range, default, where each writes), its default stack,
+  and the keeps it shows, which are the Example buttons (one per keep, less a keep the
+  published settings draw as another button's picture: 22 for 23). The page reads it before any
+  link, since a link may name a mode; the module is fetched the first time one draws.
+- **The link keys** are `custom`, `knobs`, `matched`, `autotone` and `projection`
+  (`permalink.js`'s `CUSTOM_KEY`): a widening, not a version. Under `custom` the engine
+  mode's keys are read, held, and dropped; `p` and the shade keys stay, because Matched
+  palette off draws with the link's palette, and Reverse reaches it.
+- **Drawing is three steps on a pool of half the machine's threads** (one to eight):
+  a quarter-size picture whole; full-size 128-pixel tiles against that preview's
+  balance, centre first, composited as they land; then every worker measures the whole
+  frame (the measure lives in a session and cannot cross) and the tiles are drawn again,
+  exact. Any new view, knob or palette cancels at once: a worker inside a call is
+  terminated and replaced. Downloads take the same pool without the preview.
+- **Not in the Deep tab** (`carryable` returns nothing for a custom view), **not in the
+  Walk** (the entry is appended by `syncModes`, never listed by `listedModes`), **not in
+  the gallery's facets** (no seat carries one), and **not drawn in Saved** (a tile is
+  labelled, as a deep one is). The Julia preview is off while one is up.
+- **Checked by** `node explorer/bench/custom-parity.mjs <dir>` (each example through
+  the link, the parse and the request, under Node) and `node explorer/bench/
+  custom-browser.mjs http://localhost:<port> <dir>` (each Example button and the
+  Download row in the served page), then `python explorer/bench/custom-compare.py <dir>
+  <wallpapers>/artifacts/style-wasm/wasm-parity [--png]` against the native pictures the
+  sibling's `style wasm-parity` leaves there. Item 026's tolerance: identical on Windows.
+
 ## The test suites
 
-Twenty suites here and `atlas/atlas.test.mjs` beside them, on Node's own runner with
+Twenty-one suites here and `atlas/atlas.test.mjs` beside them, on Node's own runner with
 nothing installed. `CLAUDE.md` and `.github/workflows/checks.yml` carry the command line.
 
+- `style.test.mjs` holds the custom (experimental) mode without a browser: the bundle's
+  shape, which example settings reproduce their keep (and the five that none does), each
+  example's link as a fixed point that reads back as its keep's location, Auto tone and
+  Matched palette in the request, the custom keys' round trip and refusals, and the tile
+  cut. The pictures are `bench/custom-parity.mjs`'s and `bench/custom-browser.mjs`'s,
+  held by `bench/custom-compare.py` (*Custom modes*).
 - `pointers.test.mjs` holds the pointer bookkeeping the viewer and the Phoenix plane share:
   a lift measures the pinch before it forgets the pointer and leaves nothing behind, a first
   finger starts from nothing, and a third finger measures nothing.
@@ -7940,6 +7990,8 @@ nothing installed. `CLAUDE.md` and `.github/workflows/checks.yml` carry the comm
 python -m builder explorer                 # palettes, blob, swatch, catalog, wasm, manifest
 python -m builder explorer --palettes-only # when only the colormaps moved
 python -m builder explorer --roster <stamp>  # and re-read each map's family and seat count
+python -m builder explorer --perturb       # perturb.wasm, perturb-scalar.wasm, their manifest
+python -m builder explorer --style         # style.wasm, custom-modes.json, their manifest
 python -m builder links --write            # the link registry, from figure provenance
 ```
 
