@@ -55,8 +55,8 @@ are 003's and are not repeated here.
     machine's `python` lacks. `style.test.mjs` now holds the two `INTEGER_MEMBERS` lists
     equal where the checkout is configured.
 14. **`experiments/results/003_custom_modes_explorer/` (3.3 MB of JPEGs) was tracked and
-    served by Pages.** Untracked; `/experiments/` is excluded in `.git/info/exclude`, as
-    fractal-wallpapers does.
+    served by Pages.** Untracked, and `/experiments/` is ignored in the tracked `.gitignore`
+    (Matt, MESSAGE #1025), so no clone serves a results folder again.
 
 ### Deferred to Matt
 
