@@ -1,5 +1,8 @@
 scratch/
 artifacts/
+# Conductor items' working papers (results folders): kept on disk, never tracked or
+# served by Pages, as fractal-wallpapers keeps them (004_bug_hunt, MESSAGE #1025).
+/experiments/
 
 # This machine's own settings: where the companion code repository is checked out.
 # No absolute path is committed here, so the one that exists is untracked.
