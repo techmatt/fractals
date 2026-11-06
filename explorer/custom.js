@@ -9,6 +9,7 @@
 
 import { encode } from "./permalink.js";
 import {
+  Cancelled,
   StylePool,
   colormapOf,
   exampleQuery,
@@ -16,6 +17,7 @@ import {
   modesOf,
   offeredExamples,
   requestOf,
+  roundEven,
   wholeKnob,
   SUPERSAMPLE,
 } from "./style.js";
@@ -36,9 +38,20 @@ function stepOf(knob) {
   return span >= 20 ? 1 : span >= 2 ? 0.1 : span >= 0.2 ? 0.01 : 0.001;
 }
 
+/** The finest a knob is set: a whole-number knob by one, any other by a tenth of its box's
+ *  step, which is the slider's step too. The box shows this many digits and a typed value is
+ *  rounded to it, so the box, the slider and the link say one number (004_bug_hunt: Light
+ *  direction typed as 45.5 showed 46, and drew and linked 45.5). */
+function finestOf(knob) {
+  return wholeKnob(knob) ? 1 : stepOf(knob) / 10;
+}
+
+function digitsOf(step) {
+  return Math.max(0, -Math.floor(Math.log10(step) + 1e-9));
+}
+
 function shown(value, step) {
-  const digits = Math.max(0, -Math.floor(Math.log10(step)));
-  return Number(value.toFixed(digits)).toString();
+  return Number(value.toFixed(digitsOf(step))).toString();
 }
 
 /**
@@ -88,13 +101,22 @@ export function install(bundle, host) {
 
   function setKnob(knob, value) {
     const custom = current();
-    if (!custom || host.locked()) return;
+    if (!custom || host.locked() || inert(knob, custom)) return sync();
     if (!Number.isFinite(value)) return sync();
-    const clamped = Math.min(knob.range[1], Math.max(knob.range[0], value));
+    // A whole-number knob holds the number the module draws (it rounds half to even), so
+    // the box, the slider and the link never say 5 of a picture drawn with 4.
+    const rounded = wholeKnob(knob) ? roundEven(value) : Number(value.toFixed(digitsOf(finestOf(knob))));
+    const clamped = Math.min(knob.range[1], Math.max(knob.range[0], rounded));
     const next = { ...custom.knobs };
     if (clamped === knob.default) delete next[knob.name];
     else next[knob.name] = clamped;
     host.setCustom({ ...custom, knobs: next });
+  }
+
+  /** Whether a knob writes only the tone pass while Auto tone has dropped it from the
+   *  stack: the module then writes nothing, so moving it redrew the same picture. */
+  function inert(knob, custom) {
+    return custom.autotone === false && knob.set.every((target) => (typeof target === "string" ? target : target.path).startsWith("/tone/"));
   }
 
   /** The knob sliders and the example buttons, rebuilt when the mode changes. */
@@ -121,7 +143,7 @@ export function install(bundle, host) {
       // A knob re-iterates the whole frame, so it draws when the hand lets go.
       slider.addEventListener("change", () => setKnob(knob, Number(slider.value)));
       slider.addEventListener("input", () => {
-        box.value = shown(Number(slider.value), step);
+        box.value = shown(Number(slider.value), finestOf(knob));
       });
       const box = document.createElement("input");
       box.type = "number";
@@ -131,7 +153,9 @@ export function install(bundle, host) {
       box.max = String(knob.range[1]);
       box.step = String(step);
       box.dataset.knob = knob.name;
-      box.addEventListener("change", () => setKnob(knob, Number(box.value)));
+      // An emptied or unreadable box is no setting, not zero (`Number("")` is 0, which
+      // clamped every knob to its minimum and redrew).
+      box.addEventListener("change", () => setKnob(knob, box.value.trim() === "" ? NaN : Number(box.value)));
       group.append(label, slider, box);
       knobs.append(group);
     }
@@ -182,10 +206,15 @@ export function install(bundle, host) {
       const placed = Object.keys(custom.projection ?? {}).find((member) =>
         knob.set.some((target) => (typeof target === "string" ? target : target.path).endsWith(`/${member}`) && (typeof target === "string" ? target : target.path).startsWith("/projection/")),
       );
+      const untoned = inert(knob, custom);
       for (const control of knobs.querySelectorAll(`[data-knob="${knob.name}"]`)) {
-        control.value = control.type === "range" ? String(value) : shown(value, stepOf(knob));
-        control.disabled = busy || placed !== undefined;
-        control.closest(".group").title = placed ? `This place sets its own ${placed}, so ${knob.label} does nothing here.` : knob.what;
+        control.value = control.type === "range" ? String(value) : shown(value, finestOf(knob));
+        control.disabled = busy || placed !== undefined || untoned;
+        control.closest(".group").title = placed
+          ? `This place sets its own ${placed}, so ${knob.label} does nothing here.`
+          : untoned
+            ? `${knob.label} sets the tone pass, so it does nothing while Auto tone is off.`
+            : knob.what;
       }
     }
     for (const button of examples.querySelectorAll("button")) button.disabled = busy;
@@ -197,14 +226,23 @@ export function install(bundle, host) {
   /** The pool, started the first time a custom mode draws. */
   async function started() {
     if (pool) return pool;
-    starting ??= StylePool.start(MODULE).then((made) => {
-      pool = made;
-      return made;
-    });
+    if (starting === null) {
+      // A start the reader left before it landed (`release`) must not install itself.
+      const mine = StylePool.start(MODULE).then((made) => {
+        if (starting !== mine) {
+          made.stop();
+          throw new Cancelled();
+        }
+        pool = made;
+        return made;
+      });
+      starting = mine;
+    }
+    const waiting = starting;
     try {
-      return await starting;
+      return await waiting;
     } catch (error) {
-      starting = null;
+      if (starting === waiting) starting = null;
       throw error;
     }
   }
@@ -241,7 +279,20 @@ export function install(bundle, host) {
     stripMap,
     modeOf,
     cancel: () => pool?.cancel(),
+    // Every worker replaced, so none keeps the memory a download grew it to.
+    recycle: () => pool?.recycle(),
     stop: () => pool?.stop(),
+    /** Give the pool back: the reader has left the custom modes, and each worker would
+     *  otherwise hold its last frame's memory (hundreds of megabytes) until the page goes.
+     *  The compiled module is kept, so coming back costs milliseconds. */
+    release: () => {
+      if (!pool && !starting) return;
+      const leaving = pool;
+      pool = null;
+      // A start still in flight sees `starting` moved and stops what it made.
+      starting = null;
+      leaving?.stop();
+    },
     workers: () => pool?.size ?? null,
   };
 }

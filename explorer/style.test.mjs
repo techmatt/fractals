@@ -7,7 +7,7 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
 import { canonicalize, emit, encode, parse, PermalinkError } from "./permalink.js";
 import {
@@ -15,6 +15,12 @@ import {
   exampleCustom,
   exampleQuery,
   familyOf,
+  INTEGER_MEMBERS,
+  MAX_CUSTOM_SAMPLES,
+  PASS_MEMORY,
+  BYTES_PER_SAMPLE,
+  WORKER_MEMORY,
+  workersFor,
   libraryColormap,
   modesOf,
   offeredExamples,
@@ -197,4 +203,52 @@ test("the pool takes half the machine's threads, one to eight", () => {
   assert.equal(poolSize(1), 1);
   assert.equal(poolSize(12), 6);
   assert.equal(poolSize(64), 8);
+});
+
+test("a whole-number knob in a link reads as the number the module draws", () => {
+  // 004_bug_hunt: `turns:4.5` drew 4 turns while the box and the slider said 5.
+  const read = (query) => parse(query, CONTEXT).custom.knobs;
+  assert.deepEqual(read("v=4&custom=arch-tunnel&knobs=turns:4.5"), { turns: 4 });
+  assert.deepEqual(read("v=4&custom=arch-tunnel&knobs=turns:3.5"), { turns: 4 });
+  assert.deepEqual(read("v=4&custom=arch-tunnel&knobs=turns:5.4"), {}, "5 is the default, left out");
+  // A fractional knob is read as written.
+  assert.deepEqual(read("v=4&custom=arch-tunnel&knobs=arch_glow:0.45"), { arch_glow: 0.45 });
+  const once = emit(parse("v=4&custom=arch-tunnel&knobs=turns:4.5", CONTEXT), CONTEXT);
+  assert.equal(emit(parse(once, CONTEXT), CONTEXT), once, "and the link it writes is a fixed point");
+});
+
+test("a custom pass fits its workers' memory: fewer workers for a large picture, none past one's", () => {
+  // 004_bug_hunt: every worker measures the whole frame, 90 to 250 bytes a sample over the
+  // nine modes, and a wasm memory never shrinks.
+  assert.ok(MAX_CUSTOM_SAMPLES * BYTES_PER_SAMPLE <= WORKER_MEMORY);
+  assert.ok(WORKER_MEMORY < 4 * 2 ** 30);
+  assert.ok(MAX_CUSTOM_SAMPLES >= 2560 * 1440 * 4, "a 1440p download at 4x is still offered");
+  assert.ok(3840 * 2160 * 4 > MAX_CUSTOM_SAMPLES, "a 4K download at 4x is refused rather than trapping");
+  // A typical screen keeps its whole pool; a download a worker can barely hold runs on one.
+  assert.equal(workersFor(1200 * 750 * 4, 6), 6);
+  assert.equal(workersFor(2560 * 1440 * 4, 8), 1);
+  for (const samples of [1e5, 4e6, 8e6, 14e6]) {
+    for (const size of [1, 3, 8]) {
+      const workers = workersFor(samples, size);
+      assert.ok(workers >= 1 && workers <= size);
+      assert.ok(workers === 1 || workers * samples * BYTES_PER_SAMPLE <= PASS_MEMORY, `${samples} on ${size}`);
+    }
+  }
+});
+
+test("the whole-number members are the module's own list", (context) => {
+  // A second copy lives here (`wholeKnob`, `turned`); a member added next door only would
+  // give its slider a fractional step (004_bug_hunt). Read from the sibling checkout where
+  // this machine has one.
+  const settings = new URL("../local.toml", import.meta.url);
+  const root = existsSync(settings) ? /wallpapers_root\s*=\s*"([^"]+)"/.exec(readFileSync(settings, "utf8"))?.[1] : null;
+  const source = root ? `${root}/style-wasm/src/lib.rs` : null;
+  if (!source || !existsSync(source)) {
+    context.skip("no wallpapers checkout named in local.toml");
+    return;
+  }
+  const line = /INTEGER_MEMBERS: \[&str; \d+\] = \[([^\]]*)\]/.exec(readFileSync(source, "utf8"));
+  assert.ok(line, "lib.rs still spells INTEGER_MEMBERS");
+  const theirs = [...line[1].matchAll(/"([^"]+)"/g)].map((match) => match[1]).sort();
+  assert.deepEqual([...INTEGER_MEMBERS].sort(), theirs);
 });

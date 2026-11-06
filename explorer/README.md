@@ -249,7 +249,7 @@ deep-gpu-model/       a native model of the Deep tab's GPU kernel, measured agai
                       — its README
 bench/                the timing harnesses — see Measured
 bench/showcase.mjs    the showcase video's tour, captured and assembled — see Demo mode
-bench/hunt/           the bug hunt's own: lib.mjs, eight units, four probes
+bench/hunt/           the bug hunts' own: lib.mjs, eleven units (u11 the custom modes'), probes
 ```
 
 ## The studio
@@ -7815,6 +7815,27 @@ for 128. Measured, 300 requests at once, three runs: the old server refused 126,
 them, the new one none. Run the units serially anyway; `bench/hunt/lib.mjs` carries the eight
 other false alarms that each cost a verification.
 
+### The custom modes' hunt *(004_bug_hunt, 2026-11-06)*
+
+`bench/hunt/u11-custom.mjs` drives the custom (experimental) mode as a reader does: every
+mode's bare link, all 22 Example buttons (each link read back, the first of each mode
+reopened and its raster compared), presses overtaking a pass, every knob at both ends and
+with junk, emptied and half-step typing, Matched palette and Auto tone through a reload,
+leaving for an engine mode mid-pass and coming back, thirty knob moves, and a small and a 4K
+download. At each moment it screenshots (the controls scrolled into view too) and checks the
+console, overflow, overlap and covered controls, internal shorthand in a tooltip, the address
+bar as a fixed point, long tasks, and the live workers by script (counted by wrapping
+`Worker`, since CDP names a module worker by type alone). Findings land in
+`artifacts/explorer-bench/u11-custom/<stamp>/findings.jsonl` beside `contact.png`.
+
+```
+python -m builder serve --port 8000
+PORT=8000 WORKERS=3 SIZE=1400x1000 node explorer/bench/hunt/u11-custom.mjs [boot examples …]
+```
+
+About 35 minutes whole at three workers; `examples` is half of it. What it found, fixed and
+deferred is `docs/qa-findings.md`, the findings list from this hunt on.
+
 ## The operator is the engine's *(engine_wasm_import_ckpt151, 2026-09-26)*
 
 The crate used to carry its own copies of three things the engine now has:
@@ -7872,6 +7893,11 @@ from a reference image to a mode live here, and every problem the first one hit.
   frame (the measure lives in a session and cannot cross) and the tiles are drawn again,
   exact. Any new view, knob or palette cancels at once: a worker inside a call is
   terminated and replaced. Downloads take the same pool without the preview.
+- **A pass is held to its workers' memory** *(004_bug_hunt)*: each worker grows by 90 to
+  250 bytes a sample (`bench/custom-memory.mjs`) and keeps it, so a pass runs on as many
+  workers as fit 6 GiB, a download past one worker's 3.75 GiB is refused, every worker is
+  replaced after a download, and the pool is given back on leaving the custom modes.
+  `docs/custom-modes.md`'s *Memory* has the constants.
 - **Not in the Deep tab** (`carryable` returns nothing for a custom view), **not in the
   Walk** (the entry is appended by `syncModes`, never listed by `listedModes`), **not in
   the gallery's facets** (no seat carries one), and **not drawn in Saved** (a tile is
@@ -7881,7 +7907,9 @@ from a reference image to a mode live here, and every problem the first one hit.
   custom-browser.mjs http://localhost:<port> <dir>` (each Example button and the
   Download row in the served page), then `python explorer/bench/custom-compare.py <dir>
   <wallpapers>/artifacts/style-wasm/wasm-parity [--png]` against the native pictures the
-  sibling's `style wasm-parity` leaves there. Item 026's tolerance: identical on Windows.
+  sibling's `style wasm-parity` leaves there (Pillow: the sibling's `.venv` python here).
+  Item 026's tolerance: identical on Windows. `node explorer/bench/hunt/u11-custom.mjs` is
+  the reader's-eye sweep (*What the last bug hunt covered*).
 
 ## The test suites
 

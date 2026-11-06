@@ -498,10 +498,20 @@ export function install(context) {
       return;
     }
     if (onCustom()) {
+      // **A custom picture has its own ceiling** (004_bug_hunt): every worker measures the
+      // whole frame at about 250 bytes a sample, so past one worker's wasm memory the
+      // module traps however few workers draw it.
+      const samples = width * height * supersample * supersample;
+      const ceiling = customMode.refusal(samples);
+      if (ceiling !== null) {
+        refuse("too large", ceiling);
+        return;
+      }
       // **Priced off the screen's own last pass, and nothing else** *(custom_modes_explorer)*:
       // the modes run 14 to 93 s a 1280x800 frame on one thread, and no table here knows
       // them. A download measures the whole picture and tiles it again, so it costs about
-      // the screen pass's exact half twice, scaled by samples.
+      // the screen pass's exact half twice, scaled by samples, and by the workers a large
+      // one gives up.
       const known = customMode.measured();
       enable(true);
       if (known === null) {
@@ -509,7 +519,8 @@ export function install(context) {
         estimateLine.title = "Let the picture on the screen finish, and this is estimated from it.";
         return;
       }
-      estimateLine.textContent = saidShort((known.seconds * width * height * supersample * supersample) / known.samples);
+      const fewer = known.workers / customMode.workers(samples);
+      estimateLine.textContent = saidShort((known.seconds * samples * fewer) / known.samples);
       estimateLine.title = SHAPE_TIP;
       return;
     }
@@ -710,6 +721,11 @@ export function install(context) {
     }
 
     if (onCustom()) {
+      const ceiling = customMode.refusal(samples);
+      if (ceiling !== null) {
+        refuse("too large", ceiling);
+        return;
+      }
       await downloadCustom(go, width, height, query);
       return;
     }

@@ -1752,6 +1752,18 @@ canvas.palette-final {
    palette and Auto tone, then the knobs, then the example locations, each a wrapping row of
    the same contained cell. */
 .custom-examples .custom-lead { color: var(--well-ink-dim); }
+/* The knobs as a table, label, slider, box: as a wrapping row each slider began wherever its
+   label ended, so four of them made a ragged edge (004_bug_hunt). A group is a row whose
+   title is still its knob's tooltip. */
+.bar.custom-knobs {
+  display: grid;
+  grid-template-columns: max-content minmax(5rem, 8rem) 4.5rem;
+  justify-content: start;
+  gap: 0.4rem 0.6rem;
+}
+.bar.custom-knobs .group { display: contents; }
+.bar.custom-knobs input.slider { width: 100%; }
+.bar.custom-knobs input.param { width: 100%; }
 /* Matched palette on: the map is the mode's own, so the picker is shown and not offered. A
    container rule rather than a flag per swatch, because the picker rebuilds its rows on
    every tab and filter change. */

@@ -53,7 +53,8 @@ export function contractOf(bundle) {
   return new Map(
     bundle.modes.map((mode) => [
       mode.name,
-      { knobs: mode.knobs, projection: projectionKind(mode.stack) },
+      // `whole`: the module rounds the knob half to even, so the link reads it that way too.
+      { knobs: mode.knobs.map((knob) => ({ ...knob, whole: wholeKnob(knob) })), projection: projectionKind(mode.stack) },
     ]),
   );
 }
@@ -292,6 +293,10 @@ class Slot {
   constructor(module) {
     this.module = module;
     this.pending = [];
+    // Moves on every reset, so a call still waiting on a respawn when a later cancel lands
+    // is dropped there rather than posted to the fresh worker (004_bug_hunt: each burst of
+    // wheel notches otherwise queued one stale preview frame ahead of the current one).
+    this.epoch = 0;
     this.ready = this.spawn();
     this.ready.catch(() => {});
   }
@@ -299,8 +304,14 @@ class Slot {
   spawn() {
     return new Promise((resolve, reject) => {
       const worker = new Worker(new URL("./style-worker.js", import.meta.url), { type: "module" });
+      // Held while it starts, so a reset or a stop in that window terminates it rather than
+      // leaving a thread nobody answers to.
+      this.spawning = worker;
+      this.refuse = reject;
       worker.onmessage = (event) => {
         if (event.data.kind === "ready") {
+          if (this.spawning !== worker) return;
+          this.spawning = null;
           worker.onmessage = (answer) => this.answer(answer.data);
           worker.onerror = null;
           this.worker = worker;
@@ -308,6 +319,7 @@ class Slot {
         }
       };
       worker.onerror = (event) => {
+        if (this.spawning === worker) this.spawning = null;
         worker.terminate();
         reject(new Error(`a custom-mode worker did not start (${event.message || "its script did not load"})`));
       };
@@ -323,34 +335,98 @@ class Slot {
   }
 
   async call(message, transfer = []) {
+    const epoch = this.epoch;
     try {
       await this.ready;
     } catch {
+      if (epoch !== this.epoch) throw new Cancelled();
       // A worker that would not start (a respawn under memory pressure) gets one more try.
       this.ready = this.spawn();
       this.ready.catch(() => {});
       await this.ready;
     }
+    if (epoch !== this.epoch) throw new Cancelled();
     return new Promise((resolve, reject) => {
       this.pending.push({ resolve, reject });
       this.worker.postMessage(message, transfer);
     });
   }
 
-  /** Throw away whatever it is inside, and start a fresh one in its place. */
-  reset() {
-    if (this.pending.length === 0) return;
+  /** Throw away whatever it is inside, and start a fresh one in its place. `force` does so
+   *  for an idle worker too: a wasm memory never shrinks, so a worker that measured a large
+   *  frame holds that frame's peak until it is replaced. */
+  reset({ force = false } = {}) {
+    this.epoch += 1;
+    if (this.pending.length === 0 && !force) return;
     for (const waiting of this.pending.splice(0)) waiting.reject(new Cancelled());
     this.worker?.terminate();
     this.worker = null;
+    this.abandon();
     this.ready = this.spawn();
     this.ready.catch(() => {});
   }
 
   stop() {
+    this.epoch += 1;
     for (const waiting of this.pending.splice(0)) waiting.reject(new Cancelled());
     this.worker?.terminate();
+    this.worker = null;
+    this.abandon();
   }
+
+  /** Terminate a worker still starting, and reject its `ready` as cancelled, so a call
+   *  waiting on it ends (the epoch this moved has already cancelled it). */
+  abandon() {
+    if (!this.spawning) return;
+    this.spawning.terminate();
+    this.spawning = null;
+    this.refuse?.(new Cancelled());
+  }
+}
+
+/** Bytes of wasm memory a custom pass grows each worker by, per sample, with headroom:
+ *  measured 90 to 250 over the nine published modes (004_bug_hunt; `measure` holds every
+ *  layer's channels and the linear, lifted and toned frames at once). A memory never
+ *  shrinks, so this is what a worker keeps after the pass too. */
+export const BYTES_PER_SAMPLE = 256;
+
+/** The most one worker can hold: wasm32's four gibibytes (a memory grows to 3.75 GiB and
+ *  no further, measured), less room for the module. */
+export const WORKER_MEMORY = 3.75 * 2 ** 30;
+
+/** What a pass's workers may hold between them. Every worker measures the whole frame, so a
+ *  large picture (a download, a 4K screen) runs on fewer workers rather than on a pool's
+ *  worth of copies: six gibibytes is a 1600x1000 screen at 4x (1.5 GiB a worker) on four. */
+export const PASS_MEMORY = 6 * 2 ** 30;
+
+/** The most samples a custom picture may be: one worker's memory. */
+export const MAX_CUSTOM_SAMPLES = Math.floor(WORKER_MEMORY / BYTES_PER_SAMPLE);
+
+/** How many of `size` workers a picture of `samples` runs on within `budget`. */
+export function workersFor(samples, size, budget = PASS_MEMORY) {
+  return Math.max(1, Math.min(size, Math.floor(budget / (samples * BYTES_PER_SAMPLE))));
+}
+
+/** One compile per module URL for the page's life, so a pool given back and started again
+ *  costs a fetch from cache and no second compile. */
+const compiled = new Map();
+function compileOnce(url) {
+  const key = String(url);
+  if (!compiled.has(key)) {
+    const made = (async () => {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`${url}: ${response.status} ${response.statusText}`);
+      const spare = response.clone();
+      try {
+        return await WebAssembly.compileStreaming(response);
+      } catch {
+        return await WebAssembly.compile(await spare.arrayBuffer());
+      }
+    })();
+    made.catch(() => compiled.delete(key));
+    compiled.set(key, made);
+  }
+  return compiled.get(key);
 }
 
 /**
@@ -368,15 +444,7 @@ export class StylePool {
   }
 
   static async start(url, count = poolSize()) {
-    const response = await fetch(url);
-    if (!response.ok) throw new Error(`${url}: ${response.status} ${response.statusText}`);
-    const spare = response.clone();
-    let module;
-    try {
-      module = await WebAssembly.compileStreaming(response);
-    } catch {
-      module = await WebAssembly.compile(await spare.arrayBuffer());
-    }
+    const module = await compileOnce(url);
     const pool = new StylePool(module, count);
     try {
       await Promise.all(pool.slots.map((slot) => slot.ready));
@@ -394,6 +462,13 @@ export class StylePool {
   cancel() {
     this.pass += 1;
     for (const slot of this.slots) slot.reset();
+  }
+
+  /** Cancel, and replace every worker, idle ones included, so none keeps the memory a
+   *  large picture grew it to. */
+  recycle() {
+    this.pass += 1;
+    for (const slot of this.slots) slot.reset({ force: true });
   }
 
   stop() {
@@ -418,12 +493,16 @@ export class StylePool {
     } catch (error) {
       // A call that failed for real ends the pass for every worker, so none goes on landing
       // tiles of a picture the caller has already said could not be drawn.
-      if (!(error instanceof Cancelled) && pass === this.pass) this.cancel();
+      // Every worker is replaced, the one that failed included: a module that trapped (a
+      // picture past its memory) is not one to draw the next pass with.
+      if (!(error instanceof Cancelled) && pass === this.pass) this.recycle();
       throw error;
     }
   }
 
-  async drawing(pass, request, { preview = true, hooks = {} }) {
+  async drawing(pass, request, { preview = true, hooks = {}, workers = this.size }) {
+    // A download as large as a worker can hold runs on fewer of them (`workersFor`).
+    const slots = this.slots.slice(0, Math.max(1, Math.min(this.size, workers)));
     const live = () => {
       if (pass !== this.pass) throw new Cancelled();
     };
@@ -431,7 +510,7 @@ export class StylePool {
     const text = JSON.stringify(request);
     const picture = new Uint8ClampedArray(width * height * 4);
     const tiles = tilesOf(width, height);
-    const timing = { workers: this.size };
+    const timing = { workers: slots.length };
     const started = performance.now();
     // Progress shares: the preview, the preview-balanced tiles, the exact measure, the
     // exact tiles. Each of the last three is about one picture's iteration spread over
@@ -446,14 +525,14 @@ export class StylePool {
       hooks.stage?.("preview");
       const small = JSON.stringify({ ...request, resolution: [pw, ph], supersample: 1 });
       const at = performance.now();
-      const frame = await this.slots[0].call({ kind: "frame", job: pass, request: small });
+      const frame = await slots[0].call({ kind: "frame", job: pass, request: small });
       live();
       timing.preview = performance.now() - at;
       hooks.preview?.(new Uint8ClampedArray(frame.pixels), frame.width, frame.height);
       base += spans[0];
     }
 
-    const opened = await Promise.all(this.slots.map((slot) => slot.call({ kind: "open", job: pass, request: text })));
+    const opened = await Promise.all(slots.map((slot) => slot.call({ kind: "open", job: pass, request: text })));
     live();
     const summary = opened[0].summary;
 
@@ -461,7 +540,7 @@ export class StylePool {
       const queue = [...tiles];
       let done = 0;
       await Promise.all(
-        this.slots.map(async (slot) => {
+        slots.map(async (slot) => {
           while (queue.length > 0) {
             const tile = queue.shift();
             const answer = await slot.call({ kind: "tile", job: pass, ...tile });
@@ -487,7 +566,7 @@ export class StylePool {
     if (preview) {
       hooks.stage?.("sharpening");
       const at = performance.now();
-      await Promise.all(this.slots.map((slot) => slot.call({ kind: "measure", job: pass, frame: [pw, ph, 1] })));
+      await Promise.all(slots.map((slot) => slot.call({ kind: "measure", job: pass, frame: [pw, ph, 1] })));
       live();
       await sweep(false, spans[1]);
       timing.sharpening = performance.now() - at;
@@ -497,7 +576,7 @@ export class StylePool {
     let at = performance.now();
     // Every worker measures the whole frame: the measure lives in its session and cannot
     // cross, so the pool pays it once per worker, side by side.
-    const measured = await Promise.all(this.slots.map((slot) => slot.call({ kind: "measure", job: pass })));
+    const measured = await Promise.all(slots.map((slot) => slot.call({ kind: "measure", job: pass })));
     live();
     timing.measure = performance.now() - at;
     base += spans[2];
@@ -508,7 +587,7 @@ export class StylePool {
     await sweep(true, spans[3]);
     timing.tiles = performance.now() - at;
     timing.total = performance.now() - started;
-    for (const slot of this.slots) slot.call({ kind: "close", job: pass }).catch(() => {});
+    for (const slot of slots) slot.call({ kind: "close", job: pass }).catch(() => {});
     return { picture, width, height, summary, tone: measured[0].report.tone, timing };
   }
 }

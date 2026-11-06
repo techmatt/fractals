@@ -547,6 +547,13 @@ function pairsOf(text, words) {
 }
 
 /** A custom mode's state on a view, or `null`: what `custom` and its three keys say. */
+/** Half to even, as `style-wasm` rounds a whole-number member (`style.js`'s `roundEven`). */
+function halfEven(number) {
+  const floor = Math.floor(number);
+  if (number - floor !== 0.5) return Math.round(number);
+  return floor % 2 === 0 ? floor : floor + 1;
+}
+
 function readCustom(params, context) {
   const name = params.get(CUSTOM_KEY);
   if (name === null) {
@@ -571,7 +578,10 @@ function readCustom(params, context) {
     }
     if (seen.has(key)) throw new PermalinkError(`This link sets ${knob.label} twice.`);
     seen.add(key);
-    const value = finite(number, `${knob.label} setting`);
+    const read = finite(number, `${knob.label} setting`);
+    // A whole-number knob (arch-tunnel's Turns) is read as the module draws it, half to
+    // even, so `turns:4.5` is the 4 it always drew and its box never says 5 (004_bug_hunt).
+    const value = knob.whole ? halfEven(read) : read;
     const [low, high] = knob.range;
     if (!(value >= low && value <= high)) {
       throw new PermalinkError(`The ${knob.label} setting has to be between ${low} and ${high}, not ${number} (${pair}).`);

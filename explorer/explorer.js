@@ -50,7 +50,7 @@ import * as screensaver from "./screensaver.js";
 import * as browse from "./browse.js";
 import * as dives from "./dives.js";
 import * as customUi from "./custom.js";
-import { contractOf } from "./style.js";
+import { MAX_CUSTOM_SAMPLES, contractOf, poolSize, workersFor } from "./style.js";
 import { Trail } from "./undo.js";
 import { heldOut, stopOf } from "./outermost.js";
 import { tracker } from "./pointers.js";
@@ -1671,6 +1671,9 @@ async function drawPass() {
   panel?.describe();
 
   if (customOn()) return drawCustom(pass);
+  // Out of the custom modes, their pool is given back: each worker would otherwise keep the
+  // memory its last frame grew it to, hundreds of megabytes, until the page goes.
+  customs?.release();
 
   const shape = planOf(view);
   if (!shape.ok) {
@@ -1963,11 +1966,15 @@ async function drawCustom(pass) {
   try {
     const drawn = await pool.draw(request, {
       preview: true,
+      workers: workersFor(width * height * SAMPLES_OF_CUSTOM, pool.size),
       hooks: {
         preview: (rgba, w, h) => {
           if (pass !== drawing) return;
           stretch(new ImageData(rgba, w, h));
-          settle({ remember: false });
+          // Remembered at the preview, as an engine pass is at its first full field: the link
+          // does not wait on the picture, and a pass takes up to a minute, during which Undo
+          // would otherwise step past the picture just left (004_bug_hunt).
+          settle();
         },
         tile: (tile, rgba) => {
           if (pass !== drawing) return;
@@ -1977,7 +1984,7 @@ async function drawCustom(pass) {
           if (pass !== drawing) return;
           if (name === "sharpening") {
             showState("sharpening");
-            stat(`${mode.name}: ${size}, at the preview's balance, on ${pool.size} workers…`);
+            stat(`${mode.name}: ${size}, at the preview's balance, on ${workersFor(width * height * SAMPLES_OF_CUSTOM, pool.size)} workers…`);
           } else if (name === "measuring") {
             stat(`${mode.name}: ${size}, measuring the tone at full size…`);
           } else if (name === "final") {
@@ -1994,13 +2001,13 @@ async function drawCustom(pass) {
     present(finished);
     showState("final");
     const seconds = drawn.timing.total / 1000;
-    customMeasured = { key: link.emit(view, contract), samples: width * height * SAMPLES_OF_CUSTOM, seconds, workers: pool.size };
+    customMeasured = { key: link.emit(view, contract), samples: width * height * SAMPLES_OF_CUSTOM, seconds, workers: drawn.timing.workers };
     stat(
-      `${mode.name}: ${size} at ${SAMPLES_OF_CUSTOM}× on ${pool.size} workers · ${seconds.toFixed(1)} s ` +
+      `${mode.name}: ${size} at ${SAMPLES_OF_CUSTOM}× on ${drawn.timing.workers} workers · ${seconds.toFixed(1)} s ` +
         `(measure ${(drawn.timing.measure / 1000).toFixed(1)} s, tiles ${(drawn.timing.tiles / 1000).toFixed(1)} s)`,
     );
     // The timing harness's seam (`bench/custom-speed.mjs`), as `__viewer` is the shallow pass's.
-    (globalThis.__customTimings ??= []).push({ mode: mode.name, size, workers: pool.size, timing: drawn.timing });
+    (globalThis.__customTimings ??= []).push({ mode: mode.name, size, workers: drawn.timing.workers, timing: drawn.timing });
     settle();
     panel?.describe();
   } catch (error) {
@@ -6784,7 +6791,12 @@ async function main() {
         const maxiter = ownCap(view.maxiter ?? null, view.w.value) ?? renderer.maxiter(view.w.value);
         const request = customs.request(view, width, height, maxiter, supersample);
         try {
-          const drawn = await pool.draw(request, { preview: false, hooks: { progress: onProgress } });
+          const samples = width * height * supersample * supersample;
+          const drawn = await pool.draw(request, {
+            preview: false,
+            workers: workersFor(samples, pool.size),
+            hooks: { progress: onProgress },
+          });
           return {
             image: new ImageData(drawn.picture, drawn.width, drawn.height),
             name: {
@@ -6794,12 +6806,21 @@ async function main() {
             },
           };
         } finally {
-          // The screen's pass was cancelled by this one, finished or not; it is drawn again
-          // once the row is free.
+          // Every worker is replaced, so none keeps the download's memory, which can be
+          // gigabytes; the screen's pass was cancelled by this one, finished or not, and is
+          // drawn again once the row is free.
+          customs?.recycle();
           if (finished === null) setTimeout(() => draw(), 0);
         }
       },
       cancel: () => customs?.cancel(),
+      // Past one worker's wasm memory a custom picture cannot be drawn at all.
+      refusal: (samples) =>
+        samples > MAX_CUSTOM_SAMPLES
+          ? `A custom mode draws at most ${(MAX_CUSTOM_SAMPLES / 1e6).toFixed(1)} million samples, and this is ` +
+            `${(samples / 1e6).toFixed(1)} million. Ask for fewer samples per pixel, or a smaller size.`
+          : null,
+      workers: (samples) => workersFor(samples, customs?.workers() ?? poolSize()),
     },
     deep: {
       owns: () => deepOwns(),

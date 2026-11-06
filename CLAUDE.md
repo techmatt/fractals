@@ -185,6 +185,9 @@ mechanics)
   either is an edit to the record; `bake` holds the baked modules to them.
 - **The gallery's collections are pinned** by `builder/seats.py`'s `COLLECTIONS`, a stamp
   each; a re-solve is a re-pointing of that table.
+- **Adding or changing a custom mode follows `docs/custom-modes.md` alone**: both
+  repositories' steps, the rebuild order (`explorer`, `--perturb`, `--style`), the tests
+  and benches it moves, and the memory rule. It never needs `explorer/README.md`.
 - **Display names live in `explorer/palette-names.json`**; a palette is addressed everywhere
   by its own name, and a hand-edited display name says `authored`. `explorer/popular.json`'s
   `pinned` and `dropped` are Matt's, edited by hand.

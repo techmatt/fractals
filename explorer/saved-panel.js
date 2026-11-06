@@ -114,11 +114,17 @@ export function mount(host) {
       view = parse(key);
       const said = describeView(view);
       label.textContent = said;
+      // A custom link parses with the engine's first mode and the link's palette beside its
+      // own keys, and neither is what it draws under Matched palette (004_bug_hunt).
       tile.title = view.deep
         ? `Deep, on ${planeName(view.family)}: ${view.said}, in ${shownName(view.palette)}. ` +
           "Opens in the Deep tab."
-        : `${view.mode} in ${shownName(view.palette)} on ${planeName(view.family)}`;
-      image.alt = view.deep ? "" : tile.title;
+        : view.custom
+          ? `Custom (experimental) ${view.custom.name}` +
+            `${view.custom.matched === false ? ` in ${shownName(view.palette)}` : ""} on ${planeName(view.family)}. ` +
+            "Opens in the explorer."
+          : `${view.mode} in ${shownName(view.palette)} on ${planeName(view.family)}`;
+      image.alt = view.deep || view.custom ? "" : tile.title;
       // **A deep picture is not drawn here.** There is no thumbnail of one without the
       // perturbation kernel and a wait of seconds to minutes a tile, so the tab labels it
       // and the click opens it where it can be drawn.

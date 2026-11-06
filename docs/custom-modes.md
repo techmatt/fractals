@@ -19,17 +19,28 @@ the page). A website item never commits next door; each half below is its own it
    1 to 9: the stack, any new primitive, the matched map, the scouted locations, the tone
    targets, two picker rounds, and Matt's keeps saved with `style keep`.
 2. **Write the catalog row** in `data/styles/catalog.json` (step 10 there): `status:
-   "publish"`, `public: {name, palette}` (the name a reader sees in the explorer's select,
-   lowercase-with-hyphens, never the style's internal name), `variant` (the stack the row
-   publishes), `show` (the keeps to show, each with a caption; these become the explorer's
-   Example buttons), and `what` (the select's tooltip).
+   "publish"`, `public: {name, palette, knobs}` (`name` is what a reader sees in the
+   explorer's select, lowercase-with-hyphens, never the style's internal name; `knobs` is
+   the style file's public knob names in its order, step 3, which `style_catalog.check`
+   holds it to), `variant` (the stack the row publishes), `show` (the keeps to show, each
+   with a caption; these become the explorer's Example buttons, and the caption is their
+   hover text, so it is written for a reader: no `d5`, `m2`, `seed4` or `variant:`), and
+   `what` (the select's tooltip).
 3. **Write the `public` knobs** in the style file: `public.knobs`, each `{name, label, what,
    default, range, set}`, where `set` lists the stack members the knob writes (a pointer, or
    `{path, scale, offset}`). The explorer shows them in this order, as sliders over `range`
-   with a reset to `default`. Keep each range short of a picture that stops reading as a
+   with a reset to `default`. A published mode has **3 to 5** of them (`style_catalog.check`
+   refuses any other count). Keep each range short of a picture that stops reading as a
    fractal (item 018's rule). A member the module must treat as a whole number has to be
    one of `INTEGER_MEMBERS` in `style-wasm/src/lib.rs` (`iterations`, `hit`, `settle`,
-   `sectors`, `turns`); a new one is an edit there, with its test.
+   `sectors`, `turns`); a new one is an edit there, with its test, **and the same edit to
+   `INTEGER_MEMBERS` in this repository's `explorer/style.js`** in the website item (step 8;
+   `style.test.mjs` holds the two lists equal where the checkout is configured). **Spell
+   every whole-number member as a JSON integer and every other member a knob writes as a
+   float** (`1.0`, not `1`): the native `styles.with_knobs` rounds by the value's JSON type
+   and the module by the member's name, so a mismatch reads as a `__knobs` miss in step 5.
+   A knob that writes only `/tone/…` does nothing with Auto tone off; the explorer greys it
+   then.
 4. **Re-keep or re-draw any shown keep whose stack is not the published one**, if it should
    match its Example button exactly (see *Problems*, 2). `bundle()` carries each keep's own
    stack, so the parity below holds either way; the button opens the published stack.
@@ -62,8 +73,14 @@ the page). A website item never commits next door; each half below is its own it
    bundle with the sibling's own `style bundle`.
 8. **The page picks the mode up by itself.** The select, the knobs, the matched map and the
    Example buttons are all read from `custom-modes.json`; nothing in `custom.js` names a
-   mode. Run `node --test explorer/style.test.mjs`: its count of modes (9) and its list of
-   unreached keeps are the two lines a new mode moves.
+   mode. Run `node --test explorer/style.test.mjs`: these lines move with a new mode **or a
+   re-keep** next door, its count of modes (9), its `UNREACHED` list of keeps no setting
+   reaches, and in *each mode offers one button a picture* the offered count (22, in the
+   title too), the duplicate it names as not offered (`lit_petals__1`), and its own list of
+   offered buttons no setting reaches. (A dry run of step 7 at wallpapers `27e2178`, whose
+   re-keep of brass-foam and soft-petals reaches every keep, failed exactly these.) `explorer/README.md`'s *Custom modes* names
+   the 22 of 23 once; that is the one line of it a new mode moves, and nothing in the path
+   needs the rest of that file.
 9. **Hold every Example to its keep**, at 640x400 2×2, against step 5's native pictures
    (for a button no setting reproduces, against `style render <style> --location <its
    place> --colormap <its map> --resolution 640 400 --supersample 2`, the published look):
@@ -75,6 +92,14 @@ the page). A website item never commits next door; each half below is its own it
    python explorer/bench/custom-compare.py out/parity  <wallpapers>/artifacts/style-wasm/wasm-parity
    python explorer/bench/custom-compare.py out/browser <wallpapers>/artifacts/style-wasm/wasm-parity --png
    ```
+
+   `custom-compare.py` needs Pillow, which this machine's `python` does not have: run it
+   with the sibling's environment, `../fractal-wallpapers/.venv/Scripts/python`. The second
+   compare reads **every button no setting reproduces as a `MISS`** (today
+   `bronze_packing__0`–`2` and `lit_petals__2`), because the button draws the published
+   look and `wasm-parity` drew the keep's own stack: draw those with the `style render`
+   line above into a directory of their own, as `<id>.native.png`, and compare just them
+   against it. A miss on any other id is a finding.
 
    The tolerance is item 026's: identical on Windows. The first proves the link, the parse
    and the request reach the keep's own picture; the second presses each Example button
@@ -103,6 +128,14 @@ the page). A website item never commits next door; each half below is its own it
 - **Drawing** is a quarter-size picture, then full-size tiles against its balance, then the
   exact tone measure and the tiles again, on a pool of half the machine's threads (one to
   eight). Downloads take the same pool, without the preview.
+- **Memory** (004_bug_hunt): every worker measures the whole frame, at 90 to 250 bytes a
+  sample over the nine modes (`node explorer/bench/custom-memory.mjs`: `measure` then one tile
+  on a fresh instance), and a wasm memory never shrinks. So a pass runs on as many workers as fit
+  `PASS_MEMORY` (6 GiB) between them, a download over `MAX_CUSTOM_SAMPLES` (one worker's
+  3.75 GiB at 256 bytes a sample, about 15.7 million samples) is refused in a sentence,
+  every worker is replaced after a download, and the pool is given back when the reader
+  leaves the custom modes. A mode much heavier than 256 bytes a sample moves
+  `BYTES_PER_SAMPLE` in `explorer/style.js`.
 - **Not offered** in the Deep tab, the Walk, or the gallery's facets; Saved labels a custom
   entry and does not draw its tile.
 
