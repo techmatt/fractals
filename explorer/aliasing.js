@@ -23,8 +23,8 @@ import { colourAt } from "./hold.js";
 /**
  * **The mean colour difference, in 8-bit levels averaged over red, green and blue, above
  * which a colouring reads as static.** Chosen on real deep frames — the dive candidates'
- * landings and the reported case — measured on their quarter passes: `explorer/README.md`'s
- * *New coloring* has the reading it was taken from.
+ * landings and the reported case — measured on their quarter passes; the reading is in
+ * `explorer/README.md`'s git history.
  */
 export const THRESHOLD = 35;
 

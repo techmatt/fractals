@@ -38,7 +38,7 @@ export const SPREAD_HIGH = 97;
  * guard's own line (`aliasing.THRESHOLD`, where a colouring reads as static) on five deep
  * frames and two shallow ones, the frame crosses it with the median pair 0.07 to 0.12 of a
  * turn apart — so a tenth puts the dense end at the edge of noise, which is what it is for.
- * `explorer/README.md`'s *The Period slider* has the reading.
+ * The reading is in `explorer/README.md`'s git history (*The Period slider*).
  */
 export const DENSE_TURNS = 0.1;
 

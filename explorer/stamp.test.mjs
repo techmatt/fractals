@@ -3,8 +3,8 @@
 // byte for byte; a JPEG is checked the same way a decoder would read it, segment by
 // segment, because node has no JPEG decoder and there is not going to be a dependency.
 //
-// The browser's own encoders are checked out of band — see *The download* in
-// `explorer/README.md` for the two pixel counts that pass measured.
+// The browser's own encoders are checked out of band; the two pixel counts that pass
+// measured are in `explorer/README.md`'s git history (*The download*).
 //
 //   node --test explorer/stamp.test.mjs
 

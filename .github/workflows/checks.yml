@@ -72,7 +72,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      # CLAUDE.md's second line, verbatim, so the suite list lives in one spelling here.
+      # CLAUDE.md's second line, `node --test explorer/*.test.mjs atlas/atlas.test.mjs`,
+      # spelled out by name so a new suite joins CI on purpose.
       - name: the twenty-two JavaScript suites
         run: >-
           node --test explorer/permalink.test.mjs explorer/bands.test.mjs

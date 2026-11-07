@@ -4,13 +4,13 @@
 paste, `figures` lists what is still to make and lands a finished one, `locations` and
 `judges` draw the figures of those two sections, `picks` draws the figures whose panels
 are named by a tentative gallery's own IDs, `growth` and `pipeline` bake the figures that
-are charts of a measurement rather than pictures of anything, `diagram` draws
-the three figures that are diagrams rather than renders, `serve` puts the committed tree
-on localhost for previewing, `prose` holds each page to the approved document it was
+are charts of a measurement rather than pictures of anything, `diagram` draws the
+figures that are diagrams rather than renders (`diagrams.DIAGRAMS`), `serve` puts the
+committed tree on localhost for previewing, `prose` holds each page to the approved document it was
 placed from, and `review` builds the doc a page is marked up in and reads it back.
 `explorer` bakes the explorer page's palettes, wasm module and manifest. `seats` lands a
 published tentative record next door as a staged gallery — a record and its pictures, with
-no page made from them. `import`,
+no page made from them. `import` brings an image in as a web-res asset.
 `deep-gallery` bakes the Deep tab's gallery tiles from its register, and runs the stages
 that found the first set. `dive-candidates` lands deep candidates by the Dive block's own
 rules and lays them out as a numbered sheet to pick a figure from; `random-dives` lands the

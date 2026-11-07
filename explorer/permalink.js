@@ -154,6 +154,23 @@
 // worth withholding over furniture. And **a UI key never decides what is drawn**: the
 // moment one would, it is a picture key and belongs in the emit order above with a
 // default and a reader.
+//
+// ## The emit order, and the rules every key keeps
+//
+// `v · f · cx · cy · px · py · zx · zy · m · mode params · curve · x · y · w · n · a · p ·
+// shade keys · level`. A constant pair comes both or neither; mode params are only those
+// the catalog lists for the mode, and one at its default is omitted so a link follows a
+// retune (an angle mode's `weight` and a trap's `opacity` are taken from the view when
+// absent, `DERIVED`); `x`/`y`/`w` are at most 64 characters; `a` is `across:down`, each
+// side 1-10000; `p` is a name, never an index; `n` is written only where it differs from
+// the width's cap (`CAP_FLOOR`..`CAP_LIMIT`, `readCap`, shared with `deep-link.js`), and a
+// v1-v3 link spelling `n` is refused. `level` under `scale=absolute` and `knee` under
+// `scale=leveled` are read, validated, and dropped (`levelUnder`, `kneeUnder`), in both
+// contracts. A duplicate key with one value is read, with two refused (`readQuery`);
+// `firstQuery` takes the first link in pasted text; refusals name keys in words
+// (`KEY_WORDS`); keys are set with `withKeys`, never appended. Parse then emit is a fixed
+// point; `:` is left unencoded and `+` always encoded. `MODES` is typed, and
+// `permalink.test.mjs` holds it to `catalog.js`'s roster in order.
 
 /** The contract version this module emits. */
 export const VERSION = 4;

@@ -1,5 +1,6 @@
 // How many nuclei the Deep tab's Find minibrots lists, on the frames the crate's own
-// table measured. `perturb-wasm/README.md` §9 says 6 for `tangle 1e-22`; the tab listed 3,
+// table measured. `perturb-wasm/README.md` §9's table (in its git history) says 6 for
+// `tangle 1e-22`; the tab listed 3,
 // because it searched at the view's cap and a `dv` link pins that at the policy's 93,600
 // while the largest nucleus there is period 94,776.
 //

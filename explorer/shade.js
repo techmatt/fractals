@@ -122,7 +122,7 @@ const PRESENTATION = {
  * and what tells them apart is a recipe fitted shallow and then held while zooming, which is
  * what the knee is for. Fitted on julia3 at w 1.7e-2 and held to its final frame, 0.1 runs
  * 7.7 turns across the stretch, the fit's own 7; 0.157 runs 9.6, and 0.25 13.7.
- * `explorer/README.md`'s *Straighten iter* has the contact sheet and the table.
+ * The contact sheet and the table are in `explorer/README.md`'s git history (*Straighten iter*).
  */
 export const STRAIGHTEN = { knee: 5000, lambda: 0.1 };
 

@@ -1036,7 +1036,7 @@ export const SKIP_SHARE = 0.02;
 
 /** The widest frame a skip table is built for, `2^-100` (about 7.9e-31): past it the table
  *  pays (A, B and C from 1e-60 down, 1.3x to 3.6x on the device's field), short of it no
- *  measured frame kept one (*The skip table on the GPU*, `explorer/README.md`). */
+ *  measured frame kept one (the readings are in `explorer/README.md`'s git history). */
 export const TABLE_WIDTH = 2 ** -100;
 
 /** The orbit points a skip table is first built over: where they hold no live run, the

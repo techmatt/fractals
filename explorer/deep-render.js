@@ -16,7 +16,7 @@
 // `colour` in `engine-wasm/src/lib.rs` takes `sample_width`, `sample_height`, `out_width`,
 // `out_height` and `supersample` off the viewport and nothing else, because a percentile
 // stretch is a statement about the numbers in the buffer and not about where they were
-// taken. `deep-shade.test.mjs` holds that to the committed module rather than to this
+// taken. `deep.test.mjs` holds that to the committed module rather than to this
 // comment: the same lanes under two different viewports come back byte for byte the same
 // picture.
 //
@@ -498,7 +498,7 @@ export function orbitKey(view, limbs, period = null) {
  * two frames below it, the kept reference and the frame's own drew equally close to the
  * truth, and they differed only in the chaotic tail, a percent or two of the samples
  * that sit on the boundary. So what this buys back is determinism, and the price is an
- * orbit per zoom (`explorer/README.md` has it measured).
+ * orbit per zoom (measured in `explorer/README.md`'s git history).
  */
 export function sameOrbit(held, view, limbs, period = null) {
   if (held === null) return false;

@@ -19,7 +19,7 @@
 // did not understand it is a visible refusal rather than a shallow picture at a rounded
 // coordinate — which is the failure this whole file exists to make impossible.
 //
-// **What is shared is the colour, and it is shared rather than copied.** The seven shade
+// **What is shared is the colour, and it is shared rather than copied.** The eleven shade
 // keys, the `level` operator and the two encoders come from `permalink.js` by import.
 // They are the engine's palette recipe and a URL's escaping rule, neither of which has
 // anything to do with how deep the view is, and a second spelling of either is how two

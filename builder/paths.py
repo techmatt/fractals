@@ -25,8 +25,14 @@ THUMBS_DIR_NAME = "thumbs"
 # holds an agent session's worktrees, whole checkouts of this repository whose pages are
 # somebody else's copy of the site rather than the site.
 UNSERVED_DIRS = frozenset(
-    {".claude", ".git", ".github", ".ruff_cache", ".venv", "artifacts", "scratch"}
+    {".claude", ".git", ".github", ".ruff_cache", ".venv", "artifacts", "node_modules", "scratch"}
 )
+
+# Top-level trees that are ignored scratch, skipped only at the root because the name is
+# common: `out/` is a session's scratch (ignored in `.git/info/exclude`; a clone of this
+# repository there once read as 89 problems), and `experiments/` holds conductor items'
+# results folders (ignored in `.gitignore`).
+UNSERVED_ROOTS = frozenset({"out", "experiments"})
 
 
 def carrier_path(page: str) -> Path:
@@ -54,11 +60,16 @@ def _hosted(path: Path) -> bool:
 
 
 def _all_pages() -> list[Path]:
-    return [
-        path
-        for path in SITE_ROOT.rglob("*.html")
-        if not UNSERVED_DIRS.intersection(path.relative_to(SITE_ROOT).parts)
-    ]
+    """Every `.html` under the root, never descending into an unserved tree."""
+    found = []
+    for folder, dirs, files in SITE_ROOT.walk():
+        dirs[:] = [
+            name
+            for name in dirs
+            if name not in UNSERVED_DIRS and not (folder == SITE_ROOT and name in UNSERVED_ROOTS)
+        ]
+        found.extend(folder / name for name in files if name.endswith(".html"))
+    return found
 
 
 def site_pages() -> list[Path]:

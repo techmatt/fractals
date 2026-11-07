@@ -171,7 +171,7 @@ const CAP_STEP = 2;
  *
  * **A set, and a measured one** *(deep_degrees_ckpt140)*: a degree is in it only where the
  * crate's body-size estimate landed against a pin measured independently of it —
- * `perturb-wasm/README.md` §10 has the table. Where it did not, a list would rank and
+ * `perturb-wasm/README.md` §10 names the test that holds it. Where it did not, a list would rank and
  * frame minibrots by a size nobody had checked, and the button is absent rather than
  * wrong. **Every degree's did**, to within 0.4% of an area measurement, and a preview
  * tile resolves at the same eight periods at every degree — so it is every degree, and

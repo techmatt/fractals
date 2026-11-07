@@ -20,9 +20,9 @@ agreeing on centre and width to twelve significant figures is not a thing that h
 **Two resolutions, and they answer differently.** `resolve(fuller=True)` resolves every
 figure's keyed sources as well as its geometry; `resolve(fuller=False)` resolves a figure's
 keys only where its provenance wrote no geometry at all, which is what the first carry
-sheet did. The counts each produces are in `builder/README.md`, and the modes-page
-exclusion uses the **fuller** one: a place the record names is a place a reader can land on
-twice whether or not the prose repeated it.
+sheet did. The fuller one finds more places, and the modes-page exclusion uses it: a
+place the record names is a place a reader can land on twice whether or not the prose
+repeated it.
 
 Nothing here is wired into `check` — `locations` reads `Figure.frames` directly and is the
 check that refuses a collision. This is the maker's side of the same question.

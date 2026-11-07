@@ -113,8 +113,8 @@ def draw_link(link: str, width: int, height: int, supersample: int, name: str) -
 
     A link that names no cap comes back naming the one the probe settled, so the key is the
     link as *asked* and the answer is recorded beside the picture. Anything derived on top
-    of a cached render carries that render's key in its own name — `builder/README.md` has
-    the case that made that a rule.
+    of a cached render carries that render's key in its own name (`builder/README.md`'s
+    *Drawing a figure*), or a stale file on top passes for the new location's picture.
     """
     asked = f"{link}|{width}x{height}x{supersample}"
     key = hashlib.sha256(asked.encode("utf-8")).hexdigest()[:16]

@@ -78,8 +78,9 @@ const SUPERSAMPLES = [1, 2, 4];
  *  is, at quality 95 through the browser's own canvas encoder — the same `toBlob` the PNG
  *  goes through, so the pixels handed to either are the same pixels. What that encoder
  *  does with color at 95 is the browser's to decide: Chrome and Edge store color at half
- *  resolution each way (4:2:0) at every quality below 1, which the explorer's README says
- *  more about. */
+ *  resolution each way (4:2:0) at every quality below 1, unlike the pipeline's
+ *  `jpeg-encoder` (4:4:4); the fix, if ever wanted, is an `encode_jpeg` export in
+ *  `engine-wasm`. */
 const FORMATS = {
   png: { type: "image/png", extension: "png", label: "PNG" },
   jpg: { type: "image/jpeg", extension: "jpg", label: "JPG", quality: 0.95 },
@@ -118,7 +119,7 @@ const SHAPE_TIP =
   "A different shape shows more or less of the picture above and below, rather than cropping it.";
 
 /** What a mode costs, as the seconds measured over one 1280x720 frame on one thread —
- *  the `after` column of the per-mode table in `explorer/README.md`, typed. It is typed
+ *  the `after` column of the per-mode table once in `explorer/README.md` (git history), typed. It is typed
  *  and so it goes stale silently: this table was last left behind by a re-measure that
  *  refreshed the README and not it, and every field cost here was about twice what the
  *  module did.

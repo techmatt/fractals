@@ -140,9 +140,9 @@ export function mount(host) {
 
   /** The preview's own pool, started at the first hover that would draw.
    *
-   *  Smaller than the walk's and the Saved tab's — a third of the cores rather than a
-   *  half, and never more than three — because those two run while a reader is watching
-   *  them and this one runs while a reader is watching something else. */
+   *  Smaller than the walk's and the Saved tab's — a quarter of the cores, never more
+   *  than three, where theirs are a third capped at four — because those two run while a
+   *  reader is watching them and this one runs while a reader is watching something else. */
   function start() {
     if (renderer !== null) return Promise.resolve(renderer);
     starting ??= Renderer.over(

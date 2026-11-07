@@ -131,7 +131,7 @@ const MINED_MODES = new Set(["smooth", "tia", "threads"]);
  * Of the roster, the ones whose recorded cost is near `smooth`'s
  * *(explorer_ui_text_ckpt139 addendum 2)*.
  *
- * **From the mined-width table in `explorer/README.md` and not the per-mode one**, because
+ * **From the mined-width table (in `explorer/README.md`'s git history) and not the per-mode one**, because
  * the two do not order the modes the same way and only one of them was measured where this
  * tab draws: at the widths a descent actually reaches, a picture is `smooth` 1 046 ms,
  * `tia` 1.10x and `threads` 1.44x, against 1.00, 4.36 and 4.52 at a home view. The line
@@ -185,7 +185,7 @@ const RECOLOURS = 16;
  * strip that fills for long enough to be read, and more of the place in it.
  *
  * Three: the modes are 1.4x to 3.9x `smooth` at mined widths (the roster table in
- * `explorer/README.md`), so three is several seconds wherever it lands and a dozen at the
+ * `explorer/README.md`'s git history), so three is several seconds wherever it lands and a dozen at the
  * worst.
  *
  * **At every place, and it was written for the last one only** *(measured, same round)*. A
@@ -194,7 +194,7 @@ const RECOLOURS = 16;
  * bar, which is the minority of them. Three walks of the first cut drew no finish at all for
  * exactly that reason. So every place takes one, which costs a second finish on the walks
  * where both legs mine — about one walk in ten over the default set, by the places-painted
- * count in §Measured — and never leaves the strip a reader is looking at without one.
+ * count once in the README's *Measured* (git history) — and never leaves the strip a reader is looking at without one.
  */
 const FINISH_MODES = 3;
 
