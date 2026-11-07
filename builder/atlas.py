@@ -3,16 +3,15 @@
 The atlas draws one dot per place the search kept, over a pre-rendered plate of the plane
 those places sit in, and every picture a dot carries opens in the explorer at the view it
 stands for. `atlas/frame.js` is the frame, and the explorer's Atlas tab is the one page
-that mounts it — it was a page of its own at `atlas/index.html` until
-`website_webp_and_atlas_deprecate` (2026-09-21) retired that for the tab. The record below
-is the **contract between the wallpaper project's maker and that frame**: the maker writes
-it, the frame reads it, and neither composes a key the other did not put there.
+that mounts it. The record below is the **contract between the wallpaper project's maker
+and that frame**: the maker writes it, the frame reads it, and neither composes a key the
+other did not put there.
 
 That last rule is the whole point of the file. A frame that worked out a location's
-viewport from a position in a list — or an index into a pool derived from live data —
-would draw at a moving target, and a rerun next door would silently repoint every dot.
-So a slot carries **its own** viewport keys, spelled the way the permalink contract
-spells them, and the frame hands them to `permalink.js` without arithmetic.
+viewport from a position in a list, or an index into a pool derived from live data, would
+draw at a moving target, and a rerun next door would silently repoint every dot. So a slot
+carries **its own** viewport keys, spelled the way the permalink contract spells them, and
+the frame hands them to `permalink.js` without arithmetic.
 
 ## The shape
 
@@ -28,7 +27,7 @@ spells them, and the frame hands them to `permalink.js` without arithmetic.
   neighborhood width, the tally, the two labels its location slots wear, and whether its
   slot pictures are committed. There are six: the Mandelbrot parameter plane and the
   four higher-degree ones, each with the Julia places of its degree drawn over the same
-  plate because a Julia place *is* a `c` and a `c` is a point of that plane; and the
+  plate because a Julia place is a `c` and a `c` is a point of that plane; and the
   classic Phoenix slice, whose places are frames on the slice itself. A plane the search
   has not reached carries an empty dot file rather than none, so marks land later as rows
   and nothing that reads the record changes. `python -m builder atlas --plates` draws all
@@ -38,15 +37,14 @@ spells them, and the frame hands them to `permalink.js` without arithmetic.
 A partition keeps its absorption radius twice: `radius_plane`, the distance on the plane
 the thinning ran at, and `radius_px`, that distance spelled in the pixels of the plate the
 dots are drawn on now. The second is restated from the first whenever the plates are,
-because a plate cropped tighter spells one distance with a bigger number — and it is a
+because a plate cropped tighter spells one distance with a bigger number, and it is a
 partition's rather than the atlas's because the maker thins every plane at twelve pixels of
-*its own* base, so the distance on the plane differs from one plane to the next.
+its own base, so the distance on the plane differs from one plane to the next.
 
-`pictures` is `tracked` or `staged`. A staged plane's slot pictures were kept out of
-history until a deploy, and a clone had the record and none of the files, which `check`
-reports as a named skip rather than as a broken page or a pass. Every plane is `tracked`
-since deploy_staged_assets_ckpt152 lifted that rule; the state stays for a plane that is
-ever staged again.
+`pictures` is `tracked` or `staged`. A staged plane's slot pictures are kept out of
+history, so a clone has the record and none of the files, which `check` reports as a named
+skip rather than as a broken page or a pass. Every plane is `tracked`; the state stays for
+a plane that is ever staged again.
 
 `atlas/<partition>.jsonl` carries one **`dot`** row per place:
 
@@ -61,7 +59,7 @@ ever staged again.
 * `slots` — the three pictures the page shows, in the order it shows them: `mandelbrot`,
   `julia`, `gallery`. Each carries the permalink keys of its own view, the mode and map it
   was drawn through, the file it was landed as, and `refused` — what the recipe holds that
-  a link has no key for, so the page can say the explorer is opening *near* the picture
+  a link has no key for, so the page can say the explorer is opening near the picture
   rather than at it.
 
 The gallery slot carries two more, because the page's border color says both: `seated`,
@@ -70,18 +68,18 @@ kind of place the row came from. The second is read off the recipe's own family 
 than copied from the dot, and `check` holds the two together.
 
 It also carries what became of the picture's tone, because a gallery picture went through
-`band_autolevel/v1` and a link that forgot the curve would draw the right geometry in the
-wrong color:
+`band_autolevel/v1` (`LEVEL_OPERATOR`) and a link that forgot the curve would draw the
+right geometry in the wrong color:
 
 * `tone` — `clean` where the operator did not act, `curved` where it did and the run
   recorded the curve, `lost` where it did and the run did not;
 * `level` — the curve as the permalink's own `level` value, where `tone` is `curved`, and
-  `null` everywhere else. The page hands it to the link, so a curved seat opens levelled;
+  `null` everywhere else. The page hands it to the link, so a curved seat opens leveled;
 * `gap` — what the run did not record, where `tone` is `lost`, which the tooltip says;
 * `from` — the run the row came out of, a note; and `curve` — the curve the mode's field
-  was read through. The page hands `curve` to the link as its own key since
-  tools_figures_ckpt156, so a `curve <name>` the maker wrote into `refused` for it is
-  dropped at the ingest: the link carries it.
+  was read through. The page hands `curve` to the link as its own key, so a
+  `curve <name>` the maker wrote into `refused` for it is dropped at the ingest: the link
+  carries it.
 
 A `lost` slot is the one that carries an `autolevel` refusal, and a slot that carries one
 is `lost`: the two are one fact spelled twice, and the loader holds them together.
@@ -95,11 +93,10 @@ refusal beside it, fails there.
 ## The population is one bar
 
 A place is on the plate if it holds at least one row the fine head reads at or above the
-solve's own `DEFAULT_FINE_BAR`. Nothing else qualifies — not a human verdict, not a
-top-quarter reading of the candidate judge — and that is what makes the third slot
-honest: the best row at a qualifying place clears the bar by construction, so the gallery
-picture is always a wallpaper somebody could seat rather than a location view standing in
-for one.
+solve's own `DEFAULT_FINE_BAR`. Nothing else qualifies, not a human verdict and not a
+top-quarter reading of the candidate judge, and that is what makes the third slot honest:
+the best row at a qualifying place clears the bar by construction, so the gallery picture
+is always a wallpaper somebody could seat rather than a location view standing in for one.
 """
 
 from __future__ import annotations

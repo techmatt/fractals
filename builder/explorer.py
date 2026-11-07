@@ -1,10 +1,10 @@
 """What the explorer page is built from: its palettes, its wasm module, its manifest.
 
-The explorer is a page that runs code, which is new here, and the rule the rest of the
-site is held to still holds: **the builder generates; it never becomes the site.**
-`engine.wasm`, `palettes.js` and `engine.manifest.json` are committed artifacts. A clone
-with no wallpaper project beside it serves the explorer exactly as this one does; only
-*regenerating* those three files needs the sibling checkout and a Rust toolchain.
+The explorer is a page that runs code, and the rule the rest of the site is held to still
+holds: **the builder generates; it never becomes the site.** `engine.wasm`, `palettes.js`
+and `engine.manifest.json` are committed artifacts. A clone with no wallpaper project
+beside it serves the explorer exactly as this one does; only regenerating those three
+files needs the sibling checkout and a Rust toolchain.
 
 Five things are baked, and each for its own reason:
 
@@ -15,11 +15,11 @@ Five things are baked, and each for its own reason:
 - **The blob** — `palettes.bin`, the control points of all of them, sRGB8, three bytes
   a stop, in the index's own order. See *The blob, and what is not in it* below.
 - **The catalog** — the modes the picker offers with the line that says what each one
-  is for, and the family constants a dynamical plane needs. What each mode *is* is a fact
+  is for, and the family constants a dynamical plane needs. What each mode is, is a fact
   the wallpaper project owns, and so are the constants: the identity lines come out of
   `fractal-engine modes` and the constants out of the shipped anchors, so neither is
-  typed here. **Which** modes are offered is this repository's own record — see below.
-  What the *permalink* will accept is still `permalink.js`'s own business — a contract
+  typed here. Which modes are offered is this repository's own record — see below.
+  What the permalink will accept is still `permalink.js`'s own business — a contract
   that read its vocabulary from a generated file could be widened by rebuilding it.
 - **The wasm** — `explorer/engine-wasm/` compiled for `wasm32-unknown-unknown` and
   copied in. The crate depends on the engine by path, so the module is the engine's own
@@ -34,73 +34,63 @@ because a labeled corpus names it — says so in its `source` line, and the rest
 chosen. `CONVERTED_MARKER` is the tail of that sentence.
 
 **The baked set is wider than the offered one**, and the difference is what a link may
-say against what a picker may choose *(Matt, 2026-08-21)*. Every curated map is offered.
-Baked alongside them, and not offered, is every map one of this site's own pictures was
-drawn in — most of them converted, because that is what the corpora the article draws
-from were colored through. A map the article publishes a picture in has to be nameable,
-or the explorer cannot open that picture at all; it does not have to be on the menu, and
-putting it there would widen a curated set this repository does not own. So `offered`
-travels with each baked map, the picker reads it, and a link arriving on an unoffered map
-draws it and shows it in the picker for as long as it is in force.
+say against what a picker may choose (Matt). Baked alongside the offered maps, and not
+offered, is every map one of this site's own pictures was drawn in — most of them
+converted, because that is what the corpora the article draws from were colored through.
+A map the article publishes a picture in has to be nameable, or the explorer cannot open
+that picture at all; it does not have to be on the menu, and putting it there would widen
+a curated set this repository does not own. So `offered` travels with each baked map, the
+picker reads it, and a link arriving on an unoffered map draws it and shows it in the
+picker for as long as it is in force.
 
-**Which maps those are is a committed record here, not a question asked next door**
-*(2026-08-25)*. It used to be derived: every map whose `source` line did not say it was
-converted, plus every map a figure names. That derivation read "everything curated", and
-when the wallpaper project admitted two hundred authored maps in one drop the picker
-silently went from 77 entries to 277 — a bake nobody ran deliberately changing what a
-reader is offered. `explorer/palettes.jsonl` is the roster instead: one row per map the
-explorer carries, saying whether the picker lists it. The bake reads the names from that
-record and the gradients from the library next door, so growing the picker is an edit
-somebody made on purpose and a rebake on an unchanged tree reproduces the committed
-module byte for byte — which `builder check` asserts.
+**Which maps those are is a committed record here, not a question asked next door**, so
+that a bake nobody ran deliberately cannot change what a reader is offered.
+`explorer/palettes.jsonl` is the roster: one row per map the explorer carries, saying
+whether the picker lists it. The bake reads the names from that record and the gradients
+from the library next door, so growing the picker is an edit somebody made on purpose and
+a rebake on an unchanged tree reproduces the committed module byte for byte — which
+`builder check` asserts.
 
 ## The blob, and what is not in it
 
-The module used to carry every map's stops inline and carried 126 maps. It carries
-**1,021** now — the whole library — because a link built from a gallery seat's recipe
-has to be able to name the map that seat was drawn in, and 451 distinct maps are seated
-in the published record alone. Inline, that is about twelve megabytes of JavaScript
-source; as three bytes a stop it is about one megabyte of binary that the page fetches
-once beside the wasm.
+A link built from a gallery seat's recipe has to be able to name the map that seat was
+drawn in, so the blob carries the whole library as three bytes a stop, which the
+page fetches once beside the wasm.
 
 **The positions are not in it, and the bake refuses a map that would need them.** Every
-map the library holds spaces its stops evenly — position `i` is exactly `i/(n-1)`, on all
-1,021, checked — so the blob carries colour alone and the index carries the count. That
-is not an assumption the format makes quietly: `blob` compares each stop's own position
-with `i/(n-1)` as an exact `f64` and **stops the bake by name** where one differs, because
-rounding a map's positions would bend its gradient slightly rather than fail, and the
-engine does not require even spacing even though this library happens to have it.
+map the library holds spaces its stops evenly — position `i` is exactly `i/(n-1)` — so
+the blob carries color alone and the index carries the count. That is not an assumption
+the format makes quietly: `blob` stops the bake by name on a map that does not space its
+stops evenly, because rounding a map's positions would bend its gradient slightly rather
+than fail, and the engine does not require even spacing even though this library happens
+to have it.
 
-**Stored planar and byte-delta, so that gzip can see it** *(explorer_slim_ckpt131)*. A
-map's stops are written as its reds, then its greens, then its blues, each channel as the
-difference from the stop before it, mod 256, starting from zero at the map's first stop.
-It is the same number of bytes as `r g b r g b` and occupies the same span, so the index's
-`at` and `stops` address a map exactly as before; what changes is that a gradient's
-neighbouring stops are close, so its deltas are small and repeat. Pages gzips the file on
-the way out, and it goes from 897 KB on the wire interleaved to 185 KB. `stops.js` undoes
-it once, on arrival, into the interleaved bytes it always read, and the index names the
+**Stored planar and byte-delta, so that gzip can see it** (`BLOB_LAYOUT`). A map's stops
+are written as its reds, then its greens, then its blues, each channel as the difference
+from the stop before it, mod 256, starting from zero at the map's first stop. It is the
+same number of bytes as `r g b r g b` and occupies the same span, so the index's `at` and
+`stops` address a map the same way either layout; a gradient's neighboring stops are
+close, so its deltas are small and repeat, and Pages gzips the file on the way out.
+`stops.js` undoes it once, on arrival, into interleaved bytes, and the index names the
 `layout` so a reader of one can tell which it is holding.
 
 **Two fields ride in the index that the library does not hold**, `family` and `seats`,
 and both are frozen into the roster record rather than derived at bake time. `family` is
-the hue family a map most often *produces* — the modal `colour.families[0]` over the
-candidate-ledger rows drawn in it whose fine-head reading clears `solve.DEFAULT_FINE_BAR`
-— and `seats` is how many seats of the published record named it. Neither is a fact about
-the gradient; both are readings of a pool that is being written to while this runs. A bake
-that went out to the ledger would answer differently on two days of one tree, which is
-what the roster record exists to prevent — the picker's 77 went the same way once. So
-`python -m builder explorer --roster` is what reads them, deliberately, and the method row
-records the release and the ledger row count it read them at.
+the hue family a map most often produces — the modal `colour.families[0]` over the
+candidate-ledger rows drawn in it whose fine-head reading clears `FINE_BAR` — and `seats`
+is how many seats of the published record named it. Neither is a fact about the gradient;
+both are readings of a pool that is being written to while this runs, and a bake that went
+out to the ledger would answer differently on two days of one tree. So `python -m builder
+explorer --roster` is what reads them, deliberately, and the method row records the
+release and the ledger row count it read them at.
 
-**The mode roster is a committed record for the same reason** *(2026-09-01)*. It used to
-be derived — every mode the engine catalog called `production` — and the engine promoted
-`tail_itinerary`, so the next bake would have put a nineteenth entry in the picker and a
-nineteenth name in the contract without anybody deciding to. `explorer/modes.jsonl` names
-the seventeen the picker offers, in the order it shows them; the bake takes each mode's
-identity line and its curve from the catalog next door and offers nothing the record does
-not name. There are three copies of that list and all three are held together: the record
-is held to the module by `builder check`'s bake, and the module to `permalink.js`'s typed
-`MODES` by `permalink.test.mjs`.
+**The mode roster is a committed record for the same reason**, so that a mode the engine
+promotes reaches neither the picker nor the contract without anybody deciding to.
+`explorer/modes.jsonl` names the seventeen the picker offers, in the order it shows them;
+the bake takes each mode's identity line and its curve from the catalog next door and
+offers nothing the record does not name. There are three copies of that list and all
+three are held together: the record is held to the module by `builder check`'s bake, and
+the module to `permalink.js`'s typed `MODES` by `permalink.test.mjs`.
 """
 
 from __future__ import annotations

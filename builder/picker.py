@@ -2,63 +2,57 @@
 
 Two committed records, both under `explorer/`, and both written from here:
 
-* **`popular.json`** — the maps the picker's Popular tab lists, in order. It used to be
-  the top twenty by seat count, taken straight off the index, and the pool's favourites
-  look alike: that list carried four cream, gold and green ramps. It is now 24, and
-  **the choice is Matt's first** *(2026-09-16)*: `pinned` is the maps he picked, in his
-  order, and `dropped` the ones he ruled out, each with his reason. Both are edited by hand
-  and read back by `--popular`, which fills the remaining places by a rule rather than a
-  taste — for **range across hue families**: ranked by `seats`, how many seats of the
-  published record were drawn in each, and taken in rounds, so that every family holds one
-  place before any family holds two, and never a map too like one already on the list.
+* **`popular.json`** — the `POPULAR_SIZE` maps the picker's Popular tab lists, in order.
+  **The choice is Matt's first**: `pinned` is the maps he picked, in his order, and
+  `dropped` the ones he ruled out, each with his reason. Both are edited by hand and read
+  back by `--popular`, which fills the remaining places by a rule rather than a taste, for
+  **range across hue families**: ranked by `seats`, how many seats of the published record
+  were drawn in each, and taken in rounds, so that every family holds one place before any
+  family holds two, and never a map too like one already on the list.
 * **`palette-names.json`** — `{underlying: display}` for every map the explorer carries.
-  The underlying name is an address — it is what a link, a download filename and every
+  The underlying name is an address — it is what a link, a download filename, and every
   record spell — and a great many of them are codes: `wallhaven_wallhaven-1joljg`,
   `cmr.gothic`, `RdPu`. The display name is what a reader is shown.
 
-## What "too much of its colour" means
+## What "too much of its color" means
 
 Read off the wallpaper project's carrier record, `carriers.jsonl`: for each map, the
 codebook cells it comes out dominant in on three reference fields, with each cell's mean
 share (`palettes.carriers` derives that mean). The cells are pooled onto the **hue family**
-each row names, and two maps overlap by the share of the *smaller* map's pooled colour that
+each row names, and two maps overlap by the share of the smaller map's pooled color that
 the other map carries too — the sum over families of the lesser share, over the lesser
-total. A candidate that overlaps any map already taken, pins included, by `OVERLAP` or more is
-skipped. Pins are held to nothing: two of Matt's picks may overlap, and a family may hold
-more pinned places than the rounds would ever give it.
+total. A candidate that overlaps any map already taken, pins included, by `OVERLAP` or more
+is skipped. Pins are held to nothing: two of Matt's picks may overlap, and a family may
+hold more pinned places than the rounds would ever give it.
 
-Pooled onto families, not compared cell by cell, because the cells split a colour by tone
-and chroma: the three cream-and-gold ramps that crowded the old list lead with three
-different cells of one family, and a cell-level overlap reads them as strangers. Over the
+Pooled onto families, not compared cell by cell, because the cells split a color by tone
+and chroma, and a cell-level overlap reads two ramps of one family as strangers. Over the
 lesser total, not the union, because a map whose carrier rows are thin — most of its
-picture neutral — is still exactly as much *of* its colour as its rows say.
-`OVERLAP = 0.7` is where that list came apart without cutting maps that merely share one
-colour: at 0.6 the list reaches down to maps seated twice, and at 0.8 three of the four
-cream, gold and green ramps survive. The rounds count `family`, the reading the picker's
-own tabs are built from, so the spread is one a reader can see tab by tab; a map filed
-under no family is never taken to fill.
+picture neutral — is still exactly as much of its color as its rows say. The rounds count
+`family`, the reading the picker's own tabs are built from, so the spread is one a reader
+can see tab by tab; a map filed under no family is never taken to fill.
 
 ## How a display name is chosen
 
 **A name that already reads as one is kept.** Words in Title Case, joined by spaces and
-the odd comma, connective or ampersand — `Pale Fire Rose`, `Copper Bloom, Teal Fleck`,
-`Y2K Bubblegum` — with no underscore, no dot and no trailing number. The library's authored
-maps are named that way on purpose, so a name of four such words is kept too: it is not a
-code, and renaming it would be replacing somebody's name with a generated one.
+the odd comma, connective, or ampersand — `Pale Fire Rose`, `Copper Bloom, Teal Fleck`,
+`Y2K Bubblegum` — with no underscore, no dot, and no trailing number. The library's
+authored maps are named that way on purpose: such a name is not a code, and renaming it
+would be replacing somebody's name with a generated one.
 
 **So is a single word, where the library says a person wrote it.** `Inkfall`, `Three-Metal`:
-one Title Case word, hyphens allowed, no capital inside it and no digit. The shape alone
+one Title Case word, hyphens allowed, no capital inside it, and no digit. The shape alone
 cannot tell `Tidepool` from `Spectral` or `Blues`, which are matplotlib's names carried over
 under the library's `converted`, nor from `Jqmsl`, an `extracted` filename; the library's
 own `source` can, so a single word reads as a name only where that is `authored`.
 
-**Everything else gets two words:** a colour word, then a material or an object —
-`Cobalt Harbor`, `Ivory Ember`. The colour word comes from the map's **dominant** cell and
-the material from its **secondary** one: the largest cell of a *different* hue family, or
-of the other neutral kind, so the two words name two colours whenever the map has two.
+**Everything else gets two words:** a color word, then a material or an object —
+`Cobalt Harbor`, `Ivory Ember`. The color word comes from the map's **dominant** cell and
+the material from its **secondary** one: the largest cell of a different hue family, or
+of the other neutral kind, so the two words name two colors whenever the map has two.
 Both are read from the codebook's ramp census, `codebook.of_ramp` next door, over the
 gradient a render of the map really spends — the carrier record is chromatic only, and a
-name has to be able to say *ivory* and *coal*.
+name has to be able to say ivory and coal.
 
 **Unique, and stable.** Maps are named in seat order, so the most seated maps get the
 first word of each list. A name already taken — by a kept name or an earlier generated one —
@@ -69,9 +63,8 @@ grows gets a name without renaming the thousand before it.
 **Every entry says where its name came from**: `{"name": ..., "source": "authored"}` for a
 name a person wrote — the map's own, or one set by hand — and `"generated"` for one this
 generator made. That is what lets a later `--names` correct itself: a `generated` entry
-whose map's own name has come to read as one, under a rule that has grown since, is given
-its own name back, and nothing else already in the file moves. A hand edit that changes a
-name says `authored` beside it.
+whose map's own name now reads as one is given its own name back, and nothing else
+already in the file moves. A hand edit that changes a name says `authored` beside it.
 
 American spelling throughout, and nothing on the site's banned lists: the vocabulary is
 typed below, and `builder check`'s `vocabulary` sweep reads the committed file.

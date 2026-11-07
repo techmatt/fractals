@@ -1,30 +1,32 @@
-"""Twenty tentative records, landed here as one staged gallery.
+"""Twenty-one tentative records, landed here as one staged gallery.
 
 ## What this is for
 
-The explorer grew a gallery panel: a reader who has a picture on the canvas can look at
-what the curation passes actually seated, and open any of it. That wants thousands of
-pictures and a link beside each, which is a gallery in every respect the builder already
-understands — a directory, a `gallery.jsonl`, web-res images — and a gallery in no respect
-the *article* understands, because there is no page, no cover tile and no written caption
-anywhere in it. `staged` is that state, and `builder/README.md` says what it means. Here is
-what fills one.
+The explorer's gallery panel lets a reader who has a picture on the canvas look at what the
+curation passes seated, and open any of it. That wants thousands of pictures and a link
+beside each, which is a gallery in every respect the builder already understands — a
+directory, a `gallery.jsonl`, web-res images — and a gallery in no respect the article
+understands, because there is no page, no cover tile, and no written caption anywhere in
+it. `staged` is that state, and `builder/README.md` says what it means. Here is what fills
+one.
 
 ## Collections, and one row a seat across all of them
 
-The panel shows one **collection** at a time: the general gallery, or one of the nineteen
-the project next door solves on a single axis — twelve hue families and seven modes, whose
-sizes are `curation/targets.py`'s. They overlap, since a seat of the rose collection may
-well be a seat of the general one, so the record is their **union**: one row, and one
-picture, per recipe key, and each row carries `collections`, a map from every collection
-that seats it to its place in that collection's presentation order. The panel's dropdown
-chooses a key of that map; it never fetches anything.
+The panel shows one **collection** at a time: the general gallery (`GENERAL`, its larger
+solve `GENERAL_2000`, or `ALL`, every other collection at once), or one of the nineteen the
+project next door solves on a single axis — twelve hue families and seven modes, whose
+sizes are `curation/targets.py`'s. `COLLECTIONS` pins the stamp each solve is read from.
+They overlap, since a seat of the rose collection may well be a seat of the general one,
+so the record is their **union**: one row, and one picture, per recipe key, and each row
+carries `collections`, a map from every collection that seats it to its place in that
+collection's presentation order. The panel's dropdown chooses a key of that map; it never
+fetches anything.
 
-**The pictures are thumbnails and nothing else** *(explorer_gallery_collections_ckpt129)*.
-Clicking a tile opens the viewer, which draws the picture itself, so the full picture is
-one click away and a second, larger copy of it here would be a gigabyte nobody is shown. A
-row's `file` is a WebP at `TILE_SIZE`, encoded through `images.write_thumb` at
-`images.TILE_WEBP_QUALITY`, and it is the only size this gallery ships.
+**The pictures are thumbnails and nothing else.** Clicking a tile opens the viewer, which
+draws the picture itself, so the full picture is one click away and a second, larger copy
+of it here would be a gigabyte nobody is shown. A row's `file` is a WebP at `TILE_SIZE`,
+encoded through `images.write_thumb` at `images.TILE_WEBP_QUALITY`, and it is the only size
+this gallery ships.
 
 ## The four reads, and where each answer comes from
 
@@ -34,39 +36,36 @@ This module does the same reads a thousand at a time rather than six, so each st
 opened once:
 
 - **the seats**, `artifacts/curation/tentative/<stamp>/gallery.jsonl` — seat order, the
-  alias, and the hue family the colour reading rolls the picture up to, where there is
-  one: see *Every seat has a family* below;
+  alias, and the hue family the color reading rolls the picture up to, where there is
+  one: see Every seat has a family below;
 - **the recipes**, the candidate ledger, in one streamed pass through `picks.ledger_rows`;
 - **the tone curves**, asked of that project's own reader, `curation.stamps.for_rows` with
   the backfill overlay beneath it, in one call for the thousand. The two kinds that draw
   by attempt are not among its stores, and `PICTURE_RECORDS` reads theirs here, one pass
-  per run record. Neither is `picks.RUN_RECORDS`: that one answers *did the operator
-  act*, and this wants the five numbers it acted with.
+  per run record. Neither is `picks.RUN_RECORDS`: that one answers whether the operator
+  acted, and this wants the five numbers it acted with.
 - **the hue families each picture contains**, read off the pictures themselves through
   `palettes.dominance`, at `HUE_PRESENT` rather than at that module's dominance bar. The
-  seat row already says which family *leads* a picture; the panel's chips inside a colour
-  collection ask the other question — *what else is in here* — and a hint of a hue is the
-  answer to it. This is the one read that opens the pictures, and it is a minute and a
-  half for five thousand.
+  seat row already says which family leads a picture; the panel's chips inside a color
+  collection ask what else is in it, and a hint of a hue is the answer to that. This is
+  the one read that opens the pictures, and the slowest.
 
-## Every seat has a family *(2026-09-19)*
+## Every seat has a family
 
 The record next door files a seat under a hue family only where the picture is
-**dominant** in one — `dominance`'s `FAMILY_LEAD` of 0.20, or `FAMILY_ALONE` of 0.30 —
-and a picture spread evenly enough across the wheel clears neither. Ten of the 6,062
-seats came out that way, and the panel's filter carried an *unfiled* chip for them.
+**dominant** in one — `dominance`'s `FAMILY_LEAD` or `FAMILY_ALONE` — and a picture spread
+evenly enough across the wheel clears neither.
 
-A chip that means *the ones the rule could not decide* is a worse answer than a family:
-it is a technical fact about a threshold offered to a reader looking for a colour, and
-every one of those ten pictures does have a colour it has more of than any other. So
-where the record files a seat under nothing, the row takes **the family its own colour
-reading favours most** — the first of `hues`, which is sorted by share — and the chip is
-gone. Nothing next door moves: no solve, no record, no collection, and the dominance rule
-is untouched. This is what the page shows, not what the pipeline believes.
+A chip meaning "the ones the rule could not decide" would be a technical fact about a
+threshold offered to a reader looking for a color, and every such picture does have a
+color it has more of than any other. So where the record files a seat under nothing, the
+row takes **the family its own color reading favors most** — the first of `hues`, which is
+sorted by share — and there is no unfiled chip. Nothing next door moves: no solve, no
+record, no collection, and the dominance rule is untouched. This is what the page shows,
+not what the pipeline believes.
 
-A seat whose picture reads no chromatic colour at all would still have no family, and is
-a [`SeatError`] rather than a quiet `null`, because the panel no longer has anywhere to
-put one.
+A seat whose picture reads no chromatic color at all has no family, and is a
+[`SeatError`] rather than a quiet `null`, because the panel has nowhere to put one.
 
 And a fifth thing that is not a read of a record: **the presentation order**. The
 tentative gallery's own page opens on `curation.page_order`'s permutation of the seating,
@@ -78,7 +77,7 @@ for the same permutation so that the explorer's panel opens on the tiles that pa
 The permalink is emitted by the contract itself — `links.ledger_view` puts a ledger recipe
 into the shape `emit.mjs` reads, and all thousand go through one node process. A link that
 is not the picture is not silently shipped: the row carries a `gap` saying in one clause
-what is missing, and there are three ways that happens here.
+what is missing, and there are two ways that happens here.
 
 - **The tone curve.** Every candidate of this pool was drawn with `band_autolevel/v1`
   switched on, and where it acted the picture is drawn through a curve pushed into the
@@ -89,14 +88,12 @@ what is missing, and there are three ways that happens here.
   claims: an identity curve is the operator having measured and declined, and replaying
   one is not free — it costs a fraction of a level through the Oklab round trip — so a
   seat whose curve is identity needs no `level` key and has no gap for one.
-- **The iteration cap.** A recipe pins `maxiter`, and since permalink v4 the link carries
-  it as `n` wherever the engine's depth policy would give another cap at that width
-  *(preclose_website_ckpt155; until then this was a gap on 421 seats)*. The row still
-  says so if the link's cap and the recipe's ever part, in the words `links._settled`
-  uses for a figure.
-- **Not a mode's curve, any more.** Eight seats read `smooth` or `stripe` through a `log`
-  curve the catalog does not give those modes, and until tools_figures_ckpt156 no key could
-  say it, so each was a gap. The link carries it as `curve` now, and the gap is gone.
+- **The iteration cap.** A recipe pins `maxiter`, and the link carries it as `n` wherever
+  the engine's depth policy would give another cap at that width. The row still carries a
+  gap, naming both caps, if the link's cap and the recipe's ever part.
+
+A curve the catalog does not give a mode (`smooth` or `stripe` read through `log`) is not a
+gap: the link carries it as `curve`.
 """
 
 from __future__ import annotations

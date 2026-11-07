@@ -4,76 +4,67 @@
 
 A tentative gallery is the curation solve written down: `artifacts/curation/tentative/
 <stamp>/gallery.jsonl`, one row per seat, and a browser page beside it that Matt drives.
-He picks off that page by the short alias printed under a tile. Before this module the
-picks then had to be turned into pictures by hand — somebody read the recipe out of the
-records, typed the numbers into a rig under `scratch/`, and typed them again into the
-figure's provenance.
+He picks off that page by the short alias printed under a tile.
 
-So a figure of this module names its panels by **ID and nothing else**, in its own
-registry row:
+A figure of this module names its panels by **ID and nothing else**, in its own registry
+row:
 
     "recipe": {"maker": "builder.picks:gallery_hook",
                "args": {"picks": ["<stamp>|<key>", ...]}}
 
 and re-picking is an edit to that list followed by
 `python -m builder picks <id> --replace`. The row is the source of truth and the maker
-reads it, rather than the other way round: a list of IDs in a Python constant would be a
-second place the picks live, and the registry is the place a person looks.
+reads it: a list of IDs in a Python constant would be a second place the picks live, and
+the registry is the place a person looks.
 
 ## Where a pick resolves
 
 Two reads, and the split matters because a solve may be running next door.
 
 - **The seat** comes out of the record the pick was made off — that stamp's own
-  `gallery.jsonl`. It says which seat, which mode, which partition and which location,
-  and it is a few hundred short lines.
+  `gallery.jsonl`. It says which seat, which mode, which partition, and which location.
 - **The recipe** comes out of the candidate ledger, by a **streamed lookup that stops as
-  soon as it has the keys asked for**. The record is what a curation *rule* reads and it
-  carries no palette at all; a render needs the map, the palette pass and the cap, and
+  soon as it has the keys asked for**. The record is what a curation rule reads and it
+  carries no palette at all; a render needs the map, the palette pass, and the cap, and
   the ledger is the only store that holds them per recipe key. This is one pass of a
   file, never `headroom.population()` — the pool nothing here loads.
 
-`fractal-wallpapers`' own `curate solve resolve` does exactly the same two reads, and
-answers with the same pair; this is that path in-process, so a figure's provenance is
-written from the records rather than from a printout somebody pasted.
+`fractal-wallpapers`' own `curate solve resolve` does the same two reads and answers with
+the same pair; this is that path in-process, so a figure's provenance is written from the
+records rather than from a printout somebody pasted.
 
 ## What is drawn
 
 The engine, at the figure's own geometry, from the recipe's own coloring —
 `renders.wallpaper_spec` is the bridge. The 640×360 thumbnails the record points at are the
-pictures the *judges* were shown; they are not a source for a figure, and nothing here opens
+pictures the judges were shown; they are not a source for a figure, and nothing here opens
 one.
 
 ## The autolevel curve, and the third read that finds it
 
-Every candidate of this pool was made with `band_autolevel/v1` switched on. The operator
+Candidates of this pool are made with `band_autolevel/v1` switched on. The operator
 measures a finished render's tone, and where that tone sits outside the band of finished
 wallpapers it pushes a curve through the **map's own stops** and renders again — so the
 picture a seat ships is drawn through a colormap that is not quite the one the recipe
 names. **A fresh render of the recipe alone is therefore the wrong picture whenever the
-operator acted**, and wrong by a lot: `a693d6c7` came back at mean absolute difference
-29.5 of 255 from its own gallery tile, a deep rust ground rendered as pale salmon.
+operator acted**, and wrong by a lot.
 
 The ledger's recipe row cannot fix that on its own. It keeps the **reduced** stamp — the
 operator, the switch, and the band's sha256 — because that is what decides a recipe's
-*identity*, and the curve is not part of an identity. The curve is on the **run's** own
+identity, and the curve is not part of an identity. The curve is on the **run's** own
 record, which the ledger row names in `provenance.run` and addresses again by the file in
 `picture`. So a pick resolves through a third read, `run_stamp` below, and where that
 stamp acted the panel is rendered through the stops
 `fractal_wallpapers.coloring.autolevel.stops_from_stamp` rebuilds — the project's own
-operator replaying its own curve, never a second one measured here. Re-measuring was
-tried and is not equivalent: the same frame redrawn at the seat's own regime derives a
-black point of 0.634 where the run stamped 0.595, so a re-measurement would quietly
-publish a different picture from the one the gallery shows.
+operator replaying the run's own curve. Re-measuring is not equivalent: the same frame
+redrawn at the seat's own regime derives a different black point, so a re-measurement
+would quietly publish a different picture from the one the gallery shows.
 
-**Which run stores keep the curve, and which keep only the fact** *(re-read 2026-09-15,
-against the 1,000 seats of `20260914T171846Z`)*. A candidate made by a `reframe_draw` run
-or a gallery `runs` pass has its whole stamp on that run's record, addressed by the
-picture the attempt wrote. A `depth` run and a `remode` run keep theirs in
-`sequence.jsonl`, addressed by the recipe key — **including the curve**: of the 439 seats
-of that record a `depth` run drew, 288 carry a full `autolevel.curve` block, 87 of them a
-curve that acted. This used to say a depth run wrote down `acted` and nothing else, which
-was true of the runs the sentence was written against and is not true of these.
+**Which run stores keep the curve, and which keep only the fact.** A candidate made by a
+`reframe_draw` run or a gallery `runs` pass has its whole stamp on that run's record,
+addressed by the picture the attempt wrote. A `depth` run and a `remode` run keep theirs
+in `sequence.jsonl`, addressed by the recipe key — the curve included, where the run
+wrote one.
 
 What is still only a fact rather than a curve:
 
@@ -84,21 +75,21 @@ What is still only a fact rather than a curve:
 - a **`rotation` run keeps a tally and no rows**: `rotation.json` counts how many pictures
   the operator acted on across the whole run, and `rows.jsonl` beside it carries the
   reduced stamp only;
-- a **`label_migration` pass keeps nothing but its pictures**, so neither kind is in
-  `RUN_RECORDS` and a seat from one has no reachable stamp at all.
+- a **`label_migration` pass keeps nothing but its pictures**.
 
-`run_stamp` reports every one of those as `acted_unrecoverable`, and `seat_picture` is the
-way out, copying the seat's shipped picture rather than publishing a render known to be —
-or merely not known not to be — the wrong colour.
+Neither of the last two kinds is in `RUN_RECORDS`; `run_stamp` asks the wallpaper
+project's own reader about them instead, and has the rest of its fallbacks. Where the
+answer is `acted_unrecoverable`, `seat_picture` is the way out, copying the seat's shipped
+picture rather than publishing a render known to be — or merely not known not to be — the
+wrong color.
 
 **This module's own reading stops at the fact, deliberately.** `_stamp_in`'s key-matched
 branch reads `acted` and not the curve beside it, so a `depth` or a `remode` seat is
 `acted_unrecoverable` to a maker even where the coefficients are on the record. Lifting
-that would change what every figure standing on such a seat is drawn *from* — a render
+that would change what every figure standing on such a seat is drawn from — a render
 through replayed stops rather than a copy of the shipped file — which is a decision about
-pictures on pages rather than a better read of a record, and it is not one this note
-makes. `builder/seats.py` reads the same records for the curve itself, because a link
-carries a curve without redrawing anything.
+pictures on pages, not a better read of a record. `builder/seats.py` reads the same
+records for the curve itself, because a link carries a curve without redrawing anything.
 """
 
 from __future__ import annotations

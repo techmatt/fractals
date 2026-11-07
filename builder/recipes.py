@@ -2,91 +2,80 @@
 
 ## Why this file exists
 
-A figure that stands on a wallpaper names it by `<stamp>|<recipe key>` — the recorded
+A figure that stands on a wallpaper names it by `<stamp>|<recipe key>`: the recorded
 tentative gallery it was picked off, and the row of the candidate ledger that says how the
-picture was drawn. Both of those live in the wallpaper project's regenerable tree, and for
-a year that was the whole address: `builder.picks` opened the gallery record for the seat
-and streamed the ledger for the recipe, and a figure could be redrawn for as long as that
-project kept them.
+picture was drawn. Both live in the wallpaper project's regenerable tree, which does not
+keep every saved solve, and a picture nobody can redraw is a picture nobody can correct.
 
-**On 2026-09-22 it stopped keeping them.** Closing mining removed every saved solve but the
-twenty `final139_*` records, and 96 of this site's figure panels named a seat of one of six
-records that no longer exist. Nothing on a page moved — the pictures are committed here —
-but the *recipe* behind every one of them had gone, which is the exact failure the figure
-registry was written to end: a picture nobody can redraw is a picture nobody can correct.
-
-So the recipe is this repository's now. `article/figure-recipes.jsonl` holds one row per
-`(stamp, key)` a figure cites, carrying the seat row, the ledger recipe and the ledger's
+So the recipe is this repository's. `article/figure-recipes.jsonl` holds one row per
+`(stamp, key)` a figure cites, carrying the seat row, the ledger recipe, and the ledger's
 own account of which run drew the candidate. `builder.picks` reads it first and the stores
 next door only for a key it does not hold, which is what lets a fresh pick off a live
-record still work. **A stamp on a figure's registry row is provenance from here on** — it
-says which gallery the pick was made off, and nothing has to still be there for the figure
-to be drawn again.
+record still work. **A stamp on a figure's registry row is provenance** — it says which
+gallery the pick was made off, and nothing has to still be there for the figure to be
+drawn again.
 
 ## What is in a row, and where each half came from
 
 * `seat` — the row of that stamp's `gallery.jsonl`: which seat, which partition, the alias
-  Matt picked it by, the colour reading. Absent where no record of the stamp survives.
+  Matt picked it by, and the color reading. Absent where no record of the stamp survives.
 * `recipe` — the candidate ledger's own recipe block, whole: family, viewport, mode, map,
-  palette, cap, regime.
+  palette, cap, and regime.
 * `source` — the ledger row's `picture` and its `provenance`, which is how the autolevel
   curve is reached. That third read is still next door and is not copied here: a run's
-  record is not a solve and was not deleted.
-* `read` — where the two halves were recovered from, in a clause, because two of these
-  rows have a recipe and no seat at all and the record should say so rather than look
-  complete.
+  record is not a solve.
+* `read` — where the two halves were recovered from, in a clause, because some rows have a
+  recipe and no seat at all and the record should say so rather than look complete.
 * `tone` — on one kind of row only: a seat the autolevel operator acted on whose run kept
-  the fact and not the curve. Where Matt wants such a panel drawn and linked anyway
-  *(escape_families_ckpt148, 2026-09-25)*, the curve is measured again on this side, off
-  the recipe drawn at the seat's own regime through the unlevelled map, and written here
-  with the day it was measured. It is a second reading of the operator rather than the
-  run's, and `picks.run_stamp` answers from it only where the run's own record cannot.
+  the fact and not the curve. Where Matt wants such a panel drawn and linked anyway, the
+  curve is measured again on this side, off the recipe drawn at the seat's own regime
+  through the unleveled map, and written here with the day it was measured. It is a second
+  reading of the operator rather than the run's, and `picks.run_stamp` answers from it only
+  where the run's own record cannot.
 
 ## Filling it
 
 `python -m builder recipes --fill` lands a row for every `(stamp, key)` the figure registry
 cites that this store does not already hold, reading the stores next door. **It never
 rewrites a row that is here**, the same rule `explorer --names` keeps for a hand-authored
-display name: the rows recovered from a deleted record are the only copy there is, and a
-fill run that re-derived them would answer *not found* and take them out.
-
-Three of the 96 came out of a stamp that was never tracked next door, so their seat row is
-gone for good; they carry the recipe, the run that drew them, and a `read` saying so.
+display name: a row recovered from a deleted record is the only copy there is, and a fill
+run that re-derived it would answer not found and take it out. A row whose stamp was never
+tracked next door carries the recipe, the run that drew it, and a `read` saying so.
 
 ## Deep panels
 
-A third kind, `deep` *(deep_figures_ckpt145)*: one row per panel of a *Deep zoom* figure,
-keyed `<figure id>#<panel>` under the stamp `deep`, whose recipe is the canonical Deep-tab
-link the panel was drawn from, the grid and the supersample. Nothing next door stands behind
-one — the link is the whole of it — so these rows are written by `builder.deep_figures`
+A third kind, `deep`: one row per panel of a *Deep zoom* figure, keyed
+`<figure id>#<panel>` under the stamp `deep`, whose recipe is the canonical Deep-tab link
+the panel was drawn from, the grid, and the supersample. Nothing next door stands behind
+one (the link is the whole of it), so these rows are written by `builder.deep_figures`
 when it lands a figure, rewritten when it redraws one, and never touched by `--fill`.
 
 ## The site's icon
 
-A fourth, `icon` *(favicon_wire_ckpt145)*: one row, stamp `icon`, key `site`, holding the
-seat the icon is cropped from, the crop link and the crop's width, and the master it is
-drawn at. It is not a figure and no figure cites it, so `--fill` never touches it either;
-`builder.icons` writes it and draws the icon set from it.
+A fourth, `icon`: one row, stamp `icon`, key `site`, holding the seat the icon is cropped
+from, the crop link and the crop's width, and the master it is drawn at. It is not a figure
+and no figure cites it, so `--fill` never touches it either; `builder.icons` writes it and
+draws the icon set from it.
 
 ## Recolored panels
 
-A fifth, `recolor` *(gallery_curation_edits_ckpt149)*: one row per panel of a picks figure
-that keeps a seat's place, view and mode and swaps its map, keyed `<figure id>#<panel>`
-under the stamp `recolor`. The recipe is the seat's ledger recipe whole with the map
-replaced and the autolevel stamp dropped — the operator never ran on the new map — and
-`source` names the seat it was taken from, the map it replaced, and how the new one was
-drawn. It is the only copy of that choice, so the maker reads it and `--fill` never touches
-it; the row is written once, by hand, when the choice is made.
+A fifth, `recolor`: one row per panel of a picks figure that keeps a seat's place, view,
+and mode and swaps its map, keyed `<figure id>#<panel>` under the stamp `recolor`. The
+recipe is the seat's ledger recipe whole with the map replaced and the autolevel stamp
+dropped (the operator never ran on the new map), and `source` names the seat it was taken
+from, the map it replaced, and how the new one was drawn. It is the only copy of that
+choice, so the maker reads it and `--fill` never touches it; the row is written once, by
+hand, when the choice is made.
 
 ## Link panels
 
-A sixth, `link` *(start_pink_gallery_ckpt155)*: one row per panel drawn from a **shallow**
-explorer link somebody chose, keyed `<figure id>#<panel>` under the stamp `link` the way a
-deep row is. The recipe is the link in the explorer's canonical spelling, the grid and the
-supersample, and the maker drew the picture with `fractal-engine render-link` from exactly
-that string, so the link a panel carries is read off this row and never derived. The first
-are the picks on Start here's pink gallery, whose list is `article/pink-gallery.jsonl`;
-the maker writes these rows when it lands the figure, and `--fill` never touches them.
+A sixth, `link`: one row per panel drawn from a **shallow** explorer link somebody chose,
+keyed `<figure id>#<panel>` under the stamp `link` the way a deep row is. The recipe is the
+link in the explorer's canonical spelling, the grid, and the supersample, and the maker
+drew the picture with `fractal-engine render-link` from exactly that string, so the link a
+panel carries is read off this row and never derived. Start here's pink gallery draws its
+picks this way, its list in `article/pink-gallery.jsonl`; the maker writes these rows when
+it lands the figure, and `--fill` never touches them.
 """
 
 from __future__ import annotations

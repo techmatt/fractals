@@ -183,8 +183,8 @@ CI (`.github/workflows/checks.yml`) runs the same lines, the 22 suites listed by
 third holds each crate's deliberate reformat. After touching placed prose, also `python -m builder prose <page>`.
 
 **Which python**: `python` on PATH in Git Bash and PowerShell is
-`C:\ProgramData\miniconda3\python.exe` (3.13), which has Pillow and ruff; `check` skips four
-checks without Pillow. The `WindowsApps` `python.exe` is the Microsoft Store stub.
+`C:\ProgramData\miniconda3\python.exe` (3.13), which has Pillow and ruff; without Pillow `check`
+skips half of `figures`, `assets`, `deep`, `seats`, and `agreement`. The `WindowsApps` `python.exe` is the Microsoft Store stub.
 
 - ⚠ **Any source edit in `perturb-wasm`, a formatting commit included, owes a rebake**:
   `python -m builder explorer --perturb`; `check`'s `bake` does not catch a stale

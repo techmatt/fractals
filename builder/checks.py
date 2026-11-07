@@ -1,200 +1,105 @@
-"""The checks the bootstrap did by hand, made mechanical.
+"""What `python -m builder check` checks.
 
-Every one of them read-only, and every one of them runs on a clone with nothing beside
-it. Three things a clone need not have are wanted here — the wallpaper project's
-checkout, Pillow, and a staged gallery's pictures, which stay out of history until a
-deploy — and what a check does
-without one is report a **named skip**: which check, which half of it, and why. Never a
-crash before the other checks, and never a silent pass. `check` used to build the palette
-library page straight off the checkout, so the first thing it did on a machine without one
-was raise, and every check after it went unrun.
+Every check is read-only and runs on a bare clone. Three things a clone may lack are wanted
+here: the wallpaper project's checkout (with its artifacts tree), Pillow, and a staged
+gallery's pictures. Without one, a check reports a **named skip** (which check, which half,
+and why), never a crash and never a silent pass.
 
-- **links** — every internal href and src on every page resolves to a file that exists,
-  and none is root-absolute. The site is served from `/fractals/`, so a rooted
-  href works locally and breaks only in production: exactly the bug that survives
-  review. A link to a bare directory fails too, because a page in this repo has to open
-  from the filesystem and `file:///…/wallpaper-packs/` is a directory listing.
+- **links** — every internal href and src resolves to an existing file; none is
+  root-absolute (the site lives under `/fractals/`) or a bare directory.
 - **pages** — the committed HTML under `wallpaper-packs/` is byte-identical to what the
-  builder produces from today's metadata. What is committed is what is served, so the
-  commit is the thing worth checking.
-- **figures** — every figure block on an article page matches its registry row exactly,
-  every row names the page that actually carries it, every made figure carries the
-  provenance its picture can be drawn again from, and a recipe naming a maker inside
-  `builder` names one that is still there. Every source key resolves against the store
-  its kind names, where the wallpaper project is checked out — a note rather than a
-  failure where it is not, because CI clones this repository alone. A `held` row is the
-  one row that is registered and deliberately not on a page, and it says what it is
-  held on.
-- **seats** — every panel that is a gallery seat *at its own recipe* is that seat's own
-  picture, to a stated tolerance. The site draws such a panel by redrawing the recipe,
-  and a recipe is not the whole story: the autolevel operator may have pushed a tone
-  curve through the map's stops before the run wrote the picture the gallery ships. Where
-  it did and the site did not, the page publishes the right geometry in the wrong colour,
-  and every other check stays green — which is exactly what happened to
-  `overview-pipeline` on 2026-09-02. Held at the seat's own regime, so the number is
-  colour and not resampling. Exemptions are **on the record**: a `gallery_seat` source
-  says `recipe_changed` or `cited` and the check reads it, because a list of excused
-  figure ids inside the check is an exemption nothing can audit. Needs the wallpapers
-  checkout and Pillow, and says so by name where either is missing.
-- **landing** — every made figure's page carries a block a redraw could land on. `figures
-  --replace` and every drawing command find the block they are about to swap by
-  deriving it, so the derivation is load-bearing in a way **figures** does not reach:
-  `landing_block` once left the explorer link out and refused a redraw of nearly every
-  render here while every other check stayed green.
-- **locations** — no location stands under two figures. A figure's `provenance` spells
-  out the frame each panel was drawn on, and **no location is reused across the site
-  unless the repetition is intentional** *(Matt, 2026-09-01)* — so a frame appearing
-  under two slugs fails here, and the way to keep it is a `reuse_reason` on the row that
-  says why the repetition is wanted and **names the figure it repeats** — which is what
-  keeps one excused frame from excusing every other frame that row stands on. The reason
-  is checked back: one that excuses no collision has outlived it, and comes out. What
-  the check compares is the frame written down — family, degree, constants, centre and
-  width — so a place drawn at two different zooms reads as two locations here and is a
-  judgement call the record cannot make for anybody.
-- **contents** — every hand-written page carries the contents rail the builder derives,
-  every prose heading carries the id its own words give it, and the front page's typed
-  contents list has a one-line `<h3>` entry for every section in `sections.jsonl`.
-- **bar** — every hand-written page carries the site bar `pages.topbar` spells, and so
-  does every other served page that carries one: one spelling of the bar's links, which
-  `build` writes the way it writes the rail. The explorer's studio bar is its own.
-- **assets** — every image the metadata names exists at the size it claims, every
-  thumbnail is current, and no orphan file is left in a gallery directory. A **staged**
-  gallery is held to the same things once its pictures are here, bar the thumbnail — its
-  picture is already the explorer panel's tile — and is a named skip where they are not.
-  The one gallery here is committed whole since deploy_staged_assets_ckpt152, so on this
-  tree that skip does not come up.
-- **prose** — every row of `article/prose.jsonl` names a page that is in the article and
-  is written. The master itself lives in the Drive-synced working folder, which is not
-  in a clone and never in CI, so what is checked here is the registry and not the
-  document: `python -m builder prose` is what holds the two texts together.
-- **library** — this repository's palette record still says what the wallpaper project's
-  own library says: the same maps, in the same hues, in the same order. The page is
-  held to the record by **pages**, everywhere; the record is held to the library here,
-  and only where that checkout is configured.
-- **guidance** — `CLAUDE.md` names `writing-guidance.md`, the editorial authority. That
-  document is not in this repository and cannot be: both halves of the project write to
-  it. So the one thing a clone can be held to is that the file every prompt does read
-  points at it, and a rename or a tidy-up that drops the pointer fails here.
-- **atlas** — the atlas record is the shape the atlas frame reads, which the explorer's
-  Atlas tab is the one page to mount: every dot carries its own viewport keys as decimal
-  strings, sits inside the plane its partition names and no closer to its neighbours than
-  the separation radius that partition claims, and every pre-rendered thumbnail is on disk
-  at the size its row gives. Whether a dot's *link* parses is asked of the permalink
-  contract itself, by `atlas/atlas.test.mjs`, for the same reason the explorer's links are:
-  the contract is written in JavaScript.
-- **agreement** — every atlas slot's link is its picture. The **atlas** check and
-  `atlas.test.mjs` ask whether a slot's link is a well-formed link; this asks whether it
-  opens the picture on the card, member for member against the recipe the thumbnail was
-  drawn from, on every slot — and, for a fixed sample of one slot a plane, by drawing the
-  link through the committed wasm and setting it beside the stored thumbnail, with a
-  control that has to fail. `agreement.py` says why it exists: 28 slots once opened at a
-  texture weight none of them was drawn at, with every structural test green. The pixel
-  half is a named skip without the staged thumbnails, `palettes.bin` or Pillow.
-- **coloring** — `renders.wallpaper_coloring` still gives, for every seat recipe the
-  committed collection records name, exactly what the wallpaper project's
-  `engine_spec.coloring_of` gives, dict for dict, and refuses exactly what it refuses. The
-  site's function is a copy of that one and has drifted once: its composite
-  `texture_weight` branch was missing and every screened recipe carrying a weight was
-  refused here. Needs the checkout, and is a named skip without it.
-- **theme** — the well colours a drawn figure is made of are the stylesheet's own. They
-  have to be transcribed, because Pillow cannot read CSS; this is what keeps a restyle
-  from moving the well and leaving every diagram drawn against the old one.
-- **vocabulary** — no tracked file uses a word this site has banned. `vocabulary.py`
-  holds the list and says why each term is on it.
-- **dashes** — no em-dash in the words a reader meets: the body of every section, of the
-  front page, of the gallery index and of the page hanging off Color palettes, and every
-  caption and alt in the figure registry. The rule is `writing-guidance.md`'s and it was
-  held by hand through a two-day sweep; it is mechanical from 2026-09-07, because the
-  regression it catches is a page **arriving** with them rather than a page drifting.
-  `dashes.py` says what it reads, what it does not, and why there is no allowlist.
-- **endings** — no tracked file has drifted to CRLF on disk. `.gitattributes` normalizes
-  on the way in, so a CRLF file **still commits as LF**: `git status` is empty, `git diff`
-  is empty, and the drift waits there until something rewrites the file line by line and
-  produces a whole-file diff nobody asked for. `git ls-files --eol` is the only thing that
-  reports it — `grep` cannot, and confidently names a clean tree dirty — and this is that
-  sweep, with the assertion that it returned rows at all, because a parse that silently
-  yields nothing is a guard that passes everything.
-- **icons** — every page the site serves declares the site's icon, with exactly the links
-  `builder.icons.head` spells from that page, and the files those links name are the set:
-  the `.ico` holds 16, 32 and 48, each PNG is its own size, the manifest is what the
-  builder writes, and the recipe store holds the row the set is drawn from. A page that
-  declares nothing is a page a browser asks the origin root about, which under a
-  project-Pages subpath is a 404 in every visitor's console.
-- **heads** — every page the site serves carries, between its `head-tags` markers, the
-  description and link-preview tags `builder.heads` derives from that page: its own first
-  sentence as `description` and `og:description`, its `<title>` as `og:title`, its first
-  figure's first picture (or the site icon) as `og:image`, and where it is served as
-  `og:url`. The last two are absolute, the one deliberate exception to relative links,
-  because a crawler resolves neither; they sit in `content`, which **links** never reads.
-  A page with a prose paragraph and an authored description beside it fails, because the
-  two would say different things about the page.
-- **formulas** — every display formula is a formula block: TeX on the `<div>`, one inline
-  SVG inside it with a role, a spoken reading, `currentColor` and no `<text>`, and no
-  `<pre class="formula">` left anywhere. Where node and the pinned MathJax are here, every
-  SVG is also held byte for byte to a fresh typesetting of its TeX; elsewhere that half is
-  a named skip. `formulas.py` says why the renderer is fetched rather than installed.
-- **explorer** — every figure and every gallery tile is in the explorer link registry,
-  as a link or as a stated reason there is none, and every link the registry holds is
-  the one the page carries. Whether a link *parses* is asked of the permalink contract
-  itself, by `permalink.test.mjs`, because the contract is written in JavaScript and a
-  second reading of it in Python is exactly what a URL contract cannot survive. The
-  picker's two records are held here too: `palette-names.json` names only maps the
-  explorer carries and never gives two of them one display name, and `popular.json` lists
-  24 carried maps once each. A map with no display name is a printed count, not a failure.
-- **caps** — every figure panel linked from a gallery seat opens at the cap that seat was
-  drawn at: the link's own `n`, or the width policy where it carries none, asked of the
-  contract through `emit.mjs`, against the seat recipe's `maxiter`. `ledger_view` once
-  dropped the cap, so every seat panel opened at the policy whatever drew it. Seats the
-  site's recipe store holds are asked on any clone; any other is a named skip without the
-  checkout, and the whole check is one without node.
-- **bake** — the explorer's two generated modules are what a rebake produces from the
-  committed rosters and the wallpaper project next door, both byte for byte, because both
-  stamps are read off a record — `explorer/palettes.jsonl` and `explorer/modes.jsonl` —
-  rather than off the clock. So a gradient, an identity line or an anchor constant that
-  moved next door fails here rather than arriving as a diff nobody looks at, and a mode
-  the engine promotes does not reach the picker at all until the record names it. It also
-  holds the palette roster to the figures: a picture drawn in a map the roster does not
-  carry is a picture the explorer cannot open. Only where the checkout is configured — a
-  clone has no library to bake from, and the modules it serves are the committed ones
-  either way.
-- **stamps** — the link a full-size picture carries in its metadata is the contract's
-  link, whichever repository wrote the file. Everywhere: `stamp.js`'s `EXPLORER_URL` is
-  `pages.SITE_URL` with `explorer/` after it. Where the checkout is configured: the
-  wallpaper project's release writer spells every seat of the general collection exactly
-  as `emit.mjs` does, byte for byte, and embeds a PNG and a JPEG into exactly the bytes
-  `stamp.js` does, pixels unmoved. `stamps.py` says why a second author of the contract
-  exists at all. About half a minute, most of it reading the thousand recipes.
-- **go** — every short link in `go/redirects.jsonl` has a target the explorer's own reader
-  accepts, asked of `permalink.js` or `deep-link.js` by `go.mjs` the way the page's door
-  would ask, and every page under `go/` is byte for byte what the register writes, with
-  none standing where no row names one. `go.py` says what a short link is.
-- **packs** — the Wallpaper packs record answers the page's prose: one row per `[PACK]`
-  marker and no other, each pack's counts its collection's size, each of its five pictures
-  a Gallery tab seat whose tile is on disk, and a colour or general pack's five that
-  collection's opening. Where the checkout and the full set are here, the record is also
-  what `packs --import` would write today, so zips built and not imported fail here; a
-  named skip elsewhere. `packs.py` says why the record is imported rather than derived.
-  The deep gallery's row is held to `builder/data/deep-pack.jsonl` instead, on any clone.
-- **readmes** — every explorer link in this repository's root `README.md` parses under
-  `permalink.js` and is already its own canonical spelling. Where the checkout is
-  configured, the same of fractal-wallpapers' root `README.md`, and every strip thumbnail
-  whose `examples/README.md` row names a seat is held to the link the contract emits for
-  that seat's recipe and recorded tone curve. The wallpapers strip once carried a pin
-  writer's spelling that dropped `mirror`, so its first thumbnail opened in another map;
-  `readmes.py` has the story. A named skip for the next-door half.
-- **repeats** — every explorer link this repository stores names each key once: every
-  record a link is kept in, walked value by value, every served page's hrefs, and the
-  root README, with fractal-wallpapers' README too where the checkout is configured. The
-  readers take a key named twice with one value and refuse one named with two, so a
-  repeat in a record is a writer that appended where it should have set.
-  `repeats.py` has the story. A named skip for the next-door half.
-- **deep** — the Deep tab's two baked lists, its gallery (`explorer/deep-gallery.jsonl`)
-  and Random dives (`explorer/random-dives.jsonl`), each held to its tiles: every row a
-  deep link, no link twice, a tile named by the row's FNV-1a for every row and no tile no
-  row names, every tile tracked, since an untracked tile is one the local build serves and
-  Pages does not, and each tile the Deep gallery's 316×178 where Pillow is here. Random
-  dives also holds no place twice, a plane and a centre, which is the promise its builder
-  makes. `builder/random_dives.py` says why a place and not only a link.
+  builder produces from today's metadata.
+- **figures** — every figure block on an article page matches its registry row, every row
+  names the page that carries it, every made figure carries its provenance, and a maker a
+  recipe names inside `builder` still exists. A `held` row is off its page on purpose and
+  says why. Source keys resolve against their stores (a named skip without the checkout or
+  its artifacts); sizes on disk are a named skip without Pillow.
+- **seats** — every panel that is a gallery seat at its own recipe is that seat's own
+  picture, to a tolerance, at the seat's regime, which catches a tone curve the gallery's
+  picture has and the redraw lacks. Exemptions are on the record: a `gallery_seat` source
+  says `recipe_changed` or `cited`. A whole skip without the checkout or its artifacts;
+  without Pillow only the pixel half is skipped.
+- **landing** — every made figure's page carries a block a redraw could land on.
+- **locations** — no location stands under two figures unless the repetition is
+  intentional (Matt): a `reuse_reason` on the row says why and names the figure it repeats,
+  and a reason that excuses no collision fails. Frames compare as written (family, degree,
+  constants, center, and width).
+- **contents** — every hand-written page carries the derived contents rail, every prose
+  heading the id its words give it, and the front page's contents list an `<h3>` entry per
+  section in `sections.jsonl`.
+- **bar** — every served page with a site bar carries the one `pages.topbar` spells; the
+  explorer's studio bar is its own.
+- **assets** — every image the metadata names exists at its claimed size, every thumbnail
+  is current, and no gallery directory holds an orphan. A staged gallery is held the same
+  once its pictures are here, bar the thumbnail. Sizes are a named skip without Pillow, a
+  staged gallery's pictures one where they are not landed.
+- **prose** — every row of `article/prose.jsonl` names a written page of the article. The
+  masters are outside any clone; `python -m builder prose` holds the texts together.
+- **library** — the palette record says what the wallpaper project's library says: the
+  same maps, hues, and order. A whole skip without the checkout.
+- **guidance** — `CLAUDE.md` names `writing-guidance.md`, the editorial authority.
+- **atlas** — the atlas record is the shape the atlas frame reads: decimal-string viewport
+  keys on every dot, each inside its partition's plane and its separation radius from its
+  neighbors, and every thumbnail on disk at its row's size. A staged plane's slot pictures
+  are a named skip where not landed. Links are parsed by `atlas/atlas.test.mjs`.
+- **agreement** — every atlas slot's link opens the picture on its card: member for member
+  against the thumbnail's recipe on every slot, and for one sampled slot a plane by drawing
+  the link through the committed wasm, with a control that must fail. The pixel half is a
+  named skip without the staged thumbnails, `palettes.bin`, or Pillow.
+- **coloring** — `renders.wallpaper_coloring` matches the wallpaper project's
+  `engine_spec.coloring_of` on every committed seat recipe, refusals included. A whole skip
+  without the checkout or its artifacts.
+- **theme** — the well colors drawn figures use are the stylesheet's own (transcribed, since
+  Pillow cannot read CSS).
+- **vocabulary** — no tracked file uses a word `vocabulary.py` bans.
+- **dashes** — no em-dash in reader-facing words: section bodies, the front page, the
+  gallery index, the page off Color palettes, and the registry's captions and alts.
+  `dashes.py` says what it reads.
+- **endings** — no tracked file is CRLF on disk, per `git ls-files --eol`, which must
+  return rows.
+- **icons** — every served page declares the site icon with exactly the links
+  `builder.icons.head` spells, and the set is whole: the `.ico` holds 16, 32, and 48, each
+  PNG is its size, the manifest is the builder's, and the recipe store holds its row.
+- **heads** — every served page carries, between its `head-tags` markers, the
+  `description` and `og:` tags `builder.heads` derives. `og:image` and `og:url` are
+  absolute, the one exception to relative links. A page with both a prose paragraph and an
+  authored description fails.
+- **formulas** — every display formula is a formula block (TeX on the `<div>`, one inline
+  SVG with a role, a spoken reading, `currentColor`, and no `<text>`), with no
+  `<pre class="formula">` left. Matching a fresh MathJax typesetting byte for byte is a
+  named skip without node and the pinned renderer.
+- **explorer** — every figure and gallery tile is in the explorer link registry, as a link
+  or a reason there is none, and each link matches its page; parsing is
+  `permalink.test.mjs`'s. `palette-names.json` names only carried maps, no display name
+  twice; `popular.json` lists 24 carried maps once each, `pinned` first, no `dropped`.
+- **caps** — every panel linked from a gallery seat opens at that seat's `maxiter`: the
+  link's `n`, or the width policy, asked through `emit.mjs`. Seats outside the site's
+  recipe store are a named skip without the checkout; the whole check is one without node.
+- **bake** — the explorer's two generated modules are byte for byte a rebake from
+  `explorer/palettes.jsonl`, `explorer/modes.jsonl`, and the wallpaper project, and no
+  figure uses a map the roster does not carry. A whole skip without the checkout.
+- **stamps** — a full-size picture's metadata link is the contract's, whoever wrote it.
+  Everywhere: `stamp.js`'s `EXPLORER_URL` is `pages.SITE_URL` plus `explorer/`. With the
+  checkout, the release writer spells every general-collection seat as `emit.mjs` does and
+  embeds PNG and JPEG bytes as `stamp.js` does; a named skip without the checkout or its
+  artifacts. About half a minute.
+- **go** — every short link in `go/redirects.jsonl` targets a link the explorer's reader
+  accepts (asked by `go.mjs`), and every page under `go/` is what the register writes.
+- **packs** — the Wallpaper packs record answers the page: one row per `[PACK]` marker,
+  counts matching collection sizes, five on-disk Gallery seats each, a color or general
+  pack's five its collection's opening, and the deep row held to
+  `builder/data/deep-pack.jsonl`. Matching what `packs --import` would write today is a
+  named skip without the checkout and the full set.
+- **readmes** — every explorer link in the root `README.md` parses under `permalink.js` in
+  canonical spelling. With the checkout, the same of fractal-wallpapers' README, and each
+  `examples/README.md` strip seat is held to its recipe's link; a named skip without the
+  checkout or its artifacts.
+- **repeats** — every stored explorer link (records, served pages, the root README) names
+  each key once; fractal-wallpapers' README too, a named skip without the checkout.
+- **deep** — the Deep tab's gallery (`explorer/deep-gallery.jsonl`) and Random dives
+  (`explorer/random-dives.jsonl`): every row a deep link, none twice, exactly one tracked
+  tile per row named by its FNV-1a, each 316×178 (a named skip without Pillow). Random dives
+  holds no place twice.
 """
 
 import json
@@ -1399,6 +1304,7 @@ def skips() -> tuple[Skip, ...]:
     if not images.available():
         found.append(Skip("figures", "each figure's size on disk", NO_PILLOW))
         found.append(Skip("assets", "each image's and each thumbnail's size on disk", NO_PILLOW))
+        found.append(Skip("deep", "each Deep gallery and Random dives tile's size", NO_PILLOW))
         if figures.stores_available():
             # Half, not whole: the reachability sweep below it reads records rather than
             # pixels, so a machine without Pillow still holds every cited seat to a run
