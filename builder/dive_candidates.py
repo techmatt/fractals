@@ -84,7 +84,9 @@ SPELLABLE = MAX_SCALE + 8
 ALL_INTERIOR = 0.97
 #: A picture whose luminance spread is under this is blank.
 BLANK_SPREAD = 4.0
-TILE_WEBP_QUALITY = 86
+#: A candidate's numbered tile, picked from by eye: higher than the shipped tiles'
+#: `images.TILE_WEBP_QUALITY`.
+CANDIDATE_WEBP_QUALITY = 86
 NATIVE_TIMEOUT_S = 600
 RENDER_TIMEOUT_S = 900
 HEARTBEAT_S = 15 * 60
@@ -412,7 +414,7 @@ class Run:
     def keep(self, record: dict, image, uid: str) -> bool:
         """Land a kept unit's picture and say whether it was kept: a numbered tile here."""
         self.tiles.mkdir(parents=True, exist_ok=True)
-        image.save(self.tiles / f"{uid}.webp", quality=TILE_WEBP_QUALITY)
+        image.save(self.tiles / f"{uid}.webp", quality=CANDIDATE_WEBP_QUALITY)
         record["tile"] = f"tiles/{uid}.webp"
         return True
 

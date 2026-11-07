@@ -6,8 +6,8 @@
 //
 // **Why the gradients are not in the module.** A link built from a gallery seat's
 // recipe has to be able to name the map that seat was drawn in, and the published
-// record alone seats 451 distinct maps — so the explorer carries the whole library
-// rather than the 126 it used to. Inline, the stops of 1,021 maps are about twelve
+// record alone seats hundreds of distinct maps, so the explorer carries the whole
+// library. Inline, the stops of a thousand maps are about twelve
 // megabytes of JavaScript source that a browser parses before it draws anything; as
 // three bytes a stop they are about one megabyte of binary fetched once, beside the
 // wasm, on the same boot the page already waits through.

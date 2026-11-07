@@ -1,10 +1,9 @@
 // The shade recipe's controls, without the DOM around them.
 //
-// The seven keys of the engine's palette recipe were link-only for two drafts: a
-// figure's link could set them and the page gave a reader no way to. This module is
-// what a control *is*, apart from what it looks like — which widget each key takes,
-// what it is called in front of a reader, and the two functions that move a value
-// between a control and the recipe.
+// The keys of the engine's palette recipe (`PRESENTATION`), as controls a reader can set
+// as well as a link. This module is what a control *is*, apart from what it looks like:
+// which widget each key takes, what it is called in front of a reader, and the two
+// functions that move a value between a control and the recipe.
 //
 // **A control's value and a link's spelling of it are the same string.** That is the
 // whole design. A number box holds `0.75` and the link says `gamma=0.75`; a menu holds

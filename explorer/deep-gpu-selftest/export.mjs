@@ -4,9 +4,9 @@
 //
 // Builds `explorer/deep-gpu-model`'s `export` and runs it three times into this directory:
 // the primitive vectors (`vectors.json`: `ds::self_test_vectors`'s 31 cases and the three
-// primitives they leave out, derived from their inputs), and two slim frame bundles
-// (`<id>.manifest.json` and `<id>.bin`: the `Frame` and `FrameLo` uniforms, the `HiLo`
-// orbit, and every pixel's whole double-single state with its proof, as the model leaves
+// primitives they leave out, derived from their inputs), and a slim frame bundle per
+// `FRAMES` entry (`<id>.manifest.json` and `<id>.bin`: the `Frame` and `FrameLo` uniforms,
+// the `HiLo` orbit, and every pixel's whole double-single state with its proof, as the model leaves
 // it after one unbounded pass). Then `selftest.json`, which says what a page runs and how.
 //
 // Every frame is exported with `--ftz-check on` and refused here unless flushing
