@@ -7879,14 +7879,20 @@ from a reference image to a mode live here, and every problem the first one hit.
 
 - **The record is `custom-modes.json`**, the sibling's `style bundle` written by
   `python -m builder explorer --style` beside `style.wasm`: each mode's public name, its
-  matched map, its knobs (label, range, default, where each writes), its default stack,
-  and the keeps it shows, which are the Example buttons (one per keep, less a keep the
-  published settings draw as another button's picture: 22 for 23). The page reads it before any
-  link, since a link may name a mode; the module is fetched the first time one draws.
-- **The link keys** are `custom`, `knobs`, `matched`, `autotone` and `projection`
+  matched map, its palette set (each kept map with the values tuned for it), its knobs
+  (label, range, default, where each writes), its default stack, and the keeps it shows,
+  which are the Example buttons (one per keep, less a keep the published settings draw as
+  another button's picture: 22 for 22). The page reads it before any link, since a link
+  may name a mode; the module is fetched the first time one draws.
+- **The link keys** are `custom`, `tuned`, `knobs`, `matched`, `autotone` and `projection`
   (`permalink.js`'s `CUSTOM_KEY`): a widening, not a version. Under `custom` the engine
   mode's keys are read, held, and dropped; `p` and the shade keys stay, because Matched
   palette off draws with the link's palette, and Reverse reaches it.
+- **The palette set is swatches beside Matched palette, and `[` / `]`** *(005_palette_cycle)*.
+  A switch is a fresh measure (the module keeps no frame between sessions); a palette
+  already finished at this view comes back from the page's picture cache. An old name of a
+  style merged into a mode opens that mode on its palette. `docs/custom-modes.md`'s *What
+  the explorer does with one* has both.
 - **Drawing is three steps on a pool of half the machine's threads** (one to eight):
   a quarter-size picture whole; full-size 128-pixel tiles against that preview's
   balance, centre first, composited as they land; then every worker measures the whole
@@ -7917,9 +7923,10 @@ Twenty-one suites here and `atlas/atlas.test.mjs` beside them, on Node's own run
 nothing installed. `CLAUDE.md` and `.github/workflows/checks.yml` carry the command line.
 
 - `style.test.mjs` holds the custom (experimental) mode without a browser: the bundle's
-  shape, which example settings reproduce their keep (and the five that none does), each
+  shape, which example settings reproduce their keep (every one, since wallpapers 038), each
   example's link as a fixed point that reads back as its keep's location, Auto tone and
-  Matched palette in the request, the custom keys' round trip and refusals, and the tile
+  Matched palette in the request, the custom keys' round trip and refusals, the palette
+  set (`tuned`, its values over the stack, an old merged name read as its palette), and the tile
   cut. The pictures are `bench/custom-parity.mjs`'s and `bench/custom-browser.mjs`'s,
   held by `bench/custom-compare.py` (*Custom modes*).
 - `pointers.test.mjs` holds the pointer bookkeeping the viewer and the Phoenix plane share:

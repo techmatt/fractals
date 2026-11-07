@@ -1752,6 +1752,22 @@ canvas.palette-final {
    palette and Auto tone, then the knobs, then the example locations, each a wrapping row of
    the same contained cell. */
 .custom-examples .custom-lead { color: var(--well-ink-dim); }
+/* The mode's palette set, a chip a map beside Matched palette *(005_palette_cycle)*: the
+   one drawn is ringed, and with Matched palette off the chosen one keeps a dashed ring,
+   since its tuned settings still hold. */
+.custom-palettes { gap: 0.25rem; flex-wrap: wrap; }
+.custom-palettes[hidden] { display: none; }
+.custom-swatch {
+  width: 2.6rem;
+  height: 1.1rem;
+  padding: 0;
+  border: 1px solid var(--well-rule);
+  border-radius: 2px;
+  cursor: pointer;
+}
+.custom-swatch.is-chosen { outline: 1px dashed var(--well-ink-dim); outline-offset: 1px; }
+.custom-swatch[aria-pressed="true"] { outline: 2px solid var(--well-ink); outline-offset: 1px; }
+.custom-swatch:disabled { opacity: 0.45; cursor: default; }
 /* The knobs as a table, label, slider, box: as a wrapping row each slider began wherever its
    label ended, so four of them made a ragged edge (004_bug_hunt). A group is a row whose
    title is still its knob's tooltip. */

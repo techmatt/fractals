@@ -62,7 +62,7 @@
 // rather than the catalog's constant. See "What version 3 changed" below.
 //
 // Emit order: v · f · cx · cy · px · py · zx · zy · m · the mode's parameters · curve ·
-// custom · knobs · matched · autotone · x · y · w · n · a · p · then the shade parameters,
+// custom · tuned · knobs · matched · autotone · projection · x · y · w · n · a · p · then the shade parameters,
 // in the order the engine's own palette recipe declares them · level. Under `custom` the
 // four before it (m, parameters, curve) and level are never written: see `CUSTOM_KEY`.
 //
@@ -520,6 +520,13 @@ export function readCap(text) {
  * mode's tone pass dropped). Absent, each is the default, so every link before them reads
  * as it did: a widening, not a version.
  *
+ * `tuned` *(005_palette_cycle)* names one of the mode's palette set by its map's own name
+ * (`tuned=magma`): the map Matched palette draws with, and the values the mode was tuned to
+ * in it. Absent is the set's first, the mode's own map, which is never written. A style
+ * merged into a mode under another name still opens: `custom=<old name>` reads as the mode
+ * at the palette that was it (`style.js`'s `aliasesOf`), and is written under the mode's
+ * name, so the old spelling is read and never emitted.
+ *
  * **The mode's picture is the custom mode's, whatever `m` says**, so under `custom` the
  * engine mode's keys (`m`, its parameters, `curve`, `level`) are read, held to their own
  * rules, and dropped, and never emitted: one spelling per picture. `p` and the shade keys
@@ -531,7 +538,8 @@ export const KNOBS_KEY = "knobs";
 export const MATCHED_KEY = "matched";
 export const AUTOTONE_KEY = "autotone";
 export const PROJECTION_KEY = "projection";
-const CUSTOM_KEYS = [CUSTOM_KEY, KNOBS_KEY, MATCHED_KEY, AUTOTONE_KEY, PROJECTION_KEY];
+export const TUNED_KEY = "tuned";
+const CUSTOM_KEYS = [CUSTOM_KEY, TUNED_KEY, KNOBS_KEY, MATCHED_KEY, AUTOTONE_KEY, PROJECTION_KEY];
 
 /** `name:number` pairs, comma-separated: a custom mode's knobs, or a place's projection. */
 function pairsOf(text, words) {
@@ -555,7 +563,7 @@ function halfEven(number) {
 }
 
 function readCustom(params, context) {
-  const name = params.get(CUSTOM_KEY);
+  let name = params.get(CUSTOM_KEY);
   if (name === null) {
     for (const key of CUSTOM_KEYS.slice(1)) {
       if (params.has(key)) {
@@ -564,9 +572,25 @@ function readCustom(params, context) {
     }
     return null;
   }
-  const mode = context.customs?.get(name);
+  let mode = context.customs?.get(name);
+  // An old name of a style merged into a mode: that mode, at the palette that was it.
+  const alias = mode?.alias ?? null;
+  if (alias !== null) {
+    name = alias.name;
+    mode = context.customs.get(name);
+  }
   if (mode === undefined) {
     throw new PermalinkError(`This link names a custom render mode the explorer doesn't know: ${name}.`);
+  }
+  const set = mode.palettes ?? [];
+  const tuned = params.get(TUNED_KEY);
+  let palette = alias?.palette ?? null;
+  if (tuned !== null) {
+    if (!set.includes(tuned)) {
+      throw new PermalinkError(`The ${name} custom mode has no palette called ${tuned}.`);
+    }
+    // The set's first is the mode's own map, which a link never names.
+    palette = tuned === set[0] ? null : tuned;
   }
   const knobs = {};
   const seen = new Set();
@@ -609,6 +633,7 @@ function readCustom(params, context) {
   const tonedText = params.get(AUTOTONE_KEY);
   return {
     name,
+    palette,
     knobs,
     matched: matchedText === null ? true : flag(matchedText, wordsFor(MATCHED_KEY)),
     autotone: tonedText === null ? true : flag(tonedText, wordsFor(AUTOTONE_KEY)),
@@ -620,6 +645,8 @@ function readCustom(params, context) {
 function emitCustom(custom, context) {
   if (!custom) return [];
   const parts = [`${CUSTOM_KEY}=${encode(custom.name)}`];
+  const palettes = context.customs?.get(custom.name)?.palettes ?? [];
+  if (custom.palette && custom.palette !== palettes[0]) parts.push(`${TUNED_KEY}=${encode(custom.palette)}`);
   const knobs = context.customs?.get(custom.name)?.knobs ?? [];
   const set = knobs
     .filter((knob) => custom.knobs[knob.name] !== undefined && custom.knobs[knob.name] !== knob.default)
@@ -704,6 +731,7 @@ const KEY_WORDS = {
   modes: ["mode filter", "mode filters"],
   hue: ["hue filter", "hue filters"],
   custom: ["custom render mode", "custom render modes"],
+  tuned: ["custom mode palette", "custom mode palettes"],
   knobs: ["custom mode setting", "custom mode settings"],
   matched: ["Matched palette setting", "Matched palette settings"],
   autotone: ["Auto tone setting", "Auto tone settings"],

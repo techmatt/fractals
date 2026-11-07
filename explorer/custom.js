@@ -16,6 +16,8 @@ import {
   freshCustom,
   modesOf,
   offeredExamples,
+  paletteOf,
+  palettesOf,
   requestOf,
   roundEven,
   wholeKnob,
@@ -54,16 +56,27 @@ function shown(value, step) {
   return Number(value.toFixed(digitsOf(step))).toString();
 }
 
+/** A map's stops as a CSS gradient, left to right: a swatch of it. At most 24 stops are
+ *  needed for a 2.6rem chip; a longer map is sampled evenly, ends kept. */
+export function gradientOf(map) {
+  const stops = map?.stops ?? [];
+  if (stops.length === 0) return "none";
+  const step = Math.max(1, Math.ceil(stops.length / 24));
+  const kept = stops.filter((_, index) => index % step === 0 || index === stops.length - 1);
+  const parts = kept.map(([at, [r, g, b]]) => `rgb(${r} ${g} ${b}) ${(at * 100).toFixed(1)}%`);
+  return `linear-gradient(to right, ${parts.join(", ")})`;
+}
+
 /**
  * Install the controls. `host` is the page:
  *
  *   view(), setCustom(custom|null, {draw}), openLink(query), locked(), busy(), palette(),
- *   say(text), stopsOf(name), elements: {bar, picker, matched, autotone, reset, knobs,
- *   examples, note}
+ *   say(text), stopsOf(name), elements: {bar, picker, matched, swatches, autotone, reset,
+ *   knobs, examples, note}
  */
 export function install(bundle, host) {
   const modes = modesOf(bundle);
-  const { picker, matched, autotone, reset, knobs, examples, note, bar } = host.elements;
+  const { picker, matched, swatches, autotone, reset, knobs, examples, note, bar } = host.elements;
   let pool = null;
   let starting = null;
 
@@ -96,6 +109,33 @@ export function install(bundle, host) {
     host.setCustom({ ...freshCustom(picker.value), matched: custom?.matched ?? true });
   });
   matched.addEventListener("change", () => write({ matched: matched.checked }));
+
+  /** One of the mode's palette set, chosen: its map under Matched palette (turned on, since
+   *  a map picked here is the one the reader asked to see) and the values tuned for it. The
+   *  set's first is the mode's own, which the state holds as no palette at all. */
+  function choose(entry) {
+    const custom = current();
+    if (!custom || host.locked() || host.busy()) return;
+    const mode = modeOf(custom);
+    const palette = entry === palettesOf(mode)[0] ? null : entry.colormap;
+    if (palette === (custom.palette ?? null) && custom.matched !== false) return;
+    host.setCustom({ ...custom, palette, matched: true });
+  }
+
+  /** The next (`step` 1) or previous (-1) palette of the mode's set, round the ends; the
+   *  keys `]` and `[`. Whether it moved: a set of one has nowhere to go. */
+  function cycle(step) {
+    const custom = current();
+    if (!custom || host.locked() || host.busy()) return false;
+    const mode = modeOf(custom);
+    const set = palettesOf(mode);
+    if (set.length < 2) return false;
+    const at = set.indexOf(paletteOf(mode, custom));
+    // With Matched palette off the first step lands on the palette already chosen, now drawn.
+    const next = custom.matched === false ? set[at] : set[(at + step + set.length) % set.length];
+    choose(next);
+    return true;
+  }
   autotone.addEventListener("change", () => write({ autotone: autotone.checked }));
   reset.addEventListener("click", () => write({ knobs: {} }));
 
@@ -123,6 +163,21 @@ export function install(bundle, host) {
   let built = null;
   function build(mode) {
     built = mode.name;
+    // The palette set, one swatch a map, beside Matched palette; none for a set of one.
+    swatches.replaceChildren();
+    for (const [index, entry] of palettesOf(mode).entries()) {
+      const swatch = document.createElement("button");
+      swatch.type = "button";
+      swatch.className = "custom-swatch";
+      swatch.style.backgroundImage = gradientOf(bundle.colormaps[entry.colormap]);
+      swatch.dataset.palette = entry.colormap;
+      const own = index === 0 ? `, ${mode.name}'s own` : "";
+      const tuned = Object.keys(entry.values ?? {}).length > 0 ? ", with the settings tuned for it" : "";
+      swatch.title = `${entry.colormap}${own}${tuned}`;
+      swatch.setAttribute("aria-label", `Palette ${entry.colormap}${own}`);
+      swatch.addEventListener("click", () => choose(entry));
+      swatches.append(swatch);
+    }
     knobs.replaceChildren();
     for (const knob of mode.knobs) {
       const step = stepOf(knob);
@@ -197,6 +252,17 @@ export function install(bundle, host) {
     matched.checked = custom.matched !== false;
     autotone.checked = custom.autotone !== false;
     const busy = host.busy();
+    const set = palettesOf(mode);
+    swatches.hidden = set.length < 2;
+    const chosen = paletteOf(mode, custom).colormap;
+    for (const swatch of swatches.querySelectorAll("button")) {
+      // Pressed is the palette drawn; with Matched palette off the chosen one's settings
+      // still hold, and its swatch says so by its outline alone.
+      const mine = swatch.dataset.palette === chosen;
+      swatch.setAttribute("aria-pressed", String(mine && custom.matched !== false));
+      swatch.classList.toggle("is-chosen", mine);
+      swatch.disabled = busy;
+    }
     for (const control of [picker, matched, autotone, reset]) control.disabled = busy;
     reset.disabled = busy || Object.keys(custom.knobs).length === 0;
     for (const knob of mode.knobs) {
@@ -220,7 +286,11 @@ export function install(bundle, host) {
     for (const button of examples.querySelectorAll("button")) button.disabled = busy;
     note.textContent =
       "Experimental: drawn by the wallpaper project's own compositor, a quick preview first; " +
-      "the slowest modes take a minute or more to finish.";
+      "the slowest modes take a minute or more to finish." +
+      (set.length > 1
+        ? " [ and ] step through the mode's palettes. A new palette is measured and drawn again in full; " +
+          "one already drawn at this view comes straight back."
+        : "");
   }
 
   /** The pool, started the first time a custom mode draws. */
@@ -268,12 +338,22 @@ export function install(bundle, host) {
     const custom = current();
     if (!custom) return null;
     const mode = modeOf(custom);
-    return { name: mode.palette, shown: `${mode.name}'s own map`, map: colormapOf(bundle, mode, custom) };
+    const entry = paletteOf(mode, custom);
+    const shown = entry === palettesOf(mode)[0] ? `${mode.name}'s own map` : `${entry.colormap}, tuned for ${mode.name}`;
+    return { name: entry.colormap, shown, map: colormapOf(bundle, mode, custom) };
+  }
+
+  /** The map a custom view draws with, by name: what a download is named by. */
+  function paletteName(view) {
+    const custom = view.custom;
+    return custom.matched !== false ? paletteOf(modeOf(custom), custom).colormap : view.palette;
   }
 
   return {
     modes,
     sync,
+    cycle,
+    paletteName,
     request,
     started,
     stripMap,

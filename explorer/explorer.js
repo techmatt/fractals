@@ -251,6 +251,7 @@ const customElements = {
   bar: document.getElementById("custom-bar"),
   picker: document.getElementById("custom-mode"),
   matched: document.getElementById("custom-matched"),
+  swatches: document.getElementById("custom-palettes"),
   autotone: document.getElementById("custom-autotone"),
   reset: document.getElementById("custom-reset"),
   knobs: document.getElementById("custom-knobs"),
@@ -1963,6 +1964,21 @@ async function drawCustom(pass) {
   const maxiter = ownCap(view.maxiter ?? null, view.w.value) ?? renderer.maxiter(view.w.value);
   const request = customs.request(view, width, height, maxiter);
   const size = `${width}×${height}`;
+  // A picture this page already finished, at this view and size: back at once, no measure.
+  const cacheKey = `${link.emit(view, contract)}|${width}x${height}`;
+  const kept = customDrawn.get(cacheKey);
+  if (kept) {
+    customDrawn.delete(cacheKey);
+    customDrawn.set(cacheKey, kept);
+    finished = kept.image;
+    present(finished);
+    showState("final");
+    customMeasured = kept.measured;
+    stat(`${mode.name}: ${size}, as drawn earlier on this page (${kept.measured.seconds.toFixed(1)} s then)`);
+    settle();
+    panel?.describe();
+    return;
+  }
   try {
     const drawn = await pool.draw(request, {
       preview: true,
@@ -2002,6 +2018,7 @@ async function drawCustom(pass) {
     showState("final");
     const seconds = drawn.timing.total / 1000;
     customMeasured = { key: link.emit(view, contract), samples: width * height * SAMPLES_OF_CUSTOM, seconds, workers: drawn.timing.workers };
+    keepCustom(cacheKey, { image: finished, measured: customMeasured });
     stat(
       `${mode.name}: ${size} at ${SAMPLES_OF_CUSTOM}× on ${drawn.timing.workers} workers · ${seconds.toFixed(1)} s ` +
         `(measure ${(drawn.timing.measure / 1000).toFixed(1)} s, tiles ${(drawn.timing.tiles / 1000).toFixed(1)} s)`,
@@ -2022,6 +2039,29 @@ const SAMPLES_OF_CUSTOM = FINAL_SUPERSAMPLE * FINAL_SUPERSAMPLE;
 
 /** What the last finished custom pass cost, for the download row's estimate. */
 let customMeasured = null;
+
+/**
+ * Finished custom pictures by link and size, newest last *(005_palette_cycle)*: what lets a
+ * reader stepping through a mode's palettes come back to one at once. A palette switch
+ * cannot recolour a measured frame (`style.wasm` bakes the map into its session and keeps
+ * no frame between sessions, and Auto tone's curve is each composite's own), so a palette
+ * not yet drawn here is measured and drawn in full; one already drawn is this cache's.
+ * Bounded by bytes, so a large screen keeps fewer.
+ */
+const customDrawn = new Map();
+const CUSTOM_DRAWN_BYTES = 96 * 2 ** 20;
+
+function keepCustom(key, entry) {
+  customDrawn.delete(key);
+  customDrawn.set(key, entry);
+  let bytes = 0;
+  for (const kept of customDrawn.values()) bytes += kept.image.data.length;
+  for (const [old, kept] of customDrawn) {
+    if (bytes <= CUSTOM_DRAWN_BYTES || customDrawn.size === 1) break;
+    bytes -= kept.image.data.length;
+    customDrawn.delete(old);
+  }
+}
 
 /** Whether every pixel of a picture is the same colour: a trap that painted nothing. */
 function uniform(image) {
@@ -5410,8 +5450,15 @@ window.addEventListener("keydown", (event) => {
     cancelBox();
     return;
   }
+  // **`[` and `]` step through a custom mode's palettes** *(005_palette_cycle)*, and are
+  // passed through anywhere else, as Escape is: there is nothing else for them to do.
+  if ((event.key === "[" || event.key === "]") && customOn() && !deepOwns() && !event.ctrlKey &&
+      !event.altKey && !event.metaKey && (target === "BUTTON" || !TYPING.has(target))) {
+    if (customs.cycle(event.key === "]" ? 1 : -1)) event.preventDefault();
+    return;
+  }
   const toggle = TOGGLE_KEYS[event.key];
-  if (toggle && !event.ctrlKey && !event.altKey && !event.metaKey && !event.repeat &&
+  if (toggle &&!event.ctrlKey && !event.altKey && !event.metaKey && !event.repeat &&
       (target === "BUTTON" || !TYPING.has(target))) {
     event.preventDefault();
     if (!busy && !(document.activeElement?.isContentEditable)) toggle();
@@ -5983,7 +6030,7 @@ modePicker.addEventListener("change", () => {
     }
     // The first published mode, or the one this view was last in.
     const name = lastCustom ?? customs.modes.keys().next().value;
-    setCustom({ name, knobs: {}, matched: true, autotone: true, projection: null });
+    setCustom({ name, palette: null, knobs: {}, matched: true, autotone: true, projection: null });
     return;
   }
   // Leaving the custom mode is choosing an engine one: the view drops it and goes on below.
@@ -6785,7 +6832,7 @@ async function main() {
       // Only the pass of this very view: another mode's or knob's time is not this one's.
       measured: () => (customMeasured?.key === link.emit(view, contract) ? customMeasured : null),
       // The map a file is named by: the mode's own under Matched palette.
-      palette: () => (view.custom.matched !== false ? customs.modeOf(view.custom).palette : view.palette),
+      palette: () => customs.paletteName(view),
       picture: async (width, height, { supersample, onProgress }) => {
         const pool = await customs.started();
         const maxiter = ownCap(view.maxiter ?? null, view.w.value) ?? renderer.maxiter(view.w.value);
@@ -6802,7 +6849,7 @@ async function main() {
             name: {
               family: view.family,
               mode: `custom-${view.custom.name}`,
-              palette: view.custom.matched !== false ? customs.modeOf(view.custom).palette : view.palette,
+              palette: customs.paletteName(view),
             },
           };
         } finally {

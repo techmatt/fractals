@@ -75,12 +75,12 @@ the page). A website item never commits next door; each half below is its own it
    Example buttons are all read from `custom-modes.json`; nothing in `custom.js` names a
    mode. Run `node --test explorer/style.test.mjs`: these lines move with a new mode **or a
    re-keep** next door, its count of modes (9), its `UNREACHED` list of keeps no setting
-   reaches, and in *each mode offers one button a picture* the offered count (22, in the
-   title too), the duplicate it names as not offered (`lit_petals__1`), and its own list of
-   offered buttons no setting reaches. (A dry run of step 7 at wallpapers `27e2178`, whose
-   re-keep of brass-foam and soft-petals reaches every keep, failed exactly these.) `explorer/README.md`'s *Custom modes* names
-   the 22 of 23 once; that is the one line of it a new mode moves, and nothing in the path
-   needs the rest of that file.
+   reaches (empty since wallpapers 038's re-keeps), and in *each mode offers one button a
+   picture* the offered count (22, in the title too) and its own list of offered buttons no
+   setting reaches; *each mode carries its palette set* names brass-foam's set, which moves
+   with a keep in a new map. `explorer/README.md`'s *Custom modes* names the 22 buttons
+   once; that is the one line of it a new mode moves, and nothing in the path needs the
+   rest of that file.
 9. **Hold every Example to its keep**, at 640x400 2×2, against step 5's native pictures
    (for a button no setting reproduces, against `style render <style> --location <its
    place> --colormap <its map> --resolution 640 400 --supersample 2`, the published look):
@@ -95,8 +95,8 @@ the page). A website item never commits next door; each half below is its own it
 
    `custom-compare.py` needs Pillow, which this machine's `python` does not have: run it
    with the sibling's environment, `../fractal-wallpapers/.venv/Scripts/python`. The second
-   compare reads **every button no setting reproduces as a `MISS`** (today
-   `bronze_packing__0`–`2` and `lit_petals__2`), because the button draws the published
+   compare reads **every button no setting reproduces as a `MISS`** (none since wallpapers
+   038; `bronze_packing__0`–`2` and `lit_petals__2` before it), because the button draws the published
    look and `wasm-parity` drew the keep's own stack: draw those with the `style render`
    line above into a directory of their own, as `<id>.native.png`, and compare just them
    against it. A miss on any other id is a finding.
@@ -115,16 +115,37 @@ the page). A website item never commits next door; each half below is its own it
 
 - **The record** is `custom-modes.json`, read at boot before any link (a link may name a
   mode); `style.wasm` is fetched the first time a custom mode draws.
-- **The link** carries `custom=<public name>`, `knobs=name:value,…` (defaults left out, in
-  the mode's knob order), `matched=0`, `autotone=0`, and `projection=name:value,…` (a
-  place's own log-polar members). A widening of contract version 4, not a 5. Under `custom`
-  the engine mode's keys are read, held to their rules, and dropped.
-- **Matched palette** (on by default) draws with the mode's own map, shows it on the strip,
-  and holds every palette control. Off, the view's palette and Reverse reach the picture;
-  nothing else of the palette row does, because the stack's own palette layers set the rest.
+- **The link** carries `custom=<public name>`, `tuned=<map>` (one of the mode's palette
+  set; the set's first, the mode's own map, is never written), `knobs=name:value,…`
+  (defaults left out, in the mode's knob order), `matched=0`, `autotone=0`, and
+  `projection=name:value,…` (a place's own log-polar members). A widening of contract
+  version 4, not a 5. Under `custom` the engine mode's keys are read, held to their rules,
+  and dropped.
+- **The palette set** *(005_palette_cycle)*: each mode's `palettes` in the bundle (the
+  catalog row's kept maps, each with the `values` tuned for it, written whole at their
+  pointers over the stack before the knobs, as `styles.at_palette` does) is a row of
+  swatches beside Matched palette, hidden for a set of one; a swatch or the `[` and `]`
+  keys switch palette and turn Matched palette on. **A switch measures afresh**:
+  `style.wasm` bakes the map into a session and keeps no frame between sessions, and Auto
+  tone's curve is each composite's own, so no palette recolours a measured frame today. A
+  palette already finished at this view and size comes back at once from the page's
+  picture cache (`customDrawn` in `explorer.js`, 96 MiB). The seam that would recolour is
+  next door: a `style-wasm` export that keeps the measured channels and swaps the map and
+  colour-only values, re-deriving only the tone curve.
+- **Old names**: a style merged into a published mode (the catalog row's `aliases`) still
+  opens, as `custom=<old name>` read as the mode at the palette entry whose `was` it is
+  (`style.js`'s `aliasesOf`), written back under the mode's name. The bundle carries a
+  mode's `aliases` and each entry's `was` only once the sibling's `style bundle` writes
+  them; no published mode has merged another yet (wallpapers 038 merged only unpublished
+  styles).
+- **Matched palette** (on by default) draws with the chosen palette of the set, shows it on
+  the strip, and holds every palette control. Off, the view's palette and Reverse reach the
+  picture, the chosen palette's tuned values still holding; nothing else of the palette row
+  does, because the stack's own palette layers set the rest.
 - **Auto tone** (on by default) is the stack's `tone` pass; off drops it from the stack.
 - **An Example button** opens the keep's place at 16:10, in the mode, at its defaults plus
-  whatever knob or Auto tone setting reproduces the keep's own stack.
+  whatever knob or Auto tone setting reproduces the keep's own stack, on the keep's own
+  palette of the set.
 - **Drawing** is a quarter-size picture, then full-size tiles against its balance, then the
   exact tone measure and the tiles again, on a pool of half the machine's threads (one to
   eight). Downloads take the same pool, without the preview.
@@ -162,7 +183,8 @@ the page). A website item never commits next door; each half below is its own it
    held to a native render of the published settings at its place, not to the old keep.
    The four (`bronze_packing__0`–`2`, `lit_petals__2`) and the dropped `lit_petals__1` are
    parked for a wallpapers item to re-draw under the published stacks and save as new
-   keeps (step 4).
+   keeps (step 4). Wallpapers 038 did: brass-foam's three and soft-petals' third are
+   re-kept, `lit_petals__1` is gone, and every one of the 22 buttons reaches its keep.
 3. **A place can carry projection members** (the tunnel's `twist`, `ring`, even `turns`),
    which no explorer view has a field for. *Fix:* the `projection` link key, set by an
    Example and kept through pans; a family change drops it. A location's `turns` overrides

@@ -47,16 +47,81 @@ export function modesOf(bundle) {
   return new Map(bundle.modes.map((mode) => [mode.name, mode]));
 }
 
-/** What `permalink.js` reads a link's custom keys against: each mode's knobs and whether
- *  it has a projection a link may place. */
+/** What `permalink.js` reads a link's custom keys against: each mode's knobs, its palette
+ *  set by map name (the default first), and whether it has a projection a link may place.
+ *  A style merged into a mode under an old name (`aliasesOf`) is an entry of its own,
+ *  `{alias: {name, palette}}`, which the link reads as that mode at that palette. */
 export function contractOf(bundle) {
-  return new Map(
+  const contract = new Map(
     bundle.modes.map((mode) => [
       mode.name,
-      // `whole`: the module rounds the knob half to even, so the link reads it that way too.
-      { knobs: mode.knobs.map((knob) => ({ ...knob, whole: wholeKnob(knob) })), projection: projectionKind(mode.stack) },
+      {
+        // `whole`: the module rounds the knob half to even, so the link reads it that way too.
+        knobs: mode.knobs.map((knob) => ({ ...knob, whole: wholeKnob(knob) })),
+        palettes: palettesOf(mode).map((entry) => entry.colormap),
+        projection: projectionKind(mode.stack),
+      },
     ]),
   );
+  for (const [old, alias] of aliasesOf(bundle)) {
+    if (!contract.has(old)) contract.set(old, { alias });
+  }
+  return contract;
+}
+
+/**
+ * A mode's palette set: each map the mode was kept in, with the values tuned for it, the
+ * default (the stack's own, `values` empty) first. A bundle from before palette sets
+ * carries none, and is the one map it names.
+ */
+export function palettesOf(mode) {
+  return mode.palettes?.length ? mode.palettes : [{ colormap: mode.palette, values: {} }];
+}
+
+/** The palette entry a custom state draws: the one it names, else the mode's default. */
+export function paletteOf(mode, custom) {
+  const set = palettesOf(mode);
+  return set.find((entry) => entry.colormap === custom?.palette) ?? set[0];
+}
+
+/**
+ * Old names that still open a mode, as `name → {name, palette}`: a style merged into a
+ * published mode (the sibling's `catalog.json` `aliases`) opens on the palette entry that
+ * was it (its `was`), else on the mode's default. A bundle names them as the mode's
+ * `aliases`, each a string or `{name, colormap}`; one the bundle does not carry is not
+ * known here.
+ */
+export function aliasesOf(bundle) {
+  const out = new Map();
+  for (const mode of bundle.modes) {
+    const set = palettesOf(mode);
+    const at = (colormap) => (colormap && colormap !== set[0].colormap && set.some((e) => e.colormap === colormap) ? colormap : null);
+    for (const entry of set) {
+      if (entry.was && entry.was !== mode.name) out.set(entry.was, { name: mode.name, palette: at(entry.colormap) });
+    }
+    for (const alias of mode.aliases ?? []) {
+      const old = typeof alias === "string" ? alias : alias.name;
+      if (old === mode.name || out.has(old)) continue;
+      const was = typeof alias === "string" ? set.find((entry) => entry.was === old)?.colormap : alias.colormap;
+      out.set(old, { name: mode.name, palette: at(was) });
+    }
+  }
+  return out;
+}
+
+/** A copy of `stack` with each of a palette entry's values written whole at its pointer
+ *  (`/`-separated, list indices as numbers), as the sibling's `style_palettes.apply`
+ *  writes them. A pointer naming nothing is skipped: the tone pass Auto tone dropped. */
+export function withValues(stack, values = {}) {
+  const pointers = Object.keys(values);
+  if (pointers.length === 0) return stack;
+  const out = structuredClone(stack);
+  for (const pointer of pointers) {
+    const steps = pointer.split("/").slice(1);
+    if (steps.includes("*")) continue;
+    put(out, steps, structuredClone(values[pointer]));
+  }
+  return out;
 }
 
 /** The one projection a stack draws through (`log_polar`), or `null`. */
@@ -67,14 +132,17 @@ export function projectionKind(stack) {
 
 /** A custom state at a mode's defaults. */
 export function freshCustom(name) {
-  return { name, knobs: {}, matched: true, autotone: true, projection: null };
+  return { name, palette: null, knobs: {}, matched: true, autotone: true, projection: null };
 }
 
-/** The stack a custom state draws: the published one, without its tone pass when Auto tone
- *  is off. The knobs are not applied here: the module applies them, by the pipeline's rule. */
+/** The stack a custom state draws: the published one at its palette entry's values,
+ *  without its tone pass when Auto tone is off. The knobs are not applied here: the module
+ *  applies them, by the pipeline's rule, over the entry's values (`styles.at_palette`, then
+ *  `with_knobs`). */
 export function stackOf(mode, custom) {
-  if (custom.autotone !== false) return mode.stack;
-  const { tone: _tone, ...rest } = mode.stack;
+  const stack = withValues(mode.stack, paletteOf(mode, custom).values);
+  if (custom.autotone !== false) return stack;
+  const { tone: _tone, ...rest } = stack;
   return rest;
 }
 
@@ -88,9 +156,10 @@ export function libraryColormap(name, baked, { reverse = false } = {}) {
   return { schema: 1, name: reverse ? `${name} (reversed)` : name, kind: baked.kind, stops };
 }
 
-/** The map a custom state draws with: the mode's matched map, or the view's palette. */
+/** The map a custom state draws with: its palette entry's (the mode's matched map by
+ *  default), or the view's palette with Matched palette off. */
 export function colormapOf(bundle, mode, custom, view, stopsOf) {
-  if (custom.matched !== false) return bundle.colormaps[mode.palette];
+  if (custom.matched !== false) return bundle.colormaps[paletteOf(mode, custom).colormap];
   return libraryColormap(view.palette, stopsOf(view.palette), { reverse: view.shade?.reverse === true });
 }
 
@@ -203,6 +272,9 @@ export function turned(stack, knobs, settings) {
  */
 export function exampleCustom(mode, shown) {
   const custom = freshCustom(mode.name);
+  // A keep drawn in another of the set's maps opens on that palette, its values with it.
+  const entry = palettesOf(mode).find((each) => each.colormap === shown.colormap);
+  if (entry && entry !== palettesOf(mode)[0]) custom.palette = entry.colormap;
   const kind = projectionKind(mode.stack);
   const placed = kind !== null ? shown.location.projection?.[kind] : undefined;
   if (placed) custom.projection = { ...placed };
@@ -236,6 +308,7 @@ export function exampleQuery(mode, shown, { palette, encode }) {
   if (location.family.c) parts.push(`cx=${encode(location.family.c[0])}`, `cy=${encode(location.family.c[1])}`);
   parts.push(`custom=${encode(mode.name)}`);
   const { custom } = exampleCustom(mode, shown);
+  if (custom.palette) parts.push(`tuned=${encode(custom.palette)}`);
   const set = mode.knobs.filter((knob) => custom.knobs[knob.name] !== undefined);
   if (set.length > 0) parts.push(`knobs=${set.map((knob) => `${knob.name}:${custom.knobs[knob.name]}`).join(",")}`);
   if (!custom.autotone) parts.push("autotone=0");

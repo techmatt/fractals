@@ -11,8 +11,10 @@ import { existsSync, readFileSync } from "node:fs";
 
 import { canonicalize, emit, encode, parse, PermalinkError } from "./permalink.js";
 import {
+  aliasesOf,
   contractOf,
   exampleCustom,
+  freshCustom,
   exampleQuery,
   familyOf,
   INTEGER_MEMBERS,
@@ -24,11 +26,13 @@ import {
   libraryColormap,
   modesOf,
   offeredExamples,
+  palettesOf,
   poolSize,
   requestOf,
   roundEven,
   stackOf,
   tilesOf,
+  withValues,
 } from "./style.js";
 
 const bundle = JSON.parse(readFileSync(new URL("./custom-modes.json", import.meta.url), "utf8"));
@@ -52,8 +56,9 @@ const CONTEXT = {
 const EXAMPLES = bundle.modes.flatMap((mode) => mode.shown.map((shown, index) => [mode, shown, `${mode.style}__${index}`]));
 
 /** The keeps no setting of the published mode reaches (item 003, ruling C): drawn with a
- *  stack whose tone or layers are not the published one's. */
-const UNREACHED = ["bronze_packing__0", "bronze_packing__1", "bronze_packing__2", "lit_petals__1", "lit_petals__2"];
+ *  stack whose tone or layers are not the published one's. None since wallpapers 038's
+ *  re-keeps of brass-foam and soft-petals. */
+const UNREACHED = [];
 
 test("the bundle is the nine published modes, each with its knobs and an example", () => {
   assert.equal(bundle.schema, 1);
@@ -78,6 +83,7 @@ test("an example opens at the mode's defaults, plus the setting that reproduces 
   const brass = modes.get("brass-foam");
   assert.deepEqual(exampleCustom(brass, brass.shown[0]).custom, {
     name: "brass-foam",
+    palette: null,
     knobs: {},
     matched: true,
     autotone: true,
@@ -85,14 +91,14 @@ test("an example opens at the mode's defaults, plus the setting that reproduces 
   });
 });
 
-test("each mode offers one button a picture: 22 of the 23 keeps", () => {
+test("each mode offers one button a picture: all 22 keeps", () => {
   const offered = bundle.modes.flatMap((mode) => offeredExamples(mode, encode).map(({ index }) => `${mode.style}__${index}`));
   assert.equal(offered.length, 22);
-  assert.ok(!offered.includes("lit_petals__1"), "soft-petals' second draws its first's picture");
+  assert.equal(EXAMPLES.length, 22);
   const unreached = bundle.modes.flatMap((mode) =>
     offeredExamples(mode, encode).filter(({ reached }) => !reached).map(({ index }) => `${mode.style}__${index}`),
   );
-  assert.deepEqual(unreached, ["bronze_packing__0", "bronze_packing__1", "bronze_packing__2", "lit_petals__2"]);
+  assert.deepEqual(unreached, []);
 });
 
 test("an example's link is a fixed point, and reads back as the example's request", () => {
@@ -109,7 +115,7 @@ test("an example's link is a fixed point, and reads back as the example's reques
     assert.deepEqual(location.viewport, shown.location.viewport, id);
     assert.equal(location.maxiter, shown.location.maxiter, id);
     assert.deepEqual(location.projection ?? null, shown.location.projection ?? null, id);
-    assert.deepEqual(request.colormap, bundle.colormaps[mode.palette], id);
+    assert.deepEqual(request.colormap, bundle.colormaps[shown.colormap], id);
     assert.deepEqual(request.resolution, [640, 400]);
     assert.equal(request.supersample, 2);
   }
@@ -251,4 +257,87 @@ test("the whole-number members are the module's own list", (context) => {
   assert.ok(line, "lib.rs still spells INTEGER_MEMBERS");
   const theirs = [...line[1].matchAll(/"([^"]+)"/g)].map((match) => match[1]).sort();
   assert.deepEqual([...INTEGER_MEMBERS].sort(), theirs);
+});
+
+// ---------------------------------------------------------------- palette sets (005_palette_cycle)
+
+test("each mode carries its palette set, the mode's own map first, every map in the bundle", () => {
+  for (const mode of bundle.modes) {
+    const set = palettesOf(mode);
+    assert.ok(set.length >= 1, mode.name);
+    assert.equal(set[0].colormap, mode.palette, `${mode.name}'s default is its own map`);
+    assert.deepEqual(set[0].values, {}, `${mode.name}'s default is the stack's own`);
+    assert.equal(new Set(set.map((entry) => entry.colormap)).size, set.length, `${mode.name} names a map once`);
+    for (const entry of set) assert.ok(bundle.colormaps[entry.colormap], `${mode.name}: ${entry.colormap} is carried`);
+  }
+  assert.deepEqual(
+    palettesOf(modes.get("brass-foam")).map((entry) => entry.colormap),
+    ["bronze_packing", "magma", "teal_tunnel", "twilight"],
+  );
+});
+
+test("a palette of the set is in the link as `tuned`, the default never, and reads back", () => {
+  const view = parse("v=4&custom=glass-whorl&p=twilight_shifted", CONTEXT);
+  assert.equal(view.custom.palette, null);
+  const on = { ...view, custom: { ...view.custom, palette: "Lilac Vellum" } };
+  const query = emit(on, CONTEXT);
+  assert.equal(query, "v=4&custom=glass-whorl&tuned=Lilac%20Vellum&p=twilight_shifted");
+  assert.equal(parse(query, CONTEXT).custom.palette, "Lilac Vellum");
+  assert.equal(canonicalize(query, CONTEXT), query);
+  // Naming the mode's own map is the default, and is not written back.
+  assert.equal(emit(parse("v=4&custom=glass-whorl&tuned=yas", CONTEXT), CONTEXT), "v=4&custom=glass-whorl&p=twilight_shifted");
+  for (const refused of ["v=4&custom=glass-whorl&tuned=Blues", "v=4&tuned=magma", "v=4&custom=lacquer-lobes&tuned=magma"]) {
+    assert.throws(() => parse(refused, CONTEXT), PermalinkError, refused);
+  }
+});
+
+test("a palette of the set draws its own map with Matched palette, and the view's without", () => {
+  const mode = modes.get("brass-foam");
+  const view = parse("v=4&custom=brass-foam&tuned=magma", CONTEXT);
+  const request = requestOf({ bundle, mode, custom: view.custom, view, maxiter: 500, width: 8, height: 5 });
+  assert.deepEqual(request.colormap, bundle.colormaps.magma);
+  const off = parse("v=4&custom=brass-foam&tuned=magma&matched=0&p=Blues", CONTEXT);
+  const baked = { kind: "sequential", stops: [[0, [0, 0, 0]], [1, [255, 255, 255]]] };
+  const plain = requestOf({ bundle, mode, custom: off.custom, view: off, maxiter: 500, stopsOf: () => baked, width: 8, height: 5 });
+  assert.equal(plain.colormap.name, "Blues");
+});
+
+test("a palette's tuned values are written over the stack whole, tone pass and all", () => {
+  const base = { layers: [{ color: { rgb: "#000000" }, opacity: 1 }, { opacity: 0.5 }], tone: { median: 0.2 } };
+  const mode = {
+    name: "test",
+    palette: "a",
+    stack: base,
+    knobs: [],
+    palettes: [
+      { colormap: "a", values: {} },
+      { colormap: "b", values: { "/layers/0/color": { rgb: "#5a7cff" }, "/layers/1/opacity": 0.0, "/tone/median": 0.3 } },
+    ],
+  };
+  const custom = { ...freshCustom("test"), palette: "b" };
+  const tuned = { layers: [{ color: { rgb: "#5a7cff" }, opacity: 1 }, { opacity: 0.0 }], tone: { median: 0.3 } };
+  assert.deepEqual(stackOf(mode, custom), tuned);
+  assert.deepEqual(base.layers[0].color, { rgb: "#000000" }, "the bundle's stack is not written");
+  assert.equal(stackOf(mode, freshCustom("test")), base, "the default is the stack itself");
+  assert.deepEqual(stackOf(mode, { ...custom, autotone: false }), { layers: tuned.layers });
+  assert.deepEqual(withValues(base, { "/layers/9/opacity": 0.0 }), base, "a pointer naming nothing writes nothing");
+});
+
+test("an old name of a style merged into a mode opens that mode, on the palette that was it", () => {
+  const merged = structuredClone(bundle);
+  const mode = merged.modes.find((each) => each.name === "glass-whorl");
+  mode.aliases = ["old_whorl", { name: "older-whorl", colormap: "magma" }, "plain_whorl"];
+  mode.palettes.find((entry) => entry.colormap === "Copper Fathom").was = "old_whorl";
+  const context = { ...CONTEXT, customs: contractOf(merged) };
+  assert.deepEqual(aliasesOf(merged).get("old_whorl"), { name: "glass-whorl", palette: "Copper Fathom" });
+  const view = parse("v=4&custom=old_whorl", context);
+  assert.equal(view.custom.name, "glass-whorl");
+  assert.equal(view.custom.palette, "Copper Fathom");
+  assert.equal(emit(view, context), "v=4&custom=glass-whorl&tuned=Copper%20Fathom&p=twilight_shifted");
+  assert.equal(parse("v=4&custom=older-whorl", context).custom.palette, "magma");
+  assert.equal(parse("v=4&custom=plain_whorl", context).custom.palette, null, "no entry kept: the default");
+  // A link's own `tuned` outranks the alias's palette.
+  assert.equal(parse("v=4&custom=old_whorl&tuned=hsv", context).custom.palette, "hsv");
+  // The bundle as baked names no aliases: no published mode has merged another yet.
+  assert.equal(aliasesOf(bundle).size, 0);
 });
