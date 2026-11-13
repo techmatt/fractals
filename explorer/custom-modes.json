@@ -8091,24 +8091,21 @@
      "colormap": "lit_petals",
      "values": {},
      "score": 3
+    },
+    {
+     "colormap": "golden_egg_petals",
+     "values": {
+      "/interior": {
+       "rgb": "#0a0a10"
+      },
+      "/tone/median": 0.456,
+      "/tone/p10": 0.194
+     }
     }
    ],
    "variant": "soft",
    "what": "Smoothly lit petals with jewelled edges, on a wrap-around palette.",
    "knobs": [
-    {
-     "name": "petal_depth",
-     "label": "Petal depth",
-     "what": "escape steps per lit petal: more makes fewer, broader petals",
-     "default": 3.0,
-     "range": [
-      2.0,
-      4.0
-     ],
-     "set": [
-      "/layers/1/light/period"
-     ]
-    },
     {
      "name": "jewels",
      "label": "Jewels",
@@ -25371,6 +25368,94 @@
       238,
       142,
       70
+     ]
+    ]
+   ]
+  },
+  "golden_egg_petals": {
+   "schema": 1,
+   "name": "golden_egg_petals",
+   "kind": "cyclic",
+   "source": "golden_egg_petals, authored as 10 control points as the albedo of golden-egg-closeup-25.jpg, for lit_petals: the outer field's gold, pale gold and cream, a pale blue-white cloud through slate to a dark blue, then the lace's bronze, dark brown and tan back to gold.",
+   "stops": [
+    [
+     0.0,
+     [
+      200,
+      160,
+      80
+     ]
+    ],
+    [
+     0.15,
+     [
+      225,
+      195,
+      130
+     ]
+    ],
+    [
+     0.28,
+     [
+      240,
+      225,
+      180
+     ]
+    ],
+    [
+     0.38,
+     [
+      190,
+      200,
+      220
+     ]
+    ],
+    [
+     0.5,
+     [
+      110,
+      130,
+      170
+     ]
+    ],
+    [
+     0.6,
+     [
+      60,
+      72,
+      110
+     ]
+    ],
+    [
+     0.7,
+     [
+      120,
+      90,
+      50
+     ]
+    ],
+    [
+     0.8,
+     [
+      70,
+      45,
+      25
+     ]
+    ],
+    [
+     0.9,
+     [
+      150,
+      110,
+      55
+     ]
+    ],
+    [
+     1.0,
+     [
+      200,
+      160,
+      80
      ]
     ]
    ]

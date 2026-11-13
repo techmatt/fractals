@@ -1,7 +1,7 @@
 {
-  "built": "2026-11-07",
+  "built": "2026-11-13",
   "bundle": {
-    "colormaps": 17,
+    "colormaps": 18,
     "file": "custom-modes.json",
     "modes": [
       "brass-foam",
@@ -15,7 +15,7 @@
       "soft-petals"
     ],
     "schema": 1,
-    "sha256": "af9c2c0d51a5207deee860cc2133ea3afa3e42c73ee4271e74260c78927fd246"
+    "sha256": "1401aa22680b6ee1babbfbcb33f437bb9719c260edf07e4efe911561e06990fa"
   },
   "crate": "explorer/style-wasm",
   "dependencies": [
@@ -23,8 +23,8 @@
   ],
   "modules": {
     "style.wasm": {
-      "gzip_bytes": 275865,
-      "raw_bytes": 846119,
+      "gzip_bytes": 275957,
+      "raw_bytes": 846345,
       "rustflags": ""
     }
   },
@@ -32,9 +32,9 @@
   "rustc": "1.96.0 (ac68faa20 2026-05-25)",
   "schema": 1,
   "trees": {
-    "data/palettes": "c1f1af44fc3d2ee976950edd1bc850643a99dbc0",
-    "data/styles": "4cc4e29a6b2959f7f299e0b6cee3917a11863e04",
-    "engine": "43d15b3751f0d9afef15c8811c5bd9fb9f339c78",
-    "style-wasm": "70280abc0ba594aa0df9af56c21ba3acc6b36576"
+    "data/palettes": "2e06d291116cc0e11ffc2fb05b2db82049aa48e5",
+    "data/styles": "ed86b7e2460cc4c39caad4ba71e14dbe8c425a2d",
+    "engine": "d1b36fbb5e083790d6acd65c4ba28616e2e7f4a9",
+    "style-wasm": "9b32bf77130d4318609ee03510d8ea8d8d94edf2"
   }
 }
