@@ -1,9 +1,11 @@
 // Every custom mode's example locations, opened by their buttons in the served explorer and
 // downloaded through the page's own Download row, for `custom-compare.py --png`.
 //
-//   node explorer/bench/custom-browser.mjs <base url> <out dir> [--size 640x400] [--only <mode>]
+//   node explorer/bench/custom-browser.mjs <base url> <out dir> [--size 640x400] [--only <mode>,…]
+//                                          [--tier curated|lab]
 //
-// Chooses `custom (experimental)` in the mode select, picks each published mode, presses
+// Chooses each mode's tier in the mode select (`Custom` or `Custom (lab)`, `style.js`'s
+// `TIERS`), picks the mode in the tier's own select, presses
 // each Example button, and saves a PNG at `--size` with the row's default 2×2 samples: the
 // whole path a reader's download takes, pool, tiles and encoder included. Each file lands
 // as `<style>__<n>.png`, the numbering `style wasm-parity` uses next door. Also writes a
@@ -15,6 +17,7 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { open, sleep } from "./cdp.mjs";
+import { TIERS, tierOf } from "../style.js";
 
 const args = process.argv.slice(2);
 const [base, outArg] = args;
@@ -24,7 +27,8 @@ const option = (name, fallback) => {
   return at === -1 ? fallback : args[at + 1];
 };
 const [width, height] = option("--size", "640x400").split("x").map(Number);
-const only = option("--only", null);
+const only = option("--only", null)?.split(",") ?? null;
+const tierOnly = option("--tier", null);
 const landing = join(out, "landing");
 mkdirSync(landing, { recursive: true });
 
@@ -83,7 +87,11 @@ async function landed(before) {
 
 let screenshot = false;
 for (const mode of bundle.modes) {
-  if (only && mode.style !== only && mode.name !== only) continue;
+  if (only && !only.includes(mode.style) && !only.includes(mode.name)) continue;
+  if (tierOnly && tierOf(mode) !== tierOnly) continue;
+  // The tier's entry first: the custom select lists that tier's modes only.
+  const tier = TIERS.find((each) => each.tier === tierOf(mode)).option;
+  if ((await browser.evaluate(`document.getElementById("mode").value`)) !== tier) await set("#mode", tier);
   await set("#custom-mode", mode.name);
   for (let index = 0; index < mode.shown.length; index++) {
     const id = `${mode.style}__${index}`;

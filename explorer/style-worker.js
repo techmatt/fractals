@@ -1,6 +1,6 @@
 // One worker, one `style.wasm` instance, one custom-mode session at a time.
 //
-// The custom (experimental) render mode's half of the pool: `style.js` keeps several of
+// The custom render modes' half of the pool: `style.js` keeps several of
 // these, each with the compiled module cloned in, and hands each the same request. A
 // worker's whole job is the module's own calls (`fractal-wallpapers/engine/README.md`,
 // *The style module*): open a session, measure it, draw tiles of it against that measure,

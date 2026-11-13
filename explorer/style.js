@@ -1,4 +1,4 @@
-// The custom (experimental) render mode: `style.wasm`, its worker pool, and what a view
+// The custom render modes, Custom and Custom (lab): `style.wasm`, its worker pool, and what a view
 // becomes as that module's request.
 //
 // A custom mode is one of the wallpaper project's published styles: a stack of layers
@@ -42,6 +42,28 @@ export function poolSize(threads = globalThis.navigator?.hardwareConcurrency ?? 
   return Math.max(1, Math.min(MAX_STYLE_WORKERS, Math.floor(threads / 2)));
 }
 
+/**
+ * The two tiers the published modes come in (wallpapers 050, Matt's ruling), each its own
+ * entry of the Mode select: **curated** (four or five knobs, kept pictures only) and
+ * **lab** (knobs optional, an example may be a round-one draft's place). The select's
+ * value is `option`; a link never names the tier, only the mode (`custom=<name>`), and the
+ * tier is the mode's record's, so a link or a saved view from before the tiers still opens.
+ */
+export const TIERS = [
+  { tier: "curated", option: "custom", label: "Custom", what: "The wallpaper project's published custom modes, drawn by its own compositor." },
+  {
+    tier: "lab",
+    option: "custom-lab",
+    label: "Custom (lab)",
+    what: "The wallpaper project's experimental custom modes: fewer controls, and some examples are first drafts.",
+  },
+];
+
+/** A mode's tier: its record's, and curated in a bundle from before the tiers. */
+export function tierOf(mode) {
+  return mode.tier === "lab" ? "lab" : "curated";
+}
+
 /** The bundle, by public name: `{name, style, palette, variant, what, knobs, stack, shown}`. */
 export function modesOf(bundle) {
   return new Map(bundle.modes.map((mode) => [mode.name, mode]));
@@ -72,11 +94,17 @@ export function contractOf(bundle) {
 /**
  * A mode's palette set: each map the mode was kept in, with the values tuned for it, the
  * default (the stack's own, `values` empty) first. A bundle from before palette sets
- * carries none, and is the one map it names.
+ * carries none, and is the one map it names. **The same array every call**: callers tell
+ * the default by identity (`entry === palettesOf(mode)[0]`), and a lab mode with no set
+ * (`corkscrew-ribbons`) read a fresh one-entry array each time as a palette of its own.
  */
 export function palettesOf(mode) {
-  return mode.palettes?.length ? mode.palettes : [{ colormap: mode.palette, values: {} }];
+  if (mode.palettes?.length) return mode.palettes;
+  let made = ONE_MAP.get(mode);
+  if (!made) ONE_MAP.set(mode, (made = [{ colormap: mode.palette, values: {} }]));
+  return made;
 }
+const ONE_MAP = new WeakMap();
 
 /** The palette entry a custom state draws: the one it names, else the mode's default. */
 export function paletteOf(mode, custom) {
@@ -201,7 +229,29 @@ export function familyOf(family) {
   if (family.kind === "mandelbrot") return degree === 2 ? "mandelbrot" : `multibrot${degree}`;
   if (family.kind === "multibrot") return degree === 2 ? "mandelbrot" : `multibrot${degree}`;
   if (family.kind === "julia") return degree === 2 ? "julia" : `julia${degree}`;
+  if (family.kind === "phoenix") return "phoenix";
   return null;
+}
+
+/** The engine's defaults for a Phoenix place's constants (`engine/src/spec.rs`'s
+ *  `FamilySpec::Phoenix`): `{"kind": "phoenix"}` alone is the classic Ushiki set. */
+export const PHOENIX_DEFAULTS = { c: ["0.5667", "0.0"], p: ["-0.5", "0.0"], z_prev: ["0.0", "0.0"] };
+
+/** A place's constants as the link spells them, `[key, decimal]` pairs: a Julia set's `c`,
+ *  and a Phoenix place's `c`, `p` and `z_prev`, the engine's defaults where it names none. */
+export function constantsOf(family) {
+  if (family.kind === "phoenix") {
+    const { c, p, z_prev } = { ...PHOENIX_DEFAULTS, ...family };
+    return [
+      ["cx", c[0]],
+      ["cy", c[1]],
+      ["px", p[0]],
+      ["py", p[1]],
+      ["zx", z_prev[0]],
+      ["zy", z_prev[1]],
+    ];
+  }
+  return family.c ? [["cx", family.c[0]], ["cy", family.c[1]]] : [];
 }
 
 /** A JSON value at a `/`-pointer with `*` steps: every match. */
@@ -305,7 +355,7 @@ export function exampleQuery(mode, shown, { palette, encode }) {
   const family = familyOf(location.family);
   const parts = ["v=4"];
   if (family !== "mandelbrot") parts.push(`f=${family}`);
-  if (location.family.c) parts.push(`cx=${encode(location.family.c[0])}`, `cy=${encode(location.family.c[1])}`);
+  for (const [key, value] of constantsOf(location.family)) parts.push(`${key}=${encode(value)}`);
   parts.push(`custom=${encode(mode.name)}`);
   const { custom } = exampleCustom(mode, shown);
   if (custom.palette) parts.push(`tuned=${encode(custom.palette)}`);

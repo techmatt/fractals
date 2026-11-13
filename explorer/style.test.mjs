@@ -1,4 +1,4 @@
-// The custom (experimental) render mode, without a browser: what a link says, what an
+// The custom render modes, Custom and Custom (lab), without a browser: what a link says, what an
 // example location opens with, and what a view becomes as `style.wasm`'s request.
 //
 // The pictures themselves are held elsewhere, because they take minutes: `bench/
@@ -12,6 +12,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { canonicalize, emit, encode, parse, PermalinkError } from "./permalink.js";
 import {
   aliasesOf,
+  constantsOf,
   contractOf,
   exampleCustom,
   freshCustom,
@@ -31,7 +32,9 @@ import {
   requestOf,
   roundEven,
   stackOf,
+  tierOf,
   tilesOf,
+  TIERS,
   withValues,
 } from "./style.js";
 
@@ -56,15 +59,31 @@ const CONTEXT = {
 const EXAMPLES = bundle.modes.flatMap((mode) => mode.shown.map((shown, index) => [mode, shown, `${mode.style}__${index}`]));
 
 /** The keeps no setting of the published mode reaches (item 003, ruling C): drawn with a
- *  stack whose tone or layers are not the published one's. None since wallpapers 038's
- *  re-keeps of brass-foam and soft-petals. */
-const UNREACHED = [];
+ *  stack whose tone or layers are not the published one's. Since wallpapers 050, the lab
+ *  tier's round-one drafts and keeps from earlier rounds, and one curated keep
+ *  (satin-spiral's second, `glossy_spirals__1`). */
+const UNREACHED = [
+  "teal_filaments__1",
+  "star_eye__2",
+  "ember_rose__2",
+  "flame_veil_teal__0",
+  "flame_veil_chalk__2",
+  "flame_wisp_amber__0",
+  "flame_wisp_spark__0",
+  "glossy_spirals__1",
+  "banded_lines__1",
+];
 
-test("the bundle is the nine published modes, each with its knobs and an example", () => {
+test("the bundle is the 32 published modes in two tiers, each with an example", () => {
   assert.equal(bundle.schema, 1);
-  assert.equal(bundle.modes.length, 9);
+  assert.equal(bundle.modes.length, 32);
+  const tiers = bundle.modes.map((mode) => tierOf(mode));
+  assert.equal(tiers.filter((tier) => tier === "curated").length, 16);
+  assert.equal(tiers.filter((tier) => tier === "lab").length, 16);
   for (const mode of bundle.modes) {
     assert.ok(mode.shown.length > 0, mode.name);
+    // A curated mode has four or five knobs (the catalog's tier rule); a lab mode may have none.
+    if (tierOf(mode) === "curated") assert.ok(mode.knobs.length >= 3 && mode.knobs.length <= 5, mode.name);
     assert.ok(bundle.colormaps[mode.palette], `${mode.name}'s map is carried`);
     for (const knob of mode.knobs) {
       assert.ok(knob.range[0] <= knob.default && knob.default <= knob.range[1], `${mode.name} ${knob.name}`);
@@ -91,14 +110,50 @@ test("an example opens at the mode's defaults, plus the setting that reproduces 
   });
 });
 
-test("each mode offers one button a picture: all 22 keeps", () => {
+test("each mode offers one button a picture: 68 of the 69 keeps", () => {
   const offered = bundle.modes.flatMap((mode) => offeredExamples(mode, encode).map(({ index }) => `${mode.style}__${index}`));
-  assert.equal(offered.length, 22);
-  assert.equal(EXAMPLES.length, 22);
+  assert.equal(offered.length, 68);
+  assert.equal(EXAMPLES.length, 69);
+  // star-eye's third keep draws its second's picture under the published settings.
+  assert.deepEqual(
+    EXAMPLES.map(([, , id]) => id).filter((id) => !offered.includes(id)),
+    ["star_eye__2"],
+  );
   const unreached = bundle.modes.flatMap((mode) =>
     offeredExamples(mode, encode).filter(({ reached }) => !reached).map(({ index }) => `${mode.style}__${index}`),
   );
-  assert.deepEqual(unreached, []);
+  assert.deepEqual(
+    unreached,
+    UNREACHED.filter((id) => id !== "star_eye__2"),
+  );
+});
+
+test("a Phoenix place opens with its constants, the engine's defaults where it names none", () => {
+  const [mode, shown] = EXAMPLES.find(([, each]) => each.location.family.kind === "phoenix" && !each.location.family.c);
+  const view = parse(exampleQuery(mode, shown, { palette: "twilight_shifted", encode }), CONTEXT);
+  assert.equal(view.family, "phoenix");
+  const { location } = requestOf({ bundle, mode, custom: view.custom, view, maxiter: view.maxiter, width: 8, height: 5 });
+  assert.deepEqual(location.family.c.map(Number), [0.5667, 0]);
+  assert.deepEqual(location.family.p.map(Number), [-0.5, 0]);
+  assert.deepEqual(location.family.z_prev.map(Number), [0, 0]);
+});
+
+test("each tier is a select entry of its own, and a mode's tier is its record's", () => {
+  assert.deepEqual(
+    TIERS.map(({ option, label }) => [option, label]),
+    [
+      ["custom", "Custom"],
+      ["custom-lab", "Custom (lab)"],
+    ],
+  );
+  assert.equal(tierOf(modes.get("brass-foam")), "curated");
+  assert.equal(tierOf(modes.get("teal-mist")), "lab");
+  // A bundle from before the tiers is all curated.
+  assert.equal(tierOf({ name: "old" }), "curated");
+  // A link names the mode, never the tier: a lab mode's link is `custom=<name>` too.
+  const view = parse("v=4&custom=teal-mist", CONTEXT);
+  assert.equal(view.custom.name, "teal-mist");
+  assert.equal(emit(view, CONTEXT), "v=4&custom=teal-mist&p=twilight_shifted");
 });
 
 test("an example's link is a fixed point, and reads back as the example's request", () => {
@@ -111,7 +166,10 @@ test("an example's link is a fixed point, and reads back as the example's reques
     const { location } = request;
     assert.equal(familyOf(location.family), familyOf(shown.location.family), id);
     assert.equal(location.family.degree ?? 2, shown.location.family.degree ?? 2, id);
-    assert.deepEqual(location.family.c ?? null, shown.location.family.c ?? null, id);
+    const named = Object.fromEntries(constantsOf(shown.location.family));
+    const drawn = Object.fromEntries(constantsOf(location.family));
+    assert.deepEqual(Object.keys(drawn), Object.keys(named), id);
+    for (const key of Object.keys(named)) assert.equal(Number(drawn[key]), Number(named[key]), `${id} ${key}`);
     assert.deepEqual(location.viewport, shown.location.viewport, id);
     assert.equal(location.maxiter, shown.location.maxiter, id);
     assert.deepEqual(location.projection ?? null, shown.location.projection ?? null, id);

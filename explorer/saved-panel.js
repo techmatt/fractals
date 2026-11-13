@@ -120,7 +120,7 @@ export function mount(host) {
         ? `Deep, on ${planeName(view.family)}: ${view.said}, in ${shownName(view.palette)}. ` +
           "Opens in the Deep tab."
         : view.custom
-          ? `Custom (experimental) ${view.custom.name}` +
+          ? `${host.customLabel?.(view.custom.name) ?? "Custom"} ${view.custom.name}` +
             `${view.custom.matched === false ? ` in ${shownName(view.palette)}` : ""} on ${planeName(view.family)}. ` +
             "Opens in the explorer."
           : `${view.mode} in ${shownName(view.palette)} on ${planeName(view.family)}`;
@@ -129,7 +129,7 @@ export function mount(host) {
       // perturbation kernel and a wait of seconds to minutes a tile, so the tab labels it
       // and the click opens it where it can be drawn.
       if (view.deep) tile.classList.add("is-deep");
-      // **Nor a custom (experimental) one**: its picture is `style.wasm`'s, a minute of a
+      // **Nor a custom one**: its picture is `style.wasm`'s, a minute of a
       // pool's time on the slowest modes, so the tile is labelled as a deep one is and the
       // click opens it where it is drawn.
       if (view.custom) tile.classList.add("is-deep");

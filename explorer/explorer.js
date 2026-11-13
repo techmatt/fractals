@@ -50,7 +50,7 @@ import * as screensaver from "./screensaver.js";
 import * as browse from "./browse.js";
 import * as dives from "./dives.js";
 import * as customUi from "./custom.js";
-import { MAX_CUSTOM_SAMPLES, contractOf, poolSize, workersFor } from "./style.js";
+import { MAX_CUSTOM_SAMPLES, contractOf, poolSize, tierOf, workersFor } from "./style.js";
 import { Trail } from "./undo.js";
 import { heldOut, stopOf } from "./outermost.js";
 import { tracker } from "./pointers.js";
@@ -246,7 +246,7 @@ const holdGroup = document.getElementById("hold-group");
 const holdToggle = document.getElementById("hold-toggle");
 const fitGroup = document.getElementById("fit-group");
 const fitButton = document.getElementById("shade-fit");
-/** The custom (experimental) render mode's controls, which `custom.js` owns. */
+/** The custom render modes' controls, which `custom.js` owns. */
 const customElements = {
   bar: document.getElementById("custom-bar"),
   picker: document.getElementById("custom-mode"),
@@ -761,7 +761,7 @@ function tinting() {
   return deep !== null && deep.owns() ? deep.view() : view;
 }
 
-/** Whether the viewer is drawing a custom (experimental) mode, and not the Deep tab. */
+/** Whether the viewer is drawing a custom mode, and not the Deep tab. */
 function customOn() {
   return view?.custom != null && !deepOwns();
 }
@@ -1939,7 +1939,7 @@ async function drawPass() {
 }
 
 /**
- * One pass of a custom (experimental) mode: `style.js`'s three steps on its own pool.
+ * One pass of a custom mode: `style.js`'s three steps on its own pool.
  *
  * A quarter-size picture first, stretched; then full-size tiles against that preview's
  * balance, each composited as it lands; then the tone measure at the picture's own size and
@@ -3428,21 +3428,22 @@ function syncLevel() {
  */
 function syncModes() {
   const wanted = listedModes(view.mode);
-  // **The custom (experimental) entry is appended here and never listed** by `listedModes`,
-  // which is the Walk tab's roster too: a walk draws engine modes only.
-  const options = customs === null ? wanted : [...wanted, customUi.CUSTOM_OPTION];
+  // **The custom entries, Custom and Custom (lab), are appended here and never listed** by
+  // `listedModes`, which is the Walk tab's roster too: a walk draws engine modes only.
+  const tiers = customs?.tiers ?? [];
+  const options = [...wanted, ...tiers.map(({ option }) => option)];
   const showing = [...modePicker.options].map((option) => option.value);
   if (options.join() !== showing.join()) {
     fill(modePicker, wanted, IDENTITIES);
-    if (customs !== null) {
+    for (const { option: value, label, what } of tiers) {
       const option = document.createElement("option");
-      option.value = customUi.CUSTOM_OPTION;
-      option.textContent = customUi.CUSTOM_LABEL;
-      option.title = "The wallpaper project's published custom modes, drawn by its own compositor.";
+      option.value = value;
+      option.textContent = label;
+      option.title = what;
       modePicker.append(option);
     }
   }
-  modePicker.value = view.custom ? customUi.CUSTOM_OPTION : view.mode;
+  modePicker.value = view.custom && customs ? customs.optionOf(view.custom) : view.mode;
 }
 
 /** What the Mode select lists, in its order, with `extra` listed too if it is a mode the
@@ -3535,6 +3536,15 @@ let anchor = null;
  */
 function openLink(query, given = {}) {
   if (locked()) return false;
+  // A link naming a custom mode before the modes' record has landed (`loadCustoms`) waits
+  // for it, rather than being refused as naming a mode the page does not know.
+  if (customs === null && new URLSearchParams(query).has("custom")) {
+    customsReady().then((ready) => {
+      if (ready) openLink(query, given);
+      else say("The custom modes could not be loaded, so this link cannot be opened.");
+    });
+    return true;
+  }
   const { picture = null, ...opts } = given;
   const { gap = null, key = null, restoring: stepping = false } = opts;
   let wanted;
@@ -4292,6 +4302,9 @@ async function startSaved() {
     // here rather than at the first deep entry, because the panel reads a link
     // synchronously to label a tile.
     await loadDeepRules();
+    // And the custom modes' record, for the same reason: an entry naming one is read
+    // against it (`loadCustoms`), and before it lands would read as a mode nobody knows.
+    await customsReady();
     const { mount } = await import("./saved-panel.js");
     const at = (id) => document.getElementById(id);
     savedPanel = mount({
@@ -4314,6 +4327,11 @@ async function startSaved() {
       parseImport: saving.parseImport,
       shownName,
       planeName,
+      // A custom entry is labelled by its mode's tier's select entry: Custom, Custom (lab).
+      customLabel: (name) => {
+        const mode = customs?.modes.get(name);
+        return mode ? customUi.TIERS.find(({ tier }) => tier === tierOf(mode))?.label : undefined;
+      },
       open: (query) => {
         openAny(query, { from: "saved" });
       },
@@ -4589,7 +4607,7 @@ const DEEP_FAMILIES = new Set([
 ]);
 
 function carryable() {
-  // **A custom (experimental) mode is not the Deep tab's** *(custom_modes_explorer)*: it is
+  // **A custom mode is not the Deep tab's** *(custom_modes_explorer)*: it is
   // `f64`-only and its picture is another module's, so the tab opens on its own home.
   if (view.custom) return null;
   return DEEP_FAMILIES.has(view.family) ? view : null;
@@ -6023,13 +6041,16 @@ const TOGGLE_KEYS = {
 /** A new mode keeps the place and drops the parameters, because they belonged to
  *  the mode that is being left. The texture is the one exception — see `heldWeight`. */
 modePicker.addEventListener("change", () => {
-  if (modePicker.value === customUi.CUSTOM_OPTION) {
+  const tier = customUi.tierOption(modePicker.value);
+  if (tier !== undefined) {
     if (locked()) {
       syncModes();
       return;
     }
-    // The first published mode, or the one this view was last in.
-    const name = lastCustom ?? customs.modes.keys().next().value;
+    // The tier's first mode, or the one this view was last in where it is that tier's.
+    // From one tier's entry to the other's, the view's own mode counts as the last.
+    if (view.custom) lastCustom = view.custom.name;
+    const name = customs.openingOf(tier.tier, lastCustom);
     setCustom({ name, palette: null, knobs: {}, matched: true, autotone: true, projection: null });
     return;
   }
@@ -6669,9 +6690,12 @@ async function main() {
     gallery.load(import.meta.url).catch((error) => error),
     json(new URL("./palette-names.json", import.meta.url)),
     json(new URL("./popular.json", import.meta.url)),
-    // The custom (experimental) modes: 80 KB, read before any link, since a link may name
-    // one. The module itself waits until a custom mode first draws.
-    json(new URL("./custom-modes.json", import.meta.url)),
+    // **The custom modes wait for the first frame** (008_custom_tiers): the record is 790 KB
+    // (74 KB on the wire) since the lab tier, and only a link naming one needs it before the
+    // first frame, since the link is read against it. Otherwise it is fetched once the first
+    // frame is under way, and the select gains its Custom entries when it lands. The module
+    // itself waits until a custom mode first draws.
+    new URLSearchParams(window.location.search).has("custom") ? loadCustoms() : null,
   ]);
   renderer = started;
   paletteNames = shownNames(names);
@@ -6691,20 +6715,9 @@ async function main() {
     // The width policy, which is what an absent `n` means: a view whose held cap is the
     // width's own emits none, so it is the string it always was (permalink v4).
     cap: (width) => renderer.maxiter(width),
-    customs: published ? contractOf(published) : new Map(),
+    customs: new Map(),
   };
-  if (published) {
-    customs = customUi.install(published, {
-      view: () => view,
-      setCustom,
-      openLink: (query) => openLink(query),
-      locked,
-      busy: () => busy,
-      say,
-      stopsOf,
-      elements: customElements,
-    });
-  }
+  if (published) installCustoms(published);
 
   // What the deep contract needs, which is the shallow one's palette set and two numbers
   // neither contract owns: where the Mandelbrot set comes home to, and what cap a width
@@ -6825,7 +6838,7 @@ async function main() {
     // asked through `deep` rather than captured, because the tab is mounted lazily and may
     // not exist when this is installed; `owns` answering false is what keeps the row the
     // viewer's until it does.
-    // **A custom (experimental) mode downloads through its own pool** at any size, by the
+    // **A custom mode downloads through its own pool** at any size, by the
     // same three calls as the screen less the preview: the exact picture, measured whole.
     custom: {
       owns: () => customOn(),
@@ -7065,6 +7078,41 @@ async function main() {
       tiles.refuse("The gallery could not be loaded.");
       if (saverAsked) draw();
     });
+  // The custom modes' record, now the first frame is asked for (see `loadCustoms`).
+  if (customs === null) customsReady();
+}
+
+/** The custom modes' record, fetched once: `null` where it could not be read. */
+let customsLoading = null;
+function loadCustoms() {
+  customsLoading ??= json(new URL("./custom-modes.json", import.meta.url));
+  return customsLoading;
+}
+
+/** The custom modes installed, from the record: their select entries, controls, and the
+ *  link contract's `customs`, so a link naming one reads from then on. */
+function installCustoms(published) {
+  if (customs !== null || !published) return;
+  contract.customs = contractOf(published);
+  customs = customUi.install(published, {
+    view: () => view,
+    setCustom,
+    openLink: (query) => openLink(query),
+    locked,
+    busy: () => busy,
+    say,
+    stopsOf,
+    elements: customElements,
+  });
+  // At boot, for a link naming a mode, this runs before there is a view: the boot's own
+  // first `rebuild` lists the entries then.
+  if (view !== null) syncModes();
+}
+
+/** Whether the custom modes are installed, once their record has been read. */
+async function customsReady() {
+  if (customs === null) installCustoms(await loadCustoms());
+  return customs !== null;
 }
 
 main().catch((error) => {

@@ -1,7 +1,8 @@
-// The custom (experimental) render mode's controls, and its picture.
+// The custom render modes' controls, and their picture.
 //
-// The mode select's last entry. Choosing it shows a second select of the published custom
-// modes by their public names, Matched palette and Auto tone, the mode's knobs as sliders
+// The mode select's last two entries, one a tier (`style.js`'s `TIERS`): Custom and Custom
+// (lab). Choosing one shows a second select of that tier's published modes by their public
+// names, Matched palette and Auto tone, the mode's knobs as sliders
 // with a reset, and one button per example location. Everything here writes `view.custom`
 // (`permalink.js`'s `CUSTOM_KEY` has its link keys) and asks the page to draw; the picture
 // itself is `style.js`'s pool, three steps on several workers. The page hands in what it
@@ -20,15 +21,21 @@ import {
   palettesOf,
   requestOf,
   roundEven,
+  tierOf,
   wholeKnob,
   SUPERSAMPLE,
+  TIERS,
 } from "./style.js";
 
-/** The mode select's value for this mode. Never a name in `permalink.js`'s `MODES`, which
- *  the Walk tab's roster and the gallery's facets are built from: a custom mode is in
- *  neither. */
-export const CUSTOM_OPTION = "custom";
-export const CUSTOM_LABEL = "custom (experimental)";
+/** The mode select's entries for the custom modes, a tier each, by `option`. Never a name in
+ *  `permalink.js`'s `MODES`, which the Walk tab's roster and the gallery's facets are built
+ *  from: a custom mode is in neither. */
+export { TIERS };
+
+/** The tier entry an option value names, or `undefined` for an engine mode. */
+export function tierOption(value) {
+  return TIERS.find((each) => each.option === value);
+}
 
 /** Where the module and the record are, beside the page. */
 const MODULE = new URL("./style.wasm", import.meta.url);
@@ -80,12 +87,20 @@ export function install(bundle, host) {
   let pool = null;
   let starting = null;
 
-  for (const mode of bundle.modes) {
-    const option = document.createElement("option");
-    option.value = mode.name;
-    option.textContent = mode.name;
-    option.title = mode.what;
-    picker.append(option);
+  /** The tier the picker lists, which is the view's mode's: the picker offers one tier. */
+  let listing = null;
+  function list(tier) {
+    if (listing === tier) return;
+    listing = tier;
+    picker.replaceChildren();
+    for (const mode of bundle.modes) {
+      if (tierOf(mode) !== tier) continue;
+      const option = document.createElement("option");
+      option.value = mode.name;
+      option.textContent = mode.name;
+      option.title = mode.what;
+      picker.append(option);
+    }
   }
 
   function current() {
@@ -247,6 +262,7 @@ export function install(bundle, host) {
     note.textContent = "";
     if (custom === null) return;
     const mode = modeOf(custom);
+    list(tierOf(mode));
     if (built !== mode.name) build(mode);
     picker.value = mode.name;
     matched.checked = custom.matched !== false;
@@ -265,6 +281,8 @@ export function install(bundle, host) {
     }
     for (const control of [picker, matched, autotone, reset]) control.disabled = busy;
     reset.disabled = busy || Object.keys(custom.knobs).length === 0;
+    // A lab mode may publish no knobs: no sliders, and nothing to reset.
+    reset.hidden = knobs.hidden = mode.knobs.length === 0;
     for (const knob of mode.knobs) {
       const value = custom.knobs[knob.name] ?? knob.default;
       // The place's own projection is laid over the knobs (`styles.projected`), so a knob
@@ -285,7 +303,10 @@ export function install(bundle, host) {
     }
     for (const button of examples.querySelectorAll("button")) button.disabled = busy;
     note.textContent =
-      "Experimental: drawn by the wallpaper project's own compositor, a quick preview first; " +
+      (tierOf(mode) === "lab"
+        ? "Lab: modes still in development, with fewer controls; an example may be a first draft. "
+        : "") +
+      "Drawn by the wallpaper project's own compositor, a quick preview first; " +
       "the slowest modes take a minute or more to finish." +
       (set.length > 1
         ? " [ and ] step through the mode's palettes. A new palette is measured and drawn again in full; " +
@@ -349,8 +370,26 @@ export function install(bundle, host) {
     return custom.matched !== false ? paletteOf(modeOf(custom), custom).colormap : view.palette;
   }
 
+  /** The mode a tier's entry opens: `last` if it is that tier's, else the tier's first. */
+  function openingOf(tier, last = null) {
+    const mine = last !== null && modes.has(last) && tierOf(modes.get(last)) === tier;
+    return mine ? last : bundle.modes.find((mode) => tierOf(mode) === tier)?.name;
+  }
+
+  /** The tiers this bundle has a mode in, in `TIERS` order: the select's entries. */
+  const tiers = TIERS.filter(({ tier }) => bundle.modes.some((mode) => tierOf(mode) === tier));
+
+  /** The select's value for a custom view: its mode's tier's option. */
+  function optionOf(custom) {
+    const tier = tierOf(modes.get(custom.name));
+    return TIERS.find((each) => each.tier === tier).option;
+  }
+
   return {
     modes,
+    tiers,
+    openingOf,
+    optionOf,
     sync,
     cycle,
     paletteName,

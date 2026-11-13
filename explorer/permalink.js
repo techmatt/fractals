@@ -527,7 +527,7 @@ export function readCap(text) {
 }
 
 /**
- * The **custom (experimental)** render mode's four keys *(custom_modes_explorer)*.
+ * The **custom** render modes' keys (Custom and Custom (lab) alike: the link names the mode, never its tier) *(custom_modes_explorer)*.
  *
  * `custom` names a published custom mode by its public name (`brass-foam`), one of
  * `context.customs` — the page's `custom-modes.json`, so a link naming one this page does

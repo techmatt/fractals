@@ -1,8 +1,9 @@
 # A custom mode, from a reference image to live in Mandelnaut
 
 A **custom mode** is one of the wallpaper project's published styles: a stack of layers over
-one orbit, drawn by that project's own compositor. Mandelnaut offers them under the render
-mode **custom (experimental)**, and draws them with the same compositor compiled to
+one orbit, drawn by that project's own compositor. Mandelnaut offers them in two tiers, the
+catalog row's `tier`, each its own render mode entry: **Custom** (`curated`) and **Custom
+(lab)** (`lab`). It draws them with the same compositor compiled to
 WebAssembly (`explorer/style.wasm`), so a picture in the explorer is the pipeline's picture
 byte for byte. This is the whole path for the next one, across both repositories, and the
 problems a mode meets on the way.
@@ -75,9 +76,9 @@ the page). A website item never commits next door; each half below is its own it
 8. **The page picks the mode up by itself.** The select, the knobs, the matched map and the
    Example buttons are all read from `custom-modes.json`; nothing in `custom.js` names a
    mode. Run `node --test explorer/style.test.mjs`: these lines move with a new mode **or a
-   re-keep** next door: its count of modes (`bundle.modes.length`), its `UNREACHED` list of
+   re-keep** next door: its counts of modes, in all and by tier, its `UNREACHED` list of
    keeps no setting reaches, and in *each mode offers one button a picture* the offered
-   count (in the title too) and its own list of offered buttons no setting reaches; *each
+   counts (in the title too) and the keeps it does not offer; *each
    mode carries its palette set* names brass-foam's set, which moves with a keep in a new
    map. `explorer/README.md`'s *Custom modes* names the button count once; that is the one
    line of it a new mode moves, and nothing in the path needs the rest of that file.
@@ -113,9 +114,11 @@ the page). A website item never commits next door; each half below is its own it
 
 ## What the explorer does with one
 
-- **The record** is `custom-modes.json`, read at boot before any link (a link may name a
-  mode); `style.wasm` is fetched the first time a custom mode draws.
-- **The link** carries `custom=<public name>`, `tuned=<map>` (one of the mode's palette
+- **The record** is `custom-modes.json`, fetched once the first frame is asked for, or
+  before it where the link names a mode (the link is read against it; so is a Saved entry,
+  and the Saved tab waits for it); `style.wasm` is fetched the first time a custom mode
+  draws. The select gains the tier entries when it lands; its own select lists one tier.
+- **The link** carries `custom=<public name>`, never the tier, `tuned=<map>` (one of the mode's palette
   set; the set's first, the mode's own map, is never written), `knobs=name:value,…`
   (defaults left out, in the mode's knob order), `matched=0`, `autotone=0`, and
   `projection=name:value,…` (a place's own log-polar members). A widening of contract

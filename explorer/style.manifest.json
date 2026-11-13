@@ -1,7 +1,7 @@
 {
   "built": "2026-11-13",
   "bundle": {
-    "colormaps": 18,
+    "colormaps": 59,
     "file": "custom-modes.json",
     "modes": [
       "brass-foam",
@@ -12,10 +12,33 @@
       "ribbon-foam",
       "gilt-orbs",
       "steel-blades",
-      "soft-petals"
+      "soft-petals",
+      "teal-mist",
+      "star-eye",
+      "ember-rose",
+      "gear-halo",
+      "blue-veils",
+      "teal-nebula",
+      "violet-ribbons",
+      "chalk-shards",
+      "corkscrew-ribbons",
+      "ember-waves",
+      "amber-flames",
+      "spark-veils",
+      "frost-feather",
+      "crimson-swirl",
+      "molten-folds",
+      "chrome-orbs",
+      "cauliflower-scales",
+      "ember-streams",
+      "satin-spiral",
+      "smooth-bands",
+      "glass-beads",
+      "veil-drift",
+      "line-bands"
     ],
     "schema": 1,
-    "sha256": "1401aa22680b6ee1babbfbcb33f437bb9719c260edf07e4efe911561e06990fa"
+    "sha256": "842af7fe5d3f5e96419b524f413c1902ff8a1c33765a6de3a32a229c3adacabd"
   },
   "crate": "explorer/style-wasm",
   "dependencies": [
@@ -23,8 +46,8 @@
   ],
   "modules": {
     "style.wasm": {
-      "gzip_bytes": 275957,
-      "raw_bytes": 846345,
+      "gzip_bytes": 278810,
+      "raw_bytes": 851112,
       "rustflags": ""
     }
   },
@@ -33,8 +56,8 @@
   "schema": 1,
   "trees": {
     "data/palettes": "2e06d291116cc0e11ffc2fb05b2db82049aa48e5",
-    "data/styles": "ed86b7e2460cc4c39caad4ba71e14dbe8c425a2d",
-    "engine": "d1b36fbb5e083790d6acd65c4ba28616e2e7f4a9",
-    "style-wasm": "9b32bf77130d4318609ee03510d8ea8d8d94edf2"
+    "data/styles": "195b57dc134899b8d82f29fe1f0b9b084d446270",
+    "engine": "736ad154f901d5b2670ae9afbc4d2a5050f91809",
+    "style-wasm": "be71a3ef3261f2840786a0a7c358945b483539dd"
   }
 }

@@ -361,7 +361,7 @@ export function install(context) {
     return deep !== null && deep.owns();
   }
 
-  /** Whether the viewer is in a custom (experimental) mode, drawn by its own pool. */
+  /** Whether the viewer is in a custom mode, drawn by its own pool. */
   function onCustom() {
     return !onDeep() && customMode !== null && customMode.owns();
   }
@@ -656,7 +656,7 @@ export function install(context) {
   }
 
   /**
-   * **A custom (experimental) mode's download**, through the pool the screen draws with:
+   * **A custom mode's download**, through the pool the screen draws with:
    * the exact picture at the row's size, measured whole and tiled. Progress on the button,
    * as a shallow download's is.
    */

@@ -157,8 +157,8 @@ PERTURB_SCALAR_MODULE = EXPLORER_DIR / "perturb-scalar.wasm"
 PERTURB_MANIFEST = EXPLORER_DIR / "perturb.manifest.json"
 PERTURB_CRATE_DIR = EXPLORER_DIR / "perturb-wasm"
 
-#: The third module, its manifest, and the record it draws from: the **custom
-#: (experimental)** render mode. `style-wasm` links the sibling's `style-wasm/` crate whole
+#: The third module, its manifest, and the record it draws from: the **custom** render
+#: modes, Custom and Custom (lab). `style-wasm` links the sibling's `style-wasm/` crate whole
 #: (the engine's own `style::measure` and `style::tile` behind raw exports), so the page
 #: draws a published custom mode's pipeline picture; its own crate so that nothing in it is
 #: linked into `engine.wasm`. `custom-modes.json` is the sibling's `style bundle`, written

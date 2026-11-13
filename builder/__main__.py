@@ -161,7 +161,7 @@ def _parser() -> argparse.ArgumentParser:
         "--style",
         action="store_true",
         help=(
-            "rebuild explorer/style.wasm — the custom (experimental) render mode's compositor "
+            "rebuild explorer/style.wasm — the custom render modes' compositor "
             "— its manifest, and explorer/custom-modes.json, the published custom modes, and "
             "nothing else; needs cargo and the sibling checkout at the commit "
             "engine.manifest.json pins"
