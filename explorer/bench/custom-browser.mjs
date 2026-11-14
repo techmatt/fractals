@@ -2,7 +2,13 @@
 // downloaded through the page's own Download row, for `custom-compare.py --png`.
 //
 //   node explorer/bench/custom-browser.mjs <base url> <out dir> [--size 640x400] [--only <mode>,…]
-//                                          [--tier curated|lab]
+//                                          [--tier curated|lab] [--wait <seconds>]
+//
+// `--wait` (default 600) is how long one download may take. frost-feather's Example is a
+// whole-frame measure of about 12 min a worker (008's Node parity: 744 s measure, 769 s of
+// tiles on one thread, on a loaded box), so it needs `--wait 2400` and a run of its own:
+// a download still running when the wait ends keeps the page busy, and the next mode's
+// switch is retried until it lands.
 //
 // Chooses each mode's tier in the mode select (`Custom` or `Custom (lab)`, `style.js`'s
 // `TIERS`), picks the mode in the tier's own select, presses
@@ -29,6 +35,7 @@ const option = (name, fallback) => {
 const [width, height] = option("--size", "640x400").split("x").map(Number);
 const only = option("--only", null)?.split(",") ?? null;
 const tierOnly = option("--tier", null);
+const waitSeconds = Number(option("--wait", "600"));
 const landing = join(out, "landing");
 mkdirSync(landing, { recursive: true });
 
@@ -85,7 +92,7 @@ function empty() {
 }
 
 async function landed() {
-  for (let tries = 0; tries < 2400; tries++) {
+  for (let tries = 0; tries < waitSeconds * 4; tries++) {
     const files = readdirSync(landing).filter((name) => name.endsWith(".png"));
     if (files.length > 0) return files[0];
     await sleep(250);
