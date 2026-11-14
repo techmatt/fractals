@@ -66,8 +66,7 @@ generator made. That is what lets a later `--names` correct itself: a `generated
 whose map's own name now reads as one is given its own name back, and nothing else
 already in the file moves. A hand edit that changes a name says `authored` beside it.
 
-American spelling throughout, and nothing on the site's banned lists: the vocabulary is
-typed below, and `builder check`'s `vocabulary` sweep reads the committed file.
+American spelling throughout: the vocabulary is typed below.
 """
 
 from __future__ import annotations

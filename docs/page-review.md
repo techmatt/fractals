@@ -176,16 +176,16 @@ site has spent.
 **Excluded:** the explorer and its Atlas tab are tool pages, with no master and no review
 round (a ruling); `run-it-yourself/index.html` is written by `builder/run_it_yourself.py`.
 
-**Em-dashes** are `builder check`'s `dashes` (Matt); `builder/dashes.py` says what it
-reads. Text drawn into a figure is outside the rule (Matt).
+**Em-dashes**: text drawn into a figure is outside the rule (Matt). No check holds the
+rule; the prose passes are done (Matt).
 
 **The Rendering modes quality table** is the shipped render judge's reading of the
 candidate ledger's score sidecar: a judge adoption invalidates it at once, and as prose
 it has no `stale_when` to say so.
 
 **One rendering mode is retired from the site** (weight 0 in `mode_policy` next door) and
-named nowhere a reader meets; `builder/vocabulary.py` has the two figures still drawn in
-it, which read as smooth (Matt).
+named nowhere a reader meets; two figures, `overview-pipeline` and `gallery-output`, are
+still drawn in it, and read as smooth through `builder/picks.py`'s `MODE_WORDS` (Matt).
 
 ## Rulings a page is held to
 

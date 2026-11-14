@@ -45,7 +45,8 @@ sessions write to it too. Three rules touch markup and filenames:
 - **American spelling in everything a reader sees** (color, gray, normalize). A name keeps
   its own spelling (`watercolours-in-the-rain-25`).
 
-Nothing enforces the last two.
+No check enforces any of the three: wording and prose checks were removed once the prose
+passes were done (Matt), so none is to be added back.
 
 ## Where prose comes from
 

@@ -51,10 +51,6 @@ and why), never a crash and never a silent pass.
   without the checkout or its artifacts.
 - **theme** — the well colors drawn figures use are the stylesheet's own (transcribed, since
   Pillow cannot read CSS).
-- **vocabulary** — no tracked file uses a word `vocabulary.py` bans.
-- **dashes** — no em-dash in reader-facing words: section bodies, the front page, the
-  gallery index, the page off Color palettes, and the registry's captions and alts.
-  `dashes.py` says what it reads.
 - **endings** — no tracked file is CRLF on disk, per `git ls-files --eol`, which must
   return rows.
 - **icons** — every served page declares the site icon with exactly the links
@@ -114,7 +110,6 @@ from urllib.parse import parse_qs, unquote, urldefrag
 from . import (
     agreement,
     coloring,
-    dashes,
     deep_gallery,
     explorer,
     figures,
@@ -141,7 +136,6 @@ from . import (
     sections,
     stamps,
     theme,
-    vocabulary,
 )
 from . import (
     atlas as atlas_module,
@@ -1399,8 +1393,6 @@ def run_all() -> Report:
             "prose": check_prose(article),
             "guidance": check_guidance(),
             "theme": check_theme(),
-            "vocabulary": vocabulary.sweep(),
-            "dashes": dashes.sweep(),
             "endings": check_endings(),
             "icons": icons.problems(),
             "heads": heads.problems(),
