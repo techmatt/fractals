@@ -82,31 +82,30 @@ the page). A website item never commits next door; each half below is its own it
    mode carries its palette set* names brass-foam's set, which moves with a keep in a new
    map. `explorer/README.md`'s *Custom modes* names the button count once; that is the one
    line of it a new mode moves, and nothing in the path needs the rest of that file.
-9. **Hold every Example to its keep**, at 640x400 2×2, against step 5's native pictures
-   (for a button no setting reproduces, against `style render <style> --location <its
-   place> --colormap <its map> --resolution 640 400 --supersample 2`, the published look):
+9. **Hold every Example to its button's native picture**, at 640x400 2×2. `custom-natives.mjs`
+   draws each offered button with the sibling's `style render` at its place, palette and
+   knobs (the published look, so a button no setting reproduces is held to that, not its
+   keep), a few seconds each; `wasm-parity`'s natives come only after its whole wasm half.
+   Use fresh out directories: `custom-parity.mjs` appends, and a stale id reads `NO NATIVE`.
 
    ```
-   node explorer/bench/custom-parity.mjs out/parity --stack keep          # Node, the request path
+   node explorer/bench/custom-natives.mjs out/natives                     # the references
+   node explorer/bench/custom-parity.mjs out/parity --stack mode          # Node, the request path
    python -m builder serve --port 8000                                     # then, the page:
    node explorer/bench/custom-browser.mjs http://localhost:8000 out/browser --workers 3
-   python explorer/bench/custom-compare.py out/parity  <wallpapers>/artifacts/style-wasm/wasm-parity
-   python explorer/bench/custom-compare.py out/browser <wallpapers>/artifacts/style-wasm/wasm-parity --png
+   python explorer/bench/custom-compare.py out/parity  out/natives
+   python explorer/bench/custom-compare.py out/browser out/natives --png
    ```
 
-   `custom-compare.py` needs Pillow, which this machine's `python` does not have: run it
-   with the sibling's environment, `../fractal-wallpapers/.venv/Scripts/python`. The second
-   compare reads **every button no setting reproduces as a `MISS`**, because the button
-   draws the published look and `wasm-parity` drew the keep's own stack: draw those with the
-   `style render` line above into a directory of their own, as `<id>.native.png`, and
-   compare just them against it. A miss on any other id is a finding.
-
+   A miss is a finding, except the one a button opening with Auto tone off has, which
+   `custom-natives.mjs` names and skips: hold those to `wasm-parity`'s picture. `--stack
+   keep` draws each keep's own stack instead, against `wasm-parity`'s natives.
    The tolerance is identical, on Windows. The first proves the link, the parse and the
-   request reach the keep's own picture; the second presses each Example button and saves
+   request reach the button's picture; the second presses each Example button and saves
    through the Download row, so a miss there that the first does not have is the page's.
    Look at the browser run's PNGs beside the keep JPEGs
-   (`fractal-drive-sync/style-keeps/<style>/`) too. The benches take `--workers`: on a
-   shared machine keep it low.
+   (`fractal-drive-sync/style-keeps/<style>/`) too. The benches take `--workers`, `--tier`
+   and `--only`: on a shared machine keep it low, or split the run.
 10. **Release:** the site's usual checks (`CLAUDE.md`'s *Checks to run before committing*,
     and `builder check` with the checkout, reading its skips), then commit `style.wasm`,
     `custom-modes.json`, both manifests and whatever else moved. GitHub Pages serves the

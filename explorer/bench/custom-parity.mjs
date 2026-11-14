@@ -17,7 +17,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { parse, encode } from "../permalink.js";
-import { contractOf, exampleCustom, exampleQuery, requestOf, tilesOf, SUPERSAMPLE } from "../style.js";
+import { contractOf, exampleCustom, exampleQuery, offeredExamples, requestOf, tilesOf, SUPERSAMPLE } from "../style.js";
 
 const here = (name) => fileURLToPath(new URL(`../${name}`, import.meta.url));
 const args = process.argv.slice(2);
@@ -60,8 +60,12 @@ const context = {
 
 let index = 0;
 for (const mode of bundle.modes) {
+  // Under `--stack mode` only the buttons the page offers: a keep it does not offer draws
+  // another button's picture, and has no native of its own in `custom-natives.mjs`'s set.
+  const offered = new Set(offeredExamples(mode, encode).map(({ index: at }) => at));
   for (const [order, shown] of mode.shown.entries()) {
     const id = `${mode.style}__${order}`;
+    if (which === "mode" && !offered.has(order)) continue;
     if (index++ % shards !== shard) continue;
     const row = { id, mode: mode.name, keep: shown.keep, stack: which };
     try {

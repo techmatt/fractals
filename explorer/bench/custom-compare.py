@@ -41,12 +41,19 @@ def main(argv: list[str]) -> int:
         ids = sorted(path.stem for path in ours.glob("*__*.png"))
     else:
         rows = [json.loads(line) for line in (ours / "results.jsonl").read_text().splitlines()]
-        ids = sorted(row["id"] for row in rows if row["ok"])
+        # `custom-parity.mjs` appends, so a rerun into one directory repeats an id.
+        ids = sorted({row["id"] for row in rows if row["ok"]})
         for row in rows:
             if not row["ok"]:
                 print(f"{row['id']:<24} REFUSED {row['why']}")
     missed = 0
     for ident in ids:
+        # A missing native is a miss said by name, not a traceback: an id a rerun left from an
+        # older bundle, an Example no reference was drawn for, or a keep no longer offered.
+        if not (theirs / f"{ident}.native.png").exists():
+            print(f"{ident:<24} NO NATIVE  MISS")
+            missed += 1
+            continue
         with Image.open(theirs / f"{ident}.native.png") as picture:
             native = picture.convert("RGB")
             size = native.size

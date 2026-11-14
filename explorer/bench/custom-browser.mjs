@@ -12,7 +12,7 @@
 // screenshot of the page with the first example drawn (`page.png`) and `browser.jsonl`, a
 // line per example with the seconds the download took and any console error.
 
-import { mkdirSync, readFileSync, readdirSync, renameSync, writeFileSync, appendFileSync } from "node:fs";
+import { mkdirSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync, appendFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -76,9 +76,17 @@ await set("#download-size", "custom");
 await set("#download-width", width);
 await set("#download-height", height);
 
-async function landed(before) {
+/** The download that landed, once Chrome has finished it. **The landing directory is emptied
+ *  before every press** (`empty`): every Example of one mode downloads under one file name,
+ *  so a file left from the last one was overwritten in place and never read as new (008: two
+ *  ember-streams downloads the page said it saved, and the harness missed). */
+function empty() {
+  for (const name of readdirSync(landing)) rmSync(join(landing, name), { force: true });
+}
+
+async function landed() {
   for (let tries = 0; tries < 2400; tries++) {
-    const files = readdirSync(landing).filter((name) => name.endsWith(".png") && !before.has(name));
+    const files = readdirSync(landing).filter((name) => name.endsWith(".png"));
     if (files.length > 0) return files[0];
     await sleep(250);
   }
@@ -91,8 +99,15 @@ for (const mode of bundle.modes) {
   if (tierOnly && tierOf(mode) !== tierOnly) continue;
   // The tier's entry first: the custom select lists that tier's modes only.
   const tier = TIERS.find((each) => each.tier === tierOf(mode)).option;
-  if ((await browser.evaluate(`document.getElementById("mode").value`)) !== tier) await set("#mode", tier);
-  await set("#custom-mode", mode.name);
+  // **A busy page ignores both selects** (a download in flight locks every control), and
+  // under load the last download's lock can outlast the press (008: frost-feather and
+  // molten-folds drew gear-halo's view and timed out): retry until the mode is the view's.
+  const switched = `new URLSearchParams(location.search).get("custom") === ${JSON.stringify(mode.name)}`;
+  for (let tries = 0; tries < 600 && !(await browser.evaluate(switched)); tries++) {
+    if ((await browser.evaluate(`document.getElementById("mode").value`)) !== tier) await set("#mode", tier);
+    await set("#custom-mode", mode.name);
+    await sleep(1000);
+  }
   for (let index = 0; index < mode.shown.length; index++) {
     const id = `${mode.style}__${index}`;
     if (done.has(id) && screenshot) continue;
@@ -111,6 +126,15 @@ for (const mode of bundle.modes) {
     // The address bar is rewritten at most every 350 ms (`ADDRESS_MS`).
     await sleep(800);
     row.query = await browser.evaluate("location.search");
+    // A press the page ignored leaves another mode's view up: a row of that would compare
+    // the wrong picture, so it is refused here, by name.
+    if (new URLSearchParams(row.query).get("custom") !== mode.name) {
+      row.ok = false;
+      row.why = "the page did not open the example (still busy?)";
+      appendFileSync(join(out, "browser.jsonl"), JSON.stringify(row) + "\n");
+      console.log(JSON.stringify(row));
+      continue;
+    }
     if (!screenshot) {
       // One look at the page itself: the first example, drawn on the screen to the end.
       await browser.until(`document.getElementById("render-state").dataset.state === "final"`, { within: 600000, every: 500 });
@@ -121,10 +145,10 @@ for (const mode of bundle.modes) {
     // The row prices a custom view off a finished screen pass; until then it says so and
     // the buttons wait, so the harness presses once the row offers it.
     await browser.until(`!document.getElementById("download-png").disabled`, { within: 600000, every: 500 });
-    const before = new Set(readdirSync(landing));
+    empty();
     const started = Date.now();
     await browser.evaluate(`document.getElementById("download-png").click()`);
-    const name = await landed(before);
+    const name = await landed();
     row.seconds = (Date.now() - started) / 1000;
     row.said = await browser.evaluate(`document.getElementById("status").textContent`);
     if (name) renameSync(join(landing, name), join(out, `${id}.png`));
