@@ -43,7 +43,7 @@
       "copper-webs"
     ],
     "schema": 1,
-    "sha256": "278ee1be711d97f6ba4323f76c1a19453aedf4bbb301812d24c34f4019bcb232"
+    "sha256": "f88627f5816a5e4162b77dfcc43284a9f2bea6aaf65bb55577354cd3a61da940"
   },
   "crate": "explorer/style-wasm",
   "dependencies": [
@@ -61,7 +61,7 @@
   "schema": 1,
   "trees": {
     "data/palettes": "71f71881bd1977679d69d580c64ab02639b7158e",
-    "data/styles": "134a3ab72c7ec4217cd79baead0e3fc6f8083dd6",
+    "data/styles": "3321c499df6498baa61a57e35c5c74ba5b786650",
     "engine": "736ad154f901d5b2670ae9afbc4d2a5050f91809",
     "style-wasm": "be71a3ef3261f2840786a0a7c358945b483539dd"
   }

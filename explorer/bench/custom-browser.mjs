@@ -6,8 +6,9 @@
 //
 // **The page says when it is busy**: `#render-state` carries `data-busy` while a download
 // holds the controls (`explorer.js`'s `setBusy`), and every press here waits for it to go,
-// so a slow download is waited out however long it takes (frost-feather's Example is a
-// whole-frame measure of about 12 min a worker on a loaded box, 008) and no press lands on
+// so a slow download is waited out however long it takes (frost-feather's Example was a
+// whole-frame measure of about 12 min a worker on a loaded box at its old cap of 9062, 008;
+// about 150 s for the whole download at 1000, two workers) and no press lands on
 // a page that would ignore it. `--wait` is a ceiling on one download, none by default.
 //
 // Chooses each mode's tier in the mode select (`Custom` or `Custom (lab)`, `style.js`'s

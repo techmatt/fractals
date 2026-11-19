@@ -19746,8 +19746,8 @@
        "center_im": "0.7684797196552032",
        "width": "0.1610764466724867"
       },
-      "maxiter": 9062,
-      "note": "final139_general seat 548 (smooth_mean_angle, phoenix:classic)",
+      "maxiter": 1000,
+      "note": "final139_general seat 548 (smooth_mean_angle, phoenix:classic); its cap lowered from the seat's 9062 to 1000, which reads the same and draws in a seventh of the time (the saved picture was drawn at 9062)",
       "gallery": {
        "record": "final139_general",
        "seat": 548,
