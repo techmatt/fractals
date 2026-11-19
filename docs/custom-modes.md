@@ -105,7 +105,11 @@ the page). A website item never commits next door; each half below is its own it
    through the Download row, so a miss there that the first does not have is the page's.
    Look at the browser run's PNGs beside the keep JPEGs
    (`fractal-drive-sync/style-keeps/<style>/`) too. The benches take `--workers`, `--tier`
-   and `--only`: on a shared machine keep it low, or split the run.
+   and `--only`: on a shared machine keep it low, or split the run. A palette entry no
+   Example opens on is held with `--palette <entry>` on `custom-natives.mjs` and
+   `custom-parity.mjs` (`--stack mode`), which draw each of its mode's Examples on it as
+   `<id>@<entry>`. The browser bench waits on `#render-state`'s `data-busy`, which the page
+   holds while a download has the controls, so a slow Example needs no timeout of its own.
 10. **Release:** the site's usual checks (`CLAUDE.md`'s *Checks to run before committing*,
     and `builder check` with the checkout, reading its skips), then commit `style.wasm`,
     `custom-modes.json`, both manifests and whatever else moved. GitHub Pages serves the

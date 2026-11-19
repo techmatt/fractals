@@ -277,6 +277,18 @@ function same(a, b) {
   return JSON.stringify(a) === JSON.stringify(b);
 }
 
+/** A stack as the engine reads it, for telling two stacks apart: each layer's `blend` and
+ *  `opacity` written where the stack leaves them to their serde defaults (`engine/src/
+ *  style.rs`'s `Layer`: `normal`, `1.0`). A stack that comes to spell a default (wallpapers
+ *  054: bronze_packing's layer 2 writes `opacity: 1.0`, so an entry can set it) draws what
+ *  it drew, and its keeps are still reached. */
+function asRead(stack) {
+  if (!Array.isArray(stack?.layers)) return stack;
+  // Both first, so that a member spelt and one left out compare in one key order.
+  const layers = stack.layers.map(({ blend = "normal", opacity = 1.0, ...rest }) => ({ blend, opacity, ...rest }));
+  return { ...stack, layers };
+}
+
 /** The stack members the module treats as whole numbers (`style-wasm`'s `INTEGER_MEMBERS`). */
 export const INTEGER_MEMBERS = new Set(["iterations", "hit", "settle", "sectors", "turns"]);
 
@@ -344,7 +356,7 @@ export function exampleCustom(mode, shown) {
     const value = (theirs - offset) / scale;
     if (value >= knob.range[0] && value <= knob.range[1]) settings[knob.name] = value;
   }
-  const reached = same(turned(base, mode.knobs, settings), keep);
+  const reached = same(asRead(turned(base, mode.knobs, settings)), asRead(keep));
   if (reached) custom.knobs = settings;
   return { custom, reached };
 }
@@ -388,6 +400,29 @@ export function offeredExamples(mode, encode) {
     offered.push({ index, shown, ...exampleCustom(mode, shown) });
   }
   return offered;
+}
+
+/**
+ * The number of the Example button (from 1, as its label says) whose place the view is at,
+ * or `null` at any other place: what tells one Example's download from another's, since the
+ * mode, palette and size of two Examples are often one. A place is its family, constants and
+ * viewport, held as numbers, so a link's re-spelled decimal is still the same place; the
+ * knobs are not part of it. Two Examples at one place (glass-beads' second and third) are
+ * told apart by the palette entry each opens on, the view's own where it is one of them.
+ */
+export function exampleAt(mode, view, encode) {
+  const same = (text, field) => field !== undefined && Number(text) === Number(field.text);
+  const here = [];
+  for (const [number, { shown, custom }] of offeredExamples(mode, encode).entries()) {
+    const { family, viewport } = shown.location;
+    if (familyOf(family) !== view.family) continue;
+    if (!constantsOf(family).every(([key, value]) => same(value, view.constants?.[key]))) continue;
+    if (same(viewport.center_re, view.x) && same(viewport.center_im, view.y) && same(viewport.width, view.w)) {
+      here.push({ number: number + 1, palette: paletteOf(mode, custom).colormap });
+    }
+  }
+  const palette = view.custom ? paletteOf(mode, view.custom).colormap : null;
+  return (here.find((each) => each.palette === palette) ?? here[0])?.number ?? null;
 }
 
 /** Output tiles of a `width × height` picture, the centre's first. */

@@ -601,10 +601,7 @@ export function install(context) {
    *  named rather than read, and a deep download lands under the same
    *  `family_mode_palette_size` a shallow one does — `multibrot3_smooth_…` at degree three. */
   function naming() {
-    if (onCustom()) {
-      const view = currentView();
-      return { family: view.family, mode: `custom-${view.custom.name}`, palette: customMode.palette() };
-    }
+    if (onCustom()) return customMode.name();
     if (!onDeep()) return currentView();
     const view = deep.view();
     return {

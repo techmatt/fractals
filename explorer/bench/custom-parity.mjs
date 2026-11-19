@@ -2,7 +2,11 @@
 // path under Node, for `custom-compare.py` to hold against the pipeline's picture.
 //
 //   node explorer/bench/custom-parity.mjs <out dir> [--size 640x400] [--shard i/n] [--stack keep|mode]
+//                                         [--only <mode or id>,…] [--palette <entry>]
 //
+// `--palette` draws each example on that entry of its mode's set instead of the one it opens
+// on (under `--stack mode`), as a swatch press does, and names it `<id>@<entry>`: how a palette
+// entry no Example opens on is held to `custom-natives.mjs --palette`'s picture.
 // Each example goes the page's way: `exampleQuery` writes its link, `permalink.parse` reads
 // it back as a view, and `requestOf` turns the view into the module's request, which
 // `style.wasm` (the committed module) then draws as the pool draws: one exact `measure`, then
@@ -29,6 +33,9 @@ const option = (name, fallback) => {
 const [width, height] = option("--size", "640x400").split("x").map(Number);
 const [shard, shards] = option("--shard", "0/1").split("/").map(Number);
 const which = option("--stack", "keep");
+const only = option("--only", null)?.split(",") ?? null;
+const entry = option("--palette", null);
+if (entry !== null && which !== "mode") throw new Error("--palette draws the published stack: pass --stack mode");
 mkdirSync(out, { recursive: true });
 
 const bundle = JSON.parse(readFileSync(here("custom-modes.json"), "utf8"));
@@ -64,8 +71,11 @@ for (const mode of bundle.modes) {
   // another button's picture, and has no native of its own in `custom-natives.mjs`'s set.
   const offered = new Set(offeredExamples(mode, encode).map(({ index: at }) => at));
   for (const [order, shown] of mode.shown.entries()) {
-    const id = `${mode.style}__${order}`;
+    const keepId = `${mode.style}__${order}`;
+    const id = entry === null ? keepId : `${keepId}@${entry}`;
     if (which === "mode" && !offered.has(order)) continue;
+    if (only && !only.includes(mode.name) && !only.includes(mode.style) && !only.includes(keepId)) continue;
+    if (entry !== null && !mode.palettes?.some((each) => each.colormap === entry)) continue;
     if (index++ % shards !== shard) continue;
     const row = { id, mode: mode.name, keep: shown.keep, stack: which };
     try {
@@ -73,7 +83,7 @@ for (const mode of bundle.modes) {
       const view = parse(query, context);
       row.query = query;
       row.reached = exampleCustom(mode, shown).reached;
-      const custom = view.custom;
+      const custom = entry === null ? view.custom : { ...view.custom, palette: entry, matched: true };
       const drawn = which === "keep" ? { ...mode, stack: shown.stack } : mode;
       const request = requestOf({
         bundle,

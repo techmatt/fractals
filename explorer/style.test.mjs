@@ -14,6 +14,7 @@ import {
   aliasesOf,
   constantsOf,
   contractOf,
+  exampleAt,
   exampleCustom,
   freshCustom,
   exampleQuery,
@@ -61,7 +62,8 @@ const EXAMPLES = bundle.modes.flatMap((mode) => mode.shown.map((shown, index) =>
 /** The keeps no setting of the published mode reaches (item 003, ruling C): drawn with a
  *  stack whose tone or layers are not the published one's. Since wallpapers 050, the lab
  *  tier's round-one drafts and keeps from earlier rounds, and one curated keep
- *  (satin-spiral's second, `glossy_spirals__1`). */
+ *  (satin-spiral's second, `glossy_spirals__1`). Since 054, scaled-folds' keep, whose sixth
+ *  layer was off (opacity 0) where the published one draws it at 0.9. */
 const UNREACHED = [
   "teal_filaments__1",
   "star_eye__2",
@@ -72,14 +74,15 @@ const UNREACHED = [
   "flame_wisp_spark__0",
   "glossy_spirals__1",
   "banded_lines__1",
+  "scaled_folds__0",
 ];
 
-test("the bundle is the 32 published modes in two tiers, each with an example", () => {
+test("the bundle is the 37 published modes in two tiers, each with an example", () => {
   assert.equal(bundle.schema, 1);
-  assert.equal(bundle.modes.length, 32);
+  assert.equal(bundle.modes.length, 37);
   const tiers = bundle.modes.map((mode) => tierOf(mode));
   assert.equal(tiers.filter((tier) => tier === "curated").length, 16);
-  assert.equal(tiers.filter((tier) => tier === "lab").length, 16);
+  assert.equal(tiers.filter((tier) => tier === "lab").length, 21);
   for (const mode of bundle.modes) {
     assert.ok(mode.shown.length > 0, mode.name);
     // A curated mode has four or five knobs (the catalog's tier rule); a lab mode may have none.
@@ -110,10 +113,10 @@ test("an example opens at the mode's defaults, plus the setting that reproduces 
   });
 });
 
-test("each mode offers one button a picture: 68 of the 69 keeps", () => {
+test("each mode offers one button a picture: 77 of the 78 keeps", () => {
   const offered = bundle.modes.flatMap((mode) => offeredExamples(mode, encode).map(({ index }) => `${mode.style}__${index}`));
-  assert.equal(offered.length, 68);
-  assert.equal(EXAMPLES.length, 69);
+  assert.equal(offered.length, 77);
+  assert.equal(EXAMPLES.length, 78);
   // star-eye's third keep draws its second's picture under the published settings.
   assert.deepEqual(
     EXAMPLES.map(([, , id]) => id).filter((id) => !offered.includes(id)),
@@ -330,8 +333,24 @@ test("each mode carries its palette set, the mode's own map first, every map in 
   }
   assert.deepEqual(
     palettesOf(modes.get("brass-foam")).map((entry) => entry.colormap),
-    ["bronze_packing", "magma", "teal_tunnel", "twilight"],
+    ["bronze_packing", "magma", "teal_tunnel", "twilight", "greenhorn"],
   );
+});
+
+test("a download names the Example its view is at, and nothing at any other place", () => {
+  for (const mode of bundle.modes) {
+    for (const [number, { shown }] of offeredExamples(mode, encode).entries()) {
+      const view = parse(exampleQuery(mode, shown, { palette: "twilight_shifted", encode }), CONTEXT);
+      assert.equal(exampleAt(mode, view, encode), number + 1, `${mode.name} ${number + 1}`);
+    }
+  }
+  const frost = modes.get("frost-feather");
+  const view = parse(exampleQuery(frost, frost.shown[0], { palette: "twilight_shifted", encode }), CONTEXT);
+  assert.equal(view.family, "phoenix");
+  const moved = { ...view, x: { text: "0.1", value: 0.1 } };
+  assert.equal(exampleAt(frost, moved, encode), null);
+  // Another family at the same viewport is another place.
+  assert.equal(exampleAt(frost, { ...view, family: "mandelbrot" }, encode), null);
 });
 
 test("a palette of the set is in the link as `tuned`, the default never, and reads back", () => {

@@ -4,11 +4,11 @@
 //   node explorer/bench/custom-browser.mjs <base url> <out dir> [--size 640x400] [--only <mode>,…]
 //                                          [--tier curated|lab] [--wait <seconds>]
 //
-// `--wait` (default 600) is how long one download may take. frost-feather's Example is a
-// whole-frame measure of about 12 min a worker (008's Node parity: 744 s measure, 769 s of
-// tiles on one thread, on a loaded box), so it needs `--wait 2400` and a run of its own:
-// a download still running when the wait ends keeps the page busy, and the next mode's
-// switch is retried until it lands.
+// **The page says when it is busy**: `#render-state` carries `data-busy` while a download
+// holds the controls (`explorer.js`'s `setBusy`), and every press here waits for it to go,
+// so a slow download is waited out however long it takes (frost-feather's Example is a
+// whole-frame measure of about 12 min a worker on a loaded box, 008) and no press lands on
+// a page that would ignore it. `--wait` is a ceiling on one download, none by default.
 //
 // Chooses each mode's tier in the mode select (`Custom` or `Custom (lab)`, `style.js`'s
 // `TIERS`), picks the mode in the tier's own select, presses
@@ -35,7 +35,10 @@ const option = (name, fallback) => {
 const [width, height] = option("--size", "640x400").split("x").map(Number);
 const only = option("--only", null)?.split(",") ?? null;
 const tierOnly = option("--tier", null);
-const waitSeconds = Number(option("--wait", "600"));
+const waitSeconds = Number(option("--wait", "Infinity"));
+/** Whether the page holds no control for a download (`data-busy` absent). */
+const idle = `document.getElementById("render-state").dataset.busy === undefined`;
+const waitIdle = () => browser.until(idle, { within: waitSeconds * 1000, every: 500 });
 const landing = join(out, "landing");
 mkdirSync(landing, { recursive: true });
 
@@ -84,15 +87,18 @@ await set("#download-width", width);
 await set("#download-height", height);
 
 /** The download that landed, once Chrome has finished it. **The landing directory is emptied
- *  before every press** (`empty`): every Example of one mode downloads under one file name,
- *  so a file left from the last one was overwritten in place and never read as new (008: two
- *  ember-streams downloads the page said it saved, and the harness missed). */
+ *  before every press** (`empty`): a file left from the last one could be overwritten in place
+ *  and never read as new (008: when every Example of a mode downloaded under one file name,
+ *  two ember-streams downloads the page said it saved were missed). */
 function empty() {
   for (const name of readdirSync(landing)) rmSync(join(landing, name), { force: true });
 }
 
+/** The file, once the page has let go of the controls: Chrome writes it a moment after the
+ *  page hands it over, so a minute is ample. */
 async function landed() {
-  for (let tries = 0; tries < waitSeconds * 4; tries++) {
+  if (!(await waitIdle())) return null;
+  for (let tries = 0; tries < 240; tries++) {
     const files = readdirSync(landing).filter((name) => name.endsWith(".png"));
     if (files.length > 0) return files[0];
     await sleep(250);
@@ -106,10 +112,12 @@ for (const mode of bundle.modes) {
   if (tierOnly && tierOf(mode) !== tierOnly) continue;
   // The tier's entry first: the custom select lists that tier's modes only.
   const tier = TIERS.find((each) => each.tier === tierOf(mode)).option;
-  // **A busy page ignores both selects** (a download in flight locks every control), and
-  // under load the last download's lock can outlast the press (008: frost-feather and
-  // molten-folds drew gear-halo's view and timed out): retry until the mode is the view's.
+  // **A busy page ignores both selects** (a download in flight locks every control; 008:
+  // frost-feather and molten-folds drew gear-halo's view and timed out), so the switch
+  // waits for `data-busy` to go, then retries until the mode is the view's.
   const switched = `new URLSearchParams(location.search).get("custom") === ${JSON.stringify(mode.name)}`;
+  await waitIdle();
+  // (011: on a loaded box, one switch from an idle page had not landed after 60 tries.)
   for (let tries = 0; tries < 600 && !(await browser.evaluate(switched)); tries++) {
     if ((await browser.evaluate(`document.getElementById("mode").value`)) !== tier) await set("#mode", tier);
     await set("#custom-mode", mode.name);
@@ -121,6 +129,7 @@ for (const mode of bundle.modes) {
     const row = { id, mode: mode.name };
     errors.length = 0;
     // A keep whose button is not offered (it would draw another button's picture) is skipped.
+    await waitIdle();
     const offered = await browser.evaluate(`(() => {
       const button = document.querySelector('#custom-examples button[data-example="${index}"]');
       if (button) button.click();
@@ -158,6 +167,8 @@ for (const mode of bundle.modes) {
     const name = await landed();
     row.seconds = (Date.now() - started) / 1000;
     row.said = await browser.evaluate(`document.getElementById("status").textContent`);
+    // The page's own file name, which names the family and the Example.
+    row.file = name;
     if (name) renameSync(join(landing, name), join(out, `${id}.png`));
     row.ok = name !== null;
     row.errors = [...errors];

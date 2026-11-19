@@ -1,8 +1,12 @@
 // The native picture each offered Example button draws, from the sibling's own `style render`,
 // for `custom-compare.py` to hold the page's and Node's pictures against.
 //
-//   node explorer/bench/custom-natives.mjs <out dir> [--size 640x400] [--only <id>,…]
+//   node explorer/bench/custom-natives.mjs <out dir> [--size 640x400] [--only <id or mode>,…]
+//                                          [--palette <entry>]
 //
+// `--palette` draws each Example on that entry of its mode's set instead of the one it opens
+// on, as `<id>@<entry>`, the modes without that entry skipped: `custom-parity.mjs --palette`
+// draws the same, for an entry no Example opens on.
 // Each button is drawn at its keep's place, on the palette and with the knobs it opens with
 // (`offeredExamples`), the published stack: `<id>.native.png` beside its `<id>.location.json`.
 // For a button whose keep the published settings reach this is the keep's own picture, which
@@ -31,6 +35,7 @@ const option = (name, fallback) => {
 };
 const [width, height] = option("--size", "640x400").split("x").map(Number);
 const only = option("--only", null)?.split(",") ?? null;
+const entry = option("--palette", null);
 mkdirSync(out, { recursive: true });
 
 const sibling = fileURLToPath(new URL("../../../fractal-wallpapers/", import.meta.url));
@@ -40,8 +45,10 @@ const bundle = JSON.parse(readFileSync(fileURLToPath(new URL("../custom-modes.js
 
 for (const mode of bundle.modes) {
   for (const { index, shown, custom } of offeredExamples(mode, encode)) {
-    const id = `${mode.style}__${index}`;
-    if (only && !only.includes(id)) continue;
+    const keepId = `${mode.style}__${index}`;
+    const id = entry === null ? keepId : `${keepId}@${entry}`;
+    if (only && !only.includes(keepId) && !only.includes(mode.name) && !only.includes(mode.style)) continue;
+    if (entry !== null && !palettesOf(mode).some((each) => each.colormap === entry)) continue;
     const target = join(out, `${id}.native.png`);
     if (existsSync(target)) continue;
     if (custom.autotone === false) {
@@ -50,7 +57,7 @@ for (const mode of bundle.modes) {
     }
     const location = join(out, `${id}.location.json`);
     writeFileSync(location, JSON.stringify(shown.location));
-    const palette = custom.palette ?? palettesOf(mode)[0].colormap;
+    const palette = entry ?? custom.palette ?? palettesOf(mode)[0].colormap;
     const command = ["style", "render", mode.style, "--location", location, "--colormap", palette];
     command.push("--resolution", String(width), String(height), "--supersample", "2", "--out", target);
     for (const [name, value] of Object.entries(custom.knobs)) command.push("--knob", `${name}=${value}`);

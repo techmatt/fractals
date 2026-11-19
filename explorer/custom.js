@@ -13,6 +13,7 @@ import {
   Cancelled,
   StylePool,
   colormapOf,
+  exampleAt,
   exampleQuery,
   freshCustom,
   modesOf,
@@ -370,6 +371,21 @@ export function install(bundle, host) {
     return custom.matched !== false ? paletteOf(modeOf(custom), custom).colormap : view.palette;
   }
 
+  /** What a download of a custom view is named by (`download.js`'s `fileNameOf`): the view's
+   *  family, the mode with the Example the view is at (`custom-frost-feather-example-1`, so
+   *  two Examples' files differ), and the map it draws with. The page reads it from the view
+   *  the request is built from, before the draw (008: a Phoenix picture saved as
+   *  `mandelbrot_…`). */
+  function nameOf(view) {
+    const custom = view.custom;
+    const example = exampleAt(modeOf(custom), view, encode);
+    return {
+      family: view.family,
+      mode: `custom-${custom.name}${example === null ? "" : `-example-${example}`}`,
+      palette: paletteName(view),
+    };
+  }
+
   /** The mode a tier's entry opens: `last` if it is that tier's, else the tier's first. */
   function openingOf(tier, last = null) {
     const mine = last !== null && modes.has(last) && tierOf(modes.get(last)) === tier;
@@ -393,6 +409,7 @@ export function install(bundle, host) {
     sync,
     cycle,
     paletteName,
+    nameOf,
     request,
     started,
     stripMap,

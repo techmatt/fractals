@@ -1,7 +1,7 @@
 {
-  "built": "2026-11-13",
+  "built": "2026-11-19",
   "bundle": {
-    "colormaps": 59,
+    "colormaps": 67,
     "file": "custom-modes.json",
     "modes": [
       "brass-foam",
@@ -35,10 +35,15 @@
       "smooth-bands",
       "glass-beads",
       "veil-drift",
-      "line-bands"
+      "line-bands",
+      "ribbed-hoses",
+      "sliced-mirrors",
+      "cut-tiles",
+      "scaled-folds",
+      "copper-webs"
     ],
     "schema": 1,
-    "sha256": "842af7fe5d3f5e96419b524f413c1902ff8a1c33765a6de3a32a229c3adacabd"
+    "sha256": "278ee1be711d97f6ba4323f76c1a19453aedf4bbb301812d24c34f4019bcb232"
   },
   "crate": "explorer/style-wasm",
   "dependencies": [
@@ -55,8 +60,8 @@
   "rustc": "1.96.0 (ac68faa20 2026-05-25)",
   "schema": 1,
   "trees": {
-    "data/palettes": "2e06d291116cc0e11ffc2fb05b2db82049aa48e5",
-    "data/styles": "195b57dc134899b8d82f29fe1f0b9b084d446270",
+    "data/palettes": "71f71881bd1977679d69d580c64ab02639b7158e",
+    "data/styles": "134a3ab72c7ec4217cd79baead0e3fc6f8083dd6",
     "engine": "736ad154f901d5b2670ae9afbc4d2a5050f91809",
     "style-wasm": "be71a3ef3261f2840786a0a7c358945b483539dd"
   }

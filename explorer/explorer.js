@@ -557,6 +557,10 @@ async function arriveDeep(open) {
 /** Freeze or release every control that would change what is being drawn. */
 function setBusy(on) {
   busy = on;
+  // Said on the render-state bar for a harness to wait on (`custom-browser.mjs`): a press
+  // while the controls are held is ignored, however long the download takes.
+  if (on) renderState.dataset.busy = "";
+  else delete renderState.dataset.busy;
   // A download is about to have every core it can get, and a hover is not what they are
   // for. `previewable` keeps it away until the download is done.
   if (on) juliaCard?.hide();
@@ -6844,12 +6848,15 @@ async function main() {
       owns: () => customOn(),
       // Only the pass of this very view: another mode's or knob's time is not this one's.
       measured: () => (customMeasured?.key === link.emit(view, contract) ? customMeasured : null),
-      // The map a file is named by: the mode's own under Matched palette.
-      palette: () => customs.paletteName(view),
+      // What a file of this view is named by: its family, mode and Example, and map.
+      name: () => customs.nameOf(view),
       picture: async (width, height, { supersample, onProgress }) => {
         const pool = await customs.started();
         const maxiter = ownCap(view.maxiter ?? null, view.w.value) ?? renderer.maxiter(view.w.value);
         const request = customs.request(view, width, height, maxiter, supersample);
+        // Named now, from the view the request is of, not from whatever `view` is once the
+        // pool hands the picture back.
+        const name = customs.nameOf(view);
         try {
           const samples = width * height * supersample * supersample;
           const drawn = await pool.draw(request, {
@@ -6859,11 +6866,7 @@ async function main() {
           });
           return {
             image: new ImageData(drawn.picture, drawn.width, drawn.height),
-            name: {
-              family: view.family,
-              mode: `custom-${view.custom.name}`,
-              palette: customs.paletteName(view),
-            },
+            name,
           };
         } finally {
           // Every worker is replaced, so none keeps the download's memory, which can be
