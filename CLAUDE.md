@@ -4,15 +4,16 @@ The public site for the fractal wallpapers project, served by GitHub Pages at
 `https://techmatt.github.io/fractals/`. `README.md` says what the site is, what is where, and
 how to serve and check it; `builder/README.md` has every command and what each check holds;
 `explorer/README.md` has the explorer, its wasm modules, its link format, and its test suites.
+**`docs/rulings.md` holds the standing rulings; read it before starting an item.**
 
 ## The companion repository
 
-`C:\Code\fractal-wallpapers` (`techmatt/fractal-wallpapers`) is **read-only from here, and a
-website item never commits into it** (Matt). Running its CLI is reading: `builder/renders.py`
+`C:\Code\fractal-wallpapers` (`techmatt/fractal-wallpapers`) is **read-only from here**.
+Running its CLI is reading: `builder/renders.py`
 shells its `fractal-engine` and writes only to the ignored `artifacts/` here
 (`FRACTAL_WEBSITE_RENDER_CACHE` moves the cache).
 
-- **An engine seam is a separate item.** The report's `blocks:` line names the exact change
+- **An engine seam's report names it.** The `blocks:` line names the exact change
   wanted next door; once it lands, the wasm rebuild here names the new engine commit in
   `explorer/engine.manifest.json`, so every committed wasm can be rebuilt.
 - ⚠ **Nothing rebuilds `engine/target/release/fractal-engine` for you.** After any engine
@@ -44,9 +45,6 @@ sessions write to it too. Three rules touch markup and filenames:
   masters; never in code, a link's text, or a record's own name.
 - **American spelling in everything a reader sees** (color, gray, normalize). A name keeps
   its own spelling (`watercolours-in-the-rain-25`).
-
-No check enforces any of the three: wording and prose checks were removed once the prose
-passes were done (Matt), so none is to be added back.
 
 ## Where prose comes from
 
@@ -195,8 +193,8 @@ skips half of `figures`, `assets`, `deep`, `seats`, and `agreement`. The `Window
 - ⚠ **A sibling `style-wasm/`, `engine/`, `data/styles/` or `data/palettes/` commit owes
   `python -m builder explorer --style`** once the pin moves past it; `check` only notes a
   stale `style.wasm` or `custom-modes.json`.
-- **Run `builder check` on this machine, with the checkout configured, before an item is
-  called done, and read the skip count in the exit summary.** CI clones this repository
+- **Run `builder check` on this machine, with the checkout configured, and read the skip
+  count in the exit summary.** CI clones this repository
   alone, so the checks that want the wallpapers checkout skip there by name
   (`builder/README.md`'s *What `check` checks*). `check` never walks the ignored root trees
   `out/` and `experiments/` (`builder/paths.py`'s `UNSERVED_ROOTS`).
