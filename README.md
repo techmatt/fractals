@@ -53,7 +53,8 @@ rebuilding the engine's wasm needs a fractal-wallpapers checkout beside this one
 - `go/`: short links into the explorer
 - `assets/`: the stylesheet, web-size images, and icons
 - `builder/`: the Python program that writes the generated pages and figures, and checks the tree
-- `docs/`: how the page-review loop is run
+- `docs/`: the standing rulings, how the page-review loop is run, how a custom mode is added,
+  and the bug hunts' findings list
 - `tools/judges-lab/`: the browser port of the judges, used by the explorer's Walk tab
 - `examples/`: the four pictures above
 

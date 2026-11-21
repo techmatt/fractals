@@ -321,9 +321,9 @@ STYLE_SCHEMA = 1
 SCHEMA = 1
 
 #: Every change this consumer has needed in the sibling engine, one line each. Website items
-#: no longer change the engine (an engine seam is a wallpapers item, CLAUDE.md); these are the
-#: changes earlier website items made under a rule since retired, each named here because a
-#: committed module nobody can rebuild from the sibling checkout is a dead end. Typed
+#: no longer change the engine (an engine seam is a wallpapers item, docs/rulings.md); these
+#: are the changes earlier website items made under a rule since retired, each named here
+#: because a committed module nobody can rebuild from the sibling checkout is a dead end. Typed
 #: rather than derived: nothing in the sibling repository marks a commit as one of these,
 #: and a list that guessed would be worse than no list. A change landed here in the same
 #: commit that baked it in.
