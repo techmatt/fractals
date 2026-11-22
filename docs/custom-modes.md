@@ -87,6 +87,11 @@ the page). A website item never commits next door; each half below is its own it
    knobs (the published look, so a button no setting reproduces is held to that, not its
    keep), a few seconds each; `wasm-parity`'s natives come only after its whole wasm half.
    Use fresh out directories: `custom-parity.mjs` appends, and a stale id reads `NO NATIVE`.
+   **Draw both sides at one pin**: the natives come from the sibling's `HEAD` at the moment
+   they run, the Node and page sides from the committed bundle, so a sibling commit landing
+   mid-run (a knob added) reads as a whole-picture miss; re-pin, then redraw that mode on
+   both sides. **Two `custom-browser.mjs` runs at once need distinct `--port`s**; without
+   one the second refuses to start (`cdp.mjs`'s `open`).
 
    ```
    node explorer/bench/custom-natives.mjs out/natives                     # the references

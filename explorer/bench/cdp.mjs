@@ -28,6 +28,16 @@ export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
  * `flags` are extra Chrome switches, for a harness that needs one.
  */
 export async function open({ port = 9422, width = 1600, height = 1000, headless = true, flags = [] } = {}) {
+  // A second Chrome on a port already held cannot listen there, so the poll below would
+  // find the first one's page and drive it: two runs of one harness would press each
+  // other's buttons and save each other's downloads (015). Refused instead.
+  try {
+    await fetch(`http://127.0.0.1:${port}/json/version`);
+    throw new Error(`port ${port} already has a Chrome debugging on it (another run of this harness?): pass a free port`);
+  } catch (error) {
+    if (error.message.startsWith(`port ${port}`)) throw error;
+    // Nothing listening: the port is free.
+  }
   const profile = mkdtempSync(join(tmpdir(), "explorer-bench-"));
   const args = [
     `--remote-debugging-port=${port}`,

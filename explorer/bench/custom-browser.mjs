@@ -3,6 +3,7 @@
 //
 //   node explorer/bench/custom-browser.mjs <base url> <out dir> [--size 640x400] [--only <mode>,…]
 //                                          [--tier curated|lab] [--wait <seconds>]
+//                                          [--workers <n>] [--port <debugging port>]
 //
 // **The page says when it is busy**: `#render-state` carries `data-busy` while a download
 // holds the controls (`explorer.js`'s `setBusy`), and every press here waits for it to go,
@@ -24,7 +25,8 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { open, sleep } from "./cdp.mjs";
-import { TIERS, tierOf } from "../style.js";
+import { encode } from "../permalink.js";
+import { TIERS, offeredExamples, tierOf } from "../style.js";
 
 const args = process.argv.slice(2);
 const [base, outArg] = args;
@@ -44,7 +46,9 @@ const landing = join(out, "landing");
 mkdirSync(landing, { recursive: true });
 
 const bundle = JSON.parse(readFileSync(fileURLToPath(new URL("../custom-modes.json", import.meta.url)), "utf8"));
-const browser = await open({ port: 9433, width: 1400, height: 900 });
+// `--port` is Chrome's debugging port: a second run beside the first needs its own
+// (`cdp.mjs`'s `open` refuses a port another Chrome holds).
+const browser = await open({ port: Number(option("--port", "9433")), width: 1400, height: 900 });
 const errors = [];
 browser.on((message) => {
   if (message.method === "Runtime.exceptionThrown") errors.push(message.params.exceptionDetails?.exception?.description);
@@ -137,7 +141,11 @@ for (const mode of bundle.modes) {
       return button !== null;
     })()`);
     if (!offered) {
-      appendFileSync(join(out, "browser.jsonl"), `${JSON.stringify({ ...row, ok: true, skipped: "not offered" })}\n`);
+      // Held to the bundle's own rule: a button the record offers and the page lacks is the
+      // page's miss, not a skip (015 read one as "not offered" while two runs shared a page).
+      const owed = offeredExamples(mode, encode).some((each) => each.index === index);
+      const skipped = owed ? { ok: false, why: "the page lacks a button the bundle offers" } : { ok: true, skipped: "not offered" };
+      appendFileSync(join(out, "browser.jsonl"), `${JSON.stringify({ ...row, ...skipped })}\n`);
       continue;
     }
     // The address bar is rewritten at most every 350 ms (`ADDRESS_MS`).
