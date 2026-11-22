@@ -45,10 +45,16 @@ for (const mode of bundle.modes) {
   const before = wasm.memory.buffer.byteLength;
   const opened = text(wasm.open(pointer, raw.length));
   const t = performance.now();
-  text(wasm.measure(opened.handle, 0, 0, 0));
-  const [tw, th] = [Math.min(128, width), Math.min(128, height)];
-  const at = wasm.tile(opened.handle, 0, 0, tw, th);
-  wasm.dealloc(at >>> 0, tw * th * 4);
+  if (opened.post === true) {
+    // A post stage reads the whole frame and is drawn in one pass, never tiled.
+    const at = wasm.frame(opened.handle);
+    wasm.dealloc(at >>> 0, width * height * 4);
+  } else {
+    text(wasm.measure(opened.handle, 0, 0, 0));
+    const [tw, th] = [Math.min(128, width), Math.min(128, height)];
+    const at = wasm.tile(opened.handle, 0, 0, tw, th);
+    wasm.dealloc(at >>> 0, tw * th * 4);
+  }
   wasm.close(opened.handle);
   const after = wasm.memory.buffer.byteLength;
   const samples = width * height * 4;

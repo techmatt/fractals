@@ -43,13 +43,15 @@ const { instance } = await WebAssembly.instantiate(readFileSync(here("style.wasm
 const wasm = instance.exports;
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
-const text = (pointer) => {
+// `last_error` is a plain sentence; every other answer is JSON.
+const plain = (pointer) => {
   pointer >>>= 0;
   const length = new DataView(wasm.memory.buffer).getUint32(pointer, true);
-  const value = JSON.parse(decoder.decode(new Uint8Array(wasm.memory.buffer, pointer + 4, length).slice()));
+  const value = decoder.decode(new Uint8Array(wasm.memory.buffer, pointer + 4, length).slice());
   wasm.dealloc(pointer, length + 4);
   return value;
 };
+const text = (pointer) => JSON.parse(plain(pointer));
 
 // The parse context: only what an example link names is ever read, so `home` and
 // `constants` answer for any family without the engine, and `palettes` is the one map an
@@ -105,22 +107,32 @@ for (const mode of bundle.modes) {
       wasm.dealloc(pointer, raw.length);
       if (!opened.ok) throw new Error(opened.why);
       let started = performance.now();
-      const measured = text(wasm.measure(opened.handle, 0, 0, 0));
-      if (!measured.ok) throw new Error(measured.why);
-      row.measure = (performance.now() - started) / 1000;
-      started = performance.now();
-      const picture = new Uint8Array(width * height * 4);
-      for (const tile of tilesOf(width, height)) {
-        const length = tile.width * tile.height * 4;
-        const at = wasm.tile(opened.handle, tile.x, tile.y, tile.width, tile.height) >>> 0;
-        if (at === 0) throw new Error(text(wasm.last_error()));
-        const rgba = new Uint8Array(wasm.memory.buffer.slice(at, at + length));
+      let picture = new Uint8Array(width * height * 4);
+      if (opened.post === true) {
+        // A post stage reads the whole frame: one pass, as the page draws it (`StylePool`).
+        const length = width * height * 4;
+        const at = wasm.frame(opened.handle) >>> 0;
+        if (at === 0) throw new Error(plain(wasm.last_error()));
+        picture = new Uint8Array(wasm.memory.buffer.slice(at, at + length));
         wasm.dealloc(at, length);
-        for (let r = 0; r < tile.height; r++) {
-          picture.set(rgba.subarray(r * tile.width * 4, (r + 1) * tile.width * 4), ((tile.y + r) * width + tile.x) * 4);
+        row.whole = (performance.now() - started) / 1000;
+      } else {
+        const measured = text(wasm.measure(opened.handle, 0, 0, 0));
+        if (!measured.ok) throw new Error(measured.why);
+        row.measure = (performance.now() - started) / 1000;
+        started = performance.now();
+        for (const tile of tilesOf(width, height)) {
+          const length = tile.width * tile.height * 4;
+          const at = wasm.tile(opened.handle, tile.x, tile.y, tile.width, tile.height) >>> 0;
+          if (at === 0) throw new Error(plain(wasm.last_error()));
+          const rgba = new Uint8Array(wasm.memory.buffer.slice(at, at + length));
+          wasm.dealloc(at, length);
+          for (let r = 0; r < tile.height; r++) {
+            picture.set(rgba.subarray(r * tile.width * 4, (r + 1) * tile.width * 4), ((tile.y + r) * width + tile.x) * 4);
+          }
         }
+        row.tiles = (performance.now() - started) / 1000;
       }
-      row.tiles = (performance.now() - started) / 1000;
       wasm.close(opened.handle);
       writeFileSync(join(out, `${id}.rgba`), picture);
       row.ok = true;

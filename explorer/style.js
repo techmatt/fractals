@@ -290,7 +290,7 @@ function asRead(stack) {
 }
 
 /** The stack members the module treats as whole numbers (`style-wasm`'s `INTEGER_MEMBERS`). */
-export const INTEGER_MEMBERS = new Set(["iterations", "hit", "settle", "sectors", "turns"]);
+export const INTEGER_MEMBERS = new Set(["iterations", "hit", "settle", "sectors", "turns", "levels", "arms", "steps"]);
 
 /** Half to even, as the module's `round_ties_even`. */
 export function roundEven(number) {
@@ -690,9 +690,30 @@ export class StylePool {
       base += spans[0];
     }
 
-    const opened = await Promise.all(slots.map((slot) => slot.call({ kind: "open", job: pass, request: text })));
+    const first = await slots[0].call({ kind: "open", job: pass, request: text });
     live();
-    const summary = opened[0].summary;
+    const summary = first.summary;
+
+    if (summary.post === true) {
+      // A post stage reads the whole frame (a mosaic's lattice is fixed to it), so the
+      // module draws it in one pass on one worker and refuses tiles; the preview above is
+      // the same rule at a quarter size.
+      hooks.stage?.("whole");
+      const at = performance.now();
+      const answer = await slots[0].call({ kind: "whole", job: pass, width, height });
+      live();
+      picture.set(new Uint8ClampedArray(answer.pixels));
+      hooks.tile?.({ x: 0, y: 0, width, height }, picture, true);
+      report(1 - base, 1);
+      timing.workers = 1;
+      timing.whole = performance.now() - at;
+      timing.total = performance.now() - started;
+      slots[0].call({ kind: "close", job: pass }).catch(() => {});
+      return { picture, width, height, summary, tone: null, timing };
+    }
+
+    await Promise.all(slots.slice(1).map((slot) => slot.call({ kind: "open", job: pass, request: text })));
+    live();
 
     const sweep = async (exact, share) => {
       const queue = [...tiles];

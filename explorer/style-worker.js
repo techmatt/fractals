@@ -16,20 +16,25 @@ let session = 0;
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
-/** A `[u32 length][JSON]` answer, read and freed. */
-function text(pointer) {
+/** A `[u32 length][text]` answer as it is, read and freed: `last_error` is a sentence. */
+function plain(pointer) {
   pointer >>>= 0;
   const length = new DataView(wasm.memory.buffer).getUint32(pointer, true);
   const body = new Uint8Array(wasm.memory.buffer, pointer + 4, length);
-  const value = JSON.parse(decoder.decode(body.slice()));
+  const value = decoder.decode(body.slice());
   wasm.dealloc(pointer, length + 4);
   return value;
+}
+
+/** A `[u32 length][JSON]` answer, read and freed. */
+function text(pointer) {
+  return JSON.parse(plain(pointer));
 }
 
 /** Bare RGBA, copied out and freed; a null pointer is the module's refusal. */
 function rgba(pointer, length) {
   pointer >>>= 0;
-  if (pointer === 0) throw new Error(text(wasm.last_error()));
+  if (pointer === 0) throw new Error(plain(wasm.last_error()));
   const out = wasm.memory.buffer.slice(pointer, pointer + length);
   wasm.dealloc(pointer, length);
   return out;
@@ -75,6 +80,15 @@ self.onmessage = (event) => {
       const pixels = rgba(wasm.tile(session, x, y, width, height), width * height * 4);
       self.postMessage(
         { kind: "tile", job, x, y, width, height, pixels, elapsed: performance.now() - started },
+        [pixels],
+      );
+    } else if (message.kind === "whole") {
+      // The open session's picture in one pass: a style with a post stage (`post` in its
+      // summary) reads the whole frame, so the module refuses it a tile.
+      const { width, height } = message;
+      const pixels = rgba(wasm.frame(session), width * height * 4);
+      self.postMessage(
+        { kind: "tile", job, x: 0, y: 0, width, height, pixels, elapsed: performance.now() - started },
         [pixels],
       );
     } else if (message.kind === "frame") {

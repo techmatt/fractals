@@ -1,5 +1,5 @@
 {
-  "built": "2026-11-19",
+  "built": "2026-11-22",
   "crate": "explorer/engine-wasm",
   "engine_changes": [
     "coloring::composite, coloring::modulate and direct_trap::Painter::trace are pub: visibility only, no signature moved, engine tests unmoved.",
@@ -22,9 +22,9 @@
     "A default-on `deep` feature takes the sibling's `perturbation/` kernel as an optional dependency, for render-link's dv= links (deep_seam_move_ckpt163); this module takes the engine with default-features = false, links none of it, and rebuilds at the pin to its committed bytes."
   ],
   "engine_version": "0.1.0",
-  "gzip_bytes": 255239,
+  "gzip_bytes": 255234,
   "raw_bytes": 965449,
   "rustc": "1.96.0 (ac68faa20 2026-05-25)",
   "schema": 1,
-  "wallpapers_commit": "f21fcf18b236e276646bcab79515bf1dd2607c4c"
+  "wallpapers_commit": "3569b0e320c1b1fbae5af301764133bf83699edd"
 }

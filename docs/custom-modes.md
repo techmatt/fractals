@@ -151,7 +151,10 @@ the page). A website item never commits next door; each half below is its own it
 - **Drawing** is a quarter-size picture, then full-size tiles against its balance, then the
   exact tone measure and the tiles again, on a pool of half the machine's threads, one to
   `MAX_STYLE_WORKERS` (`style.js`'s `poolSize`). Downloads take the same pool, without the
-  preview.
+  preview. **A mode with a post stage** (its `open` summary says `post: true`, tri-mosaic's
+  lattice) reads the whole frame, so the module refuses it a tile: after the preview it is
+  drawn whole in one pass on one worker (`StylePool.drawing`, the worker's `whole`). Its
+  pattern is fixed to the frame, so a pan moves the fractal under it.
 - **Memory**: every worker measures the whole frame, and a wasm memory never shrinks. So a
   pass runs on as many workers as fit `PASS_MEMORY` between them, a download over
   `MAX_CUSTOM_SAMPLES` (one worker's `WORKER_MEMORY` at `BYTES_PER_SAMPLE`) is refused in a

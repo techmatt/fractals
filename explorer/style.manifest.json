@@ -1,7 +1,7 @@
 {
-  "built": "2026-11-19",
+  "built": "2026-11-22",
   "bundle": {
-    "colormaps": 67,
+    "colormaps": 80,
     "file": "custom-modes.json",
     "modes": [
       "brass-foam",
@@ -40,10 +40,21 @@
       "sliced-mirrors",
       "cut-tiles",
       "scaled-folds",
-      "copper-webs"
+      "copper-webs",
+      "tri-mosaic",
+      "stirred-ink",
+      "paper-layers",
+      "gouache-cut",
+      "mercury-tubes",
+      "neon-loops",
+      "hairline-rays",
+      "frost-stipple",
+      "grain-fans",
+      "draped-folds",
+      "gilded-leaves"
     ],
     "schema": 1,
-    "sha256": "f88627f5816a5e4162b77dfcc43284a9f2bea6aaf65bb55577354cd3a61da940"
+    "sha256": "4853e17f92c0cf00604e2f1e9d2f2191e90e02682ac395d2469bcf41eace62d2"
   },
   "crate": "explorer/style-wasm",
   "dependencies": [
@@ -51,8 +62,8 @@
   ],
   "modules": {
     "style.wasm": {
-      "gzip_bytes": 278810,
-      "raw_bytes": 851112,
+      "gzip_bytes": 350696,
+      "raw_bytes": 1103075,
       "rustflags": ""
     }
   },
@@ -60,9 +71,9 @@
   "rustc": "1.96.0 (ac68faa20 2026-05-25)",
   "schema": 1,
   "trees": {
-    "data/palettes": "71f71881bd1977679d69d580c64ab02639b7158e",
-    "data/styles": "3321c499df6498baa61a57e35c5c74ba5b786650",
-    "engine": "736ad154f901d5b2670ae9afbc4d2a5050f91809",
-    "style-wasm": "be71a3ef3261f2840786a0a7c358945b483539dd"
+    "data/palettes": "213957617c141cdce7706fa2112bd2de158427b5",
+    "data/styles": "c5e3a6657269b4f20de51f7056c2a4152ce9367d",
+    "engine": "58d4071e47fbc0dce5dbaa98eee64a30c0e82b10",
+    "style-wasm": "d3ad984143d73f71dd78904bc574693a9ad51d8a"
   }
 }

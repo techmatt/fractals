@@ -63,7 +63,10 @@ const EXAMPLES = bundle.modes.flatMap((mode) => mode.shown.map((shown, index) =>
  *  stack whose tone or layers are not the published one's. Since wallpapers 050, the lab
  *  tier's round-one drafts and keeps from earlier rounds, and one curated keep
  *  (satin-spiral's second, `glossy_spirals__1`). Since 054, scaled-folds' keep, whose sixth
- *  layer was off (opacity 0) where the published one draws it at 0.9. */
+ *  layer was off (opacity 0) where the published one draws it at 0.9. Since 4c1501e (056 to
+ *  067), eleven lab keeps drawn with a round's variant of the stack (tri-mosaic's post
+ *  pass, stirred-ink's stir, the stroke widths and tilts, frost-stipple's, grain-fans' and
+ *  draped-folds' named variants), or before gilded-leaves' bubble fade. */
 const UNREACHED = [
   "teal_filaments__1",
   "star_eye__2",
@@ -75,14 +78,25 @@ const UNREACHED = [
   "glossy_spirals__1",
   "banded_lines__1",
   "scaled_folds__0",
+  "tri_mosaic__1",
+  "tri_mosaic__2",
+  "stirred_ink__2",
+  "paper_layers__1",
+  "mercury_tubes__1",
+  "hairline_rays__0",
+  "frost_stipple__0",
+  "grain_fans__0",
+  "draped_folds__0",
+  "draped_folds__1",
+  "gilded_leaves__0",
 ];
 
-test("the bundle is the 37 published modes in two tiers, each with an example", () => {
+test("the bundle is the 48 published modes in two tiers, each with an example", () => {
   assert.equal(bundle.schema, 1);
-  assert.equal(bundle.modes.length, 37);
+  assert.equal(bundle.modes.length, 48);
   const tiers = bundle.modes.map((mode) => tierOf(mode));
   assert.equal(tiers.filter((tier) => tier === "curated").length, 16);
-  assert.equal(tiers.filter((tier) => tier === "lab").length, 21);
+  assert.equal(tiers.filter((tier) => tier === "lab").length, 32);
   for (const mode of bundle.modes) {
     assert.ok(mode.shown.length > 0, mode.name);
     // A curated mode has four or five knobs (the catalog's tier rule); a lab mode may have none.
@@ -113,21 +127,23 @@ test("an example opens at the mode's defaults, plus the setting that reproduces 
   });
 });
 
-test("each mode offers one button a picture: 77 of the 78 keeps", () => {
+test("each mode offers one button a picture: 95 of the 97 keeps", () => {
   const offered = bundle.modes.flatMap((mode) => offeredExamples(mode, encode).map(({ index }) => `${mode.style}__${index}`));
-  assert.equal(offered.length, 77);
-  assert.equal(EXAMPLES.length, 78);
-  // star-eye's third keep draws its second's picture under the published settings.
+  assert.equal(offered.length, 95);
+  assert.equal(EXAMPLES.length, 97);
+  // star-eye's third keep draws its second's picture under the published settings, and
+  // draped-folds' second its first's (both kept at the same place under round variants).
+  const unoffered = ["star_eye__2", "draped_folds__1"];
   assert.deepEqual(
     EXAMPLES.map(([, , id]) => id).filter((id) => !offered.includes(id)),
-    ["star_eye__2"],
+    unoffered,
   );
   const unreached = bundle.modes.flatMap((mode) =>
     offeredExamples(mode, encode).filter(({ reached }) => !reached).map(({ index }) => `${mode.style}__${index}`),
   );
   assert.deepEqual(
     unreached,
-    UNREACHED.filter((id) => id !== "star_eye__2"),
+    UNREACHED.filter((id) => !unoffered.includes(id)),
   );
 });
 
@@ -326,6 +342,12 @@ test("each mode carries its palette set, the mode's own map first, every map in 
   for (const mode of bundle.modes) {
     const set = palettesOf(mode);
     assert.ok(set.length >= 1, mode.name);
+    if (mode.name === "neon-loops") {
+      // Kept only in an entry: its set is that entry, its own map in none of it, so the
+      // entry is the default and its values are written over the stack.
+      assert.ok(!set.some((entry) => entry.colormap === mode.palette), mode.name);
+      continue;
+    }
     assert.equal(set[0].colormap, mode.palette, `${mode.name}'s default is its own map`);
     assert.deepEqual(set[0].values, {}, `${mode.name}'s default is the stack's own`);
     assert.equal(new Set(set.map((entry) => entry.colormap)).size, set.length, `${mode.name} names a map once`);

@@ -2009,6 +2009,9 @@ async function drawCustom(pass) {
             stat(`${mode.name}: ${size}, measuring the tone at full size…`);
           } else if (name === "final") {
             stat(`${mode.name}: ${size}, the exact picture…`);
+          } else if (name === "whole") {
+            showState("sharpening");
+            stat(`${mode.name}: ${size}, the whole frame in one pass on one worker…`);
           }
         },
         progress: (done) => {
@@ -2025,7 +2028,9 @@ async function drawCustom(pass) {
     keepCustom(cacheKey, { image: finished, measured: customMeasured });
     stat(
       `${mode.name}: ${size} at ${SAMPLES_OF_CUSTOM}× on ${drawn.timing.workers} workers · ${seconds.toFixed(1)} s ` +
-        `(measure ${(drawn.timing.measure / 1000).toFixed(1)} s, tiles ${(drawn.timing.tiles / 1000).toFixed(1)} s)`,
+        (drawn.timing.whole === undefined
+          ? `(measure ${(drawn.timing.measure / 1000).toFixed(1)} s, tiles ${(drawn.timing.tiles / 1000).toFixed(1)} s)`
+          : "(drawn whole: a post stage reads the frame)"),
     );
     // The timing harness's seam (`bench/custom-speed.mjs`), as `__viewer` is the shallow pass's.
     (globalThis.__customTimings ??= []).push({ mode: mode.name, size, workers: drawn.timing.workers, timing: drawn.timing });

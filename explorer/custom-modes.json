@@ -31785,6 +31785,5000 @@
      }
     }
    ]
+  },
+  {
+   "name": "tri-mosaic",
+   "style": "tri_mosaic",
+   "tier": "lab",
+   "palette": "tri_mosaic",
+   "palettes": [
+    {
+     "colormap": "tri_mosaic",
+     "values": {},
+     "score": 3
+    },
+    {
+     "colormap": "tri_mosaic_ice",
+     "values": {
+      "/post/0/fold": 0.5,
+      "/post/0/relief": 0.0,
+      "/tone/median": 0.629,
+      "/tone/p10": 0.176
+     },
+     "score": 3
+    }
+   ],
+   "variant": "current",
+   "what": "A mosaic of triangles nested inside triangles: large calm facets far from the set, splitting ever finer towards it, each tilted and folded into lit faces.",
+   "knobs": [],
+   "stack": {
+    "name": "tri_mosaic",
+    "interior": {
+     "palette": 0.0
+    },
+    "tone": {
+     "median": 0.457,
+     "p10": 0.224
+    },
+    "layers": [
+     {
+      "kind": "palette",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "palette": {
+       "transfer": {
+        "kind": "rank"
+       },
+       "cycles": 2.0
+      }
+     }
+    ],
+    "post": [
+     {
+      "kind": "mosaic",
+      "largest": 0.5,
+      "smallest": 0.0018,
+      "levels": 8,
+      "reach": 0.7,
+      "fold": 0.35,
+      "relief": 6.0,
+      "azimuth": 120.0,
+      "seam": {
+       "width": 0.0005,
+       "color": {
+        "palette": 1.0
+       },
+       "opacity": 0.35
+      }
+     }
+    ]
+   },
+   "shown": [
+    {
+     "keep": "style_tri_mosaic_r1/locations/loc__10_julia-multibrot3_2e04e5e2_tri_mosaic",
+     "caption": "Folded triangles in cream, rust and navy, large in the open field and splitting to dust along a cubic Julia set's curls",
+     "location": {
+      "schema": 1,
+      "name": "julia-multibrot3_2e04e5e2",
+      "family": {
+       "c": [
+        "0.4169190761394084",
+        "0.006933824661843332"
+       ],
+       "degree": 3,
+       "kind": "julia"
+      },
+      "viewport": {
+       "center_re": "-0.13379412906834562",
+       "center_im": "0.01066720222081552",
+       "width": "0.08255897112532501"
+      },
+      "maxiter": 10220,
+      "note": "final139_general seat 923 (direct_trap_multiply, julia:multibrot3)",
+      "gallery": {
+       "record": "final139_general",
+       "seat": 923,
+       "key": "2e04e5e21e6b5512",
+       "p_spiral": 0.002261
+      },
+      "ink": 0.09676
+     },
+     "colormap": "tri_mosaic",
+     "stack": {
+      "name": "tri_mosaic",
+      "interior": {
+       "palette": 0.0
+      },
+      "tone": {
+       "median": 0.457,
+       "p10": 0.224
+      },
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         },
+         "cycles": 2.0
+        }
+       }
+      ],
+      "post": [
+       {
+        "kind": "mosaic",
+        "largest": 0.5,
+        "smallest": 0.0018,
+        "levels": 8,
+        "reach": 0.7,
+        "fold": 0.35,
+        "relief": 6.0,
+        "azimuth": 120.0,
+        "seam": {
+         "width": 0.0005,
+         "color": {
+          "palette": 1.0
+         },
+         "opacity": 0.35
+        }
+       }
+      ]
+     }
+    },
+    {
+     "keep": "style_tri_mosaic_r1/formulations_a/fo_f_inlay__00_phoenix_fc131a7f_tri_mosaic",
+     "caption": "Flat facets with fainter triangles inlaid in each, banded round a phoenix island",
+     "location": {
+      "schema": 1,
+      "name": "phoenix_fc131a7f",
+      "family": {
+       "c": [
+        "-0.5266783574752247",
+        "-0.652322729101436"
+       ],
+       "kind": "phoenix",
+       "p": [
+        "-0.28353182998131243",
+        "-0.02545285599096059"
+       ],
+       "z_prev": [
+        "-0.10324356398202189",
+        "0.43684294503006016"
+       ]
+      },
+      "viewport": {
+       "center_re": "0.797164153883992",
+       "center_im": "0.41015624999999994",
+       "width": "1.7526149488693006"
+      },
+      "maxiter": 4930,
+      "note": "final139_general seat 145 (smooth_angle_min, phoenix)",
+      "gallery": {
+       "record": "final139_general",
+       "seat": 145,
+       "key": "fc131a7f21537f6c",
+       "p_spiral": 0.031184
+      },
+      "ink": 0.02976
+     },
+     "colormap": "tri_mosaic",
+     "stack": {
+      "name": "tri_mosaic",
+      "interior": {
+       "palette": 0.0
+      },
+      "tone": {
+       "median": 0.457,
+       "p10": 0.224
+      },
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         },
+         "cycles": 2.0
+        }
+       }
+      ],
+      "post": [
+       {
+        "kind": "mosaic",
+        "largest": 0.5,
+        "smallest": 0.0018,
+        "levels": 8,
+        "reach": 0.7,
+        "fold": 0.0,
+        "relief": 0.0,
+        "azimuth": 120.0,
+        "seam": {
+         "width": 0.0005,
+         "color": {
+          "palette": 1.0
+         },
+         "opacity": 0.35
+        },
+        "inlay": {
+         "levels": 3,
+         "amount": 0.07
+        }
+       }
+      ]
+     }
+    },
+    {
+     "keep": "style_tri_mosaic_r1/spiral/sp_f_spiral__00_julia-mandelbrot_35b23c31_tri_mosaic",
+     "caption": "The spiral lattice: turned quads winding into a Julia spiral, each showing the fractal broken along its seams",
+     "location": {
+      "schema": 1,
+      "name": "julia-mandelbrot_35b23c31",
+      "family": {
+       "kind": "julia",
+       "degree": 2,
+       "c": [
+        "-1.2583366697573282",
+        "-0.03810995140056672"
+       ]
+      },
+      "viewport": {
+       "center_re": "-0.33378538253283807",
+       "center_im": "-0.10001632773189907",
+       "width": "0.009564736536387666"
+      },
+      "maxiter": 3029,
+      "note": "final139_general seat 463 (threads, julia:mandelbrot)",
+      "gallery": {
+       "record": "final139_general",
+       "seat": 463,
+       "key": "35b23c31a85b40f0",
+       "p_spiral": 0.894374
+      }
+     },
+     "colormap": "tri_mosaic",
+     "stack": {
+      "name": "tri_mosaic",
+      "interior": {
+       "palette": 0.0
+      },
+      "tone": {
+       "median": 0.457,
+       "p10": 0.224
+      },
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         },
+         "cycles": 2.0
+        }
+       }
+      ],
+      "post": [
+       {
+        "kind": "mosaic",
+        "largest": 1.0,
+        "smallest": 0.02,
+        "levels": 0,
+        "reach": 0.3,
+        "fold": 0.15,
+        "relief": 0.0,
+        "azimuth": 120.0,
+        "seam": {
+         "width": 0.0012,
+         "color": {
+          "palette": 0.0
+         },
+         "opacity": 0.85
+        },
+        "spiral": {
+         "arms": 7,
+         "twist": 1.0
+        },
+        "fill": "turned",
+        "turn": 25.0
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "stirred-ink",
+   "style": "stirred_ink",
+   "tier": "lab",
+   "palette": "stirred_ink",
+   "palettes": [
+    {
+     "colormap": "stirred_ink",
+     "values": {},
+     "score": 4
+    }
+   ],
+   "variant": "current",
+   "what": "A poured liquid stirred into S-curls and hooks: one glossy blue ink combed along a turned copy of the fractal, bright crests along the folds, the curls tightening towards the set.",
+   "knobs": [
+    {
+     "name": "stir_length",
+     "label": "Stir length",
+     "what": "how many steps the wide stir takes; 4 winds the large curls a little further, 3 draws faster",
+     "default": 3,
+     "range": [
+      3,
+      4
+     ],
+     "set": [
+      "/stir/0/steps"
+     ]
+    }
+   ],
+   "stack": {
+    "name": "stirred_ink",
+    "interior": {
+     "palette": 0.05
+    },
+    "tone": {
+     "median": 0.471,
+     "p10": 0.22
+    },
+    "stir": [
+     {
+      "view": {
+       "turn": 100.0,
+       "zoom": 0.35,
+       "shift": [
+        0.13,
+        -0.17
+       ]
+      },
+      "strength": 3.0,
+      "angle": 90.0,
+      "period": 2.0,
+      "largest": 0.2,
+      "steps": 3
+     },
+     {
+      "view": {
+       "turn": 220.0,
+       "zoom": 1.5,
+       "shift": [
+        -0.2,
+        0.1
+       ]
+      },
+      "strength": 2.0,
+      "angle": 90.0,
+      "period": 2.0,
+      "largest": 0.04,
+      "steps": 3
+     }
+    ],
+    "layers": [
+     {
+      "kind": "palette",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "palette": {
+       "cycles": 1.0,
+       "gamma": 1.6,
+       "phase": 0.0,
+       "transfer": {
+        "kind": "rank"
+       }
+      }
+     },
+     {
+      "kind": "light",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "light": {
+       "bands": 1.0,
+       "rings": 0.0,
+       "slope": 0.9,
+       "azimuth": 120.0,
+       "elevation": 42.0,
+       "ambient": 0.5,
+       "diffuse": 0.5,
+       "specular": 0.7,
+       "shininess": 10.0,
+       "highlight": {
+        "palette": 0.95
+       }
+      },
+      "opacity": 1.0,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        },
+        "transform": "log"
+       },
+       "power": 1.0
+      }
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "sheet": {
+       "bands": 5.0,
+       "edge": 0.03,
+       "fill": 0.0,
+       "rank": false
+      },
+      "blend": "screen",
+      "opacity": 0.95,
+      "color": {
+       "palette": 0.98
+      }
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "sheet": {
+       "bands": 5.0,
+       "edge": 0.3,
+       "fill": 0.0,
+       "rank": false
+      },
+      "blend": "screen",
+      "opacity": 0.4,
+      "color": {
+       "palette": 0.8
+      }
+     }
+    ]
+   },
+   "shown": [
+    {
+     "keep": "style_stirred_ink_r1/stirred_ink/formulations_a/a_f_wide__00_julia-multibrot3_7e312206_stirred_ink",
+     "caption": "Blue ink poured in frame-wide swirls round a cubic Julia set, white crests glowing along the folds",
+     "location": {
+      "schema": 1,
+      "name": "julia-multibrot3_7e312206",
+      "family": {
+       "c": [
+        "0.4169190761394084",
+        "0.006933824661843332"
+       ],
+       "degree": 3,
+       "kind": "julia"
+      },
+      "viewport": {
+       "center_re": "0.21194222504856358",
+       "center_im": "0.1873982280382586",
+       "width": "0.5156906251665773"
+      },
+      "maxiter": 7048,
+      "note": "final139_general seat 78 (threads, julia:multibrot3)",
+      "gallery": {
+       "record": "final139_general",
+       "seat": 78,
+       "key": "7e312206457ba5b2",
+       "p_spiral": 0.004165
+      },
+      "ink": 0.08408
+     },
+     "colormap": "stirred_ink",
+     "stack": {
+      "name": "stirred_ink",
+      "interior": {
+       "palette": 0.05
+      },
+      "tone": {
+       "median": 0.471,
+       "p10": 0.22
+      },
+      "stir": [
+       {
+        "view": {
+         "turn": 100.0,
+         "zoom": 0.35,
+         "shift": [
+          0.13,
+          -0.17
+         ]
+        },
+        "strength": 3.0,
+        "angle": 90.0,
+        "period": 2.0,
+        "largest": 0.2,
+        "steps": 4
+       },
+       {
+        "view": {
+         "turn": 220.0,
+         "zoom": 1.5,
+         "shift": [
+          -0.2,
+          0.1
+         ]
+        },
+        "strength": 2.0,
+        "angle": 90.0,
+        "period": 2.0,
+        "largest": 0.04,
+        "steps": 3
+       }
+      ],
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "palette": {
+         "cycles": 1.0,
+         "gamma": 1.6,
+         "phase": 0.0,
+         "transfer": {
+          "kind": "rank"
+         }
+        }
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "light": {
+         "bands": 1.0,
+         "rings": 0.0,
+         "slope": 0.9,
+         "azimuth": 120.0,
+         "elevation": 42.0,
+         "ambient": 0.5,
+         "diffuse": 0.5,
+         "specular": 0.7,
+         "shininess": 10.0,
+         "highlight": {
+          "palette": 0.95
+         }
+        },
+        "opacity": 1.0,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          },
+          "transform": "log"
+         },
+         "power": 1.0
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "sheet": {
+         "bands": 5.0,
+         "edge": 0.03,
+         "fill": 0.0,
+         "rank": false
+        },
+        "blend": "screen",
+        "opacity": 0.95,
+        "color": {
+         "palette": 0.98
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "sheet": {
+         "bands": 5.0,
+         "edge": 0.3,
+         "fill": 0.0,
+         "rank": false
+        },
+        "blend": "screen",
+        "opacity": 0.4,
+        "color": {
+         "palette": 0.8
+        }
+       }
+      ]
+     }
+    },
+    {
+     "keep": "style_stirred_ink_r1/stirred_ink/formulations_b/b_f_wide__01_julia-multibrot3_f1cad9d4_stirred_ink",
+     "caption": "Broad glossy sweeps curling into hooks where the lace begins",
+     "location": {
+      "schema": 1,
+      "name": "julia-multibrot3_f1cad9d4",
+      "family": {
+       "c": [
+        "0.4169190761394084",
+        "0.006933824661843332"
+       ],
+       "degree": 3,
+       "kind": "julia"
+      },
+      "viewport": {
+       "center_re": "-0.13379412906834562",
+       "center_im": "0.01066720222081552",
+       "width": "0.08255897112532501"
+      },
+      "maxiter": 10220,
+      "note": "final139_general seat 225 (threads, julia:multibrot3)",
+      "gallery": {
+       "record": "final139_general",
+       "seat": 225,
+       "key": "f1cad9d4acc1ec9b",
+       "p_spiral": 0.002079
+      },
+      "ink": 0.09676
+     },
+     "colormap": "stirred_ink",
+     "stack": {
+      "name": "stirred_ink",
+      "interior": {
+       "palette": 0.05
+      },
+      "tone": {
+       "median": 0.471,
+       "p10": 0.22
+      },
+      "stir": [
+       {
+        "view": {
+         "turn": 100.0,
+         "zoom": 0.35,
+         "shift": [
+          0.13,
+          -0.17
+         ]
+        },
+        "strength": 3.0,
+        "angle": 90.0,
+        "period": 2.0,
+        "largest": 0.2,
+        "steps": 4
+       },
+       {
+        "view": {
+         "turn": 220.0,
+         "zoom": 1.5,
+         "shift": [
+          -0.2,
+          0.1
+         ]
+        },
+        "strength": 2.0,
+        "angle": 90.0,
+        "period": 2.0,
+        "largest": 0.04,
+        "steps": 3
+       }
+      ],
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "palette": {
+         "cycles": 1.0,
+         "gamma": 1.6,
+         "phase": 0.0,
+         "transfer": {
+          "kind": "rank"
+         }
+        }
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "light": {
+         "bands": 1.0,
+         "rings": 0.0,
+         "slope": 0.9,
+         "azimuth": 120.0,
+         "elevation": 42.0,
+         "ambient": 0.5,
+         "diffuse": 0.5,
+         "specular": 0.7,
+         "shininess": 10.0,
+         "highlight": {
+          "palette": 0.95
+         }
+        },
+        "opacity": 1.0,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          },
+          "transform": "log"
+         },
+         "power": 1.0
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "sheet": {
+         "bands": 5.0,
+         "edge": 0.03,
+         "fill": 0.0,
+         "rank": false
+        },
+        "blend": "screen",
+        "opacity": 0.95,
+        "color": {
+         "palette": 0.98
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "sheet": {
+         "bands": 5.0,
+         "edge": 0.3,
+         "fill": 0.0,
+         "rank": false
+        },
+        "blend": "screen",
+        "opacity": 0.4,
+        "color": {
+         "palette": 0.8
+        }
+       }
+      ]
+     }
+    },
+    {
+     "keep": "style_stirred_ink_r1/stirred_ink/locations/loc__01_phoenix_71e305f0_stirred_ink",
+     "caption": "Round one's tighter stir at a phoenix seat: dark glossy streams combed through bright spray",
+     "location": {
+      "schema": 1,
+      "name": "phoenix_71e305f0",
+      "family": {
+       "c": [
+        "-0.45709691767279576",
+        "-0.199309339142123"
+       ],
+       "kind": "phoenix",
+       "p": [
+        "0.26195066562519664",
+        "-0.03188285542142037"
+       ],
+       "z_prev": [
+        "0.23987361417464126",
+        "0.45066347511034605"
+       ]
+      },
+      "viewport": {
+       "center_re": "0.25337620512610465",
+       "center_im": "0.019520042863297414",
+       "width": "0.05170751794386484"
+      },
+      "maxiter": 11030,
+      "note": "final139_general seat 221 (smooth_mean_angle, phoenix)",
+      "gallery": {
+       "record": "final139_general",
+       "seat": 221,
+       "key": "71e305f066da5bbb",
+       "p_spiral": 0.015579
+      },
+      "ink": 0.09515
+     },
+     "colormap": "stirred_ink",
+     "stack": {
+      "name": "stirred_ink",
+      "interior": {
+       "palette": 0.05
+      },
+      "tone": {
+       "median": 0.471,
+       "p10": 0.22
+      },
+      "stir": [
+       {
+        "view": {
+         "turn": 100.0,
+         "zoom": 0.8,
+         "shift": [
+          0.13,
+          -0.17
+         ]
+        },
+        "strength": 3.0,
+        "angle": 90.0,
+        "period": 3.0,
+        "largest": 0.08,
+        "steps": 4
+       },
+       {
+        "view": {
+         "turn": 220.0,
+         "zoom": 1.5,
+         "shift": [
+          -0.2,
+          0.1
+         ]
+        },
+        "strength": 2.0,
+        "angle": 90.0,
+        "period": 2.0,
+        "largest": 0.04,
+        "steps": 3
+       }
+      ],
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "palette": {
+         "cycles": 1.0,
+         "gamma": 1.6,
+         "phase": 0.0,
+         "transfer": {
+          "kind": "rank"
+         }
+        }
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "light": {
+         "bands": 1.0,
+         "rings": 0.0,
+         "slope": 0.9,
+         "azimuth": 120.0,
+         "elevation": 42.0,
+         "ambient": 0.5,
+         "diffuse": 0.5,
+         "specular": 0.7,
+         "shininess": 10.0,
+         "highlight": {
+          "palette": 0.95
+         }
+        },
+        "opacity": 1.0,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          },
+          "transform": "log"
+         },
+         "power": 1.0
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "sheet": {
+         "bands": 5.0,
+         "edge": 0.03,
+         "fill": 0.0,
+         "rank": false
+        },
+        "blend": "screen",
+        "opacity": 0.95,
+        "color": {
+         "palette": 0.98
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "sheet": {
+         "bands": 5.0,
+         "edge": 0.3,
+         "fill": 0.0,
+         "rank": false
+        },
+        "blend": "screen",
+        "opacity": 0.4,
+        "color": {
+         "palette": 0.8
+        }
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "paper-layers",
+   "style": "paper_layers",
+   "tier": "lab",
+   "palette": "paper_layers",
+   "palettes": [
+    {
+     "colormap": "paper_layers",
+     "values": {},
+     "score": 4
+    }
+   ],
+   "variant": "current",
+   "what": "Stacked sheets of cut paper: the set's bands as flat cream, rust and slate sheets, each casting a soft shadow on the one under it.",
+   "knobs": [],
+   "stack": {
+    "name": "paper_layers",
+    "interior": {
+     "palette": 0.56
+    },
+    "tone": {
+     "median": 0.572,
+     "p10": 0.139
+    },
+    "layers": [
+     {
+      "kind": "palette",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "palette": {
+       "transfer": {
+        "kind": "rank"
+       }
+      }
+     }
+    ],
+    "post": [
+     {
+      "kind": "paper",
+      "levels": 12,
+      "taper": 0.86,
+      "shadow": {
+       "width": 0.05,
+       "offset": 0.012,
+       "azimuth": 120.0,
+       "opacity": 0.6
+      }
+     }
+    ]
+   },
+   "shown": [
+    {
+     "keep": "style_cut_paper_poster_r1/paper_layers/locations/paper_loc__p_stack__01_phoenix_71e305f0",
+     "caption": "Slate-blue lace curling over stacked cream, amber and rust sheets, each casting a soft shadow on the one below",
+     "location": {
+      "schema": 1,
+      "name": "phoenix_71e305f0",
+      "family": {
+       "c": [
+        "-0.45709691767279576",
+        "-0.199309339142123"
+       ],
+       "kind": "phoenix",
+       "p": [
+        "0.26195066562519664",
+        "-0.03188285542142037"
+       ],
+       "z_prev": [
+        "0.23987361417464126",
+        "0.45066347511034605"
+       ]
+      },
+      "viewport": {
+       "center_re": "0.25337620512610465",
+       "center_im": "0.019520042863297414",
+       "width": "0.05170751794386484"
+      },
+      "maxiter": 11030,
+      "note": "final139_general seat 221 (smooth_mean_angle, phoenix)",
+      "gallery": {
+       "record": "final139_general",
+       "seat": 221,
+       "key": "71e305f066da5bbb",
+       "p_spiral": 0.015579
+      },
+      "ink": 0.09515
+     },
+     "colormap": "paper_layers",
+     "stack": {
+      "name": "paper_layers",
+      "interior": {
+       "palette": 0.56
+      },
+      "tone": {
+       "median": 0.572,
+       "p10": 0.139
+      },
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         }
+        }
+       }
+      ],
+      "post": [
+       {
+        "kind": "paper",
+        "levels": 12,
+        "taper": 0.86,
+        "shadow": {
+         "width": 0.05,
+         "offset": 0.012,
+         "azimuth": 120.0,
+         "opacity": 0.6
+        }
+       }
+      ]
+     }
+    },
+    {
+     "keep": "style_cut_paper_poster_r1/paper_layers/formulations/paper_a__p_tia__00_phoenix_fc131a7f",
+     "caption": "Cream sheets pooled round a phoenix island, rust and slate strips of paper fanning out beneath them",
+     "location": {
+      "schema": 1,
+      "name": "phoenix_fc131a7f",
+      "family": {
+       "c": [
+        "-0.5266783574752247",
+        "-0.652322729101436"
+       ],
+       "kind": "phoenix",
+       "p": [
+        "-0.28353182998131243",
+        "-0.02545285599096059"
+       ],
+       "z_prev": [
+        "-0.10324356398202189",
+        "0.43684294503006016"
+       ]
+      },
+      "viewport": {
+       "center_re": "0.797164153883992",
+       "center_im": "0.41015624999999994",
+       "width": "1.7526149488693006"
+      },
+      "maxiter": 4930,
+      "note": "final139_general seat 145 (smooth_angle_min, phoenix)",
+      "gallery": {
+       "record": "final139_general",
+       "seat": 145,
+       "key": "fc131a7f21537f6c",
+       "p_spiral": 0.031184
+      },
+      "ink": 0.02976
+     },
+     "colormap": "paper_layers",
+     "stack": {
+      "name": "paper_layers",
+      "interior": {
+       "palette": 0.56
+      },
+      "tone": {
+       "median": 0.572,
+       "p10": 0.139
+      },
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         }
+        }
+       }
+      ],
+      "post": [
+       {
+        "kind": "paper",
+        "levels": 12,
+        "taper": 0.86,
+        "shadow": {
+         "width": 0.05,
+         "offset": 0.012,
+         "azimuth": 120.0,
+         "opacity": 0.6
+        },
+        "height": {
+         "field": {
+          "kind": "tia"
+         }
+        }
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "gouache-cut",
+   "style": "gouache_cut",
+   "tier": "lab",
+   "palette": "gouache_cut",
+   "palettes": [
+    {
+     "colormap": "gouache_cut",
+     "values": {},
+     "score": 3
+    }
+   ],
+   "variant": "current",
+   "what": "Gouache: broad flat teal, navy and mint shapes with dry-brush ragged edges and a few lime knife strokes.",
+   "knobs": [],
+   "stack": {
+    "name": "gouache_cut",
+    "interior": {
+     "palette": 0.0
+    },
+    "tone": {
+     "median": 0.34,
+     "p10": 0.053
+    },
+    "layers": [
+     {
+      "kind": "palette",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "palette": {
+       "transfer": {
+        "kind": "rank"
+       }
+      }
+     }
+    ],
+    "post": [
+     {
+      "kind": "paper",
+      "levels": 7,
+      "taper": 0.9,
+      "hop": 0.125,
+      "phase": 0.0625,
+      "ragged": {
+       "reach": 0.035,
+       "length": 0.15,
+       "width": 0.004,
+       "azimuth": 50.0,
+       "accent": {
+        "color": {
+         "palette": 1.0
+        },
+        "share": 0.12
+       }
+      },
+      "shadow": {
+       "width": 0.006,
+       "offset": 0.002,
+       "azimuth": 120.0,
+       "opacity": 0.35
+      }
+     }
+    ]
+   },
+   "shown": [
+    {
+     "keep": "style_cut_paper_poster_r1/gouache_cut/formulations/gouache_a__g_stack__00_phoenix_f7199609",
+     "caption": "Flat teal, navy and mint shapes with dry-brush ragged edges round a phoenix seat, lime knife strokes along the rims",
+     "location": {
+      "schema": 1,
+      "name": "phoenix_f7199609",
+      "family": {
+       "kind": "phoenix",
+       "c": [
+        "-1.5437553247229434",
+        "0.7599213501481302"
+       ],
+       "p": [
+        "-0.49400758763625796",
+        "0.3745554167585345"
+       ],
+       "z_prev": [
+        "0.018125124959552385",
+        "0.022199569982333456"
+       ]
+      },
+      "viewport": {
+       "center_re": "-0.9666084955510789",
+       "center_im": "0.544368249232031",
+       "width": "0.0847601557845617"
+      },
+      "maxiter": 1271,
+      "note": "final139_general seat 504 (smooth_mean_angle, phoenix)",
+      "gallery": {
+       "record": "final139_general",
+       "seat": 504,
+       "key": "f7199609503bc434",
+       "p_spiral": 0.010318
+      },
+      "ink": 0.02832
+     },
+     "colormap": "gouache_cut",
+     "stack": {
+      "name": "gouache_cut",
+      "interior": {
+       "palette": 0.0
+      },
+      "tone": {
+       "median": 0.34,
+       "p10": 0.053
+      },
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         }
+        }
+       }
+      ],
+      "post": [
+       {
+        "kind": "paper",
+        "levels": 7,
+        "taper": 0.9,
+        "hop": 0.125,
+        "phase": 0.0625,
+        "ragged": {
+         "reach": 0.035,
+         "length": 0.15,
+         "width": 0.004,
+         "azimuth": 50.0,
+         "accent": {
+          "color": {
+           "palette": 1.0
+          },
+          "share": 0.12
+         }
+        },
+        "shadow": {
+         "width": 0.006,
+         "offset": 0.002,
+         "azimuth": 120.0,
+         "opacity": 0.35
+        }
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "mercury-tubes",
+   "style": "mercury_tubes",
+   "tier": "lab",
+   "palette": "mercury_tubes",
+   "palettes": [
+    {
+     "colormap": "mercury_tubes",
+     "values": {},
+     "score": 4
+    }
+   ],
+   "variant": "current",
+   "what": "Liquid chrome: mirror-bright star nodes joined by mercury tubes thinning to hairlines, hairline loops, on a calm navy-to-cyan ground.",
+   "knobs": [],
+   "stack": {
+    "name": "mercury_tubes",
+    "interior": {
+     "palette": 0.1
+    },
+    "layers": [
+     {
+      "kind": "palette",
+      "channel": {
+       "radial": {
+        "center": [
+         1.5,
+         0.1
+        ]
+       }
+      },
+      "palette": {
+       "transfer": {
+        "kind": "value"
+       }
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "de"
+       }
+      },
+      "falloff": 0.0003,
+      "color": {
+       "rgb": "#dfe6f2"
+      },
+      "blend": "screen",
+      "opacity": 0.35
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "stroke": {
+        "shape": "circle",
+        "on_c": true,
+        "radius": 0.6,
+        "width": 0.0007,
+        "taper": 0.0,
+        "largest": 2.0,
+        "smallest": 0.05,
+        "steps": 24,
+        "side": "outside",
+        "read": "glow"
+       }
+      },
+      "color": {
+       "rgb": "#e8f0ff"
+      },
+      "blend": "screen",
+      "opacity": 0.8,
+      "power": 1.0
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "stroke": {
+        "shape": "line",
+        "on_c": true,
+        "tilt": 30.0,
+        "width": 0.01,
+        "taper": 0.5,
+        "node": 1.0,
+        "largest": 1.5,
+        "smallest": 0.12,
+        "steps": 12,
+        "side": "outside",
+        "read": "height"
+       }
+      },
+      "color": {
+       "rgb": "#8f99ad"
+      },
+      "blend": "normal",
+      "opacity": 1.0,
+      "power": 0.12
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "stroke": {
+        "shape": "line",
+        "on_c": true,
+        "tilt": 30.0,
+        "width": 0.01,
+        "taper": 0.5,
+        "node": 1.0,
+        "largest": 1.5,
+        "smallest": 0.12,
+        "steps": 12,
+        "side": "outside",
+        "read": "height"
+       }
+      },
+      "color": {
+       "rgb": "#ffffff"
+      },
+      "blend": "screen",
+      "opacity": 0.9,
+      "power": 3.0
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "stroke": {
+        "shape": "line",
+        "on_c": true,
+        "tilt": 30.0,
+        "width": 0.01,
+        "taper": 0.5,
+        "node": 1.0,
+        "largest": 1.5,
+        "smallest": 0.12,
+        "steps": 12,
+        "side": "outside",
+        "read": "height"
+       },
+       "invert": true
+      },
+      "color": {
+       "rgb": "#04071a"
+      },
+      "blend": "multiply",
+      "opacity": 0.9,
+      "power": 5.0
+     },
+     {
+      "kind": "light",
+      "channel": {
+       "stroke": {
+        "shape": "line",
+        "on_c": true,
+        "tilt": 30.0,
+        "width": 0.01,
+        "taper": 0.5,
+        "node": 1.0,
+        "largest": 1.5,
+        "smallest": 0.12,
+        "steps": 12,
+        "side": "outside",
+        "read": "height"
+       }
+      },
+      "light": {
+       "period": 2.0,
+       "bands": 1.0,
+       "rings": 1.0,
+       "slope": 0.0,
+       "azimuth": 120.0,
+       "elevation": 40.0,
+       "ambient": 0.55,
+       "diffuse": 0.6,
+       "specular": 1.0,
+       "shininess": 50.0
+      },
+      "opacity": 0.85
+     }
+    ],
+    "tone": {
+     "median": 0.557,
+     "p10": 0.152
+    }
+   },
+   "shown": [
+    {
+     "keep": "style_chrome_stars_hairlines_r1/mercury_tubes/locations/w1__m_stack__03_phoenix_8b21e0ae",
+     "caption": "A ring of chrome stars round a spiral of fine lace, mercury tubes sweeping out across the blue",
+     "location": {
+      "schema": 1,
+      "name": "phoenix_8b21e0ae",
+      "family": {
+       "c": [
+        "-0.5266783574752247",
+        "-0.652322729101436"
+       ],
+       "kind": "phoenix",
+       "p": [
+        "-0.28353182998131243",
+        "-0.02545285599096059"
+       ],
+       "z_prev": [
+        "-0.10324356398202189",
+        "0.43684294503006016"
+       ]
+      },
+      "viewport": {
+       "center_re": "-0.4471102599431493",
+       "center_im": "-0.44513093814775134",
+       "width": "1.6824237464337766"
+      },
+      "maxiter": 5001,
+      "note": "final139_general seat 624 (smooth_mean_angle, phoenix)",
+      "gallery": {
+       "record": "final139_general",
+       "seat": 624,
+       "key": "8b21e0ae0ec59010",
+       "p_spiral": 0.209808
+      },
+      "ink": 0.03679
+     },
+     "colormap": "mercury_tubes",
+     "stack": {
+      "name": "mercury_tubes",
+      "interior": {
+       "palette": 0.1
+      },
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "radial": {
+          "center": [
+           1.5,
+           0.1
+          ]
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "value"
+         }
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "falloff": 0.0003,
+        "color": {
+         "rgb": "#dfe6f2"
+        },
+        "blend": "screen",
+        "opacity": 0.35
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "stroke": {
+          "shape": "circle",
+          "on_c": true,
+          "radius": 0.6,
+          "width": 0.0007,
+          "taper": 0.0,
+          "largest": 2.0,
+          "smallest": 0.05,
+          "steps": 24,
+          "side": "outside",
+          "read": "glow"
+         }
+        },
+        "color": {
+         "rgb": "#e8f0ff"
+        },
+        "blend": "screen",
+        "opacity": 0.8,
+        "power": 1.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "stroke": {
+          "shape": "line",
+          "on_c": true,
+          "tilt": 30.0,
+          "width": 0.01,
+          "taper": 0.5,
+          "node": 1.0,
+          "largest": 1.5,
+          "smallest": 0.12,
+          "steps": 12,
+          "side": "outside",
+          "read": "height"
+         }
+        },
+        "color": {
+         "rgb": "#8f99ad"
+        },
+        "blend": "normal",
+        "opacity": 1.0,
+        "power": 0.12
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "stroke": {
+          "shape": "line",
+          "on_c": true,
+          "tilt": 30.0,
+          "width": 0.01,
+          "taper": 0.5,
+          "node": 1.0,
+          "largest": 1.5,
+          "smallest": 0.12,
+          "steps": 12,
+          "side": "outside",
+          "read": "height"
+         }
+        },
+        "color": {
+         "rgb": "#ffffff"
+        },
+        "blend": "screen",
+        "opacity": 0.9,
+        "power": 3.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "stroke": {
+          "shape": "line",
+          "on_c": true,
+          "tilt": 30.0,
+          "width": 0.01,
+          "taper": 0.5,
+          "node": 1.0,
+          "largest": 1.5,
+          "smallest": 0.12,
+          "steps": 12,
+          "side": "outside",
+          "read": "height"
+         },
+         "invert": true
+        },
+        "color": {
+         "rgb": "#04071a"
+        },
+        "blend": "multiply",
+        "opacity": 0.9,
+        "power": 5.0
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "stroke": {
+          "shape": "line",
+          "on_c": true,
+          "tilt": 30.0,
+          "width": 0.01,
+          "taper": 0.5,
+          "node": 1.0,
+          "largest": 1.5,
+          "smallest": 0.12,
+          "steps": 12,
+          "side": "outside",
+          "read": "height"
+         }
+        },
+        "light": {
+         "period": 2.0,
+         "bands": 1.0,
+         "rings": 1.0,
+         "slope": 0.0,
+         "azimuth": 120.0,
+         "elevation": 40.0,
+         "ambient": 0.55,
+         "diffuse": 0.6,
+         "specular": 1.0,
+         "shininess": 50.0
+        },
+        "opacity": 0.85
+       }
+      ],
+      "tone": {
+       "median": 0.557,
+       "p10": 0.152
+      }
+     }
+    },
+    {
+     "keep": "style_chrome_stars_hairlines_r1/mercury_tubes/formulations/w1__m_fine__00_phoenix_fc131a7f",
+     "caption": "Chrome stars joined by mercury tubes thinning to hairlines, over a navy-to-cyan ground",
+     "location": {
+      "schema": 1,
+      "name": "phoenix_fc131a7f",
+      "family": {
+       "c": [
+        "-0.5266783574752247",
+        "-0.652322729101436"
+       ],
+       "kind": "phoenix",
+       "p": [
+        "-0.28353182998131243",
+        "-0.02545285599096059"
+       ],
+       "z_prev": [
+        "-0.10324356398202189",
+        "0.43684294503006016"
+       ]
+      },
+      "viewport": {
+       "center_re": "0.797164153883992",
+       "center_im": "0.41015624999999994",
+       "width": "1.7526149488693006"
+      },
+      "maxiter": 4930,
+      "note": "final139_general seat 145 (smooth_angle_min, phoenix)",
+      "gallery": {
+       "record": "final139_general",
+       "seat": 145,
+       "key": "fc131a7f21537f6c",
+       "p_spiral": 0.031184
+      },
+      "ink": 0.02976
+     },
+     "colormap": "mercury_tubes",
+     "stack": {
+      "name": "mercury_tubes",
+      "interior": {
+       "palette": 0.1
+      },
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "radial": {
+          "center": [
+           1.5,
+           0.1
+          ]
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "value"
+         }
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "falloff": 0.0003,
+        "color": {
+         "rgb": "#dfe6f2"
+        },
+        "blend": "screen",
+        "opacity": 0.35
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "stroke": {
+          "shape": "circle",
+          "on_c": true,
+          "radius": 0.6,
+          "width": 0.0007,
+          "taper": 0.0,
+          "largest": 2.0,
+          "smallest": 0.025,
+          "steps": 24,
+          "side": "outside",
+          "read": "glow"
+         }
+        },
+        "color": {
+         "rgb": "#e8f0ff"
+        },
+        "blend": "screen",
+        "opacity": 0.8,
+        "power": 1.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "stroke": {
+          "shape": "line",
+          "on_c": true,
+          "tilt": 30.0,
+          "width": 0.006,
+          "taper": 0.5,
+          "node": 1.0,
+          "largest": 1.5,
+          "smallest": 0.05,
+          "steps": 12,
+          "side": "outside",
+          "read": "height"
+         }
+        },
+        "color": {
+         "rgb": "#8f99ad"
+        },
+        "blend": "normal",
+        "opacity": 1.0,
+        "power": 0.12
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "stroke": {
+          "shape": "line",
+          "on_c": true,
+          "tilt": 30.0,
+          "width": 0.006,
+          "taper": 0.5,
+          "node": 1.0,
+          "largest": 1.5,
+          "smallest": 0.05,
+          "steps": 12,
+          "side": "outside",
+          "read": "height"
+         }
+        },
+        "color": {
+         "rgb": "#ffffff"
+        },
+        "blend": "screen",
+        "opacity": 0.9,
+        "power": 3.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "stroke": {
+          "shape": "line",
+          "on_c": true,
+          "tilt": 30.0,
+          "width": 0.006,
+          "taper": 0.5,
+          "node": 1.0,
+          "largest": 1.5,
+          "smallest": 0.05,
+          "steps": 12,
+          "side": "outside",
+          "read": "height"
+         },
+         "invert": true
+        },
+        "color": {
+         "rgb": "#04071a"
+        },
+        "blend": "multiply",
+        "opacity": 0.9,
+        "power": 5.0
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "stroke": {
+          "shape": "line",
+          "on_c": true,
+          "tilt": 30.0,
+          "width": 0.006,
+          "taper": 0.5,
+          "node": 1.0,
+          "largest": 1.5,
+          "smallest": 0.05,
+          "steps": 12,
+          "side": "outside",
+          "read": "height"
+         }
+        },
+        "light": {
+         "period": 2.0,
+         "bands": 1.0,
+         "rings": 1.0,
+         "slope": 0.0,
+         "azimuth": 120.0,
+         "elevation": 40.0,
+         "ambient": 0.55,
+         "diffuse": 0.6,
+         "specular": 1.0,
+         "shininess": 50.0
+        },
+        "opacity": 0.85
+       }
+      ],
+      "tone": {
+       "median": 0.557,
+       "p10": 0.152
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "neon-loops",
+   "style": "neon_loops",
+   "tier": "lab",
+   "palette": "neon_loops",
+   "palettes": [
+    {
+     "colormap": "tan_star_beams",
+     "values": {
+      "/layers/0/palette/gamma": 1.2,
+      "/layers/1/opacity": 0.3,
+      "/layers/2/falloff": 0.0008,
+      "/layers/2/opacity": 0.55,
+      "/layers/3/channel/stroke/smallest": 0.1,
+      "/layers/3/channel/stroke/steps": 8,
+      "/layers/3/channel/stroke/taper": 0.7,
+      "/layers/3/channel/stroke/width": 0.01,
+      "/layers/3/opacity": 0.36,
+      "/layers/3/power": 0.25,
+      "/layers/4/channel/stroke/smallest": 0.1,
+      "/layers/4/channel/stroke/steps": 8,
+      "/layers/4/channel/stroke/taper": 0.7,
+      "/layers/4/channel/stroke/width": 0.01,
+      "/layers/5/channel/stroke/smallest": 0.1,
+      "/layers/5/channel/stroke/steps": 8,
+      "/layers/5/channel/stroke/width": 0.0015,
+      "/layers/5/opacity": 0.12,
+      "/layers/5/power": 0.25,
+      "/layers/6/channel/stroke/smallest": 0.1,
+      "/layers/6/channel/stroke/steps": 8,
+      "/layers/6/channel/stroke/width": 0.0015,
+      "/layers/6/opacity": 0.3,
+      "/tone/median": 0.156,
+      "/tone/p10": 0.034
+     },
+     "score": 3
+    }
+   ],
+   "variant": "current",
+   "what": "Neon outline: glowing white loops and beams of one clean weight over the set's pale lace, on a blue-to-green ground (blue-white beams between tan stars as a palette entry).",
+   "knobs": [],
+   "stack": {
+    "name": "neon_loops",
+    "interior": {
+     "palette": 0.0
+    },
+    "layers": [
+     {
+      "kind": "palette",
+      "channel": {
+       "radial": {
+        "center": [
+         0.6,
+         0.5
+        ]
+       }
+      },
+      "palette": {
+       "transfer": {
+        "kind": "value"
+       },
+       "cycles": 0.6,
+       "gamma": 1.0
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "de"
+       }
+      },
+      "falloff": 0.02,
+      "color": {
+       "palette": 0.75
+      },
+      "blend": "screen",
+      "opacity": 0.15
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "de"
+       }
+      },
+      "falloff": 0.0004,
+      "color": {
+       "palette": 0.88
+      },
+      "blend": "screen",
+      "opacity": 0.6
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "stroke": {
+        "shape": "line",
+        "on_c": true,
+        "tilt": 20.0,
+        "width": 0.005,
+        "taper": 0.6,
+        "node": 1.0,
+        "largest": 1.5,
+        "smallest": 0.12,
+        "steps": 10,
+        "side": "outside",
+        "read": "glow"
+       }
+      },
+      "color": {
+       "palette": 0.75
+      },
+      "blend": "screen",
+      "opacity": 0.45,
+      "power": 0.3
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "stroke": {
+        "shape": "line",
+        "on_c": true,
+        "tilt": 20.0,
+        "width": 0.005,
+        "taper": 0.6,
+        "node": 1.0,
+        "largest": 1.5,
+        "smallest": 0.12,
+        "steps": 10,
+        "side": "outside",
+        "read": "glow"
+       }
+      },
+      "color": {
+       "palette": 1.0
+      },
+      "blend": "screen",
+      "opacity": 0.9,
+      "power": 2.0
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "stroke": {
+        "shape": "circle",
+        "on_c": true,
+        "radius": 0.7,
+        "width": 0.004,
+        "taper": 0.5,
+        "largest": 1.5,
+        "smallest": 0.12,
+        "steps": 10,
+        "side": "outside",
+        "read": "glow"
+       }
+      },
+      "color": {
+       "palette": 0.75
+      },
+      "blend": "screen",
+      "opacity": 0.5,
+      "power": 0.3
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "stroke": {
+        "shape": "circle",
+        "on_c": true,
+        "radius": 0.7,
+        "width": 0.004,
+        "taper": 0.5,
+        "largest": 1.5,
+        "smallest": 0.12,
+        "steps": 10,
+        "side": "outside",
+        "read": "glow"
+       }
+      },
+      "color": {
+       "palette": 1.0
+      },
+      "blend": "screen",
+      "opacity": 1.0,
+      "power": 2.0
+     }
+    ],
+    "tone": {
+     "median": 0.649,
+     "p10": 0.423
+    }
+   },
+   "shown": [
+    {
+     "keep": "style_chrome_stars_hairlines_r1/neon_loops/entries/w2__e_tan_star_beams__00_phoenix_8b21e0ae",
+     "caption": "Blue-white beams arcing over a tan lace spiral on a dark navy ground",
+     "location": {
+      "schema": 1,
+      "name": "phoenix_8b21e0ae",
+      "family": {
+       "c": [
+        "-0.5266783574752247",
+        "-0.652322729101436"
+       ],
+       "kind": "phoenix",
+       "p": [
+        "-0.28353182998131243",
+        "-0.02545285599096059"
+       ],
+       "z_prev": [
+        "-0.10324356398202189",
+        "0.43684294503006016"
+       ]
+      },
+      "viewport": {
+       "center_re": "-0.4471102599431493",
+       "center_im": "-0.44513093814775134",
+       "width": "1.6824237464337766"
+      },
+      "maxiter": 5001,
+      "note": "final139_general seat 624 (smooth_mean_angle, phoenix)",
+      "gallery": {
+       "record": "final139_general",
+       "seat": 624,
+       "key": "8b21e0ae0ec59010",
+       "p_spiral": 0.209808
+      },
+      "ink": 0.03679
+     },
+     "colormap": "tan_star_beams",
+     "stack": {
+      "name": "neon_loops",
+      "interior": {
+       "palette": 0.0
+      },
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "radial": {
+          "center": [
+           0.6,
+           0.5
+          ]
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "value"
+         },
+         "cycles": 0.6,
+         "gamma": 1.2
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "falloff": 0.02,
+        "color": {
+         "palette": 0.75
+        },
+        "blend": "screen",
+        "opacity": 0.3
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "falloff": 0.0008,
+        "color": {
+         "palette": 0.88
+        },
+        "blend": "screen",
+        "opacity": 0.55
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "stroke": {
+          "shape": "line",
+          "on_c": true,
+          "tilt": 20.0,
+          "width": 0.01,
+          "taper": 0.7,
+          "node": 1.0,
+          "largest": 1.5,
+          "smallest": 0.1,
+          "steps": 8,
+          "side": "outside",
+          "read": "glow"
+         }
+        },
+        "color": {
+         "palette": 0.75
+        },
+        "blend": "screen",
+        "opacity": 0.36,
+        "power": 0.25
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "stroke": {
+          "shape": "line",
+          "on_c": true,
+          "tilt": 20.0,
+          "width": 0.01,
+          "taper": 0.7,
+          "node": 1.0,
+          "largest": 1.5,
+          "smallest": 0.1,
+          "steps": 8,
+          "side": "outside",
+          "read": "glow"
+         }
+        },
+        "color": {
+         "palette": 1.0
+        },
+        "blend": "screen",
+        "opacity": 0.9,
+        "power": 2.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "stroke": {
+          "shape": "circle",
+          "on_c": true,
+          "radius": 0.7,
+          "width": 0.0015,
+          "taper": 0.5,
+          "largest": 1.5,
+          "smallest": 0.1,
+          "steps": 8,
+          "side": "outside",
+          "read": "glow"
+         }
+        },
+        "color": {
+         "palette": 0.75
+        },
+        "blend": "screen",
+        "opacity": 0.12,
+        "power": 0.25
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "stroke": {
+          "shape": "circle",
+          "on_c": true,
+          "radius": 0.7,
+          "width": 0.0015,
+          "taper": 0.5,
+          "largest": 1.5,
+          "smallest": 0.1,
+          "steps": 8,
+          "side": "outside",
+          "read": "glow"
+         }
+        },
+        "color": {
+         "palette": 1.0
+        },
+        "blend": "screen",
+        "opacity": 0.3,
+        "power": 2.0
+       }
+      ],
+      "tone": {
+       "median": 0.156,
+       "p10": 0.034
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "hairline-rays",
+   "style": "hairline_rays",
+   "tier": "lab",
+   "palette": "hairline_rays",
+   "palettes": [
+    {
+     "colormap": "hairline_rays",
+     "values": {},
+     "score": 4
+    }
+   ],
+   "variant": "current",
+   "what": "Hundreds of fine bright hairlines sweeping out of the spiral centres and crossing in a mesh, blue on deep blue.",
+   "knobs": [],
+   "stack": {
+    "name": "hairline_rays",
+    "interior": {
+     "palette": 0.0
+    },
+    "layers": [
+     {
+      "kind": "palette",
+      "channel": {
+       "radial": {
+        "center": [
+         0.5,
+         2.5
+        ]
+       }
+      },
+      "palette": {
+       "transfer": {
+        "kind": "value"
+       },
+       "cycles": 0.6,
+       "gamma": 1.0
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "de"
+       }
+      },
+      "falloff": 0.004,
+      "color": {
+       "palette": 0.75
+      },
+      "blend": "screen",
+      "opacity": 0.1
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "de"
+       }
+      },
+      "falloff": 0.0004,
+      "color": {
+       "palette": 0.88
+      },
+      "blend": "screen",
+      "opacity": 0.08
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "stroke": {
+        "shape": "line",
+        "on_c": true,
+        "tilt": 20.0,
+        "width": 0.0005,
+        "taper": 0.0,
+        "largest": 3.0,
+        "smallest": 0.02,
+        "steps": 40,
+        "side": "outside",
+        "read": "glow"
+       }
+      },
+      "color": {
+       "palette": 0.75
+      },
+      "blend": "screen",
+      "opacity": 0.3,
+      "power": 0.2
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "stroke": {
+        "shape": "line",
+        "on_c": true,
+        "tilt": 20.0,
+        "width": 0.0005,
+        "taper": 0.0,
+        "largest": 3.0,
+        "smallest": 0.02,
+        "steps": 40,
+        "side": "outside",
+        "read": "glow"
+       }
+      },
+      "color": {
+       "palette": 1.0
+      },
+      "blend": "screen",
+      "opacity": 0.9,
+      "power": 1.0
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "stroke": {
+        "shape": "line",
+        "on_c": true,
+        "tilt": 80.0,
+        "width": 0.0005,
+        "taper": 0.0,
+        "largest": 3.0,
+        "smallest": 0.02,
+        "steps": 40,
+        "side": "outside",
+        "read": "glow"
+       }
+      },
+      "color": {
+       "palette": 0.75
+      },
+      "blend": "screen",
+      "opacity": 0.3,
+      "power": 0.2
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "stroke": {
+        "shape": "line",
+        "on_c": true,
+        "tilt": 80.0,
+        "width": 0.0005,
+        "taper": 0.0,
+        "largest": 3.0,
+        "smallest": 0.02,
+        "steps": 40,
+        "side": "outside",
+        "read": "glow"
+       }
+      },
+      "color": {
+       "palette": 1.0
+      },
+      "blend": "screen",
+      "opacity": 0.9,
+      "power": 1.0
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "stroke": {
+        "shape": "line",
+        "on_c": true,
+        "tilt": 140.0,
+        "width": 0.0005,
+        "taper": 0.0,
+        "largest": 3.0,
+        "smallest": 0.02,
+        "steps": 40,
+        "side": "outside",
+        "read": "glow"
+       }
+      },
+      "color": {
+       "palette": 0.75
+      },
+      "blend": "screen",
+      "opacity": 0.3,
+      "power": 0.2
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "stroke": {
+        "shape": "line",
+        "on_c": true,
+        "tilt": 140.0,
+        "width": 0.0005,
+        "taper": 0.0,
+        "largest": 3.0,
+        "smallest": 0.02,
+        "steps": 40,
+        "side": "outside",
+        "read": "glow"
+       }
+      },
+      "color": {
+       "palette": 1.0
+      },
+      "blend": "screen",
+      "opacity": 0.9,
+      "power": 1.0
+     }
+    ],
+    "tone": {
+     "median": 0.144,
+     "p10": 0.063
+    }
+   },
+   "shown": [
+    {
+     "keep": "style_chrome_stars_hairlines_r1/hairline_rays/formulations/w3__r_six__00_julia-mandelbrot_291fb1ab",
+     "caption": "Hundreds of hairlines crossing in a mesh round a Julia spiral's eye, blue on deep blue",
+     "location": {
+      "schema": 1,
+      "name": "julia-mandelbrot_291fb1ab",
+      "family": {
+       "c": [
+        "-0.7488551646997019",
+        "-0.13572339871672048"
+       ],
+       "degree": 2,
+       "kind": "julia"
+      },
+      "viewport": {
+       "center_re": "0.5010082104000427",
+       "center_im": "0.06779785703305558",
+       "width": "0.23716968598826318"
+      },
+      "maxiter": 8393,
+      "note": "final139_general seat 83 (smooth, julia:mandelbrot)",
+      "gallery": {
+       "record": "final139_general",
+       "seat": 83,
+       "key": "291fb1ab3ac3ea9b",
+       "p_spiral": 0.982848
+      }
+     },
+     "colormap": "hairline_rays",
+     "stack": {
+      "name": "hairline_rays",
+      "interior": {
+       "palette": 0.0
+      },
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "radial": {
+          "center": [
+           0.5,
+           2.5
+          ]
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "value"
+         },
+         "cycles": 0.6,
+         "gamma": 1.0
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "falloff": 0.004,
+        "color": {
+         "palette": 0.75
+        },
+        "blend": "screen",
+        "opacity": 0.1
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "falloff": 0.0004,
+        "color": {
+         "palette": 0.88
+        },
+        "blend": "screen",
+        "opacity": 0.08
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "stroke": {
+          "shape": "line",
+          "on_c": true,
+          "tilt": 20.0,
+          "width": 0.0005,
+          "taper": 0.0,
+          "largest": 3.0,
+          "smallest": 0.02,
+          "steps": 40,
+          "side": "outside",
+          "read": "glow"
+         }
+        },
+        "color": {
+         "palette": 0.75
+        },
+        "blend": "screen",
+        "opacity": 0.3,
+        "power": 0.2
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "stroke": {
+          "shape": "line",
+          "on_c": true,
+          "tilt": 20.0,
+          "width": 0.0005,
+          "taper": 0.0,
+          "largest": 3.0,
+          "smallest": 0.02,
+          "steps": 40,
+          "side": "outside",
+          "read": "glow"
+         }
+        },
+        "color": {
+         "palette": 1.0
+        },
+        "blend": "screen",
+        "opacity": 0.9,
+        "power": 1.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "stroke": {
+          "shape": "line",
+          "on_c": true,
+          "tilt": 50.0,
+          "width": 0.0005,
+          "taper": 0.0,
+          "largest": 3.0,
+          "smallest": 0.02,
+          "steps": 40,
+          "side": "outside",
+          "read": "glow"
+         }
+        },
+        "color": {
+         "palette": 0.75
+        },
+        "blend": "screen",
+        "opacity": 0.3,
+        "power": 0.2
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "stroke": {
+          "shape": "line",
+          "on_c": true,
+          "tilt": 50.0,
+          "width": 0.0005,
+          "taper": 0.0,
+          "largest": 3.0,
+          "smallest": 0.02,
+          "steps": 40,
+          "side": "outside",
+          "read": "glow"
+         }
+        },
+        "color": {
+         "palette": 1.0
+        },
+        "blend": "screen",
+        "opacity": 0.9,
+        "power": 1.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "stroke": {
+          "shape": "line",
+          "on_c": true,
+          "tilt": 80.0,
+          "width": 0.0005,
+          "taper": 0.0,
+          "largest": 3.0,
+          "smallest": 0.02,
+          "steps": 40,
+          "side": "outside",
+          "read": "glow"
+         }
+        },
+        "color": {
+         "palette": 0.75
+        },
+        "blend": "screen",
+        "opacity": 0.3,
+        "power": 0.2
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "stroke": {
+          "shape": "line",
+          "on_c": true,
+          "tilt": 80.0,
+          "width": 0.0005,
+          "taper": 0.0,
+          "largest": 3.0,
+          "smallest": 0.02,
+          "steps": 40,
+          "side": "outside",
+          "read": "glow"
+         }
+        },
+        "color": {
+         "palette": 1.0
+        },
+        "blend": "screen",
+        "opacity": 0.9,
+        "power": 1.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "stroke": {
+          "shape": "line",
+          "on_c": true,
+          "tilt": 110.0,
+          "width": 0.0005,
+          "taper": 0.0,
+          "largest": 3.0,
+          "smallest": 0.02,
+          "steps": 40,
+          "side": "outside",
+          "read": "glow"
+         }
+        },
+        "color": {
+         "palette": 0.75
+        },
+        "blend": "screen",
+        "opacity": 0.3,
+        "power": 0.2
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "stroke": {
+          "shape": "line",
+          "on_c": true,
+          "tilt": 110.0,
+          "width": 0.0005,
+          "taper": 0.0,
+          "largest": 3.0,
+          "smallest": 0.02,
+          "steps": 40,
+          "side": "outside",
+          "read": "glow"
+         }
+        },
+        "color": {
+         "palette": 1.0
+        },
+        "blend": "screen",
+        "opacity": 0.9,
+        "power": 1.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "stroke": {
+          "shape": "line",
+          "on_c": true,
+          "tilt": 140.0,
+          "width": 0.0005,
+          "taper": 0.0,
+          "largest": 3.0,
+          "smallest": 0.02,
+          "steps": 40,
+          "side": "outside",
+          "read": "glow"
+         }
+        },
+        "color": {
+         "palette": 0.75
+        },
+        "blend": "screen",
+        "opacity": 0.3,
+        "power": 0.2
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "stroke": {
+          "shape": "line",
+          "on_c": true,
+          "tilt": 140.0,
+          "width": 0.0005,
+          "taper": 0.0,
+          "largest": 3.0,
+          "smallest": 0.02,
+          "steps": 40,
+          "side": "outside",
+          "read": "glow"
+         }
+        },
+        "color": {
+         "palette": 1.0
+        },
+        "blend": "screen",
+        "opacity": 0.9,
+        "power": 1.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "stroke": {
+          "shape": "line",
+          "on_c": true,
+          "tilt": 170.0,
+          "width": 0.0005,
+          "taper": 0.0,
+          "largest": 3.0,
+          "smallest": 0.02,
+          "steps": 40,
+          "side": "outside",
+          "read": "glow"
+         }
+        },
+        "color": {
+         "palette": 0.75
+        },
+        "blend": "screen",
+        "opacity": 0.3,
+        "power": 0.2
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "stroke": {
+          "shape": "line",
+          "on_c": true,
+          "tilt": 170.0,
+          "width": 0.0005,
+          "taper": 0.0,
+          "largest": 3.0,
+          "smallest": 0.02,
+          "steps": 40,
+          "side": "outside",
+          "read": "glow"
+         }
+        },
+        "color": {
+         "palette": 1.0
+        },
+        "blend": "screen",
+        "opacity": 0.9,
+        "power": 1.0
+       }
+      ],
+      "tone": {
+       "median": 0.144,
+       "p10": 0.063
+      }
+     }
+    },
+    {
+     "keep": "style_chrome_stars_hairlines_r1/hairline_rays/locations/w3__r_stack__02_phoenix_d93f2b17",
+     "caption": "Hairline loops winding into a phoenix spiral, frosted lace along its edges",
+     "location": {
+      "schema": 1,
+      "name": "phoenix_d93f2b17",
+      "family": {
+       "c": [
+        "-0.5266783574752247",
+        "-0.652322729101436"
+       ],
+       "kind": "phoenix",
+       "p": [
+        "-0.28353182998131243",
+        "-0.02545285599096059"
+       ],
+       "z_prev": [
+        "-0.10324356398202189",
+        "0.43684294503006016"
+       ]
+      },
+      "viewport": {
+       "center_re": "0.3982970955162623",
+       "center_im": "0.5492040193988719",
+       "width": "0.2838617155845553"
+      },
+      "maxiter": 8082,
+      "note": "final139_general seat 12 (smooth_mean_angle, phoenix)",
+      "gallery": {
+       "record": "final139_general",
+       "seat": 12,
+       "key": "d93f2b1719ad1937",
+       "p_spiral": 0.928177
+      }
+     },
+     "colormap": "hairline_rays",
+     "stack": {
+      "name": "hairline_rays",
+      "interior": {
+       "palette": 0.0
+      },
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "radial": {
+          "center": [
+           0.5,
+           2.5
+          ]
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "value"
+         },
+         "cycles": 0.6,
+         "gamma": 1.0
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "falloff": 0.004,
+        "color": {
+         "palette": 0.75
+        },
+        "blend": "screen",
+        "opacity": 0.1
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "falloff": 0.0004,
+        "color": {
+         "palette": 0.88
+        },
+        "blend": "screen",
+        "opacity": 0.08
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "stroke": {
+          "shape": "line",
+          "on_c": true,
+          "tilt": 20.0,
+          "width": 0.0005,
+          "taper": 0.0,
+          "largest": 3.0,
+          "smallest": 0.02,
+          "steps": 40,
+          "side": "outside",
+          "read": "glow"
+         }
+        },
+        "color": {
+         "palette": 0.75
+        },
+        "blend": "screen",
+        "opacity": 0.3,
+        "power": 0.2
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "stroke": {
+          "shape": "line",
+          "on_c": true,
+          "tilt": 20.0,
+          "width": 0.0005,
+          "taper": 0.0,
+          "largest": 3.0,
+          "smallest": 0.02,
+          "steps": 40,
+          "side": "outside",
+          "read": "glow"
+         }
+        },
+        "color": {
+         "palette": 1.0
+        },
+        "blend": "screen",
+        "opacity": 0.9,
+        "power": 1.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "stroke": {
+          "shape": "line",
+          "on_c": true,
+          "tilt": 80.0,
+          "width": 0.0005,
+          "taper": 0.0,
+          "largest": 3.0,
+          "smallest": 0.02,
+          "steps": 40,
+          "side": "outside",
+          "read": "glow"
+         }
+        },
+        "color": {
+         "palette": 0.75
+        },
+        "blend": "screen",
+        "opacity": 0.3,
+        "power": 0.2
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "stroke": {
+          "shape": "line",
+          "on_c": true,
+          "tilt": 80.0,
+          "width": 0.0005,
+          "taper": 0.0,
+          "largest": 3.0,
+          "smallest": 0.02,
+          "steps": 40,
+          "side": "outside",
+          "read": "glow"
+         }
+        },
+        "color": {
+         "palette": 1.0
+        },
+        "blend": "screen",
+        "opacity": 0.9,
+        "power": 1.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "stroke": {
+          "shape": "line",
+          "on_c": true,
+          "tilt": 140.0,
+          "width": 0.0005,
+          "taper": 0.0,
+          "largest": 3.0,
+          "smallest": 0.02,
+          "steps": 40,
+          "side": "outside",
+          "read": "glow"
+         }
+        },
+        "color": {
+         "palette": 0.75
+        },
+        "blend": "screen",
+        "opacity": 0.3,
+        "power": 0.2
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "stroke": {
+          "shape": "line",
+          "on_c": true,
+          "tilt": 140.0,
+          "width": 0.0005,
+          "taper": 0.0,
+          "largest": 3.0,
+          "smallest": 0.02,
+          "steps": 40,
+          "side": "outside",
+          "read": "glow"
+         }
+        },
+        "color": {
+         "palette": 1.0
+        },
+        "blend": "screen",
+        "opacity": 0.9,
+        "power": 1.0
+       }
+      ],
+      "tone": {
+       "median": 0.144,
+       "p10": 0.063
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "frost-stipple",
+   "style": "frost_stipple",
+   "tier": "lab",
+   "palette": "frost_stipple",
+   "palettes": [
+    {
+     "colormap": "frost_stipple",
+     "values": {},
+     "score": 4
+    }
+   ],
+   "variant": "current",
+   "what": "Frosted seahorse waves in lilac and grey: fine feathered grain and sparkle stipple along the set, soft dark plumes in the valleys, each interior cell mottled.",
+   "knobs": [],
+   "stack": {
+    "name": "frost_stipple",
+    "interior": {
+     "palette": 0.1
+    },
+    "tone": {
+     "median": 0.494,
+     "p10": 0.209
+    },
+    "layers": [
+     {
+      "kind": "palette",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "palette": {
+       "cycles": 1.5,
+       "gamma": 1.0,
+       "phase": 0.0,
+       "transfer": {
+        "kind": "rank"
+       }
+      },
+      "opacity": 1.0
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "tia"
+       },
+       "invert": true
+      },
+      "color": {
+       "palette": 0.0
+      },
+      "blend": "multiply",
+      "opacity": 0.35,
+      "power": 3.0
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "stripe",
+        "density": 64.0
+       }
+      },
+      "color": {
+       "palette": 0.62
+      },
+      "blend": "screen",
+      "opacity": 0.3,
+      "power": 3.0,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 0.5
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "stripe",
+        "density": 256.0
+       }
+      },
+      "color": {
+       "palette": 0.7
+      },
+      "blend": "screen",
+      "opacity": 1.0,
+      "power": 8.0,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 1.0
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "gaussian_int"
+       },
+       "invert": true
+      },
+      "color": {
+       "palette": 0.7
+      },
+      "blend": "screen",
+      "opacity": 1.0,
+      "power": 30.0
+     },
+     {
+      "kind": "palette",
+      "channel": {
+       "inside": {
+        "iterations": 1000
+       }
+      },
+      "palette": {
+       "cycles": 1.0,
+       "gamma": 1.0,
+       "phase": 0.0,
+       "transfer": {
+        "kind": "rank"
+       }
+      },
+      "opacity": 1.0,
+      "warp": {
+       "channel": {
+        "field": {
+         "kind": "gaussian_int"
+        }
+       },
+       "amount": 0.6
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "de"
+       }
+      },
+      "falloff": 0.0003,
+      "color": {
+       "palette": 0.0
+      },
+      "blend": "multiply",
+      "opacity": 0.5
+     }
+    ]
+   },
+   "shown": [
+    {
+     "keep": "style_classic_escape_texture_r1/frost_stipple/formulations/fin_sA__s3_dust__00_m2_seahorse_tail_spiral",
+     "caption": "A seahorse-tail spiral in lilac and grey, fine frost grain sweeping round it and sparkle stipple on its mottled cells",
+     "location": {
+      "schema": 1,
+      "name": "m2_seahorse_tail_spiral",
+      "family": {
+       "kind": "mandelbrot",
+       "degree": 2
+      },
+      "viewport": {
+       "center_re": "-0.7451635",
+       "center_im": "0.112591",
+       "width": "0.0012"
+      },
+      "maxiter": 6000,
+      "symmetry": "1-arm log spiral",
+      "source": "hand-framed by re-centring on the spiral eye in a preview",
+      "note": "classic seahorse tail: one loose logarithmic spiral of beads coiling into an empty eye; most dark space",
+      "preview": "out/yas/locs/prev/m2_seahorse_tail_spiral_style.png"
+     },
+     "colormap": "frost_stipple",
+     "stack": {
+      "name": "s3_dust",
+      "interior": {
+       "palette": 0.1
+      },
+      "tone": {
+       "median": 0.494,
+       "p10": 0.209
+      },
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "palette": {
+         "cycles": 1.5,
+         "gamma": 1.0,
+         "phase": 0.0,
+         "transfer": {
+          "kind": "rank"
+         }
+        },
+        "opacity": 1.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "tia"
+         },
+         "invert": true
+        },
+        "color": {
+         "palette": 0.0
+        },
+        "blend": "multiply",
+        "opacity": 0.35,
+        "power": 3.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "stripe",
+          "density": 64.0
+         }
+        },
+        "color": {
+         "palette": 0.62
+        },
+        "blend": "screen",
+        "opacity": 0.5,
+        "power": 3.0,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 0.5
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "stripe",
+          "density": 512.0
+         }
+        },
+        "color": {
+         "palette": 0.7
+        },
+        "blend": "screen",
+        "opacity": 1.0,
+        "power": 8.0,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 1.0
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "gaussian_int"
+         },
+         "invert": true
+        },
+        "color": {
+         "palette": 0.7
+        },
+        "blend": "screen",
+        "opacity": 1.0,
+        "power": 30.0
+       },
+       {
+        "kind": "palette",
+        "channel": {
+         "inside": {
+          "iterations": 1000
+         }
+        },
+        "palette": {
+         "cycles": 1.0,
+         "gamma": 1.0,
+         "phase": 0.0,
+         "transfer": {
+          "kind": "rank"
+         }
+        },
+        "opacity": 1.0,
+        "warp": {
+         "channel": {
+          "field": {
+           "kind": "gaussian_int"
+          }
+         },
+         "amount": 0.6
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "falloff": 0.0003,
+        "color": {
+         "palette": 0.0
+        },
+        "blend": "multiply",
+        "opacity": 0.5
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "grain-fans",
+   "style": "grain_fans",
+   "tier": "lab",
+   "palette": "grain_fans",
+   "palettes": [
+    {
+     "colormap": "grain_fans",
+     "values": {},
+     "score": 4
+    }
+   ],
+   "variant": "current",
+   "what": "Broad fans of alternating teal and orange bands, each scooped darker towards its edge and carrying fine parallel grain, the set's beads along the edges.",
+   "knobs": [],
+   "stack": {
+    "name": "grain_fans",
+    "interior": {
+     "palette": 0.84
+    },
+    "tone": {
+     "median": 0.558,
+     "p10": 0.262
+    },
+    "layers": [
+     {
+      "kind": "palette",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "palette": {
+       "cycles": 4.0,
+       "gamma": 1.0,
+       "phase": 0.0,
+       "transfer": {
+        "kind": "rank"
+       }
+      },
+      "opacity": 1.0
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "sheet": {
+       "bands": 8.0,
+       "edge": 0.15,
+       "fill": 0.35
+      },
+      "blend": "multiply",
+      "opacity": 0.5
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "stripe",
+        "density": 48.0
+       }
+      },
+      "color": {
+       "palette": 0.0
+      },
+      "blend": "multiply",
+      "opacity": 0.6,
+      "power": 1.5
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "stripe",
+        "density": 48.0
+       }
+      },
+      "color": {
+       "palette": 0.4
+      },
+      "blend": "screen",
+      "opacity": 0.45,
+      "power": 5.0
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "de"
+       }
+      },
+      "falloff": 0.0004,
+      "color": {
+       "palette": 0.84
+      },
+      "blend": "multiply",
+      "opacity": 0.8
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "de"
+       }
+      },
+      "falloff": 0.00015,
+      "color": {
+       "palette": 0.36
+      },
+      "blend": "screen",
+      "opacity": 0.8
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "gaussian_int"
+       },
+       "invert": true
+      },
+      "color": {
+       "palette": 0.36
+      },
+      "blend": "screen",
+      "opacity": 0.6,
+      "power": 40.0,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 2.0
+      }
+     }
+    ]
+   },
+   "shown": [
+    {
+     "keep": "style_classic_escape_texture_r1/grain_fans/formulations/fin_gA__g3_six__00_julia-mandelbrot_53dd5a48",
+     "caption": "Teal and orange fans spiralling round a Julia set's beaded eyes, each band scooped darker towards its edge and finely grained",
+     "location": {
+      "schema": 1,
+      "name": "julia-mandelbrot_53dd5a48",
+      "family": {
+       "kind": "julia",
+       "degree": 2,
+       "c": [
+        "-0.7548374821242281",
+        "-0.07387098369508416"
+       ]
+      },
+      "viewport": {
+       "center_re": "-1.1188618103481036",
+       "center_im": "-0.04946681975588861",
+       "width": "0.42881425608049195"
+      },
+      "maxiter": 3000,
+      "note": "final139_general seat 794 (smooth_mean_angle, julia:mandelbrot)",
+      "gallery": {
+       "record": "final139_general",
+       "seat": 794,
+       "key": "53dd5a48644b8586",
+       "p_spiral": 0.099832
+      }
+     },
+     "colormap": "grain_fans",
+     "stack": {
+      "name": "g3_six",
+      "interior": {
+       "palette": 0.84
+      },
+      "tone": {
+       "median": 0.558,
+       "p10": 0.262
+      },
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "palette": {
+         "cycles": 6.0,
+         "gamma": 1.0,
+         "phase": 0.0,
+         "transfer": {
+          "kind": "rank"
+         }
+        },
+        "opacity": 1.0
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "sheet": {
+         "bands": 12.0,
+         "edge": 0.15,
+         "fill": 0.35
+        },
+        "blend": "multiply",
+        "opacity": 0.5
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "stripe",
+          "density": 48.0
+         }
+        },
+        "color": {
+         "palette": 0.0
+        },
+        "blend": "multiply",
+        "opacity": 0.6,
+        "power": 1.5
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "stripe",
+          "density": 48.0
+         }
+        },
+        "color": {
+         "palette": 0.4
+        },
+        "blend": "screen",
+        "opacity": 0.45,
+        "power": 5.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "falloff": 0.0004,
+        "color": {
+         "palette": 0.84
+        },
+        "blend": "multiply",
+        "opacity": 0.8
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "falloff": 0.00015,
+        "color": {
+         "palette": 0.36
+        },
+        "blend": "screen",
+        "opacity": 0.8
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "gaussian_int"
+         },
+         "invert": true
+        },
+        "color": {
+         "palette": 0.36
+        },
+        "blend": "screen",
+        "opacity": 0.6,
+        "power": 40.0,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 2.0
+        }
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "draped-folds",
+   "style": "draped_folds",
+   "tier": "lab",
+   "palette": "draped_folds",
+   "palettes": [
+    {
+     "colormap": "draped_folds",
+     "values": {},
+     "score": 4
+    }
+   ],
+   "variant": "current",
+   "what": "Gold and teal spirals over dark smooth folds that read as draped cloth, a slow stripe's creases and sheen over a glossy relief.",
+   "knobs": [],
+   "stack": {
+    "name": "draped_folds",
+    "interior": {
+     "palette": 0.0
+    },
+    "tone": {
+     "median": 0.238,
+     "p10": 0.085
+    },
+    "layers": [
+     {
+      "kind": "palette",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "palette": {
+       "cycles": 1.0,
+       "gamma": 1.6,
+       "phase": 0.0,
+       "transfer": {
+        "kind": "rank"
+       }
+      },
+      "opacity": 1.0
+     },
+     {
+      "kind": "light",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "light": {
+       "bands": 1.0,
+       "rings": 0.0,
+       "slope": 1.2,
+       "azimuth": 120.0,
+       "elevation": 40.0,
+       "ambient": 0.4,
+       "diffuse": 0.7,
+       "specular": 0.5,
+       "shininess": 14.0,
+       "rim": 0.2,
+       "rim_power": 2.5,
+       "highlight": {
+        "palette": 0.9
+       }
+      },
+      "opacity": 1.0
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "stripe",
+        "density": 3.0
+       },
+       "invert": true
+      },
+      "color": {
+       "palette": 0.0
+      },
+      "blend": "multiply",
+      "opacity": 0.6,
+      "power": 2.0
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "stripe",
+        "density": 3.0
+       }
+      },
+      "color": {
+       "palette": 0.8
+      },
+      "blend": "screen",
+      "opacity": 0.4,
+      "power": 6.0
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "de"
+       }
+      },
+      "falloff": 0.0012,
+      "color": {
+       "palette": 0.78
+      },
+      "blend": "screen",
+      "opacity": 0.45
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "de"
+       }
+      },
+      "falloff": 0.00025,
+      "color": {
+       "palette": 0.52
+      },
+      "blend": "screen",
+      "opacity": 0.6
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "de"
+       }
+      },
+      "falloff": 0.0005,
+      "color": {
+       "palette": 0.0
+      },
+      "blend": "multiply",
+      "opacity": 0.4
+     }
+    ]
+   },
+   "shown": [
+    {
+     "keep": "style_classic_escape_texture_r1/draped_folds/formulations/fin_dA__d3_one__00_julia-multibrot5_ff8bfbca",
+     "caption": "Gold-beaded spirals over dark folds that hang like draped cloth, teal and amber stars along the lace",
+     "location": {
+      "schema": 1,
+      "name": "julia-multibrot5_ff8bfbca",
+      "family": {
+       "c": [
+        "-0.5143476278661704",
+        "-0.6479947566292118"
+       ],
+       "degree": 5,
+       "kind": "julia"
+      },
+      "viewport": {
+       "center_re": "0.6488806071138624",
+       "center_im": "0.16258993172014186",
+       "width": "0.20438544988364632"
+      },
+      "maxiter": 8650,
+      "note": "final139_general seat 277 (threads, julia:multibrot5)",
+      "gallery": {
+       "record": "final139_general",
+       "seat": 277,
+       "key": "ff8bfbcaad12d050",
+       "p_spiral": 0.3883
+      }
+     },
+     "colormap": "draped_folds",
+     "stack": {
+      "name": "d3_one",
+      "interior": {
+       "palette": 0.0
+      },
+      "tone": {
+       "median": 0.238,
+       "p10": 0.085
+      },
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "palette": {
+         "cycles": 1.0,
+         "gamma": 1.6,
+         "phase": 0.0,
+         "transfer": {
+          "kind": "rank"
+         }
+        },
+        "opacity": 1.0
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "light": {
+         "bands": 1.0,
+         "rings": 0.0,
+         "slope": 1.2,
+         "azimuth": 120.0,
+         "elevation": 40.0,
+         "ambient": 0.4,
+         "diffuse": 0.7,
+         "specular": 0.5,
+         "shininess": 14.0,
+         "rim": 0.2,
+         "rim_power": 2.5,
+         "highlight": {
+          "palette": 0.9
+         }
+        },
+        "opacity": 1.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "stripe",
+          "density": 1.0
+         },
+         "invert": true
+        },
+        "color": {
+         "palette": 0.0
+        },
+        "blend": "multiply",
+        "opacity": 0.8,
+        "power": 2.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "stripe",
+          "density": 1.0
+         }
+        },
+        "color": {
+         "palette": 0.8
+        },
+        "blend": "screen",
+        "opacity": 0.4,
+        "power": 6.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "falloff": 0.0012,
+        "color": {
+         "palette": 0.78
+        },
+        "blend": "screen",
+        "opacity": 0.45
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "falloff": 0.00025,
+        "color": {
+         "palette": 0.52
+        },
+        "blend": "screen",
+        "opacity": 0.6
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "falloff": 0.0005,
+        "color": {
+         "palette": 0.0
+        },
+        "blend": "multiply",
+        "opacity": 0.4
+       }
+      ]
+     }
+    },
+    {
+     "keep": "style_classic_escape_texture_r1/draped_folds/formulations/fin_dA__d3_plumes__00_julia-multibrot5_ff8bfbca",
+     "caption": "The same five-fold Julia spiral, its folds feathered into fine amber plumes",
+     "location": {
+      "schema": 1,
+      "name": "julia-multibrot5_ff8bfbca",
+      "family": {
+       "c": [
+        "-0.5143476278661704",
+        "-0.6479947566292118"
+       ],
+       "degree": 5,
+       "kind": "julia"
+      },
+      "viewport": {
+       "center_re": "0.6488806071138624",
+       "center_im": "0.16258993172014186",
+       "width": "0.20438544988364632"
+      },
+      "maxiter": 8650,
+      "note": "final139_general seat 277 (threads, julia:multibrot5)",
+      "gallery": {
+       "record": "final139_general",
+       "seat": 277,
+       "key": "ff8bfbcaad12d050",
+       "p_spiral": 0.3883
+      }
+     },
+     "colormap": "draped_folds",
+     "stack": {
+      "name": "d3_plumes",
+      "interior": {
+       "palette": 0.0
+      },
+      "tone": {
+       "median": 0.238,
+       "p10": 0.085
+      },
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "palette": {
+         "cycles": 1.0,
+         "gamma": 1.6,
+         "phase": 0.0,
+         "transfer": {
+          "kind": "rank"
+         }
+        },
+        "opacity": 1.0
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "light": {
+         "bands": 1.0,
+         "rings": 0.0,
+         "slope": 1.2,
+         "azimuth": 120.0,
+         "elevation": 40.0,
+         "ambient": 0.4,
+         "diffuse": 0.7,
+         "specular": 0.5,
+         "shininess": 14.0,
+         "rim": 0.2,
+         "rim_power": 2.5,
+         "highlight": {
+          "palette": 0.9
+         }
+        },
+        "opacity": 1.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "stripe",
+          "density": 2.0
+         },
+         "invert": true
+        },
+        "color": {
+         "palette": 0.0
+        },
+        "blend": "multiply",
+        "opacity": 0.6,
+        "power": 2.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "stripe",
+          "density": 2.0
+         }
+        },
+        "color": {
+         "palette": 0.8
+        },
+        "blend": "screen",
+        "opacity": 0.4,
+        "power": 6.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "falloff": 0.0012,
+        "color": {
+         "palette": 0.78
+        },
+        "blend": "screen",
+        "opacity": 0.45
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "falloff": 0.00025,
+        "color": {
+         "palette": 0.52
+        },
+        "blend": "screen",
+        "opacity": 0.6
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "falloff": 0.0005,
+        "color": {
+         "palette": 0.0
+        },
+        "blend": "multiply",
+        "opacity": 0.4
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "gilded-leaves",
+   "style": "gilded_leaves",
+   "tier": "lab",
+   "palette": "gilded_leaves",
+   "palettes": [
+    {
+     "colormap": "gilded_leaves",
+     "values": {},
+     "score": 4
+    }
+   ],
+   "variant": "current",
+   "what": "Translucent gilded-glass leaves on dark crackled stone: curved almond blades bright at the spine and fading to their tips, sweeping in sprays and spirals, small copies inlaid in each, the smaller blades faint grey ghosts.",
+   "knobs": [],
+   "stack": {
+    "name": "gilded_leaves",
+    "interior": {
+     "palette": 0.02
+    },
+    "tone": {
+     "median": 0.112,
+     "p10": 0.04,
+     "log_density": 8.0
+    },
+    "layers": [
+     {
+      "kind": "palette",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "palette": {
+       "transfer": {
+        "kind": "rank"
+       },
+       "cycles": 0.24,
+       "phase": 0.0
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "stripe",
+        "density": 256.0
+       }
+      },
+      "color": {
+       "palette": 0.3
+      },
+      "blend": "screen",
+      "opacity": 0.22,
+      "power": 3.0
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "stripe",
+        "density": 64.0
+       }
+      },
+      "color": {
+       "palette": 0.26
+      },
+      "blend": "screen",
+      "opacity": 0.132,
+      "power": 4.0
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "stripe",
+        "density": 32.0
+       }
+      },
+      "color": {
+       "palette": 0.0
+      },
+      "blend": "multiply",
+      "opacity": 0.35,
+      "power": 3.0
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "bubble": {
+        "shape": "strip",
+        "tilt": 0.0,
+        "center": [
+         0.0,
+         0.5
+        ],
+        "radius": 0.22,
+        "spacing": 1.0,
+        "hit": 1,
+        "read": "height",
+        "escaped": true,
+        "largest": 0.021000000000000005,
+        "smallest": 0.0017500000000000003,
+        "fade": 0.5
+       }
+      },
+      "color": {
+       "palette": 0.4
+      },
+      "blend": "add",
+      "opacity": 0.3,
+      "power": 10.0
+     },
+     {
+      "kind": "palette",
+      "channel": {
+       "bubble": {
+        "shape": "strip",
+        "tilt": 0.0,
+        "center": [
+         0.0,
+         0.5
+        ],
+        "radius": 0.22,
+        "spacing": 1.0,
+        "hit": 1,
+        "read": "step",
+        "escaped": true,
+        "largest": 0.14,
+        "smallest": 0.014000000000000002,
+        "fade": 0.5
+       }
+      },
+      "palette": {
+       "transfer": {
+        "kind": "rank"
+       },
+       "cycles": 0.20999999999999996,
+       "phase": 0.65
+      },
+      "blend": "add",
+      "opacity": 0.8,
+      "mask": {
+       "channel": {
+        "bubble": {
+         "shape": "strip",
+         "tilt": 0.0,
+         "center": [
+          0.0,
+          0.5
+         ],
+         "radius": 0.22,
+         "spacing": 1.0,
+         "hit": 1,
+         "read": "height",
+         "escaped": true,
+         "largest": 0.14,
+         "smallest": 0.014000000000000002,
+         "fade": 0.5
+        }
+       },
+       "power": 5.0
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "bubble": {
+        "shape": "strip",
+        "tilt": 0.0,
+        "center": [
+         0.0,
+         0.5
+        ],
+        "radius": 0.22,
+        "spacing": 1.0,
+        "hit": 1,
+        "read": "height",
+        "escaped": true,
+        "largest": 0.14,
+        "smallest": 0.014000000000000002,
+        "fade": 0.5
+       }
+      },
+      "color": {
+       "palette": 0.97
+      },
+      "blend": "add",
+      "opacity": 0.7,
+      "power": 14.0
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "bubble": {
+        "shape": "strip",
+        "tilt": 0.0,
+        "center": [
+         0.0,
+         0.5
+        ],
+        "radius": 0.22,
+        "spacing": 1.0,
+        "hit": 1,
+        "read": "height",
+        "escaped": true,
+        "largest": 0.021000000000000005,
+        "smallest": 0.0017500000000000003,
+        "fade": 0.5
+       }
+      },
+      "color": {
+       "palette": 0.97
+      },
+      "blend": "add",
+      "opacity": 0.6,
+      "power": 7.5,
+      "mask": {
+       "channel": {
+        "bubble": {
+         "shape": "strip",
+         "tilt": 0.0,
+         "center": [
+          0.0,
+          0.5
+         ],
+         "radius": 0.22,
+         "spacing": 1.0,
+         "hit": 1,
+         "read": "height",
+         "escaped": true,
+         "largest": 0.14,
+         "smallest": 0.014000000000000002,
+         "fade": 0.5
+        }
+       },
+       "power": 2.0
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "bubble": {
+        "shape": "strip",
+        "tilt": 0.0,
+        "center": [
+         0.0,
+         0.5
+        ],
+        "radius": 0.22,
+        "spacing": 1.0,
+        "hit": 2,
+        "read": "height",
+        "escaped": true,
+        "largest": 0.021000000000000005,
+        "smallest": 0.0017500000000000003,
+        "fade": 0.5
+       }
+      },
+      "color": {
+       "palette": 0.4
+      },
+      "blend": "add",
+      "opacity": 0.3,
+      "power": 10.0
+     },
+     {
+      "kind": "palette",
+      "channel": {
+       "bubble": {
+        "shape": "strip",
+        "tilt": 0.0,
+        "center": [
+         0.0,
+         0.5
+        ],
+        "radius": 0.22,
+        "spacing": 1.0,
+        "hit": 2,
+        "read": "step",
+        "escaped": true,
+        "largest": 0.14,
+        "smallest": 0.014000000000000002,
+        "fade": 0.5
+       }
+      },
+      "palette": {
+       "transfer": {
+        "kind": "rank"
+       },
+       "cycles": 0.20999999999999996,
+       "phase": 0.65
+      },
+      "blend": "add",
+      "opacity": 0.8,
+      "mask": {
+       "channel": {
+        "bubble": {
+         "shape": "strip",
+         "tilt": 0.0,
+         "center": [
+          0.0,
+          0.5
+         ],
+         "radius": 0.22,
+         "spacing": 1.0,
+         "hit": 2,
+         "read": "height",
+         "escaped": true,
+         "largest": 0.14,
+         "smallest": 0.014000000000000002,
+         "fade": 0.5
+        }
+       },
+       "power": 5.0
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "bubble": {
+        "shape": "strip",
+        "tilt": 0.0,
+        "center": [
+         0.0,
+         0.5
+        ],
+        "radius": 0.22,
+        "spacing": 1.0,
+        "hit": 2,
+        "read": "height",
+        "escaped": true,
+        "largest": 0.14,
+        "smallest": 0.014000000000000002,
+        "fade": 0.5
+       }
+      },
+      "color": {
+       "palette": 0.97
+      },
+      "blend": "add",
+      "opacity": 0.7,
+      "power": 14.0
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "bubble": {
+        "shape": "strip",
+        "tilt": 0.0,
+        "center": [
+         0.0,
+         0.5
+        ],
+        "radius": 0.22,
+        "spacing": 1.0,
+        "hit": 3,
+        "read": "height",
+        "escaped": true,
+        "largest": 0.14,
+        "smallest": 0.004666666666666667,
+        "fade": 0.5
+       }
+      },
+      "color": {
+       "palette": 0.97
+      },
+      "blend": "add",
+      "opacity": 0.35,
+      "power": 14.0
+     }
+    ]
+   },
+   "shown": [
+    {
+     "keep": "style_gilded_leaves_r1/locations/loc__p_stack__julia-mandelbrot_45222fc4_gilded_leaves",
+     "caption": "A quadratic Julia spiral: gold leaf sprays sweeping round a cream core on dark crackled stone",
+     "location": {
+      "schema": 1,
+      "name": "julia-mandelbrot_45222fc4",
+      "family": {
+       "c": [
+        "-0.19006289202103677",
+        "-0.6647213277105323"
+       ],
+       "degree": 2,
+       "kind": "julia"
+      },
+      "viewport": {
+       "center_re": "-0.2545096329353115",
+       "center_im": "-0.42020398628251926",
+       "width": "0.21050627805443986"
+      },
+      "maxiter": 8599,
+      "note": "final139_general seat 177 (smooth_mean_angle, julia:mandelbrot)",
+      "gallery": {
+       "record": "final139_general",
+       "seat": 177,
+       "key": "45222fc41da79c27",
+       "p_spiral": 0.953851
+      }
+     },
+     "colormap": "gilded_leaves",
+     "stack": {
+      "name": "gilded_leaves",
+      "interior": {
+       "palette": 0.02
+      },
+      "tone": {
+       "median": 0.112,
+       "p10": 0.04,
+       "log_density": 8.0
+      },
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         },
+         "cycles": 0.24,
+         "phase": 0.0
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "stripe",
+          "density": 256.0
+         }
+        },
+        "color": {
+         "palette": 0.3
+        },
+        "blend": "screen",
+        "opacity": 0.22,
+        "power": 3.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "stripe",
+          "density": 64.0
+         }
+        },
+        "color": {
+         "palette": 0.26
+        },
+        "blend": "screen",
+        "opacity": 0.132,
+        "power": 4.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "stripe",
+          "density": 32.0
+         }
+        },
+        "color": {
+         "palette": 0.0
+        },
+        "blend": "multiply",
+        "opacity": 0.35,
+        "power": 3.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "shape": "strip",
+          "tilt": 0.0,
+          "center": [
+           0.0,
+           0.5
+          ],
+          "radius": 0.22,
+          "spacing": 1.0,
+          "hit": 1,
+          "read": "height",
+          "escaped": true,
+          "largest": 0.021000000000000005,
+          "smallest": 0.0017500000000000003,
+          "fade": 0.5
+         }
+        },
+        "color": {
+         "palette": 0.4
+        },
+        "blend": "add",
+        "opacity": 0.3,
+        "power": 10.0
+       },
+       {
+        "kind": "palette",
+        "channel": {
+         "bubble": {
+          "shape": "strip",
+          "tilt": 0.0,
+          "center": [
+           0.0,
+           0.5
+          ],
+          "radius": 0.22,
+          "spacing": 1.0,
+          "hit": 1,
+          "read": "step",
+          "escaped": true,
+          "largest": 0.14,
+          "smallest": 0.014000000000000002
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         },
+         "cycles": 0.20999999999999996,
+         "phase": 0.65
+        },
+        "blend": "add",
+        "opacity": 0.8,
+        "mask": {
+         "channel": {
+          "bubble": {
+           "shape": "strip",
+           "tilt": 0.0,
+           "center": [
+            0.0,
+            0.5
+           ],
+           "radius": 0.22,
+           "spacing": 1.0,
+           "hit": 1,
+           "read": "height",
+           "escaped": true,
+           "largest": 0.14,
+           "smallest": 0.014000000000000002,
+           "fade": 0.5
+          }
+         },
+         "power": 5.0
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "shape": "strip",
+          "tilt": 0.0,
+          "center": [
+           0.0,
+           0.5
+          ],
+          "radius": 0.22,
+          "spacing": 1.0,
+          "hit": 1,
+          "read": "height",
+          "escaped": true,
+          "largest": 0.14,
+          "smallest": 0.014000000000000002,
+          "fade": 0.5
+         }
+        },
+        "color": {
+         "palette": 0.97
+        },
+        "blend": "add",
+        "opacity": 0.7,
+        "power": 14.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "shape": "strip",
+          "tilt": 0.0,
+          "center": [
+           0.0,
+           0.5
+          ],
+          "radius": 0.22,
+          "spacing": 1.0,
+          "hit": 1,
+          "read": "height",
+          "escaped": true,
+          "largest": 0.021000000000000005,
+          "smallest": 0.0017500000000000003,
+          "fade": 0.5
+         }
+        },
+        "color": {
+         "palette": 0.97
+        },
+        "blend": "add",
+        "opacity": 0.6,
+        "power": 7.5,
+        "mask": {
+         "channel": {
+          "bubble": {
+           "shape": "strip",
+           "tilt": 0.0,
+           "center": [
+            0.0,
+            0.5
+           ],
+           "radius": 0.22,
+           "spacing": 1.0,
+           "hit": 1,
+           "read": "height",
+           "escaped": true,
+           "largest": 0.14,
+           "smallest": 0.014000000000000002,
+           "fade": 0.5
+          }
+         },
+         "power": 2.0
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "shape": "strip",
+          "tilt": 0.0,
+          "center": [
+           0.0,
+           0.5
+          ],
+          "radius": 0.22,
+          "spacing": 1.0,
+          "hit": 2,
+          "read": "height",
+          "escaped": true,
+          "largest": 0.021000000000000005,
+          "smallest": 0.0017500000000000003,
+          "fade": 0.5
+         }
+        },
+        "color": {
+         "palette": 0.4
+        },
+        "blend": "add",
+        "opacity": 0.3,
+        "power": 10.0
+       },
+       {
+        "kind": "palette",
+        "channel": {
+         "bubble": {
+          "shape": "strip",
+          "tilt": 0.0,
+          "center": [
+           0.0,
+           0.5
+          ],
+          "radius": 0.22,
+          "spacing": 1.0,
+          "hit": 2,
+          "read": "step",
+          "escaped": true,
+          "largest": 0.14,
+          "smallest": 0.014000000000000002
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         },
+         "cycles": 0.20999999999999996,
+         "phase": 0.65
+        },
+        "blend": "add",
+        "opacity": 0.8,
+        "mask": {
+         "channel": {
+          "bubble": {
+           "shape": "strip",
+           "tilt": 0.0,
+           "center": [
+            0.0,
+            0.5
+           ],
+           "radius": 0.22,
+           "spacing": 1.0,
+           "hit": 2,
+           "read": "height",
+           "escaped": true,
+           "largest": 0.14,
+           "smallest": 0.014000000000000002,
+           "fade": 0.5
+          }
+         },
+         "power": 5.0
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "shape": "strip",
+          "tilt": 0.0,
+          "center": [
+           0.0,
+           0.5
+          ],
+          "radius": 0.22,
+          "spacing": 1.0,
+          "hit": 2,
+          "read": "height",
+          "escaped": true,
+          "largest": 0.14,
+          "smallest": 0.014000000000000002,
+          "fade": 0.5
+         }
+        },
+        "color": {
+         "palette": 0.97
+        },
+        "blend": "add",
+        "opacity": 0.7,
+        "power": 14.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "shape": "strip",
+          "tilt": 0.0,
+          "center": [
+           0.0,
+           0.5
+          ],
+          "radius": 0.22,
+          "spacing": 1.0,
+          "hit": 3,
+          "read": "height",
+          "escaped": true,
+          "largest": 0.14,
+          "smallest": 0.004666666666666667,
+          "fade": 0.5
+         }
+        },
+        "color": {
+         "palette": 0.97
+        },
+        "blend": "add",
+        "opacity": 0.35,
+        "power": 14.0
+       }
+      ]
+     }
+    }
+   ]
   }
  ],
  "colormaps": {
@@ -49372,6 +54366,70 @@
     ]
    ]
   },
+  "draped_folds": {
+   "schema": 1,
+   "name": "draped_folds",
+   "kind": "sequential",
+   "source": "a navy-black through indigo, maroon and teal to amber, gold and a warm cream: the albedo of the draped_folds style, from underworld-25.jpg, gold and teal spirals over dark smooth folds that read as draped cloth",
+   "stops": [
+    [
+     0.0,
+     [
+      14,
+      14,
+      34
+     ]
+    ],
+    [
+     0.2,
+     [
+      40,
+      30,
+      72
+     ]
+    ],
+    [
+     0.36,
+     [
+      112,
+      24,
+      24
+     ]
+    ],
+    [
+     0.52,
+     [
+      18,
+      98,
+      108
+     ]
+    ],
+    [
+     0.7,
+     [
+      204,
+      122,
+      40
+     ]
+    ],
+    [
+     0.86,
+     [
+      246,
+      202,
+      112
+     ]
+    ],
+    [
+     1.0,
+     [
+      255,
+      246,
+      216
+     ]
+    ]
+   ]
+  },
   "ember_rose": {
    "schema": 1,
    "name": "ember_rose",
@@ -50116,6 +55174,158 @@
     ]
    ]
   },
+  "frost_stipple": {
+   "schema": 1,
+   "name": "frost_stipple",
+   "kind": "cyclic",
+   "source": "a deep aubergine-grey through dusty violet and lilac to a frosty near-white and a rose pink, back to the aubergine: the albedo of the frost_stipple style, from molemou.jpg, lilac and grey seahorse waves dusted with sparkling stipple",
+   "stops": [
+    [
+     0.0,
+     [
+      52,
+      36,
+      64
+     ]
+    ],
+    [
+     0.22,
+     [
+      112,
+      88,
+      132
+     ]
+    ],
+    [
+     0.45,
+     [
+      178,
+      152,
+      200
+     ]
+    ],
+    [
+     0.62,
+     [
+      226,
+      222,
+      242
+     ]
+    ],
+    [
+     0.78,
+     [
+      216,
+      168,
+      204
+     ]
+    ],
+    [
+     0.9,
+     [
+      120,
+      84,
+      118
+     ]
+    ],
+    [
+     1.0,
+     [
+      52,
+      36,
+      64
+     ]
+    ]
+   ]
+  },
+  "gilded_leaves": {
+   "schema": 1,
+   "name": "gilded_leaves",
+   "kind": "sequential",
+   "source": "charcoal through warm stone grey to a pale ghost grey, then deep bronze, copper, a rose-copper and gold to a pale cream gold: the albedo of the gilded_leaves style, from velvet-flowers-25.jpg, translucent gold leaf blades glowing over dark crackled stone",
+   "stops": [
+    [
+     0.0,
+     [
+      16,
+      15,
+      16
+     ]
+    ],
+    [
+     0.12,
+     [
+      38,
+      36,
+      35
+     ]
+    ],
+    [
+     0.26,
+     [
+      70,
+      67,
+      64
+     ]
+    ],
+    [
+     0.4,
+     [
+      150,
+      148,
+      146
+     ]
+    ],
+    [
+     0.5,
+     [
+      92,
+      60,
+      34
+     ]
+    ],
+    [
+     0.62,
+     [
+      160,
+      96,
+      52
+     ]
+    ],
+    [
+     0.72,
+     [
+      186,
+      118,
+      104
+     ]
+    ],
+    [
+     0.84,
+     [
+      222,
+      162,
+      62
+     ]
+    ],
+    [
+     0.94,
+     [
+      242,
+      206,
+      118
+     ]
+    ],
+    [
+     1.0,
+     [
+      255,
+      238,
+      190
+     ]
+    ]
+   ]
+  },
   "gilded_orbs": {
    "schema": 1,
    "name": "gilded_orbs",
@@ -50500,6 +55710,206 @@
     ]
    ]
   },
+  "gouache_cut": {
+   "schema": 1,
+   "name": "gouache_cut",
+   "kind": "sequential",
+   "source": "seven flat gouache paints, ink navy, teal, pale mint, deep teal, sky, midnight and a chalk white, with a lime at the top for the knife strokes: the albedo of the gouache_cut style, from wallhaven-4omjp5",
+   "stops": [
+    [
+     0.0,
+     [
+      8,
+      22,
+      44
+     ]
+    ],
+    [
+     0.121,
+     [
+      8,
+      22,
+      44
+     ]
+    ],
+    [
+     0.129,
+     [
+      36,
+      142,
+      156
+     ]
+    ],
+    [
+     0.246,
+     [
+      36,
+      142,
+      156
+     ]
+    ],
+    [
+     0.254,
+     [
+      186,
+      234,
+      214
+     ]
+    ],
+    [
+     0.371,
+     [
+      186,
+      234,
+      214
+     ]
+    ],
+    [
+     0.379,
+     [
+      10,
+      74,
+      98
+     ]
+    ],
+    [
+     0.496,
+     [
+      10,
+      74,
+      98
+     ]
+    ],
+    [
+     0.504,
+     [
+      118,
+      190,
+      222
+     ]
+    ],
+    [
+     0.621,
+     [
+      118,
+      190,
+      222
+     ]
+    ],
+    [
+     0.629,
+     [
+      30,
+      72,
+      124
+     ]
+    ],
+    [
+     0.746,
+     [
+      30,
+      72,
+      124
+     ]
+    ],
+    [
+     0.754,
+     [
+      224,
+      242,
+      234
+     ]
+    ],
+    [
+     0.871,
+     [
+      224,
+      242,
+      234
+     ]
+    ],
+    [
+     0.879,
+     [
+      186,
+      222,
+      28
+     ]
+    ],
+    [
+     1.0,
+     [
+      186,
+      222,
+      28
+     ]
+    ]
+   ]
+  },
+  "grain_fans": {
+   "schema": 1,
+   "name": "grain_fans",
+   "kind": "cyclic",
+   "source": "a deep teal through aqua and a pale aqua to orange, amber and a brown, back to the teal: the albedo of the grain_fans style, from touch.jpg, broad fans of alternating teal and orange bands carrying fine parallel grain",
+   "stops": [
+    [
+     0.0,
+     [
+      14,
+      100,
+      124
+     ]
+    ],
+    [
+     0.18,
+     [
+      70,
+      190,
+      210
+     ]
+    ],
+    [
+     0.34,
+     [
+      176,
+      232,
+      232
+     ]
+    ],
+    [
+     0.5,
+     [
+      232,
+      136,
+      44
+     ]
+    ],
+    [
+     0.68,
+     [
+      246,
+      180,
+      96
+     ]
+    ],
+    [
+     0.84,
+     [
+      128,
+      62,
+      26
+     ]
+    ],
+    [
+     1.0,
+     [
+      14,
+      100,
+      124
+     ]
+    ]
+   ]
+  },
   "greenhorn": {
    "schema": 1,
    "name": "greenhorn",
@@ -50568,6 +55978,62 @@
       224,
       255,
       242
+     ]
+    ]
+   ]
+  },
+  "hairline_rays": {
+   "schema": 1,
+   "name": "hairline_rays",
+   "kind": "sequential",
+   "source": "a near-black navy through deep cobalt (the ground, in its lower 0.6), then an electric blue halo, a sky-blue lace and an ice-white line: the albedo of the hairline_rays style, from sear-the-sky-25.jpg: fine bright blue hairlines on deep blue",
+   "stops": [
+    [
+     0.0,
+     [
+      1,
+      6,
+      24
+     ]
+    ],
+    [
+     0.3,
+     [
+      3,
+      16,
+      56
+     ]
+    ],
+    [
+     0.6,
+     [
+      6,
+      40,
+      110
+     ]
+    ],
+    [
+     0.75,
+     [
+      20,
+      100,
+      210
+     ]
+    ],
+    [
+     0.88,
+     [
+      70,
+      160,
+      250
+     ]
+    ],
+    [
+     1.0,
+     [
+      200,
+      236,
+      255
      ]
     ]
    ]
@@ -51780,6 +57246,54 @@
     ]
    ]
   },
+  "mercury_tubes": {
+   "schema": 1,
+   "name": "mercury_tubes",
+   "kind": "sequential",
+   "source": "a deep navy through royal blue to a clear cyan, the calm ground of the mercury_tubes style, from visionary-spires-25.jpg: liquid chrome stars and tubes (the chrome is literal paints of the stack, not the map's)",
+   "stops": [
+    [
+     0.0,
+     [
+      6,
+      10,
+      48
+     ]
+    ],
+    [
+     0.3,
+     [
+      10,
+      26,
+      96
+     ]
+    ],
+    [
+     0.6,
+     [
+      8,
+      84,
+      152
+     ]
+    ],
+    [
+     0.85,
+     [
+      10,
+      160,
+      204
+     ]
+    ],
+    [
+     1.0,
+     [
+      70,
+      210,
+      236
+     ]
+    ]
+   ]
+  },
   "molten_flow": {
    "schema": 1,
    "name": "molten_flow",
@@ -51832,6 +57346,158 @@
       255,
       246,
       190
+     ]
+    ]
+   ]
+  },
+  "neon_loops": {
+   "schema": 1,
+   "name": "neon_loops",
+   "kind": "sequential",
+   "source": "a deep ocean blue through teal to a sea green (the ground, in its lower 0.6), then a mint halo, a pale lemon lace and a white line: the albedo of the neon_loops style, from ten-leaf-clover-25.jpg: glowing white outline loops over a teal-to-green ground",
+   "stops": [
+    [
+     0.0,
+     [
+      4,
+      52,
+      140
+     ]
+    ],
+    [
+     0.2,
+     [
+      6,
+      104,
+      172
+     ]
+    ],
+    [
+     0.4,
+     [
+      10,
+      160,
+      164
+     ]
+    ],
+    [
+     0.6,
+     [
+      36,
+      196,
+      132
+     ]
+    ],
+    [
+     0.75,
+     [
+      120,
+      236,
+      190
+     ]
+    ],
+    [
+     0.88,
+     [
+      236,
+      236,
+      150
+     ]
+    ],
+    [
+     1.0,
+     [
+      255,
+      255,
+      255
+     ]
+    ]
+   ]
+  },
+  "paper_layers": {
+   "schema": 1,
+   "name": "paper_layers",
+   "kind": "sequential",
+   "source": "cream through tan and rust to maroon, then black through slate to a pale steel blue: the albedo of the paper_layers style, from no-mans-land-25: stacked sheets of cut paper, a warm half against a slate half",
+   "stops": [
+    [
+     0.0,
+     [
+      255,
+      238,
+      168
+     ]
+    ],
+    [
+     0.14,
+     [
+      240,
+      196,
+      120
+     ]
+    ],
+    [
+     0.28,
+     [
+      212,
+      140,
+      76
+     ]
+    ],
+    [
+     0.4,
+     [
+      160,
+      78,
+      44
+     ]
+    ],
+    [
+     0.5,
+     [
+      104,
+      26,
+      22
+     ]
+    ],
+    [
+     0.56,
+     [
+      16,
+      14,
+      18
+     ]
+    ],
+    [
+     0.68,
+     [
+      26,
+      34,
+      48
+     ]
+    ],
+    [
+     0.82,
+     [
+      48,
+      68,
+      96
+     ]
+    ],
+    [
+     0.93,
+     [
+      82,
+      110,
+      148
+     ]
+    ],
+    [
+     1.0,
+     [
+      150,
+      176,
+      210
      ]
     ]
    ]
@@ -53020,6 +58686,126 @@
     ]
    ]
   },
+  "stirred_ink": {
+   "schema": 1,
+   "name": "stirred_ink",
+   "kind": "sequential",
+   "source": "a blue-black through deep ultramarine and cobalt to azure, sky and an ice white, the albedo of the stirred_ink style, from meditation-25.jpg: a poured blue liquid stirred into curls under one glossy light",
+   "stops": [
+    [
+     0.0,
+     [
+      2,
+      6,
+      40
+     ]
+    ],
+    [
+     0.22,
+     [
+      4,
+      22,
+      98
+     ]
+    ],
+    [
+     0.45,
+     [
+      6,
+      62,
+      160
+     ]
+    ],
+    [
+     0.65,
+     [
+      12,
+      112,
+      206
+     ]
+    ],
+    [
+     0.82,
+     [
+      50,
+      168,
+      236
+     ]
+    ],
+    [
+     0.93,
+     [
+      140,
+      216,
+      250
+     ]
+    ],
+    [
+     1.0,
+     [
+      232,
+      248,
+      255
+     ]
+    ]
+   ]
+  },
+  "tan_star_beams": {
+   "schema": 1,
+   "name": "tan_star_beams",
+   "kind": "sequential",
+   "source": "a near-black navy through midnight blue (the ground, in its lower 0.6), then a steel-blue halo, a tan lace and a blue-white line: a palette entry of the neon_loops mode, from tianan-25.jpg: feathery tan stars joined by soft blue-white beams on a dark field",
+   "stops": [
+    [
+     0.0,
+     [
+      2,
+      4,
+      10
+     ]
+    ],
+    [
+     0.3,
+     [
+      6,
+      12,
+      28
+     ]
+    ],
+    [
+     0.6,
+     [
+      24,
+      48,
+      92
+     ]
+    ],
+    [
+     0.75,
+     [
+      70,
+      130,
+      210
+     ]
+    ],
+    [
+     0.88,
+     [
+      214,
+      190,
+      150
+     ]
+    ],
+    [
+     1.0,
+     [
+      240,
+      246,
+      255
+     ]
+    ]
+   ]
+  },
   "teal_filaments": {
    "schema": 1,
    "name": "teal_filaments",
@@ -53184,6 +58970,142 @@
       190,
       245,
       240
+     ]
+    ]
+   ]
+  },
+  "tri_mosaic": {
+   "schema": 1,
+   "name": "tri_mosaic",
+   "kind": "sequential",
+   "source": "a deep navy through slate teal and umber to rust, orange and a pale cream, the albedo of the tri_mosaic style, from wallhaven-47k2py: flat triangles nested in triangles, navy grounds against orange and cream bands",
+   "stops": [
+    [
+     0.0,
+     [
+      8,
+      38,
+      62
+     ]
+    ],
+    [
+     0.16,
+     [
+      18,
+      66,
+      92
+     ]
+    ],
+    [
+     0.3,
+     [
+      96,
+      70,
+      66
+     ]
+    ],
+    [
+     0.42,
+     [
+      166,
+      78,
+      40
+     ]
+    ],
+    [
+     0.56,
+     [
+      214,
+      118,
+      48
+     ]
+    ],
+    [
+     0.7,
+     [
+      238,
+      180,
+      96
+     ]
+    ],
+    [
+     0.84,
+     [
+      246,
+      226,
+      160
+     ]
+    ],
+    [
+     1.0,
+     [
+      250,
+      238,
+      190
+     ]
+    ]
+   ]
+  },
+  "tri_mosaic_ice": {
+   "schema": 1,
+   "name": "tri_mosaic_ice",
+   "kind": "sequential",
+   "source": "a midnight indigo through royal and sky blue to an ice white, the albedo of tri_mosaic's blue reading, from wallhaven-4xy8el: triangles folded into cube corners in navy, cyan and frost",
+   "stops": [
+    [
+     0.0,
+     [
+      14,
+      14,
+      62
+     ]
+    ],
+    [
+     0.15,
+     [
+      28,
+      44,
+      122
+     ]
+    ],
+    [
+     0.32,
+     [
+      40,
+      96,
+      178
+     ]
+    ],
+    [
+     0.48,
+     [
+      72,
+      156,
+      214
+     ]
+    ],
+    [
+     0.62,
+     [
+      150,
+      188,
+      232
+     ]
+    ],
+    [
+     0.78,
+     [
+      226,
+      240,
+      250
+     ]
+    ],
+    [
+     1.0,
+     [
+      248,
+      252,
+      255
      ]
     ]
    ]
