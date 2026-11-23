@@ -5,6 +5,16 @@
 # instead of the "deploy from a branch" setting because that setting runs the site
 # through Jekyll, which would start interpreting files this site does not intend as
 # templates. What is committed is what is served.
+#
+# Upload and deploy are two jobs, not two steps of one. deploy-pages finds the
+# artifact by listing the run's artifacts by name, and that listing can trail the
+# upload's finalize: run 45281082696 (Nov 23 2026) listed 0 artifacts 0.2 s after a
+# finalized upload and failed, where the same tree deployed on a fresh run. The job
+# boundary puts seconds between the two; it narrows the race, it does not close it.
+# If it recurs, use "Re-run failed jobs", which re-runs `deploy` against the one
+# artifact already uploaded. "Re-run all jobs" uploads a second `github-pages` and
+# deploy refuses the pair. upload-pages-artifact v4+ leaves dotfiles out; the only
+# tracked ones are `.gitattributes` and `.gitignore`, which the site does not need.
 
 name: pages
 
@@ -24,16 +34,21 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: .
+
   deploy:
+    needs: upload
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: .
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
