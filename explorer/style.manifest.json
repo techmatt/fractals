@@ -1,7 +1,7 @@
 {
   "built": "2026-11-24",
   "bundle": {
-    "colormaps": 87,
+    "colormaps": 105,
     "file": "custom-modes.json",
     "modes": [
       "brass-foam",
@@ -56,10 +56,15 @@
       "chrome-whorl",
       "dew-bloom",
       "filigree-dials",
-      "glass-orbs"
+      "glass-orbs",
+      "feather-plumes",
+      "hollow-webs",
+      "storm-clouds",
+      "starburst-veils",
+      "light-shafts"
     ],
     "schema": 1,
-    "sha256": "8e55c3222fed98d65f8a404f59051ab505338602e291d0c68803e4d5fbd64402"
+    "sha256": "4c4ea249dbaa4c3b8d3aac35450e5a9e6410ecb2ebbc640309d52b0de1afba48"
   },
   "crate": "explorer/style-wasm",
   "dependencies": [
@@ -67,8 +72,8 @@
   ],
   "modules": {
     "style.wasm": {
-      "gzip_bytes": 351599,
-      "raw_bytes": 1105975,
+      "gzip_bytes": 356245,
+      "raw_bytes": 1125703,
       "rustflags": ""
     }
   },
@@ -76,9 +81,9 @@
   "rustc": "1.96.0 (ac68faa20 2026-05-25)",
   "schema": 1,
   "trees": {
-    "data/palettes": "7f560a418302627890bbc76852b5bf279d24fd8c",
-    "data/styles": "da3c03da9d82be116c11d6052c6331f3ace999d2",
-    "engine": "85fe8bbba54067e237522f234bd5dd58a86bd7e6",
-    "style-wasm": "d3ad984143d73f71dd78904bc574693a9ad51d8a"
+    "data/palettes": "bf3ff05bd8a50129d7da6d00341fc03c109ed541",
+    "data/styles": "7806c625cc8b59360c083452811133bf24512890",
+    "engine": "d9608d245a9321879dea8a4306fdcdc85e039d01",
+    "style-wasm": "c133c363b72c75addfa5015ff1229b4cb037ff5c"
   }
 }

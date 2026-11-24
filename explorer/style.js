@@ -290,7 +290,7 @@ function asRead(stack) {
 }
 
 /** The stack members the module treats as whole numbers (`style-wasm`'s `INTEGER_MEMBERS`). */
-export const INTEGER_MEMBERS = new Set(["iterations", "hit", "settle", "sectors", "turns", "levels", "arms", "steps"]);
+export const INTEGER_MEMBERS = new Set(["iterations", "hit", "settle", "sectors", "turns", "levels", "arms", "steps", "spokes"]);
 
 /** Half to even, as the module's `round_ties_even`. */
 export function roundEven(number) {
@@ -695,7 +695,7 @@ export class StylePool {
     const summary = first.summary;
 
     if (summary.post === true) {
-      // A post stage reads the whole frame (a mosaic's lattice is fixed to it), so the
+      // A post stage reads the whole frame (a mosaic's lattice is fixed to it; a ray reads its brightest samples), so the
       // module draws it in one pass on one worker and refuses tiles; the preview above is
       // the same rule at a quarter size.
       hooks.stage?.("whole");

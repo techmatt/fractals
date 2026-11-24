@@ -2,7 +2,7 @@
 // its first example opened, measured whole and one tile drawn, and the memory it grew to
 // (004_bug_hunt). A wasm memory never shrinks, so this is what a worker keeps, too.
 //
-//   node explorer/bench/custom-memory.mjs [640x400]
+//   node explorer/bench/custom-memory.mjs [640x400] [--only <mode>,…]
 //
 // `style.js`'s `BYTES_PER_SAMPLE` is the largest `perSample` here with headroom; a new
 // mode that reads above it moves that constant (docs/custom-modes.md, *Memory*).
@@ -13,7 +13,10 @@ import { contractOf, exampleQuery, requestOf } from "../style.js";
 
 const here = (name) => fileURLToPath(new URL(`../${name}`, import.meta.url));
 
-const [width, height] = (process.argv[2] ?? "640x400").split("x").map(Number);
+const args = process.argv.slice(2);
+const at = args.indexOf("--only");
+const only = at >= 0 ? args.splice(at, 2)[1].split(",") : null;
+const [width, height] = (args[0] ?? "640x400").split("x").map(Number);
 const bundle = JSON.parse(readFileSync(here("custom-modes.json"), "utf8"));
 const bytes = readFileSync(here("style.wasm"));
 const module = await WebAssembly.compile(bytes);
@@ -28,6 +31,7 @@ const context = {
   customs: contractOf(bundle),
 };
 for (const mode of bundle.modes) {
+  if (only && !only.includes(mode.name)) continue;
   const wasm = (await WebAssembly.instantiate(module, {})).exports;
   const decoder = new TextDecoder();
   const text = (pointer) => {

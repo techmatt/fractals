@@ -157,15 +157,17 @@ the page). A website item never commits next door; each half below is its own it
   exact tone measure and the tiles again, on a pool of half the machine's threads, one to
   `MAX_STYLE_WORKERS` (`style.js`'s `poolSize`). Downloads take the same pool, without the
   preview. **A mode with a post stage** (its `open` summary says `post: true`, tri-mosaic's
-  lattice) reads the whole frame, so the module refuses it a tile: after the preview it is
-  drawn whole in one pass on one worker (`StylePool.drawing`, the worker's `whole`). Its
-  pattern is fixed to the frame, so a pan moves the fractal under it.
+  lattice, the `rays` beams of starburst-veils and light-shafts) reads the whole frame, so
+  the module refuses it a tile: after the preview it is drawn whole in one pass on one
+  worker (`StylePool.drawing`, the worker's `whole`). A new post kind next door needs
+  nothing here beyond the rebuilt module. A lattice or a shaft's `center` is fixed to the
+  frame, so a pan moves the fractal under it.
 - **Memory**: every worker measures the whole frame, and a wasm memory never shrinks. So a
   pass runs on as many workers as fit `PASS_MEMORY` between them, a download over
   `MAX_CUSTOM_SAMPLES` (one worker's `WORKER_MEMORY` at `BYTES_PER_SAMPLE`) is refused in a
   sentence, every worker is replaced after a download, and the pool is given back when the
   reader leaves the custom modes; all four constants are in `explorer/style.js`. A new mode
-  is measured with `node explorer/bench/custom-memory.mjs` (`measure` then one tile on a
+  is measured with `node explorer/bench/custom-memory.mjs --only <mode>,…` (`measure` then one tile on a
   fresh instance); one that reads above `BYTES_PER_SAMPLE` moves that constant.
 - **Not offered** in the Deep tab, the Walk, or the gallery's facets; Saved labels a custom
   entry and does not draw its tile.

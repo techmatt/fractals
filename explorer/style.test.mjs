@@ -93,14 +93,17 @@ const UNREACHED = [
   "gilded_leaves__0",
   "chrome_whorl__0",
   "glass_orbs__0",
+  "feather_plumes__0",
+  "storm_clouds__0",
+  "starburst_veils__0",
 ];
 
-test("the bundle is the 53 published modes in two tiers, each with an example", () => {
+test("the bundle is the 58 published modes in two tiers, each with an example", () => {
   assert.equal(bundle.schema, 1);
-  assert.equal(bundle.modes.length, 53);
+  assert.equal(bundle.modes.length, 58);
   const tiers = bundle.modes.map((mode) => tierOf(mode));
   assert.equal(tiers.filter((tier) => tier === "curated").length, 16);
-  assert.equal(tiers.filter((tier) => tier === "lab").length, 37);
+  assert.equal(tiers.filter((tier) => tier === "lab").length, 42);
   for (const mode of bundle.modes) {
     assert.ok(mode.shown.length > 0, mode.name);
     // A curated mode has four or five knobs (the catalog's tier rule); a lab mode may have none.
@@ -131,10 +134,10 @@ test("an example opens at the mode's defaults, plus the setting that reproduces 
   });
 });
 
-test("each mode offers one button a picture: 100 of the 102 keeps", () => {
+test("each mode offers one button a picture: 105 of the 107 keeps", () => {
   const offered = bundle.modes.flatMap((mode) => offeredExamples(mode, encode).map(({ index }) => `${mode.style}__${index}`));
-  assert.equal(offered.length, 100);
-  assert.equal(EXAMPLES.length, 102);
+  assert.equal(offered.length, 105);
+  assert.equal(EXAMPLES.length, 107);
   // star-eye's third keep draws its second's picture under the published settings, and
   // draped-folds' second its first's (both kept at the same place under round variants).
   const unoffered = ["star_eye__2", "draped_folds__1"];

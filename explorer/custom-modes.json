@@ -25807,6 +25807,30 @@
       "/tone/p10": 0.019
      },
      "score": 5
+    },
+    {
+     "colormap": "silk_scarves",
+     "values": {
+      "/tone/median": 0.224,
+      "/tone/p10": 0.078
+     },
+     "score": 3
+    },
+    {
+     "colormap": "sweet_child",
+     "values": {
+      "/tone/median": 0.378,
+      "/tone/p10": 0.243
+     },
+     "score": 3
+    },
+    {
+     "colormap": "twist_in_time",
+     "values": {
+      "/tone/median": 0.209,
+      "/tone/p10": 0.103
+     },
+     "score": 3
     }
    ],
    "variant": "current",
@@ -38664,6 +38688,2651 @@
         "power": 2.0
        }
       ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "feather-plumes",
+   "style": "feather_plumes",
+   "tier": "lab",
+   "palette": "feather_plumes",
+   "palettes": [
+    {
+     "colormap": "feather_plumes",
+     "values": {},
+     "score": 3
+    },
+    {
+     "colormap": "tempest_plumes",
+     "values": {
+      "/tone/median": 0.224,
+      "/tone/p10": 0.087
+     },
+     "score": 4
+    },
+    {
+     "colormap": "mean_plumes",
+     "values": {
+      "/tone/median": 0.202,
+      "/tone/p10": 0.063
+     },
+     "score": 3
+    },
+    {
+     "colormap": "starlight_plumes",
+     "values": {
+      "/tone/median": 0.082,
+      "/tone/p10": 0.024
+     },
+     "score": 3
+    },
+    {
+     "colormap": "lilac_plumes",
+     "values": {
+      "/layers/1/opacity": 0.25,
+      "/layers/2/opacity": 0.55,
+      "/layers/3/opacity": 0.55,
+      "/layers/4/opacity": 0.55,
+      "/layers/5/opacity": 0.45,
+      "/layers/6/opacity": 0.45,
+      "/layers/7/opacity": 0.45,
+      "/tone/median": 0.321,
+      "/tone/p10": 0.15
+     },
+     "score": 3
+    }
+   ],
+   "variant": "current",
+   "what": "Frosted feather plumes combed out of the set: fine barbs off a thin lit spine, crossing plumes and amber star sparks on a blue-black night (violet and magenta plumes, teal plumes over a rust haze, ultramarine plumes, and periwinkle plumes on royal blue as palette entries).",
+   "knobs": [],
+   "stack": {
+    "name": "feather_plumes",
+    "interior": {
+     "palette": 0.02
+    },
+    "tone": {
+     "median": 0.061,
+     "p10": 0.007,
+     "log_density": 8.0
+    },
+    "layers": [
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "de"
+       }
+      },
+      "power": 0.0001,
+      "color": {
+       "palette": 0.03
+      },
+      "opacity": 1.0
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "stripe",
+        "density": 3.0
+       }
+      },
+      "color": {
+       "palette": 0.3
+      },
+      "blend": "screen",
+      "opacity": 0.12,
+      "power": 2.0
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "stripe",
+        "density": 48.0
+       }
+      },
+      "color": {
+       "palette": 0.5
+      },
+      "blend": "screen",
+      "opacity": 0.9,
+      "power": 4.0,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 6.0
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "stripe",
+        "density": 48.0
+       },
+       "view": {
+        "turn": 137.5,
+        "zoom": 0.8,
+        "shift": [
+         -0.133,
+         -0.181
+        ]
+       }
+      },
+      "color": {
+       "palette": 0.58
+      },
+      "blend": "screen",
+      "opacity": 0.9,
+      "power": 4.0,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 6.0
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "stripe",
+        "density": 48.0
+       },
+       "view": {
+        "turn": 275.0,
+        "zoom": 0.951,
+        "shift": [
+         -0.096,
+         0.303
+        ]
+       }
+      },
+      "color": {
+       "palette": 0.66
+      },
+      "blend": "screen",
+      "opacity": 0.9,
+      "power": 4.0,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 6.0
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "stripe",
+        "density": 48.0
+       }
+      },
+      "color": {
+       "palette": 0.8
+      },
+      "blend": "screen",
+      "opacity": 0.5,
+      "power": 20.0,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 12.0
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "stripe",
+        "density": 48.0
+       },
+       "view": {
+        "turn": 137.5,
+        "zoom": 0.8,
+        "shift": [
+         -0.133,
+         -0.181
+        ]
+       }
+      },
+      "color": {
+       "palette": 0.85
+      },
+      "blend": "screen",
+      "opacity": 0.5,
+      "power": 20.0,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 12.0
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "stripe",
+        "density": 48.0
+       },
+       "view": {
+        "turn": 275.0,
+        "zoom": 0.951,
+        "shift": [
+         -0.096,
+         0.303
+        ]
+       }
+      },
+      "color": {
+       "palette": 0.9
+      },
+      "blend": "screen",
+      "opacity": 0.5,
+      "power": 20.0,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 12.0
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "de"
+       }
+      },
+      "falloff": 0.0012,
+      "color": {
+       "palette": 0.6
+      },
+      "blend": "screen",
+      "opacity": 0.2
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "de"
+       }
+      },
+      "falloff": 0.00025,
+      "color": {
+       "palette": 0.85
+      },
+      "blend": "screen",
+      "opacity": 0.35
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "gaussian_int"
+       },
+       "invert": true
+      },
+      "color": {
+       "palette": 1.0
+      },
+      "blend": "screen",
+      "opacity": 0.8,
+      "power": 40.0,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "power": 0.0001
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "inside": {
+        "iterations": 10
+       }
+      },
+      "power": 0.0001,
+      "color": {
+       "palette": 0.02
+      },
+      "opacity": 1.0
+     }
+    ]
+   },
+   "shown": [
+    {
+     "keep": "style_flames_r1/feather_plumes/formulations/fpf_long",
+     "caption": "Frosted feather plumes combed out of a phoenix set's lace, amber sparks on a blue-black night",
+     "location": {
+      "schema": 1,
+      "name": "phoenix_frost_keep",
+      "family": {
+       "kind": "phoenix",
+       "c": [
+        "-0.7903675443707822",
+        "-0.46059628853008105"
+       ],
+       "p": [
+        "-0.07072481292971435",
+        "-0.43908467679287494"
+       ],
+       "z_prev": [
+        "0.0",
+        "0.0"
+       ]
+      },
+      "viewport": {
+       "center_re": "-0.8475217631306413",
+       "center_im": "0.04446787554256711",
+       "width": "0.3827587642618578"
+      },
+      "maxiter": 945,
+      "note": "final139_general seat 973 (direct_trap_lines, phoenix)",
+      "gallery": {
+       "record": "final139_general",
+       "seat": 973,
+       "key": "1b50175755a9e8b5",
+       "p_spiral": 0.093238
+      }
+     },
+     "colormap": "feather_plumes",
+     "stack": {
+      "name": "feather_plumes__long",
+      "interior": {
+       "palette": 0.02
+      },
+      "tone": {
+       "median": 0.061,
+       "p10": 0.007,
+       "log_density": 8.0
+      },
+      "layers": [
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "power": 0.0001,
+        "color": {
+         "palette": 0.03
+        },
+        "opacity": 1.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "stripe",
+          "density": 3.0
+         }
+        },
+        "color": {
+         "palette": 0.3
+        },
+        "blend": "screen",
+        "opacity": 0.12,
+        "power": 2.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "stripe",
+          "density": 48.0
+         }
+        },
+        "color": {
+         "palette": 0.5
+        },
+        "blend": "screen",
+        "opacity": 0.9,
+        "power": 4.0,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 2.5
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "stripe",
+          "density": 48.0
+         },
+         "view": {
+          "turn": 137.5,
+          "zoom": 0.8,
+          "shift": [
+           -0.133,
+           -0.181
+          ]
+         }
+        },
+        "color": {
+         "palette": 0.58
+        },
+        "blend": "screen",
+        "opacity": 0.9,
+        "power": 4.0,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 2.5
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "stripe",
+          "density": 48.0
+         },
+         "view": {
+          "turn": 275.0,
+          "zoom": 0.951,
+          "shift": [
+           -0.096,
+           0.303
+          ]
+         }
+        },
+        "color": {
+         "palette": 0.66
+        },
+        "blend": "screen",
+        "opacity": 0.9,
+        "power": 4.0,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 2.5
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "stripe",
+          "density": 48.0
+         }
+        },
+        "color": {
+         "palette": 0.8
+        },
+        "blend": "screen",
+        "opacity": 0.5,
+        "power": 20.0,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 5.0
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "stripe",
+          "density": 48.0
+         },
+         "view": {
+          "turn": 137.5,
+          "zoom": 0.8,
+          "shift": [
+           -0.133,
+           -0.181
+          ]
+         }
+        },
+        "color": {
+         "palette": 0.8500000000000001
+        },
+        "blend": "screen",
+        "opacity": 0.5,
+        "power": 20.0,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 5.0
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "stripe",
+          "density": 48.0
+         },
+         "view": {
+          "turn": 275.0,
+          "zoom": 0.951,
+          "shift": [
+           -0.096,
+           0.303
+          ]
+         }
+        },
+        "color": {
+         "palette": 0.9
+        },
+        "blend": "screen",
+        "opacity": 0.5,
+        "power": 20.0,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 5.0
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "falloff": 0.0012,
+        "color": {
+         "palette": 0.6
+        },
+        "blend": "screen",
+        "opacity": 0.2
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "falloff": 0.00025,
+        "color": {
+         "palette": 0.85
+        },
+        "blend": "screen",
+        "opacity": 0.35
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "gaussian_int"
+         },
+         "invert": true
+        },
+        "color": {
+         "palette": 1.0
+        },
+        "blend": "screen",
+        "opacity": 0.8,
+        "power": 40.0,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "power": 0.0001
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "inside": {
+          "iterations": 10
+         }
+        },
+        "power": 0.0001,
+        "color": {
+         "palette": 0.02
+        },
+        "opacity": 1.0
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "hollow-webs",
+   "style": "hollow_webs",
+   "tier": "lab",
+   "palette": "hollow_webs",
+   "palettes": [
+    {
+     "colormap": "hollow_webs",
+     "values": {},
+     "score": 3
+    }
+   ],
+   "variant": "current",
+   "what": "Hollow webs: dark wells of every size framed by bright rims, pockets nested in pockets, a membrane of fine fibres between them (magenta and gold; violet cells, and bone strands on crimson, as palette entries).",
+   "knobs": [],
+   "stack": {
+    "name": "hollow_webs",
+    "interior": {
+     "palette": 0.12
+    },
+    "tone": {
+     "median": 0.449,
+     "p10": 0.185
+    },
+    "layers": [
+     {
+      "kind": "palette",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "palette": {
+       "cycles": 1.0,
+       "gamma": 3.0,
+       "phase": 0.0,
+       "transfer": {
+        "kind": "rank"
+       }
+      },
+      "opacity": 1.0
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "stripe",
+        "density": 3.0
+       }
+      },
+      "color": {
+       "palette": 0.35
+      },
+      "blend": "screen",
+      "opacity": 0.08,
+      "power": 2.0
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "stripe",
+        "density": 24.0
+       }
+      },
+      "color": {
+       "palette": 0.55
+      },
+      "blend": "screen",
+      "opacity": 0.55,
+      "power": 3.0,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 16.0
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "stripe",
+        "density": 24.0
+       },
+       "view": {
+        "turn": 137.5,
+        "zoom": 0.8,
+        "shift": [
+         -0.133,
+         -0.181
+        ]
+       }
+      },
+      "color": {
+       "palette": 0.65
+      },
+      "blend": "screen",
+      "opacity": 0.55,
+      "power": 3.0,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 16.0
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "stripe",
+        "density": 24.0
+       },
+       "view": {
+        "turn": 275.0,
+        "zoom": 0.951,
+        "shift": [
+         -0.096,
+         0.303
+        ]
+       }
+      },
+      "color": {
+       "palette": 0.75
+      },
+      "blend": "screen",
+      "opacity": 0.55,
+      "power": 3.0,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 16.0
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "inside": {
+        "iterations": 1000
+       }
+      },
+      "color": {
+       "palette": 0.02
+      },
+      "blend": "multiply",
+      "opacity": 0.85,
+      "power": 0.3
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "inside": {
+        "iterations": 1000
+       },
+       "invert": true
+      },
+      "color": {
+       "palette": 0.88
+      },
+      "blend": "screen",
+      "opacity": 0.9,
+      "power": 5.0
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "inside": {
+        "iterations": 1000
+       }
+      },
+      "sheet": {
+       "bands": 5.0,
+       "edge": 0.08,
+       "fill": 0.0
+      },
+      "color": {
+       "palette": 0.6
+      },
+      "blend": "screen",
+      "opacity": 0.3
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "de"
+       }
+      },
+      "color": {
+       "palette": 0.7
+      },
+      "blend": "screen",
+      "opacity": 0.3,
+      "falloff": 0.0008
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "de"
+       }
+      },
+      "color": {
+       "palette": 0.97
+      },
+      "blend": "screen",
+      "opacity": 0.9,
+      "falloff": 0.0003
+     }
+    ]
+   },
+   "shown": [
+    {
+     "keep": "style_webs_clouds_r1/hollow_webs/formulations/hwf_stack",
+     "caption": "Dark wells ringed in nested rims on a gold-lit lace, a fibre membrane between",
+     "location": {
+      "schema": 1,
+      "name": "hand_rabbitbud_alpha",
+      "family": {
+       "kind": "julia",
+       "degree": 2,
+       "c": [
+        "-0.11341865594943655",
+        "0.860569472501573"
+       ]
+      },
+      "viewport": {
+       "center_re": "-0.30547427085040324",
+       "center_im": "0.5342004727183909",
+       "width": "0.6"
+      },
+      "maxiter": 2000,
+      "note": "hand: Julia z^2+c at the centre of a period-6 component (rabbitbud), about a repelling fixed point"
+     },
+     "colormap": "hollow_webs",
+     "stack": {
+      "name": "hollow_webs",
+      "interior": {
+       "palette": 0.12
+      },
+      "tone": {
+       "median": 0.449,
+       "p10": 0.185
+      },
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "palette": {
+         "cycles": 1.0,
+         "gamma": 3.0,
+         "phase": 0.0,
+         "transfer": {
+          "kind": "rank"
+         }
+        },
+        "opacity": 1.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "stripe",
+          "density": 3.0
+         }
+        },
+        "color": {
+         "palette": 0.35
+        },
+        "blend": "screen",
+        "opacity": 0.08,
+        "power": 2.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "stripe",
+          "density": 24.0
+         }
+        },
+        "color": {
+         "palette": 0.55
+        },
+        "blend": "screen",
+        "opacity": 0.55,
+        "power": 3.0,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 16.0
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "stripe",
+          "density": 24.0
+         },
+         "view": {
+          "turn": 137.5,
+          "zoom": 0.8,
+          "shift": [
+           -0.133,
+           -0.181
+          ]
+         }
+        },
+        "color": {
+         "palette": 0.65
+        },
+        "blend": "screen",
+        "opacity": 0.55,
+        "power": 3.0,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 16.0
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "stripe",
+          "density": 24.0
+         },
+         "view": {
+          "turn": 275.0,
+          "zoom": 0.951,
+          "shift": [
+           -0.096,
+           0.303
+          ]
+         }
+        },
+        "color": {
+         "palette": 0.75
+        },
+        "blend": "screen",
+        "opacity": 0.55,
+        "power": 3.0,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 16.0
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "inside": {
+          "iterations": 1000
+         }
+        },
+        "color": {
+         "palette": 0.02
+        },
+        "blend": "multiply",
+        "opacity": 0.85,
+        "power": 0.3
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "inside": {
+          "iterations": 1000
+         },
+         "invert": true
+        },
+        "color": {
+         "palette": 0.88
+        },
+        "blend": "screen",
+        "opacity": 0.9,
+        "power": 5.0
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "inside": {
+          "iterations": 1000
+         }
+        },
+        "sheet": {
+         "bands": 5.0,
+         "edge": 0.08,
+         "fill": 0.0
+        },
+        "color": {
+         "palette": 0.6
+        },
+        "blend": "screen",
+        "opacity": 0.3
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "color": {
+         "palette": 0.7
+        },
+        "blend": "screen",
+        "opacity": 0.3,
+        "falloff": 0.0008
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "color": {
+         "palette": 0.97
+        },
+        "blend": "screen",
+        "opacity": 0.9,
+        "falloff": 0.0003
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "storm-clouds",
+   "style": "storm_clouds",
+   "tier": "lab",
+   "palette": "storm_clouds",
+   "palettes": [
+    {
+     "colormap": "storm_clouds",
+     "values": {},
+     "score": 3
+    },
+    {
+     "colormap": "tributary_clouds",
+     "values": {
+      "/tone/median": 0.364,
+      "/tone/p10": 0.248
+     },
+     "score": 3
+    },
+    {
+     "colormap": "crimson_nebula",
+     "values": {
+      "/layers/6/opacity": 0.6,
+      "/tone/median": 0.177,
+      "/tone/p10": 0.041
+     },
+     "score": 3
+    }
+   ],
+   "variant": "current",
+   "what": "Storm clouds: crinkled cloud banks in teal, violet and orchid, the lace their edge, soft colour drifting through them, lit as a broad relief (blue and gold, and a crimson nebula with stars, as palette entries).",
+   "knobs": [],
+   "stack": {
+    "name": "storm_clouds",
+    "interior": {
+     "palette": 0.02
+    },
+    "tone": {
+     "median": 0.271,
+     "p10": 0.026
+    },
+    "layers": [
+     {
+      "kind": "palette",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "palette": {
+       "cycles": 1.0,
+       "gamma": 0.8,
+       "phase": 0.0,
+       "transfer": {
+        "kind": "rank"
+       }
+      },
+      "warp": {
+       "channel": {
+        "field": {
+         "kind": "stripe",
+         "density": 3.0
+        }
+       },
+       "amount": 0.35
+      },
+      "opacity": 1.0
+     },
+     {
+      "kind": "palette",
+      "channel": {
+       "field": {
+        "kind": "stripe",
+        "density": 2.0
+       }
+      },
+      "palette": {
+       "cycles": 1.0,
+       "gamma": 1.0,
+       "phase": 0.0,
+       "transfer": {
+        "kind": "rank"
+       }
+      },
+      "blend": "screen",
+      "opacity": 0.6
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "de"
+       }
+      },
+      "color": {
+       "palette": 0.72
+      },
+      "blend": "screen",
+      "opacity": 0.4,
+      "falloff": 0.005
+     },
+     {
+      "kind": "light",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "light": {
+       "bands": 1.0,
+       "rings": 0.0,
+       "slope": 1.5,
+       "azimuth": 110.0,
+       "elevation": 35.0,
+       "ambient": 0.5,
+       "diffuse": 0.7,
+       "specular": 0.4,
+       "shininess": 8.0,
+       "rim": 0.4,
+       "rim_power": 2.5,
+       "highlight": {
+        "palette": 0.95
+       }
+      },
+      "opacity": 1.0
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "stripe",
+        "density": 64.0
+       }
+      },
+      "color": {
+       "palette": 0.9
+      },
+      "blend": "screen",
+      "opacity": 0.3,
+      "power": 6.0,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 1.0
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "stripe",
+        "density": 64.0
+       },
+       "invert": true
+      },
+      "color": {
+       "palette": 0.03
+      },
+      "blend": "multiply",
+      "opacity": 0.3,
+      "power": 6.0
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "gaussian_int"
+       },
+       "invert": true
+      },
+      "color": {
+       "palette": 1.0
+      },
+      "blend": "screen",
+      "opacity": 0.15,
+      "power": 40.0,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "power": 0.0001
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "de"
+       }
+      },
+      "color": {
+       "palette": 0.92
+      },
+      "blend": "screen",
+      "opacity": 0.25,
+      "falloff": 0.001
+     }
+    ]
+   },
+   "shown": [
+    {
+     "keep": "style_webs_clouds_r1/storm_clouds/formulations/scf_ledges",
+     "caption": "Crinkled violet and teal cloud banks combed out of a spiral's lace",
+     "location": {
+      "schema": 1,
+      "name": "phoenix-classic_9a93355d",
+      "family": {
+       "kind": "phoenix"
+      },
+      "viewport": {
+       "center_re": "-0.275707435456956",
+       "center_im": "-0.5348112226278448",
+       "width": "0.21352853949196604"
+      },
+      "maxiter": 1071,
+      "note": "final139_general seat 614 (smooth_angle_min, phoenix:classic)",
+      "gallery": {
+       "record": "final139_general",
+       "seat": 614,
+       "key": "9a93355dac469c04",
+       "p_spiral": 0.052222
+      },
+      "ink": 0.26428
+     },
+     "colormap": "storm_clouds",
+     "stack": {
+      "name": "storm_clouds__ledges",
+      "interior": {
+       "palette": 0.02
+      },
+      "tone": {
+       "median": 0.271,
+       "p10": 0.026
+      },
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "palette": {
+         "cycles": 1.0,
+         "gamma": 0.8,
+         "phase": 0.0,
+         "transfer": {
+          "kind": "rank"
+         }
+        },
+        "warp": {
+         "channel": {
+          "field": {
+           "kind": "stripe",
+           "density": 3.0
+          }
+         },
+         "amount": 0.35
+        },
+        "opacity": 1.0
+       },
+       {
+        "kind": "palette",
+        "channel": {
+         "field": {
+          "kind": "stripe",
+          "density": 2.0
+         }
+        },
+        "palette": {
+         "cycles": 1.0,
+         "gamma": 1.0,
+         "phase": 0.0,
+         "transfer": {
+          "kind": "rank"
+         }
+        },
+        "blend": "screen",
+        "opacity": 0.6
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "color": {
+         "palette": 0.72
+        },
+        "blend": "screen",
+        "opacity": 0.4,
+        "falloff": 0.005
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "light": {
+         "bands": 14.0,
+         "rings": 0.35,
+         "slope": 1.2,
+         "azimuth": 110.0,
+         "elevation": 35.0,
+         "ambient": 0.5,
+         "diffuse": 0.7,
+         "specular": 0.4,
+         "shininess": 8.0,
+         "rim": 0.4,
+         "rim_power": 2.5,
+         "highlight": {
+          "palette": 0.95
+         }
+        },
+        "opacity": 1.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "stripe",
+          "density": 64.0
+         }
+        },
+        "color": {
+         "palette": 0.9
+        },
+        "blend": "screen",
+        "opacity": 0.3,
+        "power": 6.0,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 1.0
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "stripe",
+          "density": 64.0
+         },
+         "invert": true
+        },
+        "color": {
+         "palette": 0.03
+        },
+        "blend": "multiply",
+        "opacity": 0.3,
+        "power": 6.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "gaussian_int"
+         },
+         "invert": true
+        },
+        "color": {
+         "palette": 1.0
+        },
+        "blend": "screen",
+        "opacity": 0.15,
+        "power": 40.0,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "power": 0.0001
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "color": {
+         "palette": 0.92
+        },
+        "blend": "screen",
+        "opacity": 0.25,
+        "falloff": 0.001
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "starburst-veils",
+   "style": "starburst_veils",
+   "tier": "lab",
+   "palette": "starburst_veils",
+   "palettes": [
+    {
+     "colormap": "starburst_veils",
+     "values": {},
+     "score": 2
+    },
+    {
+     "colormap": "jade_starbursts",
+     "values": {
+      "/tone/median": 0.651,
+      "/tone/p10": 0.236
+     },
+     "score": 2
+    },
+    {
+     "colormap": "moss_starbursts",
+     "values": {
+      "/tone/median": 0.402,
+      "/tone/p10": 0.242
+     },
+     "score": 2
+    },
+    {
+     "colormap": "garnet_starbursts",
+     "values": {
+      "/tone/median": 0.288,
+      "/tone/p10": 0.093
+     },
+     "score": 2
+    },
+    {
+     "colormap": "gilt_starbursts",
+     "values": {
+      "/tone/median": 0.398,
+      "/tone/p10": 0.19
+     },
+     "score": 2
+    }
+   ],
+   "variant": "current",
+   "what": "Starlit veils: soft violet veils and wisps over the set's lace, its brightest sparks six-pointed stars whose straight beams cross the frame (jade glass, moss and amber, garnet silk, and gilt as palette entries).",
+   "knobs": [],
+   "stack": {
+    "interior": {
+     "palette": 0.02
+    },
+    "tone": {
+     "median": 0.246,
+     "p10": 0.181,
+     "log_density": 8.0
+    },
+    "layers": [
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "de"
+       }
+      },
+      "power": 0.0001,
+      "color": {
+       "palette": 0.04
+      },
+      "opacity": 1.0
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "stripe",
+        "density": 2.0
+       }
+      },
+      "color": {
+       "palette": 0.3
+      },
+      "blend": "screen",
+      "opacity": 0.1,
+      "power": 2.0
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "sheet": {
+       "bands": 3.0,
+       "phase": 0.0,
+       "fill": 0.2,
+       "edge": 0.05
+      },
+      "color": {
+       "palette": 0.45
+      },
+      "blend": "screen",
+      "opacity": 0.35,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 4.0
+      }
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       },
+       "view": {
+        "turn": 137.5,
+        "zoom": 0.8,
+        "shift": [
+         -0.133,
+         -0.181
+        ]
+       }
+      },
+      "sheet": {
+       "bands": 3.0,
+       "phase": 0.37,
+       "fill": 0.2,
+       "edge": 0.05
+      },
+      "color": {
+       "palette": 0.55
+      },
+      "blend": "screen",
+      "opacity": 0.35,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 4.0
+      }
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       },
+       "view": {
+        "turn": 275.0,
+        "zoom": 0.951,
+        "shift": [
+         -0.096,
+         0.303
+        ]
+       }
+      },
+      "sheet": {
+       "bands": 3.0,
+       "phase": 0.74,
+       "fill": 0.2,
+       "edge": 0.05
+      },
+      "color": {
+       "palette": 0.65
+      },
+      "blend": "screen",
+      "opacity": 0.35,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 4.0
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "stripe",
+        "density": 10.0
+       }
+      },
+      "color": {
+       "palette": 0.7
+      },
+      "blend": "screen",
+      "opacity": 0.25,
+      "power": 10.0,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 3.0
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "stripe",
+        "density": 10.0
+       },
+       "view": {
+        "turn": 137.5,
+        "zoom": 0.8,
+        "shift": [
+         -0.133,
+         -0.181
+        ]
+       }
+      },
+      "color": {
+       "palette": 0.74
+      },
+      "blend": "screen",
+      "opacity": 0.25,
+      "power": 10.0,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 3.0
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "stripe",
+        "density": 10.0
+       },
+       "view": {
+        "turn": 275.0,
+        "zoom": 0.951,
+        "shift": [
+         -0.096,
+         0.303
+        ]
+       }
+      },
+      "color": {
+       "palette": 0.7799999999999999
+      },
+      "blend": "screen",
+      "opacity": 0.25,
+      "power": 10.0,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 3.0
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "de"
+       }
+      },
+      "falloff": 0.002,
+      "color": {
+       "palette": 0.6
+      },
+      "blend": "screen",
+      "opacity": 0.25
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "de"
+       }
+      },
+      "falloff": 0.0004,
+      "color": {
+       "palette": 0.88
+      },
+      "blend": "screen",
+      "opacity": 0.5
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "gaussian_int"
+       },
+       "invert": true
+      },
+      "color": {
+       "palette": 1.0
+      },
+      "blend": "screen",
+      "opacity": 0.9,
+      "power": 40.0,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 6.0
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "inside": {
+        "iterations": 10
+       }
+      },
+      "power": 0.0001,
+      "color": {
+       "palette": 0.02
+      },
+      "opacity": 1.0
+     }
+    ],
+    "post": [
+     {
+      "kind": "rays",
+      "share": 0.0015,
+      "spokes": 6,
+      "angle": 15.0,
+      "length": 0.08,
+      "strength": 2.5,
+      "color": {
+       "palette": 0.9
+      }
+     }
+    ],
+    "name": "starburst_veils"
+   },
+   "shown": [
+    {
+     "keep": "style_light_beams_r1/starburst_veils/formulations/sbf_long",
+     "caption": "Violet veils over a spiral's lace, its brightest sparks six-pointed stars",
+     "location": {
+      "schema": 1,
+      "name": "phoenix_c480d744",
+      "family": {
+       "kind": "phoenix",
+       "c": [
+        "-0.5266783574752247",
+        "-0.652322729101436"
+       ],
+       "p": [
+        "-0.28353182998131243",
+        "-0.02545285599096059"
+       ],
+       "z_prev": [
+        "-0.10324356398202189",
+        "0.43684294503006016"
+       ]
+      },
+      "viewport": {
+       "center_re": "-0.31224129124550437",
+       "center_im": "-0.7450268412488672",
+       "width": "0.10515634181425103"
+      },
+      "maxiter": 3000,
+      "note": "final139_general seat 701 (smooth_mean_angle, phoenix)",
+      "gallery": {
+       "record": "final139_general",
+       "seat": 701,
+       "key": "c480d74488361eca",
+       "p_spiral": 0.196033
+      },
+      "ink": 0.03448
+     },
+     "colormap": "starburst_veils",
+     "stack": {
+      "interior": {
+       "palette": 0.02
+      },
+      "tone": {
+       "median": 0.246,
+       "p10": 0.181,
+       "log_density": 8.0
+      },
+      "layers": [
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "power": 0.0001,
+        "color": {
+         "palette": 0.04
+        },
+        "opacity": 1.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "stripe",
+          "density": 2.0
+         }
+        },
+        "color": {
+         "palette": 0.3
+        },
+        "blend": "screen",
+        "opacity": 0.1,
+        "power": 2.0
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "sheet": {
+         "bands": 3.0,
+         "phase": 0.0,
+         "fill": 0.2,
+         "edge": 0.05
+        },
+        "color": {
+         "palette": 0.45
+        },
+        "blend": "screen",
+        "opacity": 0.35,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 4.0
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         },
+         "view": {
+          "turn": 137.5,
+          "zoom": 0.8,
+          "shift": [
+           -0.133,
+           -0.181
+          ]
+         }
+        },
+        "sheet": {
+         "bands": 3.0,
+         "phase": 0.37,
+         "fill": 0.2,
+         "edge": 0.05
+        },
+        "color": {
+         "palette": 0.55
+        },
+        "blend": "screen",
+        "opacity": 0.35,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 4.0
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         },
+         "view": {
+          "turn": 275.0,
+          "zoom": 0.951,
+          "shift": [
+           -0.096,
+           0.303
+          ]
+         }
+        },
+        "sheet": {
+         "bands": 3.0,
+         "phase": 0.74,
+         "fill": 0.2,
+         "edge": 0.05
+        },
+        "color": {
+         "palette": 0.65
+        },
+        "blend": "screen",
+        "opacity": 0.35,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 4.0
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "stripe",
+          "density": 10.0
+         }
+        },
+        "color": {
+         "palette": 0.7
+        },
+        "blend": "screen",
+        "opacity": 0.25,
+        "power": 10.0,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 3.0
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "stripe",
+          "density": 10.0
+         },
+         "view": {
+          "turn": 137.5,
+          "zoom": 0.8,
+          "shift": [
+           -0.133,
+           -0.181
+          ]
+         }
+        },
+        "color": {
+         "palette": 0.74
+        },
+        "blend": "screen",
+        "opacity": 0.25,
+        "power": 10.0,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 3.0
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "stripe",
+          "density": 10.0
+         },
+         "view": {
+          "turn": 275.0,
+          "zoom": 0.951,
+          "shift": [
+           -0.096,
+           0.303
+          ]
+         }
+        },
+        "color": {
+         "palette": 0.7799999999999999
+        },
+        "blend": "screen",
+        "opacity": 0.25,
+        "power": 10.0,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 3.0
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "falloff": 0.002,
+        "color": {
+         "palette": 0.6
+        },
+        "blend": "screen",
+        "opacity": 0.25
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "falloff": 0.0004,
+        "color": {
+         "palette": 0.88
+        },
+        "blend": "screen",
+        "opacity": 0.5
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "gaussian_int"
+         },
+         "invert": true
+        },
+        "color": {
+         "palette": 1.0
+        },
+        "blend": "screen",
+        "opacity": 0.9,
+        "power": 40.0,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 6.0
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "inside": {
+          "iterations": 10
+         }
+        },
+        "power": 0.0001,
+        "color": {
+         "palette": 0.02
+        },
+        "opacity": 1.0
+       }
+      ],
+      "post": [
+       {
+        "kind": "rays",
+        "share": 0.0015,
+        "spokes": 6,
+        "angle": 15.0,
+        "length": 0.15,
+        "strength": 1.0,
+        "color": {
+         "palette": 0.9
+        }
+       }
+      ],
+      "name": "starburst_veils__long"
+     }
+    }
+   ]
+  },
+  {
+   "name": "light-shafts",
+   "style": "light_shafts",
+   "tier": "lab",
+   "palette": "light_shafts",
+   "palettes": [
+    {
+     "colormap": "light_shafts",
+     "values": {},
+     "score": 2
+    }
+   ],
+   "variant": "current",
+   "what": "Light shafts: fine blue lace in a dark void, straight shafts of light streaming out of it from a point (a scarlet beam, and ice-blue strands on black, as palette entries).",
+   "knobs": [],
+   "stack": {
+    "interior": {
+     "palette": 0.02
+    },
+    "tone": {
+     "median": 0.12,
+     "p10": 0.026,
+     "log_density": 8.0
+    },
+    "layers": [
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "de"
+       }
+      },
+      "power": 0.0001,
+      "color": {
+       "palette": 0.04
+      },
+      "opacity": 1.0
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "stripe",
+        "density": 2.0
+       }
+      },
+      "color": {
+       "palette": 0.35
+      },
+      "blend": "screen",
+      "opacity": 0.06,
+      "power": 2.0
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "stripe",
+        "density": 24.0
+       }
+      },
+      "color": {
+       "palette": 0.55
+      },
+      "blend": "screen",
+      "opacity": 0.21,
+      "power": 6.0,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 5.0
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "stripe",
+        "density": 24.0
+       },
+       "view": {
+        "turn": 137.5,
+        "zoom": 0.8,
+        "shift": [
+         -0.133,
+         -0.181
+        ]
+       }
+      },
+      "color": {
+       "palette": 0.6000000000000001
+      },
+      "blend": "screen",
+      "opacity": 0.21,
+      "power": 6.0,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 5.0
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "stripe",
+        "density": 24.0
+       },
+       "view": {
+        "turn": 275.0,
+        "zoom": 0.951,
+        "shift": [
+         -0.096,
+         0.303
+        ]
+       }
+      },
+      "color": {
+       "palette": 0.65
+      },
+      "blend": "screen",
+      "opacity": 0.21,
+      "power": 6.0,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 5.0
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "de"
+       }
+      },
+      "falloff": 0.0015,
+      "color": {
+       "palette": 0.6
+      },
+      "blend": "screen",
+      "opacity": 0.105
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "de"
+       }
+      },
+      "falloff": 0.0003,
+      "color": {
+       "palette": 0.92
+      },
+      "blend": "screen",
+      "opacity": 0.21
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "inside": {
+        "iterations": 10
+       }
+      },
+      "power": 0.0001,
+      "color": {
+       "palette": 0.02
+      },
+      "opacity": 1.0
+     }
+    ],
+    "post": [
+     {
+      "kind": "rays",
+      "share": 0.03,
+      "spokes": 4,
+      "angle": 45.0,
+      "length": 0.25,
+      "center": [
+       0.5,
+       0.42
+      ],
+      "strength": 10.0
+     }
+    ],
+    "name": "light_shafts"
+   },
+   "shown": [
+    {
+     "keep": "style_light_beams_r1/light_shafts/locations/lsl_21",
+     "caption": "Pale blue spiral lace in a dark void, shafts of light streaming past it",
+     "location": {
+      "schema": 1,
+      "name": "phoenix_fc131a7f",
+      "family": {
+       "c": [
+        "-0.5266783574752247",
+        "-0.652322729101436"
+       ],
+       "kind": "phoenix",
+       "p": [
+        "-0.28353182998131243",
+        "-0.02545285599096059"
+       ],
+       "z_prev": [
+        "-0.10324356398202189",
+        "0.43684294503006016"
+       ]
+      },
+      "viewport": {
+       "center_re": "0.797164153883992",
+       "center_im": "0.41015624999999994",
+       "width": "1.7526149488693006"
+      },
+      "maxiter": 4930,
+      "note": "final139_general seat 145 (smooth_angle_min, phoenix)",
+      "gallery": {
+       "record": "final139_general",
+       "seat": 145,
+       "key": "fc131a7f21537f6c",
+       "p_spiral": 0.031184
+      },
+      "ink": 0.02976
+     },
+     "colormap": "light_shafts",
+     "stack": {
+      "interior": {
+       "palette": 0.02
+      },
+      "tone": {
+       "median": 0.12,
+       "p10": 0.026,
+       "log_density": 8.0
+      },
+      "layers": [
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "power": 0.0001,
+        "color": {
+         "palette": 0.04
+        },
+        "opacity": 1.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "stripe",
+          "density": 2.0
+         }
+        },
+        "color": {
+         "palette": 0.35
+        },
+        "blend": "screen",
+        "opacity": 0.06,
+        "power": 2.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "stripe",
+          "density": 24.0
+         }
+        },
+        "color": {
+         "palette": 0.55
+        },
+        "blend": "screen",
+        "opacity": 0.21,
+        "power": 6.0,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 5.0
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "stripe",
+          "density": 24.0
+         },
+         "view": {
+          "turn": 137.5,
+          "zoom": 0.8,
+          "shift": [
+           -0.133,
+           -0.181
+          ]
+         }
+        },
+        "color": {
+         "palette": 0.6000000000000001
+        },
+        "blend": "screen",
+        "opacity": 0.21,
+        "power": 6.0,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 5.0
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "stripe",
+          "density": 24.0
+         },
+         "view": {
+          "turn": 275.0,
+          "zoom": 0.951,
+          "shift": [
+           -0.096,
+           0.303
+          ]
+         }
+        },
+        "color": {
+         "palette": 0.65
+        },
+        "blend": "screen",
+        "opacity": 0.21,
+        "power": 6.0,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 5.0
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "falloff": 0.0015,
+        "color": {
+         "palette": 0.6
+        },
+        "blend": "screen",
+        "opacity": 0.105
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "falloff": 0.0003,
+        "color": {
+         "palette": 0.92
+        },
+        "blend": "screen",
+        "opacity": 0.21
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "inside": {
+          "iterations": 10
+         }
+        },
+        "power": 0.0001,
+        "color": {
+         "palette": 0.02
+        },
+        "opacity": 1.0
+       }
+      ],
+      "post": [
+       {
+        "kind": "rays",
+        "share": 0.03,
+        "spokes": 4,
+        "angle": 45.0,
+        "length": 0.25,
+        "center": [
+         0.5,
+         0.42
+        ],
+        "strength": 10.0
+       }
+      ],
+      "name": "light_shafts"
      }
     }
    ]
@@ -56190,6 +58859,70 @@
     ]
    ]
   },
+  "crimson_nebula": {
+   "schema": 1,
+   "name": "crimson_nebula",
+   "kind": "sequential",
+   "source": "crimson_nebula, authored as 7 control points as the albedo of the storm_clouds style from wallhaven-3z1jkd: a plum black, wine, crimson and rose, a violet-blue and a white star.",
+   "stops": [
+    [
+     0.0,
+     [
+      10,
+      2,
+      10
+     ]
+    ],
+    [
+     0.2,
+     [
+      50,
+      6,
+      30
+     ]
+    ],
+    [
+     0.4,
+     [
+      130,
+      10,
+      50
+     ]
+    ],
+    [
+     0.55,
+     [
+      210,
+      30,
+      80
+     ]
+    ],
+    [
+     0.7,
+     [
+      240,
+      90,
+      150
+     ]
+    ],
+    [
+     0.82,
+     [
+      120,
+      100,
+      240
+     ]
+    ],
+    [
+     1.0,
+     [
+      250,
+      245,
+      255
+     ]
+    ]
+   ]
+  },
   "crisis_smooth": {
    "schema": 1,
    "name": "crisis_smooth",
@@ -56610,6 +59343,78 @@
       250,
       196,
       110
+     ]
+    ]
+   ]
+  },
+  "feather_plumes": {
+   "schema": 1,
+   "name": "feather_plumes",
+   "kind": "sequential",
+   "source": "feather_plumes, authored as 8 control points as the albedo of the feather_plumes style from wallhaven-0w8gpp.png: a blue-black night, slate and steel-blue barbs, ice-white tips and an amber spark.",
+   "stops": [
+    [
+     0.0,
+     [
+      4,
+      8,
+      14
+     ]
+    ],
+    [
+     0.2,
+     [
+      14,
+      30,
+      46
+     ]
+    ],
+    [
+     0.4,
+     [
+      40,
+      80,
+      112
+     ]
+    ],
+    [
+     0.55,
+     [
+      80,
+      130,
+      170
+     ]
+    ],
+    [
+     0.7,
+     [
+      140,
+      185,
+      215
+     ]
+    ],
+    [
+     0.85,
+     [
+      215,
+      235,
+      250
+     ]
+    ],
+    [
+     0.93,
+     [
+      255,
+      240,
+      210
+     ]
+    ],
+    [
+     1.0,
+     [
+      255,
+      190,
+      90
      ]
     ]
    ]
@@ -57502,6 +60307,78 @@
     ]
    ]
   },
+  "garnet_starbursts": {
+   "schema": 1,
+   "name": "garnet_starbursts",
+   "kind": "sequential",
+   "source": "garnet_starbursts, authored as 8 control points as the albedo of the garnet_starbursts style from state-of-being-25.jpg: a near-black maroon, umber haze, garnet red strands, taupe and ivory silk.",
+   "stops": [
+    [
+     0.0,
+     [
+      16,
+      4,
+      4
+     ]
+    ],
+    [
+     0.18,
+     [
+      46,
+      14,
+      14
+     ]
+    ],
+    [
+     0.34,
+     [
+      70,
+      40,
+      34
+     ]
+    ],
+    [
+     0.48,
+     [
+      170,
+      20,
+      40
+     ]
+    ],
+    [
+     0.6,
+     [
+      110,
+      84,
+      68
+     ]
+    ],
+    [
+     0.74,
+     [
+      160,
+      132,
+      104
+     ]
+    ],
+    [
+     0.88,
+     [
+      210,
+      186,
+      150
+     ]
+    ],
+    [
+     1.0,
+     [
+      250,
+      236,
+      210
+     ]
+    ]
+   ]
+  },
   "gilded_leaves": {
    "schema": 1,
    "name": "gilded_leaves",
@@ -57674,6 +60551,78 @@
       242,
       214,
       156
+     ]
+    ]
+   ]
+  },
+  "gilt_starbursts": {
+   "schema": 1,
+   "name": "gilt_starbursts",
+   "kind": "sequential",
+   "source": "gilt_starbursts, authored as 8 control points as the albedo of the gilt_starbursts style from treasury-25.jpg: a black-olive ground, bronze and brass veils, a sea-green thread, gold to a lemon star.",
+   "stops": [
+    [
+     0.0,
+     [
+      8,
+      8,
+      4
+     ]
+    ],
+    [
+     0.2,
+     [
+      40,
+      34,
+      14
+     ]
+    ],
+    [
+     0.38,
+     [
+      90,
+      74,
+      30
+     ]
+    ],
+    [
+     0.5,
+     [
+      70,
+      120,
+      90
+     ]
+    ],
+    [
+     0.62,
+     [
+      140,
+      112,
+      46
+     ]
+    ],
+    [
+     0.76,
+     [
+      190,
+      156,
+      64
+     ]
+    ],
+    [
+     0.9,
+     [
+      235,
+      205,
+      100
+     ]
+    ],
+    [
+     1.0,
+     [
+      255,
+      248,
+      170
      ]
     ]
    ]
@@ -58430,6 +61379,78 @@
     ]
    ]
   },
+  "hollow_webs": {
+   "schema": 1,
+   "name": "hollow_webs",
+   "kind": "sequential",
+   "source": "hollow_webs, authored as 8 control points as the albedo of the hollow_webs style from thermal-pockets-25.jpg: a black plum ground, maroon and rust wells, magenta and orchid fibres, olive gold to a yellow and cream rim.",
+   "stops": [
+    [
+     0.0,
+     [
+      8,
+      4,
+      8
+     ]
+    ],
+    [
+     0.15,
+     [
+      40,
+      12,
+      22
+     ]
+    ],
+    [
+     0.3,
+     [
+      96,
+      32,
+      40
+     ]
+    ],
+    [
+     0.45,
+     [
+      150,
+      70,
+      130
+     ]
+    ],
+    [
+     0.6,
+     [
+      190,
+      110,
+      170
+     ]
+    ],
+    [
+     0.72,
+     [
+      160,
+      140,
+      40
+     ]
+    ],
+    [
+     0.85,
+     [
+      240,
+      200,
+      60
+     ]
+    ],
+    [
+     1.0,
+     [
+      255,
+      245,
+      190
+     ]
+    ]
+   ]
+  },
   "horror_scales": {
    "schema": 1,
    "name": "horror_scales",
@@ -58878,6 +61899,78 @@
     ]
    ]
   },
+  "jade_starbursts": {
+   "schema": 1,
+   "name": "jade_starbursts",
+   "kind": "sequential",
+   "source": "jade_starbursts, authored as 8 control points as the albedo of the jade_starbursts style from splendor-25.jpg: a black-green ground, jade and teal sheets, aqua glass, lilac folds and a lemon-gold star.",
+   "stops": [
+    [
+     0.0,
+     [
+      6,
+      12,
+      12
+     ]
+    ],
+    [
+     0.18,
+     [
+      20,
+      56,
+      44
+     ]
+    ],
+    [
+     0.36,
+     [
+      40,
+      110,
+      96
+     ]
+    ],
+    [
+     0.52,
+     [
+      70,
+      160,
+      160
+     ]
+    ],
+    [
+     0.66,
+     [
+      110,
+      200,
+      210
+     ]
+    ],
+    [
+     0.78,
+     [
+      150,
+      130,
+      200
+     ]
+    ],
+    [
+     0.9,
+     [
+      210,
+      220,
+      120
+     ]
+    ],
+    [
+     1.0,
+     [
+      250,
+      250,
+      210
+     ]
+    ]
+   ]
+  },
   "krinshinda_smooth": {
    "schema": 1,
    "name": "krinshinda_smooth",
@@ -59130,6 +62223,150 @@
       16,
       52,
       80
+     ]
+    ]
+   ]
+  },
+  "light_shafts": {
+   "schema": 1,
+   "name": "light_shafts",
+   "kind": "sequential",
+   "source": "light_shafts, authored as 8 control points as the albedo of the light_shafts style from wallhaven-398e39.png: a black void, navy and indigo shafts, cobalt and violet strands, a pink-lilac glint and a white star.",
+   "stops": [
+    [
+     0.0,
+     [
+      2,
+      2,
+      8
+     ]
+    ],
+    [
+     0.2,
+     [
+      10,
+      10,
+      34
+     ]
+    ],
+    [
+     0.4,
+     [
+      28,
+      26,
+      90
+     ]
+    ],
+    [
+     0.55,
+     [
+      50,
+      52,
+      160
+     ]
+    ],
+    [
+     0.7,
+     [
+      90,
+      80,
+      220
+     ]
+    ],
+    [
+     0.82,
+     [
+      170,
+      90,
+      200
+     ]
+    ],
+    [
+     0.92,
+     [
+      170,
+      170,
+      250
+     ]
+    ],
+    [
+     1.0,
+     [
+      240,
+      236,
+      255
+     ]
+    ]
+   ]
+  },
+  "lilac_plumes": {
+   "schema": 1,
+   "name": "lilac_plumes",
+   "kind": "sequential",
+   "source": "lilac_kaleidoscope, authored as 8 control points as the albedo of the lilac_kaleidoscope style from patterns_lilac: a deep indigo, royal blue and periwinkle, lilac and a white core.",
+   "stops": [
+    [
+     0.0,
+     [
+      14,
+      8,
+      50
+     ]
+    ],
+    [
+     0.2,
+     [
+      30,
+      24,
+      110
+     ]
+    ],
+    [
+     0.4,
+     [
+      50,
+      50,
+      170
+     ]
+    ],
+    [
+     0.55,
+     [
+      80,
+      90,
+      220
+     ]
+    ],
+    [
+     0.7,
+     [
+      120,
+      130,
+      240
+     ]
+    ],
+    [
+     0.82,
+     [
+      170,
+      160,
+      245
+     ]
+    ],
+    [
+     0.92,
+     [
+      220,
+      215,
+      255
+     ]
+    ],
+    [
+     1.0,
+     [
+      255,
+      255,
+      255
      ]
     ]
    ]
@@ -59582,6 +62819,78 @@
     ]
    ]
   },
+  "mean_plumes": {
+   "schema": 1,
+   "name": "mean_plumes",
+   "kind": "sequential",
+   "source": "mean_plumes, authored as 8 control points as the albedo of the feather_plumes style's entry from mean-25.jpg: a dark teal night, a rust-red haze, cyan barbs and pale gold tips.",
+   "stops": [
+    [
+     0.0,
+     [
+      6,
+      14,
+      18
+     ]
+    ],
+    [
+     0.2,
+     [
+      60,
+      18,
+      14
+     ]
+    ],
+    [
+     0.35,
+     [
+      150,
+      40,
+      28
+     ]
+    ],
+    [
+     0.5,
+     [
+      30,
+      110,
+      140
+     ]
+    ],
+    [
+     0.65,
+     [
+      50,
+      170,
+      210
+     ]
+    ],
+    [
+     0.8,
+     [
+      140,
+      210,
+      220
+     ]
+    ],
+    [
+     0.92,
+     [
+      230,
+      225,
+      170
+     ]
+    ],
+    [
+     1.0,
+     [
+      255,
+      245,
+      220
+     ]
+    ]
+   ]
+  },
   "mercury_tubes": {
    "schema": 1,
    "name": "mercury_tubes",
@@ -59682,6 +62991,78 @@
       255,
       246,
       190
+     ]
+    ]
+   ]
+  },
+  "moss_starbursts": {
+   "schema": 1,
+   "name": "moss_starbursts",
+   "kind": "sequential",
+   "source": "moss_starbursts, authored as 8 control points as the albedo of the moss_starbursts style from sparx-25.jpg: a moss ground, olive and sea-green veils, teal pools, amber strands to an orange star.",
+   "stops": [
+    [
+     0.0,
+     [
+      22,
+      34,
+      14
+     ]
+    ],
+    [
+     0.2,
+     [
+      44,
+      66,
+      26
+     ]
+    ],
+    [
+     0.38,
+     [
+      60,
+      110,
+      70
+     ]
+    ],
+    [
+     0.52,
+     [
+      60,
+      150,
+      120
+     ]
+    ],
+    [
+     0.66,
+     [
+      130,
+      160,
+      70
+     ]
+    ],
+    [
+     0.8,
+     [
+      200,
+      150,
+      50
+     ]
+    ],
+    [
+     0.92,
+     [
+      240,
+      190,
+      80
+     ]
+    ],
+    [
+     1.0,
+     [
+      255,
+      235,
+      170
      ]
     ]
    ]
@@ -60446,6 +63827,78 @@
     ]
    ]
   },
+  "silk_scarves": {
+   "schema": 1,
+   "name": "silk_scarves",
+   "kind": "sequential",
+   "source": "silk_scarves, authored as 8 control points as the albedo of the soft_veils style's entry from silk-scarves-25.jpg: a dark teal ground, teal and sea-green silk, lime, gold and orange, a crimson last scarf.",
+   "stops": [
+    [
+     0.0,
+     [
+      8,
+      22,
+      22
+     ]
+    ],
+    [
+     0.2,
+     [
+      20,
+      80,
+      80
+     ]
+    ],
+    [
+     0.35,
+     [
+      40,
+      150,
+      140
+     ]
+    ],
+    [
+     0.5,
+     [
+      110,
+      180,
+      90
+     ]
+    ],
+    [
+     0.65,
+     [
+      230,
+      200,
+      50
+     ]
+    ],
+    [
+     0.8,
+     [
+      250,
+      150,
+      30
+     ]
+    ],
+    [
+     0.9,
+     [
+      220,
+      50,
+      60
+     ]
+    ],
+    [
+     1.0,
+     [
+      255,
+      200,
+      120
+     ]
+    ]
+   ]
+  },
   "sliced_strips": {
    "schema": 1,
    "name": "sliced_strips",
@@ -61110,6 +64563,150 @@
     ]
    ]
   },
+  "starburst_veils": {
+   "schema": 1,
+   "name": "starburst_veils",
+   "kind": "sequential",
+   "source": "starburst_veils, authored as 8 control points as the albedo of the starburst_veils style from visions-25.jpg: a deep indigo night, violet and royal-blue veils, magenta strands, lavender to a pale lilac star.",
+   "stops": [
+    [
+     0.0,
+     [
+      14,
+      6,
+      34
+     ]
+    ],
+    [
+     0.2,
+     [
+      40,
+      16,
+      86
+     ]
+    ],
+    [
+     0.4,
+     [
+      70,
+      30,
+      140
+     ]
+    ],
+    [
+     0.55,
+     [
+      110,
+      50,
+      200
+     ]
+    ],
+    [
+     0.7,
+     [
+      150,
+      70,
+      230
+     ]
+    ],
+    [
+     0.82,
+     [
+      190,
+      90,
+      220
+     ]
+    ],
+    [
+     0.92,
+     [
+      170,
+      160,
+      250
+     ]
+    ],
+    [
+     1.0,
+     [
+      235,
+      220,
+      255
+     ]
+    ]
+   ]
+  },
+  "starlight_plumes": {
+   "schema": 1,
+   "name": "starlight_plumes",
+   "kind": "sequential",
+   "source": "starlight_plumes, authored as 8 control points as the albedo of the feather_plumes style's entry from starlight-25.jpg: a violet-black night, ultramarine barbs and ice-cyan tips.",
+   "stops": [
+    [
+     0.0,
+     [
+      10,
+      4,
+      26
+     ]
+    ],
+    [
+     0.2,
+     [
+      30,
+      12,
+      80
+     ]
+    ],
+    [
+     0.4,
+     [
+      60,
+      30,
+      150
+     ]
+    ],
+    [
+     0.55,
+     [
+      80,
+      60,
+      210
+     ]
+    ],
+    [
+     0.7,
+     [
+      90,
+      130,
+      230
+     ]
+    ],
+    [
+     0.85,
+     [
+      150,
+      210,
+      245
+     ]
+    ],
+    [
+     0.93,
+     [
+      210,
+      240,
+      255
+     ]
+    ],
+    [
+     1.0,
+     [
+      250,
+      250,
+      255
+     ]
+    ]
+   ]
+  },
   "stirred_ink": {
    "schema": 1,
    "name": "stirred_ink",
@@ -61170,6 +64767,150 @@
       232,
       248,
       255
+     ]
+    ]
+   ]
+  },
+  "storm_clouds": {
+   "schema": 1,
+   "name": "storm_clouds",
+   "kind": "sequential",
+   "source": "storm_clouds, authored as 8 control points as the albedo of the storm_clouds style from wallhaven-45oz58: a navy black, indigo and violet banks, deep teal, cyan, orchid pink and a white crest.",
+   "stops": [
+    [
+     0.0,
+     [
+      4,
+      6,
+      18
+     ]
+    ],
+    [
+     0.15,
+     [
+      20,
+      22,
+      70
+     ]
+    ],
+    [
+     0.3,
+     [
+      60,
+      36,
+      120
+     ]
+    ],
+    [
+     0.45,
+     [
+      20,
+      90,
+      120
+     ]
+    ],
+    [
+     0.6,
+     [
+      40,
+      190,
+      210
+     ]
+    ],
+    [
+     0.75,
+     [
+      150,
+      110,
+      200
+     ]
+    ],
+    [
+     0.88,
+     [
+      220,
+      160,
+      230
+     ]
+    ],
+    [
+     1.0,
+     [
+      245,
+      250,
+      255
+     ]
+    ]
+   ]
+  },
+  "sweet_child": {
+   "schema": 1,
+   "name": "sweet_child",
+   "kind": "sequential",
+   "source": "sweet_child, authored as 8 control points as the albedo of the soft_veils style's entry from sweet-child-25.jpg: a dusky wine ground, rose and dusty pink silk, sage, cream and a white sheen.",
+   "stops": [
+    [
+     0.0,
+     [
+      50,
+      22,
+      26
+     ]
+    ],
+    [
+     0.2,
+     [
+      110,
+      40,
+      50
+     ]
+    ],
+    [
+     0.4,
+     [
+      170,
+      70,
+      85
+     ]
+    ],
+    [
+     0.55,
+     [
+      200,
+      110,
+      120
+     ]
+    ],
+    [
+     0.7,
+     [
+      150,
+      150,
+      110
+     ]
+    ],
+    [
+     0.82,
+     [
+      220,
+      200,
+      175
+     ]
+    ],
+    [
+     0.92,
+     [
+      245,
+      230,
+      220
+     ]
+    ],
+    [
+     1.0,
+     [
+      255,
+      250,
+      245
      ]
     ]
    ]
@@ -61398,6 +65139,78 @@
     ]
    ]
   },
+  "tempest_plumes": {
+   "schema": 1,
+   "name": "tempest_plumes",
+   "kind": "sequential",
+   "source": "tempest_plumes, authored as 8 control points as the albedo of the feather_plumes style's entry from tempest-25.jpg: an indigo night, violet barbs, magenta and orchid tips.",
+   "stops": [
+    [
+     0.0,
+     [
+      18,
+      6,
+      40
+     ]
+    ],
+    [
+     0.2,
+     [
+      40,
+      14,
+      90
+     ]
+    ],
+    [
+     0.4,
+     [
+      80,
+      30,
+      170
+     ]
+    ],
+    [
+     0.55,
+     [
+      120,
+      50,
+      220
+     ]
+    ],
+    [
+     0.7,
+     [
+      170,
+      60,
+      210
+     ]
+    ],
+    [
+     0.85,
+     [
+      225,
+      90,
+      200
+     ]
+    ],
+    [
+     0.93,
+     [
+      245,
+      160,
+      235
+     ]
+    ],
+    [
+     1.0,
+     [
+      255,
+      220,
+      250
+     ]
+    ]
+   ]
+  },
   "tri_mosaic": {
    "schema": 1,
    "name": "tri_mosaic",
@@ -61530,6 +65343,70 @@
       248,
       252,
       255
+     ]
+    ]
+   ]
+  },
+  "tributary_clouds": {
+   "schema": 1,
+   "name": "tributary_clouds",
+   "kind": "sequential",
+   "source": "tributary_clouds, authored as 7 control points as the albedo of the storm_clouds style from tributaries-25.jpg: a slate navy, steel and peacock blue, cyan, ochre and a pale gold crest.",
+   "stops": [
+    [
+     0.0,
+     [
+      6,
+      14,
+      24
+     ]
+    ],
+    [
+     0.2,
+     [
+      20,
+      50,
+      80
+     ]
+    ],
+    [
+     0.4,
+     [
+      40,
+      90,
+      140
+     ]
+    ],
+    [
+     0.55,
+     [
+      40,
+      150,
+      190
+     ]
+    ],
+    [
+     0.7,
+     [
+      120,
+      160,
+      150
+     ]
+    ],
+    [
+     0.85,
+     [
+      200,
+      180,
+      110
+     ]
+    ],
+    [
+     1.0,
+     [
+      250,
+      240,
+      200
      ]
     ]
    ]
@@ -61810,6 +65687,78 @@
       226,
       217,
       226
+     ]
+    ]
+   ]
+  },
+  "twist_in_time": {
+   "schema": 1,
+   "name": "twist_in_time",
+   "kind": "sequential",
+   "source": "twist_in_time, authored as 8 control points as the albedo of the soft_veils style's entry from twist-in-time-25.jpg: a navy ground, royal and azure veils, cyan rims and a magenta-violet heart.",
+   "stops": [
+    [
+     0.0,
+     [
+      10,
+      14,
+      50
+     ]
+    ],
+    [
+     0.2,
+     [
+      24,
+      40,
+      110
+     ]
+    ],
+    [
+     0.4,
+     [
+      40,
+      80,
+      180
+     ]
+    ],
+    [
+     0.55,
+     [
+      50,
+      140,
+      220
+     ]
+    ],
+    [
+     0.7,
+     [
+      70,
+      200,
+      235
+     ]
+    ],
+    [
+     0.82,
+     [
+      150,
+      70,
+      220
+     ]
+    ],
+    [
+     0.92,
+     [
+      210,
+      80,
+      230
+     ]
+    ],
+    [
+     1.0,
+     [
+      240,
+      200,
+      255
      ]
     ]
    ]
