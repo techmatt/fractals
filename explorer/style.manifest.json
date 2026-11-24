@@ -1,7 +1,7 @@
 {
-  "built": "2026-11-22",
+  "built": "2026-11-24",
   "bundle": {
-    "colormaps": 80,
+    "colormaps": 87,
     "file": "custom-modes.json",
     "modes": [
       "brass-foam",
@@ -50,11 +50,16 @@
       "hairline-rays",
       "frost-stipple",
       "grain-fans",
+      "frost-filaments",
       "draped-folds",
-      "gilded-leaves"
+      "gilded-leaves",
+      "chrome-whorl",
+      "dew-bloom",
+      "filigree-dials",
+      "glass-orbs"
     ],
     "schema": 1,
-    "sha256": "4853e17f92c0cf00604e2f1e9d2f2191e90e02682ac395d2469bcf41eace62d2"
+    "sha256": "8e55c3222fed98d65f8a404f59051ab505338602e291d0c68803e4d5fbd64402"
   },
   "crate": "explorer/style-wasm",
   "dependencies": [
@@ -62,8 +67,8 @@
   ],
   "modules": {
     "style.wasm": {
-      "gzip_bytes": 350696,
-      "raw_bytes": 1103075,
+      "gzip_bytes": 351599,
+      "raw_bytes": 1105975,
       "rustflags": ""
     }
   },
@@ -71,9 +76,9 @@
   "rustc": "1.96.0 (ac68faa20 2026-05-25)",
   "schema": 1,
   "trees": {
-    "data/palettes": "213957617c141cdce7706fa2112bd2de158427b5",
-    "data/styles": "c5e3a6657269b4f20de51f7056c2a4152ce9367d",
-    "engine": "58d4071e47fbc0dce5dbaa98eee64a30c0e82b10",
+    "data/palettes": "7f560a418302627890bbc76852b5bf279d24fd8c",
+    "data/styles": "da3c03da9d82be116c11d6052c6331f3ace999d2",
+    "engine": "85fe8bbba54067e237522f234bd5dd58a86bd7e6",
     "style-wasm": "d3ad984143d73f71dd78904bc574693a9ad51d8a"
   }
 }

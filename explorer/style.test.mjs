@@ -66,7 +66,9 @@ const EXAMPLES = bundle.modes.flatMap((mode) => mode.shown.map((shown, index) =>
  *  layer was off (opacity 0) where the published one draws it at 0.9. Since 4c1501e (056 to
  *  067), eleven lab keeps drawn with a round's variant of the stack (tri-mosaic's post
  *  pass, stirred-ink's stir, the stroke widths and tilts, frost-stipple's, grain-fans' and
- *  draped-folds' named variants), or before gilded-leaves' bubble fade. */
+ *  draped-folds' named variants), or before gilded-leaves' bubble fade. Since a98ff12 (072
+ *  to 074), chrome-whorl's keep (its tube `rings` at 0.6, the published 1.0) and
+ *  glass-orbs' (its `no_ripples` variant, the ripple glow off). */
 const UNREACHED = [
   "teal_filaments__1",
   "star_eye__2",
@@ -89,14 +91,16 @@ const UNREACHED = [
   "draped_folds__0",
   "draped_folds__1",
   "gilded_leaves__0",
+  "chrome_whorl__0",
+  "glass_orbs__0",
 ];
 
-test("the bundle is the 48 published modes in two tiers, each with an example", () => {
+test("the bundle is the 53 published modes in two tiers, each with an example", () => {
   assert.equal(bundle.schema, 1);
-  assert.equal(bundle.modes.length, 48);
+  assert.equal(bundle.modes.length, 53);
   const tiers = bundle.modes.map((mode) => tierOf(mode));
   assert.equal(tiers.filter((tier) => tier === "curated").length, 16);
-  assert.equal(tiers.filter((tier) => tier === "lab").length, 32);
+  assert.equal(tiers.filter((tier) => tier === "lab").length, 37);
   for (const mode of bundle.modes) {
     assert.ok(mode.shown.length > 0, mode.name);
     // A curated mode has four or five knobs (the catalog's tier rule); a lab mode may have none.
@@ -127,10 +131,10 @@ test("an example opens at the mode's defaults, plus the setting that reproduces 
   });
 });
 
-test("each mode offers one button a picture: 95 of the 97 keeps", () => {
+test("each mode offers one button a picture: 100 of the 102 keeps", () => {
   const offered = bundle.modes.flatMap((mode) => offeredExamples(mode, encode).map(({ index }) => `${mode.style}__${index}`));
-  assert.equal(offered.length, 95);
-  assert.equal(EXAMPLES.length, 97);
+  assert.equal(offered.length, 100);
+  assert.equal(EXAMPLES.length, 102);
   // star-eye's third keep draws its second's picture under the published settings, and
   // draped-folds' second its first's (both kept at the same place under round variants).
   const unoffered = ["star_eye__2", "draped_folds__1"];
