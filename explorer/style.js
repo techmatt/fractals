@@ -100,11 +100,23 @@ export function contractOf(bundle) {
  * carries none, and is the one map it names. **The same array every call**: callers tell
  * the default by identity (`entry === palettesOf(mode)[0]`), and a lab mode with no set
  * (`corkscrew-ribbons`) read a fresh one-entry array each time as a palette of its own.
+ *
+ * The sibling's `bundle()` leaves out an entry with no keeps, the default among them. A
+ * default kept nowhere but still an Example's map (`chrome-orbs`, whose catalog row moved
+ * no default when it kept a second map) is put back first, so the Example opens on its own
+ * map; one no Example names (`neon-loops`) stays out, and the set's first entry is the
+ * default.
  */
 export function palettesOf(mode) {
-  if (mode.palettes?.length) return mode.palettes;
   let made = ONE_MAP.get(mode);
-  if (!made) ONE_MAP.set(mode, (made = [{ colormap: mode.palette, values: {} }]));
+  if (made) return made;
+  const set = mode.palettes ?? [];
+  const own = { colormap: mode.palette, values: {} };
+  if (!set.length) made = [own];
+  else if (set.some((entry) => entry.colormap === mode.palette)) made = set;
+  else if (mode.shown?.some((shown) => shown.colormap === mode.palette)) made = [own, ...set];
+  else made = set;
+  ONE_MAP.set(mode, made);
   return made;
 }
 const ONE_MAP = new WeakMap();

@@ -9107,6 +9107,10 @@
      "colormap": "star_eye",
      "values": {},
      "score": 3
+    },
+    {
+     "colormap": "soft_veils_amber",
+     "values": {}
     }
    ],
    "aliases": [],
@@ -22005,7 +22009,19 @@
    "style": "chrome_orbs",
    "tier": "lab",
    "palette": "chrome_orbs",
-   "palettes": [],
+   "palettes": [
+    {
+     "colormap": "mercury_tubes",
+     "values": {
+      "/layers/1/light/highlight": {
+       "palette": 0.95
+      },
+      "/layers/5/color": {
+       "palette": 0.9
+      }
+     }
+    }
+   ],
    "aliases": [],
    "variant": "current",
    "what": "Glossy chrome swirls: a mirror-bright relief in silver and slate, chrome ribbons, and red orbs swelling to gold along the arms.",
@@ -22495,6 +22511,10 @@
       "/layers/2/light/ambient": 0.45
      },
      "score": 3
+    },
+    {
+     "colormap": "soft_veils_ember",
+     "values": {}
     }
    ],
    "aliases": [],
@@ -32148,6 +32168,18 @@
      "colormap": "stirred_ink",
      "values": {},
      "score": 4
+    },
+    {
+     "colormap": "molten_flow",
+     "values": {
+      "/stir/0/steps": 4
+     }
+    },
+    {
+     "colormap": "soft_veils_ember",
+     "values": {
+      "/stir/0/steps": 4
+     }
     }
    ],
    "aliases": [],
@@ -37190,7 +37222,7 @@
    ],
    "aliases": [],
    "variant": "current",
-   "what": "Polished chrome petals whirling out of a small rosette, one lit tube per two escape bands, an amber ember glowing in each seam (ivory blades with blue glows, pastel pleats, and black chrome over frosted lace as palette entries).",
+   "what": "Polished chrome petals whirling out of a small rosette, one lit tube per two escape bands, an amber ember glowing in each seam.",
    "knobs": [],
    "stack": {
     "name": "chrome_whorl",
@@ -38810,7 +38842,10 @@
      "colormap": "starlight_plumes",
      "values": {
       "/tone/median": 0.082,
-      "/tone/p10": 0.024
+      "/tone/p10": 0.024,
+      "/layers/2/opacity": 0.55,
+      "/layers/3/opacity": 0.55,
+      "/layers/4/opacity": 0.55
      },
      "score": 3
     },
@@ -39146,49 +39181,50 @@
    },
    "shown": [
     {
-     "keep": "style_flames_r1/feather_plumes/formulations/fpf_long",
-     "caption": "Frosted feather plumes combed out of a phoenix set's lace, amber sparks on a blue-black night",
+     "keep": "style_november_r2/feather_plumes/kept/fp2_stack_2d84_tempest",
+     "caption": "Violet feather plumes combed out of a phoenix set's spirals, white star sparks on an indigo night",
      "location": {
       "schema": 1,
-      "name": "phoenix_frost_keep",
+      "name": "phoenix_2d843082",
       "family": {
-       "kind": "phoenix",
        "c": [
-        "-0.7903675443707822",
-        "-0.46059628853008105"
+        "-0.5266783574752247",
+        "-0.652322729101436"
        ],
+       "kind": "phoenix",
        "p": [
-        "-0.07072481292971435",
-        "-0.43908467679287494"
+        "-0.28353182998131243",
+        "-0.02545285599096059"
        ],
        "z_prev": [
-        "0.0",
-        "0.0"
+        "-0.10324356398202189",
+        "0.43684294503006016"
        ]
       },
       "viewport": {
-       "center_re": "-0.8475217631306413",
-       "center_im": "0.04446787554256711",
-       "width": "0.3827587642618578"
+       "center_re": "0.2392225561786449",
+       "center_im": "0.7922945504579708",
+       "width": "0.14321298448372002"
       },
-      "maxiter": 945,
-      "note": "final139_general seat 973 (direct_trap_lines, phoenix)",
+      "maxiter": 9266,
+      "note": "final139_general seat 96 (smooth_mean_angle, phoenix)",
       "gallery": {
        "record": "final139_general",
-       "seat": 973,
-       "key": "1b50175755a9e8b5",
-       "p_spiral": 0.093238
-      }
+       "seat": 96,
+       "key": "2d8430827c4c5f05",
+       "p_spiral": 0.106666
+      },
+      "ink": 0.04507
      },
-     "colormap": "feather_plumes",
+     "colormap": "tempest_plumes",
      "stack": {
-      "name": "feather_plumes__long",
+      "name": "e_tempest_plumes",
       "interior": {
        "palette": 0.02
       },
       "tone": {
-       "median": 0.061,
-       "p10": 0.007,
+       "median": 0.224,
+       "p10": 0.087,
        "log_density": 8.0
       },
       "layers": [
@@ -39241,7 +39277,7 @@
           }
          },
          "invert": true,
-         "power": 2.5
+         "power": 6.0
         }
        },
        {
@@ -39273,7 +39309,7 @@
           }
          },
          "invert": true,
-         "power": 2.5
+         "power": 6.0
         }
        },
        {
@@ -39305,7 +39341,7 @@
           }
          },
          "invert": true,
-         "power": 2.5
+         "power": 6.0
         }
        },
        {
@@ -39329,7 +39365,7 @@
           }
          },
          "invert": true,
-         "power": 5.0
+         "power": 12.0
         }
        },
        {
@@ -39361,7 +39397,7 @@
           }
          },
          "invert": true,
-         "power": 5.0
+         "power": 12.0
         }
        },
        {
@@ -39393,7 +39429,7 @@
           }
          },
          "invert": true,
-         "power": 5.0
+         "power": 12.0
         }
        },
        {
@@ -41120,7 +41156,7 @@
    ],
    "aliases": [],
    "variant": "current",
-   "what": "Light shafts: fine blue lace in a dark void, straight shafts of light streaming out of it from a point (a scarlet beam, and ice-blue strands on black, as palette entries).",
+   "what": "Light shafts: fine blue lace in a dark void, fine shafts of light streaming out of it from a point.",
    "knobs": [],
    "stack": {
     "interior": {
@@ -41308,8 +41344,8 @@
    },
    "shown": [
     {
-     "keep": "style_light_beams_r1/light_shafts/locations/lsl_21",
-     "caption": "Pale blue spiral lace in a dark void, shafts of light streaming past it",
+     "keep": "style_november_r2/light_shafts/levers/ls2_subtler",
+     "caption": "Pale blue spiral lace in a dark void, fine shafts of light streaming out of it",
      "location": {
       "schema": 1,
       "name": "phoenix_fc131a7f",
@@ -41515,18 +41551,18 @@
       "post": [
        {
         "kind": "rays",
-        "share": 0.03,
+        "share": 0.008,
         "spokes": 4,
         "angle": 45.0,
-        "length": 0.25,
+        "length": 0.1,
         "center": [
          0.5,
          0.42
         ],
-        "strength": 10.0
+        "strength": 3.5
        }
       ],
-      "name": "light_shafts"
+      "name": "light_shafts__subtler"
      }
     }
    ]

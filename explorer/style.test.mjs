@@ -71,8 +71,9 @@ const EXAMPLES = bundle.modes.flatMap((mode) => mode.shown.map((shown, index) =>
  *  to 074), chrome-whorl's keep (its tube `rings` at 0.6, the published 1.0) and
  *  glass-orbs' (its `no_ripples` variant, the ripple glow off). Since 083 (wallpapers
  *  ca5e8d3), cauliflower-scales' keep, whose published stack took two explorer-cost cuts
- *  after it was kept, and light-shafts' (its published stack moved to round two's
- *  `subtler` default). */
+ *  after it was kept. Light-shafts' (its published stack moved to round two's `subtler`
+ *  default, 083) is reached again since 7c62551 shows the round-two `ls2_subtler` keep;
+ *  feather-plumes' new card (`fp2_stack_2d84_tempest`) is still not the published stack. */
 const UNREACHED = [
   "teal_filaments__1",
   "star_eye__2",
@@ -101,7 +102,6 @@ const UNREACHED = [
   "feather_plumes__0",
   "storm_clouds__0",
   "starburst_veils__0",
-  "light_shafts__0",
 ];
 
 test("the bundle is the 58 published modes in two tiers, each with an example", () => {
@@ -370,6 +370,12 @@ test("each mode carries its palette set, the mode's own map first, every map in 
     palettesOf(modes.get("brass-foam")).map((entry) => entry.colormap),
     ["bronze_packing", "magma", "teal_tunnel", "twilight", "greenhorn"],
   );
+  // The bundle leaves out chrome-orbs' keepless default; its Example opens on it, so the
+  // page puts it back first (`palettesOf`), the same array every call.
+  const chrome = modes.get("chrome-orbs");
+  assert.deepEqual(chrome.palettes.map((entry) => entry.colormap), ["mercury_tubes"]);
+  assert.deepEqual(palettesOf(chrome).map((entry) => entry.colormap), ["chrome_orbs", "mercury_tubes"]);
+  assert.equal(palettesOf(chrome), palettesOf(chrome));
 });
 
 test("a download names the Example its view is at, and nothing at any other place", () => {

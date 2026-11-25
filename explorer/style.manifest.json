@@ -1,5 +1,5 @@
 {
-  "built": "2026-11-24",
+  "built": "2026-11-25",
   "bundle": {
     "colormaps": 105,
     "file": "custom-modes.json",
@@ -64,7 +64,7 @@
       "light-shafts"
     ],
     "schema": 1,
-    "sha256": "6322612ffcf0745f79d3f9cc2ab3abde59ac7a98aad3e1850f4e95bcd5bac126"
+    "sha256": "c44a58e29d1ae548b11376c41c93e329016e5c3edbc6f453c01c9760c8d022d4"
   },
   "crate": "explorer/style-wasm",
   "dependencies": [
@@ -82,8 +82,8 @@
   "schema": 1,
   "trees": {
     "data/palettes": "bf3ff05bd8a50129d7da6d00341fc03c109ed541",
-    "data/styles": "f841572e8549155d6179c763eec5ab9fe2a5acc4",
+    "data/styles": "9ac75aa2ede4fa0c467ea39bf86f455ca7788573",
     "engine": "d70c85f10c16d2e1c019c0f023888998e4a9051b",
-    "style-wasm": "becef6cd21b9bb5715dbabb8a8d678f290ee054d"
+    "style-wasm": "6ec5f45ee2a3b08b1046748f3ac41d0cad6f99cf"
   }
 }

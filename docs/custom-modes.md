@@ -87,6 +87,9 @@ the page). A website item never commits next door; each half below is its own it
    knobs (the published look, so a button no setting reproduces is held to that, not its
    keep), a few seconds each; `wasm-parity`'s natives come only after its whole wasm half.
    Use fresh out directories: `custom-parity.mjs` appends, and a stale id reads `NO NATIVE`.
+   **Never split `custom-natives.mjs` across processes into one out directory**: `style
+   render` rewrites the directory's `renders.jsonl`, and two at once corrupt it (every
+   later render fails `JSONDecodeError`); it takes a few seconds an Example, so run it once.
    **Draw both sides at one pin**: the natives come from the sibling's `HEAD` at the moment
    they run, the Node and page sides from the committed bundle, so a sibling commit landing
    mid-run (a knob added) reads as a whole-picture miss; re-pin, then redraw that mode on
@@ -136,7 +139,10 @@ the page). A website item never commits next door; each half below is its own it
   each with the `values` tuned for it, written whole at their pointers over the stack
   before the knobs, as `styles.at_palette` does) is a row of swatches beside Matched
   palette, hidden for a set of one; a swatch or the `[` and `]` keys switch palette and turn
-  Matched palette on. **A switch recolours**: the pool's first worker keeps the frame its
+  Matched palette on. The bundle leaves out a map with no keeps, the default among them;
+  `palettesOf` puts a keepless default back first where an Example opens on it
+  (chrome-orbs), and otherwise the set's first entry is the default (neon-loops).
+  **A switch recolours**: the pool's first worker keeps the frame its
   last finished pass measured, and the module's `recolour` re-takes the measures under the
   new entry from it without iterating, then the pool draws the tiles again; a switch of
   anything else that leaves the place, size and mode alone (a knob, Auto tone) tries the

@@ -24,7 +24,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { parse, encode } from "../permalink.js";
-import { contractOf, exampleCustom, exampleQuery, offeredExamples, requestOf, tilesOf, SUPERSAMPLE } from "../style.js";
+import { contractOf, exampleCustom, exampleQuery, offeredExamples, palettesOf, requestOf, tilesOf, SUPERSAMPLE } from "../style.js";
 
 const here = (name) => fileURLToPath(new URL(`../${name}`, import.meta.url));
 const args = process.argv.slice(2);
@@ -108,7 +108,7 @@ for (const mode of bundle.modes) {
     const id = entry === null ? keepId : `${keepId}@${entry}`;
     if (which === "mode" && !offered.has(order)) continue;
     if (only && !only.includes(mode.name) && !only.includes(mode.style) && !only.includes(keepId)) continue;
-    if (entry !== null && !mode.palettes?.some((each) => each.colormap === entry)) continue;
+    if (entry !== null && !palettesOf(mode).some((each) => each.colormap === entry)) continue;
     if (index++ % shards !== shard) continue;
     const row = { id, mode: mode.name, keep: shown.keep, stack: which };
     try {
