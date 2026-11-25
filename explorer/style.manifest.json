@@ -64,7 +64,7 @@
       "light-shafts"
     ],
     "schema": 1,
-    "sha256": "4c4ea249dbaa4c3b8d3aac35450e5a9e6410ecb2ebbc640309d52b0de1afba48"
+    "sha256": "6322612ffcf0745f79d3f9cc2ab3abde59ac7a98aad3e1850f4e95bcd5bac126"
   },
   "crate": "explorer/style-wasm",
   "dependencies": [
@@ -72,8 +72,8 @@
   ],
   "modules": {
     "style.wasm": {
-      "gzip_bytes": 356245,
-      "raw_bytes": 1125703,
+      "gzip_bytes": 373293,
+      "raw_bytes": 1174822,
       "rustflags": ""
     }
   },
@@ -82,8 +82,8 @@
   "schema": 1,
   "trees": {
     "data/palettes": "bf3ff05bd8a50129d7da6d00341fc03c109ed541",
-    "data/styles": "7806c625cc8b59360c083452811133bf24512890",
-    "engine": "d9608d245a9321879dea8a4306fdcdc85e039d01",
-    "style-wasm": "c133c363b72c75addfa5015ff1229b4cb037ff5c"
+    "data/styles": "f841572e8549155d6179c763eec5ab9fe2a5acc4",
+    "engine": "d70c85f10c16d2e1c019c0f023888998e4a9051b",
+    "style-wasm": "becef6cd21b9bb5715dbabb8a8d678f290ee054d"
   }
 }

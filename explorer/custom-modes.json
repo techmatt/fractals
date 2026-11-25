@@ -53,6 +53,7 @@
      "score": 3
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "Discs packed inside discs along the fractal, with metallic rims, nested beads and gold star-flowers blooming from inside the set.",
    "knobs": [
@@ -1427,6 +1428,7 @@
      "score": 4
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "Soft lit blue lobes, each a glossy dome, between gold star webs, with a halo and sparkle.",
    "knobs": [
@@ -3031,6 +3033,7 @@
      "score": 3
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "Lit layered waves: smooth colour bands shaded as rippled surfaces, with streaks of glow.",
    "knobs": [
@@ -3719,6 +3722,7 @@
      "score": 3
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "Radial colour lit from within: translucent stacked sheets with bright rims, hue falling away from a core.",
    "knobs": [
@@ -4424,6 +4428,7 @@
      "score": 3
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "Log-polar tunnel: bevelled arches shrinking ring by ring to a vanishing point, navy cells between teal arms.",
    "knobs": [
@@ -5065,6 +5070,7 @@
      "score": 3
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "Brass discs packed inside discs, threaded with glossy blue crescent ribbons.",
    "knobs": [
@@ -6478,6 +6484,7 @@
      "score": 3
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "Engraved gold filigree set with jewel orbs, a warm haze and sparkle.",
    "knobs": [
@@ -7688,6 +7695,7 @@
      "score": 3
     }
    ],
+   "aliases": [],
    "variant": "lune_blades",
    "what": "Smoothly shaded crescent blades over a hairline of light along the set.",
    "knobs": [
@@ -8138,6 +8146,7 @@
      }
     }
    ],
+   "aliases": [],
    "variant": "soft",
    "what": "Smoothly lit petals with jewelled edges, the colours cycling round each one.",
    "knobs": [
@@ -8638,6 +8647,7 @@
      "score": 2
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "Soft glowing teal filaments in a green-grey mist.",
    "knobs": [],
@@ -9099,6 +9109,7 @@
      "score": 3
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "A luminous blue eye: a Julia set's ring glowing round a dark pupil that holds a star, fine strands curving out of the ring and in to the star.",
    "knobs": [],
@@ -9681,6 +9692,7 @@
      "score": 2
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "A fractal rose on black: a Julia flower's petals ringed crimson to gold, with soft threads and a scattering of beads.",
    "knobs": [],
@@ -10383,6 +10395,7 @@
      "score": 4
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "A clock face of light: a Julia set lit green-gold from a hot heart, concentric rings and fine radial lines around it, and small glowing gear discs riding the rings.",
    "knobs": [
@@ -12080,6 +12093,7 @@
      "score": 2
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "Translucent blue flame veils crossing over a crisp fractal, their rims lit lemon yellow, on a deep blue ground.",
    "knobs": [],
@@ -13028,6 +13042,7 @@
      "score": 2
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "Teal and aqua flame veils and wisps sweeping round a magenta nebula with a white star at its core, on a dark slate ground.",
    "knobs": [],
@@ -13692,6 +13707,7 @@
      "score": 2
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "Violet-blue flame ribbons swirling round the frame, each a veil of fine silky strands, a few teal, on a navy ground.",
    "knobs": [],
@@ -15466,6 +15482,7 @@
      "score": 2
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "Angular translucent shards in royal blue and chalk grey crossing soft grey veils, with crisp pale Julia snowflakes among them.",
    "knobs": [],
@@ -16789,6 +16806,7 @@
    "tier": "lab",
    "palette": "corkscrew_smooth",
    "palettes": [],
+   "aliases": [],
    "variant": "current",
    "what": "A double spiral of banded ribbons in dark teal, khaki, cream, black and sky blue, each polished with a metallic sheen.",
    "knobs": [],
@@ -16957,6 +16975,7 @@
    "tier": "lab",
    "palette": "flame_wisp_waves",
    "palettes": [],
+   "aliases": [],
    "variant": "current",
    "what": "Fine teal flame wisps and crescents crossing over smouldering red and orange streaks on a dark slate ground.",
    "knobs": [],
@@ -17690,6 +17709,7 @@
      "score": 2
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "Glowing orange and gold flame ribbons curling over one another in a warm brown haze, brightest at the middle.",
    "knobs": [],
@@ -18430,6 +18450,7 @@
      "score": 2
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "Lit blue flame veils and strands crossing on a deep blue ground, strewn with gold star sparks.",
    "knobs": [],
@@ -19280,6 +19301,7 @@
      "score": 4
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "Frosted blue and white flame veils, their strands feathered with a crisp white rime along the set, on a near-black ground.",
    "knobs": [
@@ -20125,6 +20147,7 @@
    "tier": "lab",
    "palette": "flame_wisp_crimson",
    "palettes": [],
+   "aliases": [],
    "variant": "current",
    "what": "Dense flame swirls and strands, cobalt blue on one side turning through violet to crimson round a red glow on the other.",
    "knobs": [],
@@ -21219,6 +21242,7 @@
      "score": 3
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "Molten fire flowing in broad lit folds: a glossy relief in crimson, orange and gold, crossed by translucent folds, with flame lace along the edge of the set.",
    "knobs": [
@@ -21982,6 +22006,7 @@
    "tier": "lab",
    "palette": "chrome_orbs",
    "palettes": [],
+   "aliases": [],
    "variant": "current",
    "what": "Glossy chrome swirls: a mirror-bright relief in silver and slate, chrome ribbons, and red orbs swelling to gold along the arms.",
    "knobs": [],
@@ -22467,21 +22492,14 @@
       },
       "/layers/1/light/ambient": 0.35,
       "/layers/1/light/rim": 0.5,
-      "/layers/2/light/ambient": 0.45,
-      "/layers/3/color": {
-       "palette": 0.43
-      },
-      "/layers/3/opacity": 0.45,
-      "/layers/4/color": {
-       "palette": 0.43
-      },
-      "/layers/4/opacity": 0.45
+      "/layers/2/light/ambient": 0.45
      },
      "score": 3
     }
    ],
+   "aliases": [],
    "variant": "current",
-   "what": "Billowing cauliflower scales: each band of colour a lit scale, tan to blue, packed with small domed bumps under faint feathered strands.",
+   "what": "Billowing cauliflower scales: each band of colour a lit scale, tan to blue, packed with small domed bumps.",
    "knobs": [],
    "stack": {
     "name": "cauliflower_scales",
@@ -22570,52 +22588,6 @@
        }
       },
       "opacity": 0.9
-     },
-     {
-      "kind": "glow",
-      "channel": {
-       "field": {
-        "kind": "stripe",
-        "density": 12.0
-       },
-       "view": {
-        "turn": 137.5,
-        "zoom": 0.9,
-        "shift": [
-         -0.125,
-         -0.171
-        ]
-       }
-      },
-      "color": {
-       "palette": 0.42
-      },
-      "blend": "screen",
-      "opacity": 0.15,
-      "power": 12.0
-     },
-     {
-      "kind": "glow",
-      "channel": {
-       "field": {
-        "kind": "stripe",
-        "density": 12.0
-       },
-       "view": {
-        "turn": 275.0,
-        "zoom": 1.3,
-        "shift": [
-         -0.09,
-         0.286
-        ]
-       }
-      },
-      "color": {
-       "palette": 0.42
-      },
-      "blend": "screen",
-      "opacity": 0.15,
-      "power": 12.0
      }
     ]
    },
@@ -22646,8 +22618,8 @@
        "center_im": "0.8395661201695902",
        "width": "0.0072618899060757905"
       },
-      "maxiter": 14428,
-      "note": "final139_general seat 791 (direct_trap_lines, phoenix:classic)",
+      "maxiter": 2000,
+      "note": "final139_general seat 791 (direct_trap_lines, phoenix:classic); its cap lowered from the seat's 14428 to 2000 for the page's draw (Matt, 082: \"can't see much difference, faster seems better\"); the saved picture was drawn at 14428",
       "gallery": {
        "record": "final139_general",
        "seat": 791,
@@ -22808,6 +22780,7 @@
      "score": 3
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "Fine, hair-like streamlines sweep the whole frame around a small copy of the Mandelbrot set whose rim glows orange against deep blue.",
    "knobs": [
@@ -23293,11 +23266,13 @@
    "palettes": [
     {
      "colormap": "violet_star_arms",
+     "was": "violet_star_arms",
      "values": {},
      "score": 3
     },
     {
      "colormap": "golden_petals",
+     "was": "golden_petals",
      "values": {
       "/interior": {
        "palette": 0.05
@@ -23335,6 +23310,7 @@
     },
     {
      "colormap": "copper_arms",
+     "was": "copper_arms",
      "values": {
       "/layers/0/palette/gamma": 1.0,
       "/layers/1/light/highlight": {
@@ -23369,6 +23345,7 @@
     },
     {
      "colormap": "cream_tubes",
+     "was": "cream_tubes",
      "values": {
       "/interior": {
        "palette": 0.5
@@ -23443,6 +23420,12 @@
      },
      "score": 2
     }
+   ],
+   "aliases": [
+    "violet_star_arms",
+    "golden_petals",
+    "copper_arms",
+    "cream_tubes"
    ],
    "variant": "current",
    "what": "Glossy blades lit like satin sweep along a spiral's arms, over a softly sculpted relief, with the fractal's fine lace laid on top.",
@@ -24536,11 +24519,13 @@
    "palettes": [
     {
      "colormap": "council_smooth",
+     "was": "council_smooth",
      "values": {},
      "score": 2
     },
     {
      "colormap": "crisis_smooth",
+     "was": "crisis_smooth",
      "values": {
       "/interior": {
        "rgb": "#1a0410"
@@ -24556,6 +24541,7 @@
     },
     {
      "colormap": "dalooka_smooth",
+     "was": "dalooka_smooth",
      "values": {
       "/interior": {
        "rgb": "#10182c"
@@ -24594,6 +24580,13 @@
       "/tone/p10": 0.303
      }
     }
+   ],
+   "aliases": [
+    "council_smooth",
+    "crisis_smooth",
+    "dalooka_smooth",
+    "forest_smooth",
+    "mandelbrot3_smooth"
    ],
    "variant": "current",
    "what": "Smooth bands of colour flowing out from the set, a dark hairline keeping its lace crisp, in a choice of palettes.",
@@ -24862,11 +24855,13 @@
    "palettes": [
     {
      "colormap": "cream_lace",
+     "was": "cream_lace",
      "values": {},
      "score": 3
     },
     {
      "colormap": "copper_mail",
+     "was": "copper_mail",
      "values": {
       "/interior": {
        "rgb": "#5a2412"
@@ -24899,6 +24894,7 @@
     },
     {
      "colormap": "gold_arcs",
+     "was": "gold_arcs",
      "values": {
       "/interior": {
        "rgb": "#4a2a12"
@@ -24932,6 +24928,7 @@
     },
     {
      "colormap": "bead_strands",
+     "was": "bead_strands",
      "values": {
       "/layers/1/color": {
        "palette": 0.65
@@ -24963,6 +24960,12 @@
      },
      "score": 3
     }
+   ],
+   "aliases": [
+    "bead_strands",
+    "copper_mail",
+    "cream_lace",
+    "gold_arcs"
    ],
    "variant": "current",
    "what": "A glowing lace web of fine strands, pierced by round holes of every size, each hole lit like a glass bead.",
@@ -25833,6 +25836,7 @@
      "score": 3
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "Soft translucent veils of light rising out of the set, their folds lit and crossing, fine wisps over them.",
    "knobs": [
@@ -28325,6 +28329,7 @@
      "score": 2
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "Bands of fine parallel hairlines sweeping through and around the set, a second family crossing them, each band its own shade.",
    "knobs": [],
@@ -28834,6 +28839,7 @@
      "score": 2
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "Glossy ribbed hoses curling out of the set, one lit segment per escape band, fat in the far field and ever finer towards the grey lace.",
    "knobs": [],
@@ -29379,6 +29385,7 @@
      "score": 3
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "Straight hard-edged slices across the set, each holding a mirrored, shifted copy of its lace in blue and copper over lit satin folds.",
    "knobs": [],
@@ -30043,6 +30050,7 @@
      "score": 3
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "Flat hard-cut tiles in violet, peach and blue round small spirals, white gaps holding the set's grey lace, over a brick-patterned escape band.",
    "knobs": [],
@@ -30325,6 +30333,7 @@
      "score": 3
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "Lit scaly folds in dark red and grey-green on black, crossed by translucent viewed folds kept off the lace, fine red veins along the set.",
    "knobs": [],
@@ -30921,6 +30930,7 @@
      "score": 3
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "Orange-copper webs folding over blue hollows: glossy relief and translucent folds in copper, a blue far field, sparkle dust along the set.",
    "knobs": [],
@@ -31832,6 +31842,7 @@
      "score": 3
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "A mosaic of triangles nested inside triangles: large calm facets far from the set, splitting ever finer towards it, each tilted and folded into lit faces.",
    "knobs": [],
@@ -32139,6 +32150,7 @@
      "score": 4
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "A poured liquid stirred into S-curls and hooks: one glossy blue ink combed along a turned copy of the fractal, bright crests along the folds, the curls tightening towards the set.",
    "knobs": [
@@ -32791,6 +32803,7 @@
      "score": 4
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "Stacked sheets of cut paper: the set's bands as flat cream, rust and slate sheets, each casting a soft shadow on the one under it.",
    "knobs": [],
@@ -33004,6 +33017,7 @@
      "score": 3
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "Gouache: broad flat teal, navy and mint shapes with dry-brush ragged edges and a few lime knife strokes.",
    "knobs": [],
@@ -33164,6 +33178,7 @@
      "score": 4
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "Liquid chrome: mirror-bright star nodes joined by mercury tubes thinning to hairlines, hairline loops, on a calm navy-to-cyan ground.",
    "knobs": [],
@@ -33791,6 +33806,7 @@
      "score": 3
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "Neon outline: glowing white loops and beams of one clean weight over the set's pale lace, on a blue-to-green ground (blue-white beams between tan stars as a palette entry).",
    "knobs": [],
@@ -34151,6 +34167,7 @@
      "score": 4
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "Hundreds of fine bright hairlines sweeping out of the spiral centres and crossing in a mesh, blue on deep blue.",
    "knobs": [],
@@ -34962,6 +34979,7 @@
      "score": 4
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "Frosted seahorse waves in lilac and grey: fine feathered grain and sparkle stipple along the set, soft dark plumes in the valleys, each interior cell mottled.",
    "knobs": [],
@@ -35295,6 +35313,7 @@
      "score": 4
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "Broad fans of alternating teal and orange bands, each scooped darker towards its edge and carrying fine parallel grain, the set's beads along the edges.",
    "knobs": [],
@@ -35595,6 +35614,7 @@
      "score": 3
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "A deep-blue spiral whose filaments glow white, feathered with frost spikes and sparkles, faint circle arcs across it (navy dendrites on pale ice, gold dendrites in green as palette entries).",
    "knobs": [],
@@ -35927,6 +35947,7 @@
      "score": 4
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "Gold and teal spirals over dark smooth folds that read as draped cloth, a slow stripe's creases and sheen over a glossy relief.",
    "knobs": [],
@@ -36386,6 +36407,7 @@
      "score": 4
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "Translucent gilded-glass leaves on dark crackled stone: curved almond blades bright at the spine and fading to their tips, sweeping in sprays and spirals, small copies inlaid in each, the smaller blades faint grey ghosts.",
    "knobs": [],
@@ -37146,8 +37168,27 @@
      "colormap": "chrome_whorl",
      "values": {},
      "score": 2
+    },
+    {
+     "colormap": "tempest_plumes",
+     "values": {
+      "/layers/1/light/rings": 0.6
+     }
+    },
+    {
+     "colormap": "gilded_leaves",
+     "values": {
+      "/layers/1/light/rings": 0.6
+     }
+    },
+    {
+     "colormap": "twilight",
+     "values": {
+      "/layers/1/light/rings": 0.6
+     }
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "Polished chrome petals whirling out of a small rosette, one lit tube per two escape bands, an amber ember glowing in each seam (ivory blades with blue glows, pastel pleats, and black chrome over frosted lace as palette entries).",
    "knobs": [],
@@ -37389,8 +37430,16 @@
      "colormap": "dew_bloom",
      "values": {},
      "score": 3
+    },
+    {
+     "colormap": "tempest_plumes",
+     "values": {
+      "/layers/1/light/rings": 1.0,
+      "/layers/1/light/slope": 0.3
+     }
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "A translucent violet bloom: soft lit petals ringed by glowing pink rims, the set's lace inked dark and beaded with dew sparkles.",
    "knobs": [],
@@ -37694,11 +37743,48 @@
       "/layers/1/opacity": 0.15,
       "/layers/3/opacity": 0.6,
       "/layers/5/opacity": 0.7,
-      "/layers/9/opacity": 0.25
+      "/layers/9/opacity": 0.25,
+      "/layers/3/color": {
+       "palette": 0.82
+      },
+      "/layers/5/color": {
+       "palette": 0.8
+      },
+      "/layers/6/color": {
+       "palette": 0.78
+      },
+      "/layers/9/color": {
+       "palette": 0.75
+      }
      },
      "score": 3
+    },
+    {
+     "colormap": "tempest_plumes",
+     "values": {
+      "/layers/2/opacity": 0.5,
+      "/layers/2/power": 1.5,
+      "/layers/9/opacity": 0.25
+     }
+    },
+    {
+     "colormap": "gilded_leaves",
+     "values": {
+      "/layers/2/opacity": 0.5,
+      "/layers/2/power": 1.5,
+      "/layers/9/opacity": 0.25
+     }
+    },
+    {
+     "colormap": "soft_veils_amber",
+     "values": {
+      "/layers/2/opacity": 0.5,
+      "/layers/2/power": 1.5,
+      "/layers/9/opacity": 0.25
+     }
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "Open clockwork dials of every size strewn along the set: cream and gold rings, beaded rims and fine spokes round a hot middle, the blue lace showing through (copper gilt dials round ice blue, and bronze and lavender dials in shadow as palette entries).",
    "knobs": [],
@@ -38292,6 +38378,7 @@
      "score": 3
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "Translucent glass orbs strung along glowing blue lace, each a glossy dome with a bright rim and a soft inner light, faint ripple rings round the crossings (pearl orbs on steel-blue satin, and cobalt bubbles on copper lace as palette entries).",
    "knobs": [],
@@ -38696,20 +38783,20 @@
    "name": "feather-plumes",
    "style": "feather_plumes",
    "tier": "lab",
-   "palette": "feather_plumes",
+   "palette": "tempest_plumes",
    "palettes": [
     {
-     "colormap": "feather_plumes",
+     "colormap": "tempest_plumes",
      "values": {},
-     "score": 3
+     "score": 4
     },
     {
-     "colormap": "tempest_plumes",
+     "colormap": "feather_plumes",
      "values": {
-      "/tone/median": 0.224,
-      "/tone/p10": 0.087
+      "/tone/median": 0.061,
+      "/tone/p10": 0.007
      },
-     "score": 4
+     "score": 3
     },
     {
      "colormap": "mean_plumes",
@@ -38729,6 +38816,7 @@
     },
     {
      "colormap": "lilac_plumes",
+     "was": "lilac_kaleidoscope",
      "values": {
       "/layers/1/opacity": 0.25,
       "/layers/2/opacity": 0.55,
@@ -38741,10 +38829,39 @@
       "/tone/p10": 0.15
      },
      "score": 3
+    },
+    {
+     "colormap": "magma",
+     "values": {
+      "/layers/2/mask/power": 2.5,
+      "/layers/3/mask/power": 2.5,
+      "/layers/4/mask/power": 2.5,
+      "/layers/5/mask/power": 5.0,
+      "/layers/6/mask/power": 5.0,
+      "/layers/7/mask/power": 5.0,
+      "/tone/median": 0.061,
+      "/tone/p10": 0.007
+     }
+    },
+    {
+     "colormap": "flame_wisp_frost",
+     "values": {
+      "/layers/2/mask/power": 2.5,
+      "/layers/3/mask/power": 2.5,
+      "/layers/4/mask/power": 2.5,
+      "/layers/5/mask/power": 5.0,
+      "/layers/6/mask/power": 5.0,
+      "/layers/7/mask/power": 5.0,
+      "/tone/median": 0.061,
+      "/tone/p10": 0.007
+     }
     }
    ],
+   "aliases": [
+    "lilac_kaleidoscope"
+   ],
    "variant": "current",
-   "what": "Frosted feather plumes combed out of the set: fine barbs off a thin lit spine, crossing plumes and amber star sparks on a blue-black night (violet and magenta plumes, teal plumes over a rust haze, ultramarine plumes, and periwinkle plumes on royal blue as palette entries).",
+   "what": "Frosted feather plumes combed out of the set: fine barbs off a thin lit spine and crossing plumes in violet and magenta (amber star sparks on a blue-black night, teal plumes over a rust haze, ultramarine plumes, periwinkle plumes on royal blue, magma, and ice-blue frost as palette entries).",
    "knobs": [],
    "stack": {
     "name": "feather_plumes",
@@ -38752,8 +38869,8 @@
      "palette": 0.02
     },
     "tone": {
-     "median": 0.061,
-     "p10": 0.007,
+     "median": 0.224,
+     "p10": 0.087,
      "log_density": 8.0
     },
     "layers": [
@@ -39360,6 +39477,7 @@
      "score": 3
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "Hollow webs: dark wells of every size framed by bright rims, pockets nested in pockets, a membrane of fine fibres between them (magenta and gold; violet cells, and bone strands on crimson, as palette entries).",
    "knobs": [],
@@ -39831,8 +39949,25 @@
       "/tone/p10": 0.041
      },
      "score": 3
+    },
+    {
+     "colormap": "molten_flow",
+     "values": {
+      "/layers/3/light/bands": 14.0,
+      "/layers/3/light/rings": 0.35,
+      "/layers/3/light/slope": 1.2
+     }
+    },
+    {
+     "colormap": "soft_veils_drift",
+     "values": {
+      "/layers/3/light/bands": 14.0,
+      "/layers/3/light/rings": 0.35,
+      "/layers/3/light/slope": 1.2
+     }
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "Storm clouds: crinkled cloud banks in teal, violet and orchid, the lace their edge, soft colour drifting through them, lit as a broad relief (blue and gold, and a crimson nebula with stars, as palette entries).",
    "knobs": [],
@@ -40225,6 +40360,12 @@
     {
      "colormap": "jade_starbursts",
      "values": {
+      "/layers/10/opacity": 0.7,
+      "/layers/10/power": 90.0,
+      "/post/0/length": 0.03,
+      "/post/0/share": 0.0003,
+      "/post/0/spokes": 4,
+      "/post/0/strength": 1.2,
       "/tone/median": 0.651,
       "/tone/p10": 0.236
      },
@@ -40233,6 +40374,12 @@
     {
      "colormap": "moss_starbursts",
      "values": {
+      "/layers/10/opacity": 0.7,
+      "/layers/10/power": 90.0,
+      "/post/0/length": 0.03,
+      "/post/0/share": 0.0003,
+      "/post/0/spokes": 4,
+      "/post/0/strength": 1.2,
       "/tone/median": 0.402,
       "/tone/p10": 0.242
      },
@@ -40241,6 +40388,12 @@
     {
      "colormap": "garnet_starbursts",
      "values": {
+      "/layers/10/opacity": 0.7,
+      "/layers/10/power": 90.0,
+      "/post/0/length": 0.03,
+      "/post/0/share": 0.0003,
+      "/post/0/spokes": 4,
+      "/post/0/strength": 1.2,
       "/tone/median": 0.288,
       "/tone/p10": 0.093
      },
@@ -40249,12 +40402,52 @@
     {
      "colormap": "gilt_starbursts",
      "values": {
+      "/layers/10/opacity": 0.7,
+      "/layers/10/power": 90.0,
+      "/post/0/length": 0.03,
+      "/post/0/share": 0.0003,
+      "/post/0/spokes": 4,
+      "/post/0/strength": 1.2,
       "/tone/median": 0.398,
       "/tone/p10": 0.19
      },
      "score": 2
+    },
+    {
+     "colormap": "soft_veils_gold",
+     "values": {
+      "/layers/10/opacity": 0.7,
+      "/layers/10/power": 90.0,
+      "/post/0/length": 0.03,
+      "/post/0/share": 0.0003,
+      "/post/0/spokes": 4,
+      "/post/0/strength": 1.2
+     }
+    },
+    {
+     "colormap": "soft_veils_drift",
+     "values": {
+      "/layers/10/opacity": 0.7,
+      "/layers/10/power": 90.0,
+      "/post/0/length": 0.03,
+      "/post/0/share": 0.0003,
+      "/post/0/spokes": 4,
+      "/post/0/strength": 1.2
+     }
+    },
+    {
+     "colormap": "soft_veils_teal",
+     "values": {
+      "/layers/10/opacity": 0.7,
+      "/layers/10/power": 90.0,
+      "/post/0/length": 0.03,
+      "/post/0/share": 0.0003,
+      "/post/0/spokes": 4,
+      "/post/0/strength": 1.2
+     }
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "Starlit veils: soft violet veils and wisps over the set's lace, its brightest sparks six-pointed stars whose straight beams cross the frame (jade glass, moss and amber, garnet silk, and gilt as palette entries).",
    "knobs": [],
@@ -40925,6 +41118,7 @@
      "score": 2
     }
    ],
+   "aliases": [],
    "variant": "current",
    "what": "Light shafts: fine blue lace in a dark void, straight shafts of light streaming out of it from a point (a scarlet beam, and ice-blue strands on black, as palette entries).",
    "knobs": [],
@@ -41099,15 +41293,15 @@
     "post": [
      {
       "kind": "rays",
-      "share": 0.03,
+      "share": 0.008,
       "spokes": 4,
       "angle": 45.0,
-      "length": 0.25,
+      "length": 0.1,
       "center": [
        0.5,
        0.42
       ],
-      "strength": 10.0
+      "strength": 3.5
      }
     ],
     "name": "light_shafts"

@@ -29,6 +29,7 @@ import {
   modesOf,
   offeredExamples,
   palettesOf,
+  placeOf,
   poolSize,
   requestOf,
   roundEven,
@@ -68,7 +69,10 @@ const EXAMPLES = bundle.modes.flatMap((mode) => mode.shown.map((shown, index) =>
  *  pass, stirred-ink's stir, the stroke widths and tilts, frost-stipple's, grain-fans' and
  *  draped-folds' named variants), or before gilded-leaves' bubble fade. Since a98ff12 (072
  *  to 074), chrome-whorl's keep (its tube `rings` at 0.6, the published 1.0) and
- *  glass-orbs' (its `no_ripples` variant, the ripple glow off). */
+ *  glass-orbs' (its `no_ripples` variant, the ripple glow off). Since 083 (wallpapers
+ *  ca5e8d3), cauliflower-scales' keep, whose published stack took two explorer-cost cuts
+ *  after it was kept, and light-shafts' (its published stack moved to round two's
+ *  `subtler` default). */
 const UNREACHED = [
   "teal_filaments__1",
   "star_eye__2",
@@ -77,6 +81,7 @@ const UNREACHED = [
   "flame_veil_chalk__2",
   "flame_wisp_amber__0",
   "flame_wisp_spark__0",
+  "cauliflower_scales__0",
   "glossy_spirals__1",
   "banded_lines__1",
   "scaled_folds__0",
@@ -96,6 +101,7 @@ const UNREACHED = [
   "feather_plumes__0",
   "storm_clouds__0",
   "starburst_veils__0",
+  "light_shafts__0",
 ];
 
 test("the bundle is the 58 published modes in two tiers, each with an example", () => {
@@ -408,6 +414,20 @@ test("a palette of the set draws its own map with Matched palette, and the view'
   assert.equal(plain.colormap.name, "Blues");
 });
 
+test("a palette switch keeps the place a recolour holds; a pan, a size or another mode does not", () => {
+  const mode = modes.get("brass-foam");
+  const at = (query, width = 8, other = mode) => {
+    const view = parse(query, CONTEXT);
+    return placeOf(requestOf({ bundle, mode: other, custom: view.custom, view, maxiter: 500, width, height: 5 }));
+  };
+  const here = at("v=4&custom=brass-foam");
+  assert.equal(at("v=4&custom=brass-foam&tuned=magma"), here);
+  assert.equal(at("v=4&custom=brass-foam&autotone=0"), here, "the module refuses what its frame cannot serve");
+  assert.notEqual(at("v=4&custom=brass-foam&x=0.25"), here);
+  assert.notEqual(at("v=4&custom=brass-foam", 16), here);
+  assert.notEqual(at("v=4&custom=brass-foam", 8, modes.get("silk-waves")), here);
+});
+
 test("a palette's tuned values are written over the stack whole, tone pass and all", () => {
   const base = { layers: [{ color: { rgb: "#000000" }, opacity: 1 }, { opacity: 0.5 }], tone: { median: 0.2 } };
   const mode = {
@@ -444,6 +464,12 @@ test("an old name of a style merged into a mode opens that mode, on the palette 
   assert.equal(parse("v=4&custom=plain_whorl", context).custom.palette, null, "no entry kept: the default");
   // A link's own `tuned` outranks the alias's palette.
   assert.equal(parse("v=4&custom=old_whorl&tuned=hsv", context).custom.palette, "hsv");
-  // The bundle as baked names no aliases: no published mode has merged another yet.
-  assert.equal(aliasesOf(bundle).size, 0);
+  // The bundle as baked (wallpapers 083's `style bundle`) names fourteen: the styles merged
+  // into satin-spiral, smooth-bands, glass-beads and feather-plumes.
+  const baked = aliasesOf(bundle);
+  assert.equal(baked.size, 14);
+  assert.deepEqual(baked.get("lilac_kaleidoscope"), { name: "feather-plumes", palette: "lilac_plumes" });
+  assert.deepEqual(baked.get("copper_mail"), { name: "glass-beads", palette: "copper_mail" });
+  assert.deepEqual(baked.get("violet_star_arms"), { name: "satin-spiral", palette: null }, "the mode's own map");
+  assert.equal(parse("v=4&custom=lilac_kaleidoscope", CONTEXT).custom.name, "feather-plumes");
 });

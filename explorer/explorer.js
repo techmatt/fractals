@@ -2007,6 +2007,8 @@ async function drawCustom(pass) {
             stat(`${mode.name}: ${size}, at the preview's balance, on ${workersFor(width * height * SAMPLES_OF_CUSTOM, pool.size)} workers…`);
           } else if (name === "measuring") {
             stat(`${mode.name}: ${size}, measuring the tone at full size…`);
+          } else if (name === "recolouring") {
+            stat(`${mode.name}: ${size}, recoloring the measured frame…`);
           } else if (name === "final") {
             stat(`${mode.name}: ${size}, the exact picture…`);
           } else if (name === "whole") {
@@ -2051,11 +2053,11 @@ let customMeasured = null;
 
 /**
  * Finished custom pictures by link and size, newest last *(005_palette_cycle)*: what lets a
- * reader stepping through a mode's palettes come back to one at once. A palette switch
- * cannot recolour a measured frame (`style.wasm` bakes the map into its session and keeps
- * no frame between sessions, and Auto tone's curve is each composite's own), so a palette
- * not yet drawn here is measured and drawn in full; one already drawn is this cache's.
- * Bounded by bytes, so a large screen keeps fewer.
+ * reader stepping through a mode's palettes come back to one at once. A palette not yet
+ * drawn here is re-measured from the frame the pool's first worker kept, where the last
+ * finished pass was tiled at this place, size, and mode (`style.js`'s `StylePool`, the
+ * module's `recolour`), and its tiles drawn again; otherwise it is measured afresh. One
+ * already drawn is this cache's. Bounded by bytes, so a large screen keeps fewer.
  */
 const customDrawn = new Map();
 const CUSTOM_DRAWN_BYTES = 96 * 2 ** 20;

@@ -70,11 +70,14 @@ are 003's and are not repeated here.
    captions, `what` and knob `what` for a reader, then `--style` here; the alternative, a
    display-text override beside `custom-modes.json` like `palette-names.json`, is drift
    from the bundle. (Matt's call)
-2. **Every worker measures the whole frame**, so a pass costs the pool N times one frame's
-   memory and measure time (`docs/custom-modes.md`, Problems 5). The fix is a module seam:
-   a session that takes another session's measure report, so one worker measures and the
-   rest tile. A wallpapers item (`style-wasm`), then a rebake here; it would also lift the
-   download ceiling to the whole pool.
+2. **A pass's memory budget counts every worker at the measurer's cost.** Every worker
+   measured the whole frame, costing the pool N times one frame's memory and measure time
+   (`docs/custom-modes.md`, Problems 5). The measure time is fixed: wallpapers 083's
+   `export_measure`/`import_measure` let one worker measure and the rest tile (website
+   020's pool). Left: `workersFor` still prices each helper as a measurer, so a large
+   download runs on fewer workers than its memory needs. The download ceiling
+   (`MAX_CUSTOM_SAMPLES`, one worker's memory) stays, since the measuring worker still
+   holds the whole frame and keeps it for a recolour.
 3. **Choosing custom (experimental) at the home view draws the first mode at the home
    view**, which for most modes is not where they read well (lacquer-lobes is two pink
    bars across bubbles). Options: open the mode's first Example when the view is a family's

@@ -310,7 +310,7 @@ export function install(bundle, host) {
       "Drawn by the wallpaper project's own compositor, a quick preview first; " +
       "the slowest modes take a minute or more to finish." +
       (set.length > 1
-        ? " [ and ] step through the mode's palettes. A new palette is measured and drawn again in full; " +
+        ? " [ and ] step through the mode's palettes. A new palette is recolored from the frame already measured and its tiles drawn again; " +
           "one already drawn at this view comes straight back."
         : "");
   }

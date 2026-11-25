@@ -499,8 +499,8 @@ export function install(context) {
       return;
     }
     if (onCustom()) {
-      // **A custom picture has its own ceiling** (004_bug_hunt): every worker measures the
-      // whole frame at about 250 bytes a sample, so past one worker's wasm memory the
+      // **A custom picture has its own ceiling** (004_bug_hunt): the measuring worker
+      // holds the whole frame at about 250 bytes a sample, so past one worker's wasm memory the
       // module traps however few workers draw it.
       const samples = width * height * supersample * supersample;
       const ceiling = customMode.refusal(samples);

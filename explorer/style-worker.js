@@ -75,6 +75,33 @@ self.onmessage = (event) => {
       const report = text(wasm.measure(session, width, height, supersample));
       if (!report.ok) throw new Error(report.why);
       self.postMessage({ kind: "measured", job, report, elapsed: performance.now() - started });
+    } else if (message.kind === "export") {
+      // The session's measures as bytes another worker's session of the same picture
+      // takes (`import`), so one worker measures and the pool tiles.
+      const pointer = wasm.export_measure(session) >>> 0;
+      if (pointer === 0) throw new Error(plain(wasm.last_error()));
+      const length = new DataView(wasm.memory.buffer).getUint32(pointer, true);
+      const bytes = wasm.memory.buffer.slice(pointer + 4, pointer + 4 + length);
+      wasm.dealloc(pointer, length + 4);
+      self.postMessage({ kind: "exported", job, bytes, elapsed: performance.now() - started }, [bytes]);
+    } else if (message.kind === "import") {
+      const raw = new Uint8Array(message.bytes);
+      const pointer = wasm.alloc(raw.length);
+      new Uint8Array(wasm.memory.buffer, pointer, raw.length).set(raw);
+      const report = text(wasm.import_measure(session, pointer, raw.length));
+      wasm.dealloc(pointer, raw.length);
+      if (!report.ok) throw new Error(report.why);
+      self.postMessage({ kind: "measured", job, report, elapsed: performance.now() - started });
+    } else if (message.kind === "recolour") {
+      // The session re-measured under another request at the same place and size, from
+      // the frame its last `measure` kept: no orbit iterated. Refused, the session is as
+      // it was, and the pass measures afresh.
+      const raw = encoder.encode(message.request);
+      const pointer = wasm.alloc(raw.length);
+      new Uint8Array(wasm.memory.buffer, pointer, raw.length).set(raw);
+      const report = text(wasm.recolour(session, pointer, raw.length));
+      wasm.dealloc(pointer, raw.length);
+      self.postMessage({ kind: "recoloured", job, report, elapsed: performance.now() - started });
     } else if (message.kind === "tile") {
       const { x, y, width, height } = message;
       const pixels = rgba(wasm.tile(session, x, y, width, height), width * height * 4);

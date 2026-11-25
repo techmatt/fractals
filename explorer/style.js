@@ -12,8 +12,11 @@
 // **Drawing is three steps on several workers** (Matt, MESSAGE #834 of this item: a frame
 // takes 14 to 93 s on one thread at 1280x800 ss2). A quarter-size picture first, whole;
 // then the full-size tiles against that preview's balance (`measure` on the small frame),
-// spread over the pool and composited as they land; then the tone measure at the picture's
-// own size, and the tiles again, which stitch to the pipeline's picture byte for byte. A
+// spread over the pool and composited as they land; then the tiles again against the tone
+// measure at the picture's own size, which stitch to the pipeline's picture byte for byte.
+// One worker takes that measure while the rest draw the preview-balanced tiles, and shares
+// it (`export_measure`/`import_measure`); a palette switch at the same place re-measures
+// from the frame that worker kept (`recolour`), iterating nothing before the tiles. A
 // new view, knob or palette cancels the pass at once: workers inside a call are terminated
 // and replaced, since a wasm call cannot be interrupted.
 
@@ -552,9 +555,11 @@ export const BYTES_PER_SAMPLE = 256;
  *  no further, measured), less room for the module. */
 export const WORKER_MEMORY = 3.75 * 2 ** 30;
 
-/** What a pass's workers may hold between them. Every worker measures the whole frame, so a
- *  large picture (a download, a 4K screen) runs on fewer workers rather than on a pool's
- *  worth of copies: six gibibytes is a 1600x1000 screen at 4x (1.5 GiB a worker) on four. */
+/** What a pass's workers may hold between them, counting each at the measurer's cost (as
+ *  when every worker measured the whole frame; since website 020 only the first does, and
+ *  the rest hold the shared measure and their tiles, so this is conservative): a large
+ *  picture (a download, a 4K screen) runs on fewer workers: six gibibytes is a 1600x1000
+ *  screen at 4x (1.5 GiB a worker) on four. */
 export const PASS_MEMORY = 6 * 2 ** 30;
 
 /** The most samples a custom picture may be: one worker's memory. */
@@ -563,6 +568,14 @@ export const MAX_CUSTOM_SAMPLES = Math.floor(WORKER_MEMORY / BYTES_PER_SAMPLE);
 /** How many of `size` workers a picture of `samples` runs on within `budget`. */
 export function workersFor(samples, size, budget = PASS_MEMORY) {
   return Math.max(1, Math.min(size, Math.floor(budget / (samples * BYTES_PER_SAMPLE))));
+}
+
+/** What a recolour keeps of a request: the place, the size, the supersample, and the
+ *  mode's stack by name (another mode at one place measures afresh, so a post stage is
+ *  never reached by a recolour). The module refuses whatever else its kept frame cannot
+ *  serve; this only saves asking where the answer is known. */
+export function placeOf(request) {
+  return JSON.stringify([request.location, request.resolution, request.supersample, request.style?.name ?? null]);
 }
 
 /** One compile per module URL for the page's life, so a pool given back and started again
@@ -599,6 +612,10 @@ export class StylePool {
     this.module = module;
     this.slots = Array.from({ length: count }, () => new Slot(module));
     this.pass = 0;
+    // The first slot's session after a finished tiled pass, which keeps that pass's frame:
+    // `{worker, place}`, `place` what a recolour must hold (`placeOf`). A replaced worker
+    // has lost it, so it is held by the worker's identity.
+    this.kept = null;
   }
 
   static async start(url, count = poolSize()) {
@@ -666,31 +683,113 @@ export class StylePool {
     };
     const [width, height] = request.resolution;
     const text = JSON.stringify(request);
+    const place = placeOf(request);
     const picture = new Uint8ClampedArray(width * height * 4);
-    const tiles = tilesOf(width, height);
     const timing = { workers: slots.length };
     const started = performance.now();
-    // Progress shares: the preview, the preview-balanced tiles, the exact measure, the
-    // exact tiles. Each of the last three is about one picture's iteration spread over
-    // the pool, except the measure, which every worker runs whole.
-    const spans = preview ? [0.03, 0.27, 0.4, 0.3] : [0, 0, 0.5, 0.5];
+    // The first slot measures, keeps the frame, and shares its measure; the rest only tile.
+    const [keeper, ...helpers] = slots;
+    const kept = this.kept;
+    this.kept = null;
+    // Progress shares: the preview, the preview-balanced tiles (beside the exact measure),
+    // the exact tiles.
+    const spans = preview ? [0.03, 0.37, 0.6] : [0, 0.4, 0.6];
     let base = 0;
     const report = (share, done) => hooks.progress?.(Math.min(1, base + share * done));
 
     const pw = Math.max(1, Math.round(width / PREVIEW_DIVISOR));
     const ph = Math.max(1, Math.round(height / PREVIEW_DIVISOR));
+    // The preview runs on the last slot, beside the keeper's first call; nothing lands before
+    // it does, since a stretched preview would cover a tile already drawn.
+    let previewed = Promise.resolve();
     if (preview) {
       hooks.stage?.("preview");
       const small = JSON.stringify({ ...request, resolution: [pw, ph], supersample: 1 });
       const at = performance.now();
-      const frame = await slots[0].call({ kind: "frame", job: pass, request: small });
-      live();
-      timing.preview = performance.now() - at;
-      hooks.preview?.(new Uint8ClampedArray(frame.pixels), frame.width, frame.height);
-      base += spans[0];
+      previewed = slots.at(-1)
+        .call({ kind: "frame", job: pass, request: small })
+        .then((frame) => {
+          live();
+          timing.preview = performance.now() - at;
+          hooks.preview?.(new Uint8ClampedArray(frame.pixels), frame.width, frame.height);
+          base += spans[0];
+        });
+      previewed.catch(() => {});
+      // With one worker the preview is the keeper's own first call: let it finish first.
+      if (slots.length === 1) await previewed;
     }
 
-    const first = await slots[0].call({ kind: "open", job: pass, request: text });
+    // Exact tiles over the pool, each slot once its `ready` (its import) has landed.
+    const tiles = tilesOf(width, height);
+    const land = (tile, rgba) => {
+      for (let row = 0; row < tile.height; row += 1) {
+        picture.set(rgba.subarray(row * tile.width * 4, (row + 1) * tile.width * 4), ((tile.y + row) * width + tile.x) * 4);
+      }
+    };
+    let exactStarted = false;
+    const exact = async (readies) => {
+      exactStarted = true;
+      const queue = [...tiles];
+      let done = 0;
+      const at = performance.now();
+      await Promise.all(
+        slots.map(async (slot, index) => {
+          await readies[index];
+          live();
+          while (queue.length > 0) {
+            const tile = queue.shift();
+            const answer = await slot.call({ kind: "tile", job: pass, ...tile });
+            live();
+            const rgba = new Uint8ClampedArray(answer.pixels);
+            land(tile, rgba);
+            hooks.tile?.(tile, rgba, true);
+            done += 1;
+            report(spans[2], done / tiles.length);
+          }
+        }),
+      );
+      timing.tiles = performance.now() - at;
+      timing.total = performance.now() - started;
+      // The helpers' sessions go; the keeper's stays, holding the frame a recolour reads.
+      for (const slot of helpers) slot.call({ kind: "close", job: pass }).catch(() => {});
+      this.kept = { worker: keeper.worker, place };
+    };
+    // The keeper's measure, exported and taken by every helper: one measure for the pool.
+    const share = async () => {
+      const exported = await keeper.call({ kind: "export", job: pass });
+      live();
+      const imports = helpers.map((slot) => slot.call({ kind: "import", job: pass, bytes: exported.bytes }));
+      // Awaited by `exact`; handled here too, for a pass cancelled before it gets there.
+      for (const call of imports) call.catch(() => {});
+      return imports;
+    };
+
+    // A palette switch, a knob, Auto tone, at the place and size the keeper's frame holds:
+    // re-measured from that frame, iterating nothing. Refused, the pass measures afresh.
+    if (kept && kept.worker === keeper.worker && kept.place === place) {
+      hooks.stage?.("recolouring");
+      const at = performance.now();
+      const answer = await keeper.call({ kind: "recolour", job: pass, request: text });
+      live();
+      timing.recolour = performance.now() - at;
+      if (answer.report.ok) {
+        timing.recoloured = true;
+        timing.measure = timing.recolour;
+        const opened = helpers.map((slot) => slot.call({ kind: "open", job: pass, request: text }));
+        for (const call of opened) call.catch(() => {});
+        const imports = await share();
+        await previewed;
+        live();
+        base = spans[0] + spans[1];
+        report(0, 0);
+        hooks.stage?.("final", answer.report);
+        await exact([Promise.resolve(), ...helpers.map((_, i) => opened[i].then(() => imports[i]))]);
+        return { picture, width, height, summary: answer.report, tone: answer.report.tone, timing };
+      }
+      timing.recoloured = false;
+    }
+
+    const first = await keeper.call({ kind: "open", job: pass, request: text });
     live();
     const summary = first.summary;
 
@@ -700,7 +799,9 @@ export class StylePool {
       // the same rule at a quarter size.
       hooks.stage?.("whole");
       const at = performance.now();
-      const answer = await slots[0].call({ kind: "whole", job: pass, width, height });
+      const answer = await keeper.call({ kind: "whole", job: pass, width, height });
+      live();
+      await previewed;
       live();
       picture.set(new Uint8ClampedArray(answer.pixels));
       hooks.tile?.({ x: 0, y: 0, width, height }, picture, true);
@@ -708,65 +809,81 @@ export class StylePool {
       timing.workers = 1;
       timing.whole = performance.now() - at;
       timing.total = performance.now() - started;
-      slots[0].call({ kind: "close", job: pass }).catch(() => {});
+      for (const slot of slots) slot.call({ kind: "close", job: pass }).catch(() => {});
       return { picture, width, height, summary, tone: null, timing };
     }
 
-    await Promise.all(slots.slice(1).map((slot) => slot.call({ kind: "open", job: pass, request: text })));
-    live();
-
-    const sweep = async (exact, share) => {
+    const opened = Promise.all(helpers.map((slot) => slot.call({ kind: "open", job: pass, request: text })));
+    // With helpers, the keeper measures the picture at once while they draw the tiles against
+    // the preview's balance; alone, it draws those tiles first, as the screen wants them.
+    let measureDone = false;
+    timing.sharpening = 0;
+    const sharpen = async (workers, until) => {
+      await previewed;
+      live();
+      // Checked in the same turn as the small measures are posted: once the exact measure
+      // is in, its import may already be queued, and a small measure after it would replace it.
+      if (measureDone) return;
+      hooks.stage?.("sharpening");
+      const at = performance.now();
+      await Promise.all(workers.map((slot) => slot.call({ kind: "measure", job: pass, frame: [pw, ph, 1] })));
+      live();
       const queue = [...tiles];
+      until?.then(
+        () => queue.splice(0),
+        () => {},
+      );
       let done = 0;
       await Promise.all(
-        slots.map(async (slot) => {
+        workers.map(async (slot) => {
           while (queue.length > 0) {
             const tile = queue.shift();
             const answer = await slot.call({ kind: "tile", job: pass, ...tile });
             live();
-            const rgba = new Uint8ClampedArray(answer.pixels);
-            if (exact) {
-              for (let row = 0; row < tile.height; row += 1) {
-                picture.set(
-                  rgba.subarray(row * tile.width * 4, (row + 1) * tile.width * 4),
-                  ((tile.y + row) * width + tile.x) * 4,
-                );
-              }
-            }
-            hooks.tile?.(tile, rgba, exact);
+            if (exactStarted) continue;
+            hooks.tile?.(tile, new Uint8ClampedArray(answer.pixels), false);
             done += 1;
-            report(share, done / tiles.length);
+            report(spans[1], done / tiles.length);
           }
         }),
       );
-      base += share;
+      timing.sharpening = performance.now() - at;
     };
 
-    if (preview) {
-      hooks.stage?.("sharpening");
+    const measuring = async () => {
+      hooks.stage?.("measuring");
       const at = performance.now();
-      await Promise.all(slots.map((slot) => slot.call({ kind: "measure", job: pass, frame: [pw, ph, 1] })));
+      const measured = await keeper.call({ kind: "measure", job: pass });
+      measureDone = true;
       live();
-      await sweep(false, spans[1]);
-      timing.sharpening = performance.now() - at;
+      timing.measure = performance.now() - at;
+      return measured;
+    };
+
+    let measured;
+    let sharpened = Promise.resolve();
+    if (helpers.length === 0) {
+      if (preview) await sharpen([keeper]);
+      measured = await measuring();
+    } else {
+      await opened;
+      live();
+      const measure = measuring();
+      measure.catch(() => {});
+      if (preview) {
+        sharpened = sharpen(helpers, measure);
+        sharpened.catch(() => {});
+      }
+      measured = await measure;
     }
-
-    hooks.stage?.("measuring");
-    let at = performance.now();
-    // Every worker measures the whole frame: the measure lives in its session and cannot
-    // cross, so the pool pays it once per worker, side by side.
-    const measured = await Promise.all(slots.map((slot) => slot.call({ kind: "measure", job: pass })));
+    const imports = await share();
+    await previewed;
     live();
-    timing.measure = performance.now() - at;
-    base += spans[2];
+    base = spans[0] + spans[1];
     report(0, 0);
-    hooks.stage?.("final", measured[0].report);
-
-    at = performance.now();
-    await sweep(true, spans[3]);
-    timing.tiles = performance.now() - at;
-    timing.total = performance.now() - started;
-    for (const slot of slots) slot.call({ kind: "close", job: pass }).catch(() => {});
-    return { picture, width, height, summary, tone: measured[0].report.tone, timing };
+    hooks.stage?.("final", measured.report);
+    await exact([Promise.resolve(), ...imports]);
+    await sharpened;
+    return { picture, width, height, summary, tone: measured.report.tone, timing };
   }
 }

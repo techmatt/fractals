@@ -136,10 +136,14 @@ the page). A website item never commits next door; each half below is its own it
   each with the `values` tuned for it, written whole at their pointers over the stack
   before the knobs, as `styles.at_palette` does) is a row of swatches beside Matched
   palette, hidden for a set of one; a swatch or the `[` and `]` keys switch palette and turn
-  Matched palette on. **A switch measures afresh**: `style.wasm` bakes the map into a
-  session and keeps no frame between sessions, and Auto tone's curve is each composite's
-  own. A palette already finished at this view and size comes back at once from the page's
-  picture cache (`explorer.js`'s `customDrawn`, bounded by `CUSTOM_DRAWN_BYTES`).
+  Matched palette on. **A switch recolours**: the pool's first worker keeps the frame its
+  last finished pass measured, and the module's `recolour` re-takes the measures under the
+  new entry from it without iterating, then the pool draws the tiles again; a switch of
+  anything else that leaves the place, size and mode alone (a knob, Auto tone) tries the
+  same, and the module refuses one whose stack reads channels the kept frame did not
+  gather, which is then measured afresh (`StylePool.drawing`, `placeOf`). A palette already
+  finished at this view and size comes back at once from the page's picture cache
+  (`explorer.js`'s `customDrawn`, bounded by `CUSTOM_DRAWN_BYTES`).
 - **Old names**: a style merged into a published mode (the catalog row's `aliases`) still
   opens, as `custom=<old name>` read as the mode at the palette entry whose `was` it is
   (`style.js`'s `aliasesOf`), written back under the mode's name. The bundle carries a
@@ -153,17 +157,23 @@ the page). A website item never commits next door; each half below is its own it
 - **An Example button** opens the keep's place at 16:10, in the mode, at its defaults plus
   whatever knob or Auto tone setting reproduces the keep's own stack, on the keep's own
   palette of the set.
-- **Drawing** is a quarter-size picture, then full-size tiles against its balance, then the
-  exact tone measure and the tiles again, on a pool of half the machine's threads, one to
-  `MAX_STYLE_WORKERS` (`style.js`'s `poolSize`). Downloads take the same pool, without the
-  preview. **A mode with a post stage** (its `open` summary says `post: true`, tri-mosaic's
+- **Drawing** is a quarter-size picture (on the pool's last worker), then full-size tiles
+  against its balance on every worker but the first, while the first takes the exact tone
+  measure; that measure is shared (`export_measure`, `import_measure`), and every worker
+  draws the tiles again against it. The pool is half the machine's threads, one to
+  `MAX_STYLE_WORKERS` (`style.js`'s `poolSize`); with one worker the steps run in turn.
+  Downloads take the same pool, without the preview. **A mode with a post stage** (its `open` summary says `post: true`, tri-mosaic's
   lattice, the `rays` beams of starburst-veils and light-shafts) reads the whole frame, so
-  the module refuses it a tile: after the preview it is drawn whole in one pass on one
-  worker (`StylePool.drawing`, the worker's `whole`). A new post kind next door needs
+  the module refuses it a tile: it is drawn whole in one pass on the first worker, beside
+  the preview (after it, with one worker), and lands once the preview has
+  (`StylePool.drawing`, the worker's `whole`). A new post kind next door needs
   nothing here beyond the rebuilt module. A lattice or a shaft's `center` is fixed to the
   frame, so a pan moves the fractal under it.
-- **Memory**: every worker measures the whole frame, and a wasm memory never shrinks. So a
-  pass runs on as many workers as fit `PASS_MEMORY` between them, a download over
+- **Memory**: the first worker measures the whole frame and keeps it for a recolour, the
+  rest hold the shared measure (eight bytes a sample for each rank-spent layer) and their
+  tiles, and a wasm memory never shrinks. The budget still counts every worker at the
+  measurer's cost, from when each measured the frame: a pass runs on as many workers as fit
+  `PASS_MEMORY` between them, a download over
   `MAX_CUSTOM_SAMPLES` (one worker's `WORKER_MEMORY` at `BYTES_PER_SAMPLE`) is refused in a
   sentence, every worker is replaced after a download, and the pool is given back when the
   reader leaves the custom modes; all four constants are in `explorer/style.js`. A new mode
@@ -197,9 +207,12 @@ Each is a rule the code holds; code comments cite them by number.
 4. **`custom` is not a render mode in the contract's sense.** `permalink.js`'s `MODES` is
    held to the baked catalog and the engine's roster; so `custom` has its own keys, and the
    select's entry is appended in `syncModes` only.
-5. **A measure cannot cross workers.** It lives in the module's session, so every worker
-   measures the whole frame. The preview-balanced tiles go up first, so the full-detail
-   picture is on the screen before the exact measure starts.
+5. **A measure crosses workers only as its report.** It lives in the module's session; one
+   worker measures and posts `export_measure`'s bytes, and the others `import_measure` them
+   (wallpapers 083), so the pool pays one measure, beside the preview-balanced tiles. A
+   report names its picture (place, stack as drawn, map), so every worker opens the same
+   request first. A small measure posted after an import would replace it, so the
+   preview-balanced sweep posts none once the exact measure is in.
 6. **A wasm call cannot be interrupted.** A cancel terminates every worker inside a call
    and starts a fresh one; the module is compiled once and cloned in.
 7. **Style maps missing from `palettes.bin`**: the bundle carries every map it names, and
