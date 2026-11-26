@@ -2024,7 +2024,10 @@ def main(argv: list[str] | None = None) -> int:
             return _do_serve(options)
         if options.command == "walk":
             return _do_walk(options)
-        return _do_import(options)
+        if options.command == "import":
+            return _do_import(options)
+        # A subparser added without a branch above would otherwise run as `import`.
+        raise NotImplementedError(f"no branch in main() for `{options.command}`")
     except _handled_errors() as error:
         print(f"error: {error}", file=sys.stderr)
         return 1
