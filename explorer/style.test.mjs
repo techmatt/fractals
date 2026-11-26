@@ -75,8 +75,8 @@ const EXAMPLES = bundle.modes.flatMap((mode) => mode.shown.map((shown, index) =>
  *  since 7c62551 shows the round-two `ls2_subtler` keep; feather-plumes' new card
  *  (`fp2_stack_2d84_tempest`) is still not the published stack. Since 232db92 (085, 087)
  *  two more are reached: cauliflower-scales' card is a keep of its published stack, and
- *  chrome-whorl's published `rings` is its kept 0.6. Since 1fd7e5c (088 to 090), marbled-pour's
- *  card, kept at 10 posterize levels where the published stack draws 16. */
+ *  chrome-whorl's published `rings` is its kept 0.6. Since 4569f4e (088 to 090), marbled-pour's
+ *  card, kept at 10 paper sheets (its post pass's `levels`) where the published stack draws 16. */
 const UNREACHED = [
   "teal_filaments__1",
   "star_eye__2",
