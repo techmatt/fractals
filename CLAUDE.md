@@ -175,12 +175,13 @@ Matt marks up a Google-Docs copy of a page and an item applies the marks. **Read
 ```
 python -m ruff check . && python -m ruff format --check . && python -m builder check
 node --test explorer/*.test.mjs atlas/atlas.test.mjs
+python -m unittest builder.test_ranking builder.test_renders
 (cd ../fractal-wallpapers/perturbation && cargo fmt --check) && (cd explorer/perturb-wasm && cargo fmt --check) && (cd explorer/engine-wasm && cargo fmt --check) && (cd builder/deep-gallery-native && cargo fmt --check) && (cd explorer/deep-gpu-model && cargo fmt --check) && (cd explorer/style-wasm && cargo fmt --check)
 (cd explorer/deep-gpu-model && cargo test --release)
 ```
 
 CI (`.github/workflows/checks.yml`) runs the same lines, the 22 suites listed by name; the
-third holds each crate's deliberate reformat. After touching placed prose, also `python -m builder prose <page>`.
+fourth holds each crate's deliberate reformat. After touching placed prose, also `python -m builder prose <page>`.
 
 **Which python**: `python` on PATH in Git Bash and PowerShell is
 `C:\ProgramData\miniconda3\python.exe` (3.13), which has Pillow and ruff; without Pillow `check`

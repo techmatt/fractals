@@ -122,9 +122,10 @@ half below is its own item.
 - **The palette set**: a mode's `palettes` (the row's kept maps, each with its tuned
   `values`, written over the stack before the knobs, as `styles.at_palette` does) is a row
   of swatches beside Matched palette, hidden for a set of one; a swatch or `[`/`]` switches
-  and turns Matched palette on. The bundle leaves out a keepless map, the default too;
-  `palettesOf` puts that default back first where an Example opens on it (chrome-orbs),
-  else the set's first entry is the default (neon-loops).
+  and turns Matched palette on. The bundle writes the mode's own map first, kept or not,
+  then each kept entry; that first entry is the default. An entry's `rests` are where an
+  unset knob sits on it, which `knobRest` derives from the stack and `style.test.mjs` holds
+  to the bundle.
   **A switch recolours**: the first worker keeps the frame its last pass measured, and the
   module's `recolour` re-measures it under the new entry without iterating; a knob or Auto
   tone switch at the same place, size and mode tries the same, and a stack reading channels

@@ -100,23 +100,15 @@ export function contractOf(bundle) {
  * default (the stack's own, `values` empty) first. A bundle from before palette sets
  * carries none, and is the one map it names. **The same array every call**: callers tell
  * the default by identity (`entry === palettesOf(mode)[0]`), and a lab mode with no set
- * (`corkscrew-ribbons`) read a fresh one-entry array each time as a palette of its own.
+ * read a fresh one-entry array each time as a palette of its own.
  *
- * The sibling's `bundle()` leaves out an entry with no keeps, the default among them. A
- * default kept nowhere but still an Example's map (`chrome-orbs`, whose catalog row moved
- * no default when it kept a second map) is put back first, so the Example opens on its own
- * map; one no Example names (`neon-loops`) stays out, and the set's first entry is the
- * default.
+ * The sibling's `bundle()` writes the mode's own map first in every set, keeps or none
+ * (wallpapers 085), so a set is the default and its kept entries as the bundle has them.
  */
 export function palettesOf(mode) {
   let made = ONE_MAP.get(mode);
   if (made) return made;
-  const set = mode.palettes ?? [];
-  const own = { colormap: mode.palette, values: {} };
-  if (!set.length) made = [own];
-  else if (set.some((entry) => entry.colormap === mode.palette)) made = set;
-  else if (mode.shown?.some((shown) => shown.colormap === mode.palette)) made = [own, ...set];
-  else made = set;
+  made = mode.palettes?.length ? mode.palettes : [{ colormap: mode.palette, values: {} }];
   ONE_MAP.set(mode, made);
   return made;
 }
@@ -129,8 +121,8 @@ const ONE_MAP = new WeakMap();
  * then only the knobs that are set (`styles.at_palette`, then `with_knobs`), so this, not
  * `knob.default`, is the value the slider shows and the one a setting is no setting at
  * (022_bug_hunt: brass-foam's greenhorn draws Star rays at 0.5 with the slider at 0.3, and
- * moving it back to 0.3 dropped the setting and drew 0.5 again). A tuned value may lie
- * outside the knob's range (veil-drift's Brightness at most of its entries).
+ * moving it back to 0.3 dropped the setting and drew 0.5 again). Since wallpapers 087 the
+ * bundle writes the same reading as each entry's `rests`, always inside the knob's range.
  */
 export function knobRest(mode, entry, knob) {
   const target = knob.set[0];

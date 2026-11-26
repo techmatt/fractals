@@ -50,6 +50,10 @@
       "/layers/8/opacity": 0.15,
       "/layers/9/opacity": 0.15
      },
+     "rests": {
+      "disc_size": 0.6,
+      "star_rays": 0.5
+     },
      "score": 3
     }
    ],
@@ -64,7 +68,7 @@
      "default": 0.12,
      "range": [
       0.06,
-      0.16
+      0.6
      ],
      "set": [
       "/layers/2/channel/bubble/largest",
@@ -8143,6 +8147,9 @@
       },
       "/tone/median": 0.456,
       "/tone/p10": 0.194
+     },
+     "rests": {
+      "brightness": 0.456
      }
     }
    ],
@@ -8183,7 +8190,7 @@
      "default": 0.323,
      "range": [
       0.28,
-      0.38
+      0.456
      ],
      "set": [
       "/tone/median"
@@ -16809,7 +16816,13 @@
    "style": "corkscrew_smooth",
    "tier": "lab",
    "palette": "corkscrew_smooth",
-   "palettes": [],
+   "palettes": [
+    {
+     "colormap": "corkscrew_smooth",
+     "values": {},
+     "score": 2
+    }
+   ],
    "aliases": [],
    "variant": "current",
    "what": "A double spiral of banded ribbons in dark teal, khaki, cream, black and sky blue, each polished with a metallic sheen.",
@@ -16978,7 +16991,13 @@
    "style": "flame_wisp_waves",
    "tier": "lab",
    "palette": "flame_wisp_waves",
-   "palettes": [],
+   "palettes": [
+    {
+     "colormap": "flame_wisp_waves",
+     "values": {},
+     "score": 2
+    }
+   ],
    "aliases": [],
    "variant": "current",
    "what": "Fine teal flame wisps and crescents crossing over smouldering red and orange streaks on a dark slate ground.",
@@ -20150,7 +20169,13 @@
    "style": "flame_wisp_crimson",
    "tier": "lab",
    "palette": "flame_wisp_crimson",
-   "palettes": [],
+   "palettes": [
+    {
+     "colormap": "flame_wisp_crimson",
+     "values": {},
+     "score": 2
+    }
+   ],
    "aliases": [],
    "variant": "current",
    "what": "Dense flame swirls and strands, cobalt blue on one side turning through violet to crimson round a red glow on the other.",
@@ -21243,6 +21268,10 @@
        "palette": 0.9
       }
      },
+     "rests": {
+      "heart_glow": 0.5,
+      "brightness": 0.201
+     },
      "score": 3
     }
    ],
@@ -21310,7 +21339,7 @@
      "what": "the frame's median lightness, which the tone pass holds the picture to",
      "default": 0.442,
      "range": [
-      0.36,
+      0.201,
       0.52
      ],
      "set": [
@@ -22011,6 +22040,11 @@
    "palette": "chrome_orbs",
    "palettes": [
     {
+     "colormap": "chrome_orbs",
+     "values": {},
+     "score": 2
+    },
+    {
      "colormap": "mercury_tubes",
      "values": {
       "/layers/1/light/highlight": {
@@ -22613,7 +22647,7 @@
    },
    "shown": [
     {
-     "keep": "style_organic_relief_r1/cauliflower_scales/locations/loc__07_phoenix-classic_8fa28807_horror_scales",
+     "keep": "style_retrospective_082/cauliflower_scales/entries/r2_cs_horror_8fa2",
      "caption": "Dark red and bone-grey lit scales curling through a phoenix spiral on black, small domed cells packed into the broad folds",
      "location": {
       "schema": 1,
@@ -22650,7 +22684,7 @@
      },
      "colormap": "horror_scales",
      "stack": {
-      "name": "cauliflower_scales",
+      "name": "e_horror_scales",
       "interior": {
        "palette": 0.0
       },
@@ -22736,52 +22770,6 @@
          }
         },
         "opacity": 0.9
-       },
-       {
-        "kind": "glow",
-        "channel": {
-         "field": {
-          "kind": "stripe",
-          "density": 12.0
-         },
-         "view": {
-          "turn": 137.5,
-          "zoom": 0.9,
-          "shift": [
-           -0.125,
-           -0.171
-          ]
-         }
-        },
-        "color": {
-         "palette": 0.43
-        },
-        "blend": "screen",
-        "opacity": 0.45,
-        "power": 12.0
-       },
-       {
-        "kind": "glow",
-        "channel": {
-         "field": {
-          "kind": "stripe",
-          "density": 12.0
-         },
-         "view": {
-          "turn": 275.0,
-          "zoom": 1.3,
-          "shift": [
-           -0.09,
-           0.286
-          ]
-         }
-        },
-        "color": {
-         "palette": 0.43
-        },
-        "blend": "screen",
-        "opacity": 0.45,
-        "power": 12.0
        }
       ]
      }
@@ -23326,6 +23314,10 @@
       "/tone/median": 0.535,
       "/tone/p10": 0.131
      },
+     "rests": {
+      "shadow": 0.6,
+      "relief": 1.4
+     },
      "score": 3
     },
     {
@@ -23360,6 +23352,10 @@
       },
       "/tone/median": 0.238,
       "/tone/p10": 0.106
+     },
+     "rests": {
+      "shadow": 0.35,
+      "relief": 1.0
      },
      "score": 3
     },
@@ -23399,6 +23395,10 @@
       "/tone/median": 0.439,
       "/tone/p10": 0.116
      },
+     "rests": {
+      "shadow": 0.4,
+      "relief": 1.4
+     },
      "score": 3
     },
     {
@@ -23437,6 +23437,11 @@
       "/layers/8/opacity": 0.5,
       "/tone/median": 0.242,
       "/tone/p10": 0.083
+     },
+     "rests": {
+      "shadow": 0.3,
+      "relief": 0.6,
+      "lace_glow": 0.5
      },
      "score": 2
     }
@@ -24978,6 +24983,9 @@
       "/tone/median": 0.185,
       "/tone/p10": 0.0
      },
+     "rests": {
+      "strand_fade": 1.5
+     },
      "score": 3
     }
    ],
@@ -25748,6 +25756,10 @@
       "/tone/median": 0.226,
       "/tone/p10": 0.072
      },
+     "rests": {
+      "wisps": 0.3,
+      "brightness": 0.226
+     },
      "score": 5
     },
     {
@@ -25762,6 +25774,10 @@
       "/tone/median": 0.098,
       "/tone/p10": 0.004
      },
+     "rests": {
+      "wisps": 0.3,
+      "brightness": 0.098
+     },
      "score": 5
     },
     {
@@ -25775,6 +25791,10 @@
       "/layers/18/opacity": 0.35,
       "/tone/median": 0.281,
       "/tone/p10": 0.0
+     },
+     "rests": {
+      "wisps": 0.35,
+      "brightness": 0.281
      },
      "score": 5
     },
@@ -25801,6 +25821,11 @@
       "/tone/median": 0.507,
       "/tone/p10": 0.309
      },
+     "rests": {
+      "veils": 0.45,
+      "wisps": 0.25,
+      "brightness": 0.507
+     },
      "score": 5
     },
     {
@@ -25808,6 +25833,9 @@
      "values": {
       "/tone/median": 0.577,
       "/tone/p10": 0.42
+     },
+     "rests": {
+      "brightness": 0.577
      },
      "score": 5
     },
@@ -25829,6 +25857,11 @@
       "/tone/median": 0.324,
       "/tone/p10": 0.019
      },
+     "rests": {
+      "veils": 0.4,
+      "wisps": 0.25,
+      "brightness": 0.324
+     },
      "score": 5
     },
     {
@@ -25836,6 +25869,9 @@
      "values": {
       "/tone/median": 0.224,
       "/tone/p10": 0.078
+     },
+     "rests": {
+      "brightness": 0.224
      },
      "score": 3
     },
@@ -25845,6 +25881,9 @@
       "/tone/median": 0.378,
       "/tone/p10": 0.243
      },
+     "rests": {
+      "brightness": 0.378
+     },
      "score": 3
     },
     {
@@ -25852,6 +25891,9 @@
      "values": {
       "/tone/median": 0.209,
       "/tone/p10": 0.103
+     },
+     "rests": {
+      "brightness": 0.209
      },
      "score": 3
     }
@@ -25933,8 +25975,8 @@
      "what": "the picture's overall lightness, from a dark night sky to a bright glow",
      "default": 0.374,
      "range": [
-      0.25,
-      0.5
+      0.098,
+      0.582
      ],
      "set": [
       "/tone/median",
@@ -32173,12 +32215,18 @@
      "colormap": "molten_flow",
      "values": {
       "/stir/0/steps": 4
+     },
+     "rests": {
+      "stir_length": 4
      }
     },
     {
      "colormap": "soft_veils_ember",
      "values": {
       "/stir/0/steps": 4
+     },
+     "rests": {
+      "stir_length": 4
      }
     }
    ],
@@ -33806,6 +33854,11 @@
    "tier": "lab",
    "palette": "neon_loops",
    "palettes": [
+    {
+     "colormap": "neon_loops",
+     "values": {},
+     "score": 3
+    },
     {
      "colormap": "tan_star_beams",
      "values": {
@@ -37203,21 +37256,15 @@
     },
     {
      "colormap": "tempest_plumes",
-     "values": {
-      "/layers/1/light/rings": 0.6
-     }
+     "values": {}
     },
     {
      "colormap": "gilded_leaves",
-     "values": {
-      "/layers/1/light/rings": 0.6
-     }
+     "values": {}
     },
     {
      "colormap": "twilight",
-     "values": {
-      "/layers/1/light/rings": 0.6
-     }
+     "values": {}
     }
    ],
    "aliases": [],
@@ -37254,7 +37301,7 @@
       },
       "light": {
        "period": 2.0,
-       "rings": 1.0,
+       "rings": 0.6,
        "slope": 0.2,
        "azimuth": 135.0,
        "elevation": 47.0,

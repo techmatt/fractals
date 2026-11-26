@@ -70,12 +70,12 @@ const EXAMPLES = bundle.modes.flatMap((mode) => mode.shown.map((shown, index) =>
  *  067), eleven lab keeps drawn with a round's variant of the stack (tri-mosaic's post
  *  pass, stirred-ink's stir, the stroke widths and tilts, frost-stipple's, grain-fans' and
  *  draped-folds' named variants), or before gilded-leaves' bubble fade. Since a98ff12 (072
- *  to 074), chrome-whorl's keep (its tube `rings` at 0.6, the published 1.0) and
- *  glass-orbs' (its `no_ripples` variant, the ripple glow off). Since 083 (wallpapers
- *  ca5e8d3), cauliflower-scales' keep, whose published stack took two explorer-cost cuts
- *  after it was kept. Light-shafts' (its published stack moved to round two's `subtler`
- *  default, 083) is reached again since 7c62551 shows the round-two `ls2_subtler` keep;
- *  feather-plumes' new card (`fp2_stack_2d84_tempest`) is still not the published stack. */
+ *  to 074), glass-orbs' (its `no_ripples` variant, the ripple glow off). Light-shafts'
+ *  (its published stack moved to round two's `subtler` default, 083) is reached again
+ *  since 7c62551 shows the round-two `ls2_subtler` keep; feather-plumes' new card
+ *  (`fp2_stack_2d84_tempest`) is still not the published stack. Since 232db92 (085, 087)
+ *  two more are reached: cauliflower-scales' card is a keep of its published stack, and
+ *  chrome-whorl's published `rings` is its kept 0.6. */
 const UNREACHED = [
   "teal_filaments__1",
   "star_eye__2",
@@ -84,7 +84,6 @@ const UNREACHED = [
   "flame_veil_chalk__2",
   "flame_wisp_amber__0",
   "flame_wisp_spark__0",
-  "cauliflower_scales__0",
   "glossy_spirals__1",
   "banded_lines__1",
   "scaled_folds__0",
@@ -99,7 +98,6 @@ const UNREACHED = [
   "draped_folds__0",
   "draped_folds__1",
   "gilded_leaves__0",
-  "chrome_whorl__0",
   "glass_orbs__0",
   "feather_plumes__0",
   "storm_clouds__0",
@@ -389,12 +387,6 @@ test("each mode carries its palette set, the mode's own map first, every map in 
   for (const mode of bundle.modes) {
     const set = palettesOf(mode);
     assert.ok(set.length >= 1, mode.name);
-    if (mode.name === "neon-loops") {
-      // Kept only in an entry: its set is that entry, its own map in none of it, so the
-      // entry is the default and its values are written over the stack.
-      assert.ok(!set.some((entry) => entry.colormap === mode.palette), mode.name);
-      continue;
-    }
     assert.equal(set[0].colormap, mode.palette, `${mode.name}'s default is its own map`);
     assert.deepEqual(set[0].values, {}, `${mode.name}'s default is the stack's own`);
     assert.equal(new Set(set.map((entry) => entry.colormap)).size, set.length, `${mode.name} names a map once`);
@@ -404,12 +396,35 @@ test("each mode carries its palette set, the mode's own map first, every map in 
     palettesOf(modes.get("brass-foam")).map((entry) => entry.colormap),
     ["bronze_packing", "magma", "teal_tunnel", "twilight", "greenhorn"],
   );
-  // The bundle leaves out chrome-orbs' keepless default; its Example opens on it, so the
-  // page puts it back first (`palettesOf`), the same array every call.
-  const chrome = modes.get("chrome-orbs");
-  assert.deepEqual(chrome.palettes.map((entry) => entry.colormap), ["mercury_tubes"]);
-  assert.deepEqual(palettesOf(chrome).map((entry) => entry.colormap), ["chrome_orbs", "mercury_tubes"]);
-  assert.equal(palettesOf(chrome), palettesOf(chrome));
+  // A default kept nowhere is still the bundle's first entry (wallpapers 085): chrome-orbs'
+  // and neon-loops' own maps, which the page once put back itself. The same array every call.
+  for (const [name, set] of [
+    ["chrome-orbs", ["chrome_orbs", "mercury_tubes"]],
+    ["neon-loops", ["neon_loops", "tan_star_beams"]],
+  ]) {
+    const mode = modes.get(name);
+    assert.deepEqual(mode.palettes.map((entry) => entry.colormap), set, name);
+    assert.equal(palettesOf(mode), mode.palettes, name);
+  }
+  const lone = modes.get("chrome-orbs");
+  assert.equal(palettesOf(lone), palettesOf(lone));
+});
+
+test("an unset knob's rest is the bundle's, at every entry of every mode", () => {
+  // Wallpapers 087 writes each entry's `rests` (`style_palettes.knob_rest`, read as
+  // `knobRest` reads it); the page derives its own from the stack, held to them here.
+  for (const mode of bundle.modes) {
+    for (const entry of palettesOf(mode)) {
+      for (const knob of mode.knobs) {
+        const rest = knobRest(mode, entry, knob);
+        assert.equal(rest, entry.rests?.[knob.name] ?? knob.default, `${mode.name} ${entry.colormap} ${knob.name}`);
+        assert.ok(rest >= knob.range[0] && rest <= knob.range[1], `${mode.name} ${entry.colormap} ${knob.name} in range`);
+      }
+      for (const name of Object.keys(entry.rests ?? {})) {
+        assert.ok(mode.knobs.some((knob) => knob.name === name), `${mode.name} ${entry.colormap}: ${name} is a knob`);
+      }
+    }
+  }
 });
 
 test("a download names the Example its view is at, and nothing at any other place", () => {

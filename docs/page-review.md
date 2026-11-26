@@ -174,7 +174,9 @@ edits. `from-locations-to-wallpapers.html` is dead with no stub, the one permane
 site has spent.
 
 **Excluded:** the explorer and its Atlas tab are tool pages, with no master and no review
-round (a ruling); `run-it-yourself/index.html` is written by `builder/run_it_yourself.py`.
+round (a ruling); `run-it-yourself/index.html` is written by `builder/run_it_yourself.py`,
+and `deep-zoom/dives-and-julia-sets/index.html` by `builder/julia_dives.py` (Matt,
+2026-11-25).
 
 **Em-dashes**: text drawn into a figure is outside the rule (Matt). No check holds the
 rule; the prose passes are done (Matt).
