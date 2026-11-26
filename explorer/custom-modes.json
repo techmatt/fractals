@@ -19408,7 +19408,7 @@
      "what": "the frame's median lightness, which the tone pass holds the picture to",
      "default": 0.287,
      "range": [
-      0.22,
+      0.12,
       0.36
      ],
      "set": [
@@ -32228,6 +32228,13 @@
      "rests": {
       "stir_length": 4
      }
+    },
+    {
+     "colormap": "golden_sand",
+     "values": {
+      "/tone/median": 0.424,
+      "/tone/p10": 0.084
+     }
     }
    ],
    "aliases": [],
@@ -41610,6 +41617,836 @@
        }
       ],
       "name": "light_shafts__subtler"
+     }
+    }
+   ]
+  },
+  {
+   "name": "flat-spirals",
+   "style": "flat_spirals",
+   "tier": "lab",
+   "palette": "flat_spirals",
+   "palettes": [
+    {
+     "colormap": "flat_spirals",
+     "values": {},
+     "score": 4
+    },
+    {
+     "colormap": "coral_spirals",
+     "values": {
+      "/tone/median": 0.551,
+      "/tone/p10": 0.298
+     },
+     "score": 4
+    },
+    {
+     "colormap": "ember_spirals",
+     "values": {
+      "/tone/median": 0.245,
+      "/tone/p10": 0.087
+     },
+     "score": 4
+    },
+    {
+     "colormap": "slate_rosettes",
+     "values": {
+      "/layers/1/channel/bubble/largest": 0.03,
+      "/layers/1/channel/bubble/radius": 0.3,
+      "/tone/median": 0.451,
+      "/tone/p10": 0.118
+     },
+     "score": 4
+    },
+    {
+     "colormap": "umber_spirals",
+     "values": {
+      "/tone/median": 0.353,
+      "/tone/p10": 0.158
+     },
+     "score": 4
+    }
+   ],
+   "aliases": [],
+   "variant": "current",
+   "what": "Flat poster spirals: the set's bands as hard flat inks, packed with flat discs of every size winding along each spiral arm, no gradients and no light (umber and mint, coral and ice, ember on navy, and slate rosettes as palette entries).",
+   "knobs": [],
+   "stack": {
+    "name": "flat_spirals",
+    "interior": {
+     "palette": 0.5
+    },
+    "tone": {
+     "median": 0.487,
+     "p10": 0.071
+    },
+    "layers": [
+     {
+      "kind": "palette",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "palette": {
+       "transfer": {
+        "kind": "rank"
+       }
+      }
+     },
+     {
+      "kind": "palette",
+      "opacity": 1.0,
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.15,
+        "hit": 1,
+        "read": "step",
+        "spacing": 1.0,
+        "escaped": true,
+        "largest": 0.05
+       }
+      },
+      "palette": {
+       "transfer": {
+        "kind": "rank"
+       },
+       "cycles": 5.0
+      }
+     }
+    ]
+   },
+   "shown": [
+    {
+     "keep": "style_flat_graphic_r1/flat_spirals/locations/fs_loc_04_julia-multibrot3_0111cda1",
+     "caption": "Teal and ice bands as hard flat rings round a cubic Julia set's spiral, packed with flat discs along each ring",
+     "location": {
+      "schema": 1,
+      "name": "julia-multibrot3_0111cda1",
+      "family": {
+       "c": [
+        "-0.46842560684005435",
+        "0.5240780256173229"
+       ],
+       "degree": 3,
+       "kind": "julia"
+      },
+      "viewport": {
+       "center_re": "-0.303539953470547",
+       "center_im": "-0.49453963711664745",
+       "width": "0.0721391066324939"
+      },
+      "maxiter": 10453,
+      "note": "final139_general seat 451 (smooth, julia:multibrot3)",
+      "gallery": {
+       "record": "final139_general",
+       "seat": 451,
+       "key": "0111cda1acd27fe5",
+       "p_spiral": 0.961333
+      }
+     },
+     "colormap": "flat_spirals",
+     "stack": {
+      "name": "flat_spirals",
+      "interior": {
+       "palette": 0.5
+      },
+      "tone": {
+       "median": 0.487,
+       "p10": 0.071
+      },
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         }
+        }
+       },
+       {
+        "kind": "palette",
+        "opacity": 1.0,
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.15,
+          "hit": 1,
+          "read": "step",
+          "spacing": 1.0,
+          "escaped": true,
+          "largest": 0.05
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         },
+         "cycles": 5.0
+        }
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "cube-facets",
+   "style": "cube_facets",
+   "tier": "lab",
+   "palette": "cube_facets",
+   "palettes": [
+    {
+     "colormap": "cube_facets",
+     "values": {},
+     "score": 3
+    },
+    {
+     "colormap": "crimson_cubes",
+     "values": {
+      "/tone/median": 0.357,
+      "/tone/p10": 0.038
+     },
+     "score": 3
+    }
+   ],
+   "aliases": [],
+   "variant": "current",
+   "what": "Stacked cubes seen corner-on: a mosaic of triangles shaded as three cube faces, calm large cubes far from the set splitting into ever smaller cubes along it, small cubes inlaid in each face (crimson and white cubes as a palette entry).",
+   "knobs": [],
+   "stack": {
+    "name": "cube_facets",
+    "interior": {
+     "palette": 0.5
+    },
+    "tone": {
+     "median": 0.484,
+     "p10": 0.184
+    },
+    "layers": [
+     {
+      "kind": "palette",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "palette": {
+       "transfer": {
+        "kind": "rank"
+       },
+       "cycles": 2.0
+      }
+     }
+    ],
+    "post": [
+     {
+      "kind": "mosaic",
+      "largest": 0.5,
+      "smallest": 0.004,
+      "levels": 7,
+      "reach": 0.5,
+      "faces": [
+       1.0,
+       0.7,
+       0.42
+      ],
+      "inlay": {
+       "levels": 2,
+       "amount": 0.5
+      }
+     }
+    ]
+   },
+   "shown": [
+    {
+     "keep": "style_flat_graphic_r1/cube_facets/locations/cf_loc_14_julia-mandelbrot_e696b870",
+     "caption": "Large calm cubes in slate and sand splitting into ever smaller cubes along a Julia set's gold edge",
+     "location": {
+      "schema": 1,
+      "name": "julia-mandelbrot_e696b870",
+      "family": {
+       "c": [
+        "-0.19006289202103677",
+        "-0.6647213277105323"
+       ],
+       "degree": 2,
+       "kind": "julia"
+      },
+      "viewport": {
+       "center_re": "0.5953908482638008",
+       "center_im": "-0.16136497690273463",
+       "width": "1.4621524929658358"
+      },
+      "maxiter": 5244,
+      "note": "final139_general seat 126 (smooth_angle_min, julia:mandelbrot)",
+      "gallery": {
+       "record": "final139_general",
+       "seat": 126,
+       "key": "e696b870e1b70809",
+       "p_spiral": 0.063739
+      },
+      "ink": 0.05423
+     },
+     "colormap": "cube_facets",
+     "stack": {
+      "name": "cube_facets",
+      "interior": {
+       "palette": 0.5
+      },
+      "tone": {
+       "median": 0.484,
+       "p10": 0.184
+      },
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         },
+         "cycles": 2.0
+        }
+       }
+      ],
+      "post": [
+       {
+        "kind": "mosaic",
+        "largest": 0.5,
+        "smallest": 0.004,
+        "levels": 7,
+        "reach": 0.5,
+        "faces": [
+         1.0,
+         0.7,
+         0.42
+        ],
+        "inlay": {
+         "levels": 2,
+         "amount": 0.5
+        }
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "marbled-pour",
+   "style": "marbled_pour",
+   "tier": "lab",
+   "palette": "marbled_pour",
+   "palettes": [
+    {
+     "colormap": "marbled_pour",
+     "values": {},
+     "score": 4
+    },
+    {
+     "colormap": "teal_marbling",
+     "values": {
+      "/post/0/hop": 0.0714,
+      "/post/0/levels": 14,
+      "/post/0/phase": 0.0357,
+      "/post/0/shadow/azimuth": 300.0,
+      "/post/0/shadow/color": {
+       "rgb": "#e6faf7"
+      },
+      "/post/0/shadow/offset": 0.0015,
+      "/post/0/shadow/opacity": 0.8,
+      "/post/0/shadow/width": 0.003,
+      "/post/0/taper": 0.9,
+      "/stir/0/strength": 2.0,
+      "/stir/1/period": 1.0,
+      "/stir/1/strength": 2.0,
+      "/tone/median": 0.408,
+      "/tone/p10": 0.011
+     },
+     "score": 4
+    }
+   ],
+   "aliases": [],
+   "variant": "current",
+   "what": "Marbled paint: flat inks poured in hard-edged bands and combed into folds, hooks and S-curls that tighten towards the set, a thin dark vein along each edge, no light and no gradient (red, cream and blue-grey; teal marbling with white rims as a palette entry).",
+   "knobs": [],
+   "stack": {
+    "name": "marbled_pour",
+    "interior": {
+     "palette": 0.5
+    },
+    "tone": {
+     "median": 0.589,
+     "p10": 0.153
+    },
+    "stir": [
+     {
+      "view": {
+       "turn": 100.0,
+       "zoom": 0.35,
+       "shift": [
+        0.13,
+        -0.17
+       ]
+      },
+      "strength": 4.0,
+      "angle": 90.0,
+      "period": 2.0,
+      "largest": 0.2,
+      "steps": 4
+     },
+     {
+      "view": {
+       "turn": 220.0,
+       "zoom": 1.5,
+       "shift": [
+        -0.2,
+        0.1
+       ]
+      },
+      "strength": 2.5,
+      "angle": 90.0,
+      "period": 2.0,
+      "largest": 0.05,
+      "steps": 3
+     }
+    ],
+    "layers": [
+     {
+      "kind": "palette",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "palette": {
+       "transfer": {
+        "kind": "rank"
+       }
+      }
+     }
+    ],
+    "post": [
+     {
+      "kind": "paper",
+      "levels": 16,
+      "taper": 0.8,
+      "hop": 0.125,
+      "phase": 0.0625,
+      "shadow": {
+       "width": 0.004,
+       "offset": 0.0012,
+       "azimuth": 120.0,
+       "opacity": 0.5,
+       "color": {
+        "rgb": "#1c0806"
+       }
+      }
+     }
+    ]
+   },
+   "shown": [
+    {
+     "keep": "style_poured_paint_r1/marbled_pour/forms_a/mp_a_f_broad",
+     "caption": "Red, cream and blue-grey inks combed into broad hooks and S-curls, tightening into fine marbling at the set",
+     "location": {
+      "schema": 1,
+      "name": "julia-multibrot3_7e312206",
+      "family": {
+       "c": [
+        "0.4169190761394084",
+        "0.006933824661843332"
+       ],
+       "degree": 3,
+       "kind": "julia"
+      },
+      "viewport": {
+       "center_re": "0.21194222504856358",
+       "center_im": "0.1873982280382586",
+       "width": "0.5156906251665773"
+      },
+      "maxiter": 7048,
+      "note": "final139_general seat 78 (threads, julia:multibrot3)",
+      "gallery": {
+       "record": "final139_general",
+       "seat": 78,
+       "key": "7e312206457ba5b2",
+       "p_spiral": 0.004165
+      },
+      "ink": 0.08408
+     },
+     "colormap": "marbled_pour",
+     "stack": {
+      "name": "marbled_pour",
+      "interior": {
+       "palette": 0.5
+      },
+      "tone": {
+       "median": 0.589,
+       "p10": 0.153
+      },
+      "stir": [
+       {
+        "view": {
+         "turn": 100.0,
+         "zoom": 0.35,
+         "shift": [
+          0.13,
+          -0.17
+         ]
+        },
+        "strength": 4.0,
+        "angle": 90.0,
+        "period": 2.0,
+        "largest": 0.2,
+        "steps": 4
+       },
+       {
+        "view": {
+         "turn": 220.0,
+         "zoom": 1.5,
+         "shift": [
+          -0.2,
+          0.1
+         ]
+        },
+        "strength": 2.5,
+        "angle": 90.0,
+        "period": 2.0,
+        "largest": 0.05,
+        "steps": 3
+       }
+      ],
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         }
+        }
+       }
+      ],
+      "post": [
+       {
+        "kind": "paper",
+        "levels": 10,
+        "taper": 0.8,
+        "hop": 0.125,
+        "phase": 0.0625,
+        "shadow": {
+         "width": 0.004,
+         "offset": 0.0012,
+         "azimuth": 120.0,
+         "opacity": 0.5,
+         "color": {
+          "rgb": "#1c0806"
+         }
+        }
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "pour-cells",
+   "style": "pour_cells",
+   "tier": "lab",
+   "palette": "pour_cells",
+   "palettes": [
+    {
+     "colormap": "pour_cells",
+     "values": {},
+     "score": 4
+    },
+    {
+     "colormap": "crimson_cells",
+     "values": {
+      "/tone/median": 0.148,
+      "/tone/p10": 0.093
+     },
+     "score": 4
+    }
+   ],
+   "aliases": [],
+   "variant": "current",
+   "what": "An acrylic pour with cells: streams of teal and copper paint dragged into folds and veils, studded with round cells of every size, each a flat drop darkening to its rim, stretched along the flow (navy and crimson as a palette entry).",
+   "knobs": [],
+   "stack": {
+    "name": "pour_cells",
+    "interior": {
+     "palette": 0.0
+    },
+    "tone": {
+     "median": 0.254,
+     "p10": 0.064
+    },
+    "stir": [
+     {
+      "view": {
+       "turn": 100.0,
+       "zoom": 0.5,
+       "shift": [
+        0.13,
+        -0.17
+       ]
+      },
+      "strength": 3.0,
+      "angle": 90.0,
+      "period": 3.0,
+      "largest": 0.12,
+      "steps": 4
+     }
+    ],
+    "layers": [
+     {
+      "kind": "palette",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "palette": {
+       "transfer": {
+        "kind": "rank"
+       }
+      },
+      "warp": {
+       "channel": {
+        "field": {
+         "kind": "smooth"
+        },
+        "view": {
+         "turn": 60.0,
+         "zoom": 0.7,
+         "shift": [
+          0.1,
+          0.2
+         ]
+        }
+       },
+       "amount": 0.35
+      }
+     },
+     {
+      "kind": "palette",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.35,
+        "spacing": 1.0,
+        "read": "step",
+        "escaped": true,
+        "largest": 0.1,
+        "smallest": 0.003,
+        "hit": 1
+       }
+      },
+      "palette": {
+       "cycles": 1.0,
+       "phase": 0.35,
+       "transfer": {
+        "kind": "rank"
+       }
+      },
+      "opacity": 1.0
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.35,
+        "spacing": 1.0,
+        "read": "height",
+        "escaped": true,
+        "largest": 0.1,
+        "smallest": 0.003,
+        "hit": 1
+       },
+       "invert": true
+      },
+      "color": {
+       "palette": 0.0
+      },
+      "power": 2.0,
+      "opacity": 1.0
+     }
+    ]
+   },
+   "shown": [
+    {
+     "keep": "style_poured_paint_r1/pour_cells/locations/pc_loc_04_phoenix_71e305f0",
+     "caption": "Teal and copper paint dragged into folds round a phoenix set, studded with round cells along the flow",
+     "location": {
+      "schema": 1,
+      "name": "phoenix_71e305f0",
+      "family": {
+       "c": [
+        "-0.45709691767279576",
+        "-0.199309339142123"
+       ],
+       "kind": "phoenix",
+       "p": [
+        "0.26195066562519664",
+        "-0.03188285542142037"
+       ],
+       "z_prev": [
+        "0.23987361417464126",
+        "0.45066347511034605"
+       ]
+      },
+      "viewport": {
+       "center_re": "0.25337620512610465",
+       "center_im": "0.019520042863297414",
+       "width": "0.05170751794386484"
+      },
+      "maxiter": 11030,
+      "note": "final139_general seat 221 (smooth_mean_angle, phoenix)",
+      "gallery": {
+       "record": "final139_general",
+       "seat": 221,
+       "key": "71e305f066da5bbb",
+       "p_spiral": 0.015579
+      },
+      "ink": 0.09515
+     },
+     "colormap": "pour_cells",
+     "stack": {
+      "name": "pour_cells",
+      "interior": {
+       "palette": 0.0
+      },
+      "tone": {
+       "median": 0.254,
+       "p10": 0.064
+      },
+      "stir": [
+       {
+        "view": {
+         "turn": 100.0,
+         "zoom": 0.5,
+         "shift": [
+          0.13,
+          -0.17
+         ]
+        },
+        "strength": 3.0,
+        "angle": 90.0,
+        "period": 3.0,
+        "largest": 0.12,
+        "steps": 4
+       }
+      ],
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         }
+        },
+        "warp": {
+         "channel": {
+          "field": {
+           "kind": "smooth"
+          },
+          "view": {
+           "turn": 60.0,
+           "zoom": 0.7,
+           "shift": [
+            0.1,
+            0.2
+           ]
+          }
+         },
+         "amount": 0.35
+        }
+       },
+       {
+        "kind": "palette",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.35,
+          "spacing": 1.0,
+          "read": "step",
+          "escaped": true,
+          "largest": 0.1,
+          "smallest": 0.003,
+          "hit": 1
+         }
+        },
+        "palette": {
+         "cycles": 1.0,
+         "phase": 0.35,
+         "transfer": {
+          "kind": "rank"
+         }
+        },
+        "opacity": 1.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.35,
+          "spacing": 1.0,
+          "read": "height",
+          "escaped": true,
+          "largest": 0.1,
+          "smallest": 0.003,
+          "hit": 1
+         },
+         "invert": true
+        },
+        "color": {
+         "palette": 0.0
+        },
+        "power": 2.0,
+        "opacity": 1.0
+       }
+      ]
      }
     }
    ]
@@ -58784,6 +59621,126 @@
     ]
    ]
   },
+  "coral_spirals": {
+   "schema": 1,
+   "name": "coral_spirals",
+   "kind": "sequential",
+   "source": "seven flat inks, maroon, crimson, coral red, salmon, a pale lemon, ice and sky: a flat_spirals entry, from wallhaven-wej3pr's red and ice spiral tiling",
+   "stops": [
+    [
+     0.0,
+     [
+      78,
+      18,
+      38
+     ]
+    ],
+    [
+     0.1389,
+     [
+      78,
+      18,
+      38
+     ]
+    ],
+    [
+     0.1469,
+     [
+      168,
+      28,
+      54
+     ]
+    ],
+    [
+     0.2817,
+     [
+      168,
+      28,
+      54
+     ]
+    ],
+    [
+     0.2897,
+     [
+      227,
+      52,
+      74
+     ]
+    ],
+    [
+     0.4246,
+     [
+      227,
+      52,
+      74
+     ]
+    ],
+    [
+     0.4326,
+     [
+      240,
+      138,
+      122
+     ]
+    ],
+    [
+     0.5674,
+     [
+      240,
+      138,
+      122
+     ]
+    ],
+    [
+     0.5754,
+     [
+      241,
+      237,
+      182
+     ]
+    ],
+    [
+     0.7103,
+     [
+      241,
+      237,
+      182
+     ]
+    ],
+    [
+     0.7183,
+     [
+      211,
+      237,
+      236
+     ]
+    ],
+    [
+     0.8531,
+     [
+      211,
+      237,
+      236
+     ]
+    ],
+    [
+     0.8611,
+     [
+      140,
+      203,
+      220
+     ]
+    ],
+    [
+     1.0,
+     [
+      140,
+      203,
+      220
+     ]
+    ]
+   ]
+  },
   "corkscrew_smooth": {
    "schema": 1,
    "name": "corkscrew_smooth",
@@ -59136,6 +60093,206 @@
     ]
    ]
   },
+  "crimson_cells": {
+   "schema": 1,
+   "name": "crimson_cells",
+   "kind": "sequential",
+   "source": "an acrylic pour in a midnight navy, indigo, denim blue, plum, crimson, rose and a pale pink: the albedo of pour_cells' crimson_cells entry, from wallhaven-yxlvkk's navy and crimson pour with cells",
+   "stops": [
+    [
+     0.0,
+     [
+      8,
+      10,
+      34
+     ]
+    ],
+    [
+     0.2,
+     [
+      22,
+      28,
+      76
+     ]
+    ],
+    [
+     0.38,
+     [
+      42,
+      64,
+      128
+     ]
+    ],
+    [
+     0.56,
+     [
+      84,
+      48,
+      98
+     ]
+    ],
+    [
+     0.72,
+     [
+      172,
+      30,
+      64
+     ]
+    ],
+    [
+     0.88,
+     [
+      222,
+      112,
+      136
+     ]
+    ],
+    [
+     1.0,
+     [
+      236,
+      206,
+      214
+     ]
+    ]
+   ]
+  },
+  "crimson_cubes": {
+   "schema": 1,
+   "name": "crimson_cubes",
+   "kind": "sequential",
+   "source": "eight flat inks, navy black, crimson, red, pink, cream, two whites and mauve: a cube_facets entry, from wallhaven-n61olx's red and white triangle tiling",
+   "stops": [
+    [
+     0.0,
+     [
+      25,
+      27,
+      42
+     ]
+    ],
+    [
+     0.121,
+     [
+      25,
+      27,
+      42
+     ]
+    ],
+    [
+     0.129,
+     [
+      163,
+      17,
+      42
+     ]
+    ],
+    [
+     0.246,
+     [
+      163,
+      17,
+      42
+     ]
+    ],
+    [
+     0.254,
+     [
+      212,
+      42,
+      60
+     ]
+    ],
+    [
+     0.371,
+     [
+      212,
+      42,
+      60
+     ]
+    ],
+    [
+     0.379,
+     [
+      232,
+      113,
+      139
+     ]
+    ],
+    [
+     0.496,
+     [
+      232,
+      113,
+      139
+     ]
+    ],
+    [
+     0.504,
+     [
+      239,
+      226,
+      200
+     ]
+    ],
+    [
+     0.621,
+     [
+      239,
+      226,
+      200
+     ]
+    ],
+    [
+     0.629,
+     [
+      241,
+      238,
+      234
+     ]
+    ],
+    [
+     0.746,
+     [
+      241,
+      238,
+      234
+     ]
+    ],
+    [
+     0.754,
+     [
+      246,
+      244,
+      241
+     ]
+    ],
+    [
+     0.871,
+     [
+      246,
+      244,
+      241
+     ]
+    ],
+    [
+     0.879,
+     [
+      181,
+      138,
+      160
+     ]
+    ],
+    [
+     1.0,
+     [
+      181,
+      138,
+      160
+     ]
+    ]
+   ]
+  },
   "crimson_nebula": {
    "schema": 1,
    "name": "crimson_nebula",
@@ -59276,6 +60433,126 @@
       226,
       112,
       64
+     ]
+    ]
+   ]
+  },
+  "cube_facets": {
+   "schema": 1,
+   "name": "cube_facets",
+   "kind": "sequential",
+   "source": "seven flat inks, slate navy, maroon, steel grey, blue grey, beige, sage and amber: the albedo of the cube_facets style, from wallhaven-nrl8ym's rhombus tiling",
+   "stops": [
+    [
+     0.0,
+     [
+      58,
+      68,
+      88
+     ]
+    ],
+    [
+     0.1389,
+     [
+      58,
+      68,
+      88
+     ]
+    ],
+    [
+     0.1469,
+     [
+      90,
+      36,
+      32
+     ]
+    ],
+    [
+     0.2817,
+     [
+      90,
+      36,
+      32
+     ]
+    ],
+    [
+     0.2897,
+     [
+      95,
+      109,
+      118
+     ]
+    ],
+    [
+     0.4246,
+     [
+      95,
+      109,
+      118
+     ]
+    ],
+    [
+     0.4326,
+     [
+      140,
+      156,
+      164
+     ]
+    ],
+    [
+     0.5674,
+     [
+      140,
+      156,
+      164
+     ]
+    ],
+    [
+     0.5754,
+     [
+      198,
+      182,
+      158
+     ]
+    ],
+    [
+     0.7103,
+     [
+      198,
+      182,
+      158
+     ]
+    ],
+    [
+     0.7183,
+     [
+      155,
+      168,
+      151
+     ]
+    ],
+    [
+     0.8531,
+     [
+      155,
+      168,
+      151
+     ]
+    ],
+    [
+     0.8611,
+     [
+      238,
+      162,
+      62
+     ]
+    ],
+    [
+     1.0,
+     [
+      238,
+      162,
+      62
      ]
     ]
    ]
@@ -59620,6 +60897,142 @@
       250,
       196,
       110
+     ]
+    ]
+   ]
+  },
+  "ember_spirals": {
+   "schema": 1,
+   "name": "ember_spirals",
+   "kind": "sequential",
+   "source": "eight flat inks, midnight, navy, steel blue, brick, rust orange, orange, amber and tangerine: a flat_spirals entry, from wallhaven-d6yv9m's orange spiral on navy",
+   "stops": [
+    [
+     0.0,
+     [
+      12,
+      24,
+      48
+     ]
+    ],
+    [
+     0.121,
+     [
+      12,
+      24,
+      48
+     ]
+    ],
+    [
+     0.129,
+     [
+      26,
+      51,
+      96
+     ]
+    ],
+    [
+     0.246,
+     [
+      26,
+      51,
+      96
+     ]
+    ],
+    [
+     0.254,
+     [
+      54,
+      99,
+      142
+     ]
+    ],
+    [
+     0.371,
+     [
+      54,
+      99,
+      142
+     ]
+    ],
+    [
+     0.379,
+     [
+      122,
+      42,
+      20
+     ]
+    ],
+    [
+     0.496,
+     [
+      122,
+      42,
+      20
+     ]
+    ],
+    [
+     0.504,
+     [
+      200,
+      84,
+      28
+     ]
+    ],
+    [
+     0.621,
+     [
+      200,
+      84,
+      28
+     ]
+    ],
+    [
+     0.629,
+     [
+      245,
+      152,
+      46
+     ]
+    ],
+    [
+     0.746,
+     [
+      245,
+      152,
+      46
+     ]
+    ],
+    [
+     0.754,
+     [
+      247,
+      166,
+      64
+     ]
+    ],
+    [
+     0.871,
+     [
+      247,
+      166,
+      64
+     ]
+    ],
+    [
+     0.879,
+     [
+      239,
+      138,
+      36
+     ]
+    ],
+    [
+     1.0,
+     [
+      239,
+      138,
+      36
      ]
     ]
    ]
@@ -60356,6 +61769,126 @@
       170,
       220,
       226
+     ]
+    ]
+   ]
+  },
+  "flat_spirals": {
+   "schema": 1,
+   "name": "flat_spirals",
+   "kind": "sequential",
+   "source": "seven flat inks, midnight navy through deep teal, teal, aqua, mint and pale mint to a near-white: the albedo of the flat_spirals style, from wallhaven-d67kpg's dense teal spiral tiling",
+   "stops": [
+    [
+     0.0,
+     [
+      11,
+      27,
+      56
+     ]
+    ],
+    [
+     0.1389,
+     [
+      11,
+      27,
+      56
+     ]
+    ],
+    [
+     0.1469,
+     [
+      15,
+      69,
+      96
+     ]
+    ],
+    [
+     0.2817,
+     [
+      15,
+      69,
+      96
+     ]
+    ],
+    [
+     0.2897,
+     [
+      29,
+      127,
+      143
+     ]
+    ],
+    [
+     0.4246,
+     [
+      29,
+      127,
+      143
+     ]
+    ],
+    [
+     0.4326,
+     [
+      69,
+      181,
+      180
+     ]
+    ],
+    [
+     0.5674,
+     [
+      69,
+      181,
+      180
+     ]
+    ],
+    [
+     0.5754,
+     [
+      159,
+      224,
+      208
+     ]
+    ],
+    [
+     0.7103,
+     [
+      159,
+      224,
+      208
+     ]
+    ],
+    [
+     0.7183,
+     [
+      200,
+      236,
+      225
+     ]
+    ],
+    [
+     0.8531,
+     [
+      200,
+      236,
+      225
+     ]
+    ],
+    [
+     0.8611,
+     [
+      238,
+      249,
+      244
+     ]
+    ],
+    [
+     1.0,
+     [
+      238,
+      249,
+      244
      ]
     ]
    ]
@@ -61268,6 +62801,78 @@
       252,
       230,
       160
+     ]
+    ]
+   ]
+  },
+  "golden_sand": {
+   "schema": 1,
+   "name": "golden_sand",
+   "kind": "sequential",
+   "source": "a deep ultramarine through royal blue, azure and sky, then a dark umber, ochre and a sand gold: the albedo of stirred_ink's golden_sand entry, from whispers-on-golden-sand-25's gold and blue liquid swirls",
+   "stops": [
+    [
+     0.0,
+     [
+      4,
+      8,
+      70
+     ]
+    ],
+    [
+     0.16,
+     [
+      8,
+      30,
+      170
+     ]
+    ],
+    [
+     0.32,
+     [
+      30,
+      110,
+      232
+     ]
+    ],
+    [
+     0.46,
+     [
+      90,
+      190,
+      246
+     ]
+    ],
+    [
+     0.56,
+     [
+      70,
+      52,
+      30
+     ]
+    ],
+    [
+     0.72,
+     [
+      150,
+      104,
+      46
+     ]
+    ],
+    [
+     0.88,
+     [
+      214,
+      160,
+      82
+     ]
+    ],
+    [
+     1.0,
+     [
+      242,
+      214,
+      156
      ]
     ]
    ]
@@ -63096,6 +64701,142 @@
     ]
    ]
   },
+  "marbled_pour": {
+   "schema": 1,
+   "name": "marbled_pour",
+   "kind": "sequential",
+   "source": "eight flat marbling inks in pour order, a dark umber, cream, oxblood, pale blue-grey, vermilion, a warm ivory, a deep slate and an apricot: the albedo of the marbled_pour style, from wallhaven-xl8gmd's red and cream marbled swirls",
+   "stops": [
+    [
+     0.0,
+     [
+      52,
+      18,
+      16
+     ]
+    ],
+    [
+     0.121,
+     [
+      52,
+      18,
+      16
+     ]
+    ],
+    [
+     0.129,
+     [
+      222,
+      200,
+      160
+     ]
+    ],
+    [
+     0.246,
+     [
+      222,
+      200,
+      160
+     ]
+    ],
+    [
+     0.254,
+     [
+      92,
+      20,
+      18
+     ]
+    ],
+    [
+     0.371,
+     [
+      92,
+      20,
+      18
+     ]
+    ],
+    [
+     0.379,
+     [
+      184,
+      200,
+      196
+     ]
+    ],
+    [
+     0.496,
+     [
+      184,
+      200,
+      196
+     ]
+    ],
+    [
+     0.504,
+     [
+      184,
+      52,
+      34
+     ]
+    ],
+    [
+     0.621,
+     [
+      184,
+      52,
+      34
+     ]
+    ],
+    [
+     0.629,
+     [
+      214,
+      206,
+      184
+     ]
+    ],
+    [
+     0.746,
+     [
+      214,
+      206,
+      184
+     ]
+    ],
+    [
+     0.754,
+     [
+      120,
+      138,
+      144
+     ]
+    ],
+    [
+     0.871,
+     [
+      120,
+      138,
+      144
+     ]
+    ],
+    [
+     0.879,
+     [
+      224,
+      150,
+      92
+     ]
+    ],
+    [
+     1.0,
+     [
+      224,
+      150,
+      92
+     ]
+    ]
+   ]
+  },
   "mean_plumes": {
    "schema": 1,
    "name": "mean_plumes",
@@ -63768,6 +65509,78 @@
     ]
    ]
   },
+  "pour_cells": {
+   "schema": 1,
+   "name": "pour_cells",
+   "kind": "sequential",
+   "source": "an acrylic pour, a black through deep teal, cyan and a grey-white, then an umber, copper and salmon: the albedo of the pour_cells style, from wallhaven-exqwvk's teal and copper pour with cells",
+   "stops": [
+    [
+     0.0,
+     [
+      6,
+      6,
+      8
+     ]
+    ],
+    [
+     0.16,
+     [
+      10,
+      46,
+      56
+     ]
+    ],
+    [
+     0.32,
+     [
+      22,
+      136,
+      156
+     ]
+    ],
+    [
+     0.44,
+     [
+      56,
+      196,
+      214
+     ]
+    ],
+    [
+     0.54,
+     [
+      150,
+      164,
+      168
+     ]
+    ],
+    [
+     0.66,
+     [
+      62,
+      36,
+      28
+     ]
+    ],
+    [
+     0.82,
+     [
+      196,
+      98,
+      60
+     ]
+    ],
+    [
+     1.0,
+     [
+      236,
+      164,
+      128
+     ]
+    ]
+   ]
+  },
   "ribbed_tubes": {
    "schema": 1,
    "name": "ribbed_tubes",
@@ -64172,6 +65985,126 @@
       255,
       200,
       120
+     ]
+    ]
+   ]
+  },
+  "slate_rosettes": {
+   "schema": 1,
+   "name": "slate_rosettes",
+   "kind": "sequential",
+   "source": "seven flat inks, plum navy, deep brown, slate grey, steel blue, rust orange, ochre and cream: from wallhaven-7pvqqv's packed hex rosettes",
+   "stops": [
+    [
+     0.0,
+     [
+      40,
+      34,
+      63
+     ]
+    ],
+    [
+     0.1389,
+     [
+      40,
+      34,
+      63
+     ]
+    ],
+    [
+     0.1469,
+     [
+      74,
+      42,
+      34
+     ]
+    ],
+    [
+     0.2817,
+     [
+      74,
+      42,
+      34
+     ]
+    ],
+    [
+     0.2897,
+     [
+      107,
+      109,
+      110
+     ]
+    ],
+    [
+     0.4246,
+     [
+      107,
+      109,
+      110
+     ]
+    ],
+    [
+     0.4326,
+     [
+      138,
+      159,
+      178
+     ]
+    ],
+    [
+     0.5674,
+     [
+      138,
+      159,
+      178
+     ]
+    ],
+    [
+     0.5754,
+     [
+      192,
+      105,
+      42
+     ]
+    ],
+    [
+     0.7103,
+     [
+      192,
+      105,
+      42
+     ]
+    ],
+    [
+     0.7183,
+     [
+      229,
+      191,
+      88
+     ]
+    ],
+    [
+     0.8531,
+     [
+      229,
+      191,
+      88
+     ]
+    ],
+    [
+     0.8611,
+     [
+      238,
+      228,
+      184
+     ]
+    ],
+    [
+     1.0,
+     [
+      238,
+      228,
+      184
      ]
     ]
    ]
@@ -65328,6 +67261,70 @@
     ]
    ]
   },
+  "teal_marbling": {
+   "schema": 1,
+   "name": "teal_marbling",
+   "kind": "sequential",
+   "source": "a navy black through petrol, deep teal, teal, aqua and pale mint to a white, walked end to end as contour sheets: the albedo of marbled_pour's teal_marbling entry, from wallhaven-dp6vvj's teal marbling",
+   "stops": [
+    [
+     0.0,
+     [
+      4,
+      12,
+      26
+     ]
+    ],
+    [
+     0.18,
+     [
+      8,
+      30,
+      48
+     ]
+    ],
+    [
+     0.34,
+     [
+      14,
+      70,
+      86
+     ]
+    ],
+    [
+     0.5,
+     [
+      30,
+      126,
+      134
+     ]
+    ],
+    [
+     0.66,
+     [
+      80,
+      176,
+      178
+     ]
+    ],
+    [
+     0.82,
+     [
+      168,
+      222,
+      220
+     ]
+    ],
+    [
+     1.0,
+     [
+      236,
+      248,
+      246
+     ]
+    ]
+   ]
+  },
   "teal_tunnel": {
    "schema": 1,
    "name": "teal_tunnel",
@@ -66036,6 +68033,126 @@
       240,
       200,
       255
+     ]
+    ]
+   ]
+  },
+  "umber_spirals": {
+   "schema": 1,
+   "name": "umber_spirals",
+   "kind": "sequential",
+   "source": "seven flat inks, dark umber, rust, copper, tan, slate teal, mint and cream: a flat_spirals entry, from wallhaven-m35mmk's brown and mint spiral tiling",
+   "stops": [
+    [
+     0.0,
+     [
+      42,
+      26,
+      20
+     ]
+    ],
+    [
+     0.1389,
+     [
+      42,
+      26,
+      20
+     ]
+    ],
+    [
+     0.1469,
+     [
+      110,
+      58,
+      30
+     ]
+    ],
+    [
+     0.2817,
+     [
+      110,
+      58,
+      30
+     ]
+    ],
+    [
+     0.2897,
+     [
+      169,
+      104,
+      47
+     ]
+    ],
+    [
+     0.4246,
+     [
+      169,
+      104,
+      47
+     ]
+    ],
+    [
+     0.4326,
+     [
+      214,
+      173,
+      116
+     ]
+    ],
+    [
+     0.5674,
+     [
+      214,
+      173,
+      116
+     ]
+    ],
+    [
+     0.5754,
+     [
+      77,
+      124,
+      130
+     ]
+    ],
+    [
+     0.7103,
+     [
+      77,
+      124,
+      130
+     ]
+    ],
+    [
+     0.7183,
+     [
+      169,
+      211,
+      194
+     ]
+    ],
+    [
+     0.8531,
+     [
+      169,
+      211,
+      194
+     ]
+    ],
+    [
+     0.8611,
+     [
+      240,
+      231,
+      196
+     ]
+    ],
+    [
+     1.0,
+     [
+      240,
+      231,
+      196
      ]
     ]
    ]

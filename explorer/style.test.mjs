@@ -75,7 +75,8 @@ const EXAMPLES = bundle.modes.flatMap((mode) => mode.shown.map((shown, index) =>
  *  since 7c62551 shows the round-two `ls2_subtler` keep; feather-plumes' new card
  *  (`fp2_stack_2d84_tempest`) is still not the published stack. Since 232db92 (085, 087)
  *  two more are reached: cauliflower-scales' card is a keep of its published stack, and
- *  chrome-whorl's published `rings` is its kept 0.6. */
+ *  chrome-whorl's published `rings` is its kept 0.6. Since 1fd7e5c (088 to 090), marbled-pour's
+ *  card, kept at 10 posterize levels where the published stack draws 16. */
 const UNREACHED = [
   "teal_filaments__1",
   "star_eye__2",
@@ -102,14 +103,15 @@ const UNREACHED = [
   "feather_plumes__0",
   "storm_clouds__0",
   "starburst_veils__0",
+  "marbled_pour__0",
 ];
 
-test("the bundle is the 58 published modes in two tiers, each with an example", () => {
+test("the bundle is the 62 published modes in two tiers, each with an example", () => {
   assert.equal(bundle.schema, 1);
-  assert.equal(bundle.modes.length, 58);
+  assert.equal(bundle.modes.length, 62);
   const tiers = bundle.modes.map((mode) => tierOf(mode));
   assert.equal(tiers.filter((tier) => tier === "curated").length, 16);
-  assert.equal(tiers.filter((tier) => tier === "lab").length, 42);
+  assert.equal(tiers.filter((tier) => tier === "lab").length, 46);
   for (const mode of bundle.modes) {
     assert.ok(mode.shown.length > 0, mode.name);
     // A curated mode has four or five knobs (the catalog's tier rule); a lab mode may have none.
@@ -140,10 +142,10 @@ test("an example opens at the mode's defaults, plus the setting that reproduces 
   });
 });
 
-test("each mode offers one button a picture: 105 of the 107 keeps", () => {
+test("each mode offers one button a picture: 109 of the 111 keeps", () => {
   const offered = bundle.modes.flatMap((mode) => offeredExamples(mode, encode).map(({ index }) => `${mode.style}__${index}`));
-  assert.equal(offered.length, 105);
-  assert.equal(EXAMPLES.length, 107);
+  assert.equal(offered.length, 109);
+  assert.equal(EXAMPLES.length, 111);
   // star-eye's third keep draws its second's picture under the published settings, and
   // draped-folds' second its first's (both kept at the same place under round variants).
   const unoffered = ["star_eye__2", "draped_folds__1"];
