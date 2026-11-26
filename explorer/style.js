@@ -82,7 +82,8 @@ export function contractOf(bundle) {
       mode.name,
       {
         // `whole`: the module rounds the knob half to even, so the link reads it that way too.
-        knobs: mode.knobs.map((knob) => ({ ...knob, whole: wholeKnob(knob) })),
+        // `rests`: what an unset knob draws at each palette entry that tunes it (`knobRest`).
+        knobs: mode.knobs.map((knob) => ({ ...knob, whole: wholeKnob(knob), rests: restsOf(mode, knob) })),
         palettes: palettesOf(mode).map((entry) => entry.colormap),
         projection: projectionKind(mode.stack),
       },
@@ -120,6 +121,39 @@ export function palettesOf(mode) {
   return made;
 }
 const ONE_MAP = new WeakMap();
+
+/**
+ * What a knob the reader has not set draws at a palette entry: the entry's tuned value of
+ * the knob's first member, read back through the knob (`(value − offset) / scale`), where
+ * the entry tunes it, else the knob's default. The module applies the entry's values and
+ * then only the knobs that are set (`styles.at_palette`, then `with_knobs`), so this, not
+ * `knob.default`, is the value the slider shows and the one a setting is no setting at
+ * (022_bug_hunt: brass-foam's greenhorn draws Star rays at 0.5 with the slider at 0.3, and
+ * moving it back to 0.3 dropped the setting and drew 0.5 again). A tuned value may lie
+ * outside the knob's range (veil-drift's Brightness at most of its entries).
+ */
+export function knobRest(mode, entry, knob) {
+  const target = knob.set[0];
+  const path = typeof target === "string" ? target : target.path;
+  const steps = path.split("/").slice(1);
+  const [tuned] = at(withValues(mode.stack, entry?.values), steps);
+  const [own] = at(mode.stack, steps);
+  if (typeof tuned !== "number" || same(tuned, own)) return knob.default;
+  const scale = typeof target === "string" ? 1 : (target.scale ?? 1);
+  const offset = typeof target === "string" ? 0 : (target.offset ?? 0);
+  const value = Number(((tuned - offset) / scale).toPrecision(12));
+  return wholeKnob(knob) ? roundEven(value) : value;
+}
+
+/** A knob's rests by palette name, only where one differs from its default. */
+function restsOf(mode, knob) {
+  const rests = {};
+  for (const entry of palettesOf(mode)) {
+    const rest = knobRest(mode, entry, knob);
+    if (rest !== knob.default) rests[entry.colormap] = rest;
+  }
+  return rests;
+}
 
 /** The palette entry a custom state draws: the one it names, else the mode's default. */
 export function paletteOf(mode, custom) {

@@ -520,7 +520,8 @@ export function install(context) {
         estimateLine.title = "Let the picture on the screen finish, and this is estimated from it.";
         return;
       }
-      const fewer = known.workers / customMode.workers(samples);
+      // A post stage is drawn whole on one worker, the screen's pass and the download alike.
+      const fewer = known.whole ? 1 : known.workers / customMode.workers(samples);
       estimateLine.textContent = saidShort((known.seconds * samples * fewer) / known.samples);
       estimateLine.title = SHAPE_TIP;
       return;

@@ -221,7 +221,9 @@ explorer itself puts a view on Absolute, never given to a link.
 ## What the last bug hunt covered
 
 `bench/hunt/` (u1–u11, probes, `lib.mjs` with its known false alarms); run units serially.
-The custom modes' unit is `u11-custom.mjs`; findings live in `docs/qa-findings.md`.
+The custom modes' unit is `u11-custom.mjs` (its header lists the scenarios; `recolour` holds
+each palette switch, knob and Auto tone to a fresh load's raster, `PORT=` and `MODES=`/`SKIP=`
+narrow a run); findings live in `docs/qa-findings.md`.
 
 ## The operator is the engine's
 

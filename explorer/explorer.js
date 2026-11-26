@@ -2004,7 +2004,7 @@ async function drawCustom(pass) {
           if (pass !== drawing) return;
           if (name === "sharpening") {
             showState("sharpening");
-            stat(`${mode.name}: ${size}, at the preview's balance, on ${workersFor(width * height * SAMPLES_OF_CUSTOM, pool.size)} workers…`);
+            stat(`${mode.name}: ${size}, at the preview's balance, on ${workersSaid(workersFor(width * height * SAMPLES_OF_CUSTOM, pool.size))}…`);
           } else if (name === "measuring") {
             stat(`${mode.name}: ${size}, measuring the tone at full size…`);
           } else if (name === "recolouring") {
@@ -2026,12 +2026,24 @@ async function drawCustom(pass) {
     present(finished);
     showState("final");
     const seconds = drawn.timing.total / 1000;
-    customMeasured = { key: link.emit(view, contract), samples: width * height * SAMPLES_OF_CUSTOM, seconds, workers: drawn.timing.workers };
+    const samples = width * height * SAMPLES_OF_CUSTOM;
+    // **What prices a download is a pass that measured** (022_bug_hunt): a recolour iterates
+    // nothing, and a download always measures afresh, so a palette switch keeps the cost of
+    // the pass it recoloured (same place, size and mode, `placeOf`). `whole`: a post stage
+    // draws on one worker, the download too, so its workers do not scale the estimate.
+    const priced = drawn.timing.recoloured === true && customMeasured?.samples === samples ? customMeasured : null;
+    customMeasured = {
+      key: link.emit(view, contract),
+      samples,
+      seconds: priced?.seconds ?? seconds,
+      workers: priced?.workers ?? drawn.timing.workers,
+      whole: drawn.timing.whole !== undefined,
+    };
     keepCustom(cacheKey, { image: finished, measured: customMeasured });
     stat(
-      `${mode.name}: ${size} at ${SAMPLES_OF_CUSTOM}× on ${drawn.timing.workers} workers · ${seconds.toFixed(1)} s ` +
+      `${mode.name}: ${size} at ${SAMPLES_OF_CUSTOM}× on ${workersSaid(drawn.timing.workers)} · ${seconds.toFixed(1)} s ` +
         (drawn.timing.whole === undefined
-          ? `(measure ${(drawn.timing.measure / 1000).toFixed(1)} s, tiles ${(drawn.timing.tiles / 1000).toFixed(1)} s)`
+          ? `(${drawn.timing.recoloured ? "recolored" : "measure"} ${(drawn.timing.measure / 1000).toFixed(1)} s, tiles ${(drawn.timing.tiles / 1000).toFixed(1)} s)`
           : "(drawn whole: a post stage reads the frame)"),
     );
     // The timing harness's seam (`bench/custom-speed.mjs`), as `__viewer` is the shallow pass's.
@@ -2044,6 +2056,9 @@ async function drawCustom(pass) {
     showState("stopped");
   }
 }
+
+/** `1 worker`, `3 workers`: a post stage draws on one. */
+const workersSaid = (count) => `${count} worker${count === 1 ? "" : "s"}`;
 
 /** Samples a custom pass draws per output pixel, for the download estimate. */
 const SAMPLES_OF_CUSTOM = FINAL_SUPERSAMPLE * FINAL_SUPERSAMPLE;

@@ -121,7 +121,10 @@ export function mount(host) {
           "Opens in the Deep tab."
         : view.custom
           ? `${host.customLabel?.(view.custom.name) ?? "Custom"} ${view.custom.name}` +
-            `${view.custom.matched === false ? ` in ${shownName(view.palette)}` : ""} on ${planeName(view.family)}. ` +
+            // A palette of the mode's set (`tuned`) is named too: two saves a palette apart
+            // are otherwise one tile twice, none of them drawn (022_bug_hunt).
+            `${view.custom.matched === false ? ` in ${shownName(view.palette)}` : view.custom.palette ? ` in ${shownName(view.custom.palette)}` : ""}` +
+            ` on ${planeName(view.family)}. ` +
             "Opens in the explorer."
           : `${view.mode} in ${shownName(view.palette)} on ${planeName(view.family)}`;
       image.alt = view.deep || view.custom ? "" : tile.title;

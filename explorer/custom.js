@@ -16,6 +16,7 @@ import {
   exampleAt,
   exampleQuery,
   freshCustom,
+  knobRest,
   modesOf,
   offeredExamples,
   paletteOf,
@@ -164,7 +165,8 @@ export function install(bundle, host) {
     const rounded = wholeKnob(knob) ? roundEven(value) : Number(value.toFixed(digitsOf(finestOf(knob))));
     const clamped = Math.min(knob.range[1], Math.max(knob.range[0], rounded));
     const next = { ...custom.knobs };
-    if (clamped === knob.default) delete next[knob.name];
+    // At rest is no setting: the palette's tuned value where it tunes the knob (`knobRest`).
+    if (clamped === knobRest(modeOf(custom), paletteOf(modeOf(custom), custom), knob)) delete next[knob.name];
     else next[knob.name] = clamped;
     host.setCustom({ ...custom, knobs: next });
   }
@@ -285,7 +287,7 @@ export function install(bundle, host) {
     // A lab mode may publish no knobs: no sliders, and nothing to reset.
     reset.hidden = knobs.hidden = mode.knobs.length === 0;
     for (const knob of mode.knobs) {
-      const value = custom.knobs[knob.name] ?? knob.default;
+      const value = custom.knobs[knob.name] ?? knobRest(mode, paletteOf(mode, custom), knob);
       // The place's own projection is laid over the knobs (`styles.projected`), so a knob
       // writing a member the place sets does nothing here.
       const placed = Object.keys(custom.projection ?? {}).find((member) =>

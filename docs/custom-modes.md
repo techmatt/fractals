@@ -34,7 +34,7 @@ the page). A website item never commits next door; each half below is its own it
    refuses any other count). Keep each range short of a picture that stops reading as a
    fractal. A member the module must treat as a whole number has to be one of
    `INTEGER_MEMBERS` in `style-wasm/src/lib.rs` (`iterations`, `hit`, `settle`, `sectors`,
-   `turns`); a new one is an edit there, with its test, **and the same edit to
+   `turns`, `levels`, `arms`, `steps`, `spokes`); a new one is an edit there, with its test, **and the same edit to
    `INTEGER_MEMBERS` in this repository's `explorer/style.js`** in the website item (step 8;
    `style.test.mjs` holds the two lists equal where the checkout is configured). **Spell
    every whole-number member as a JSON integer and every other member a knob writes as a
@@ -112,8 +112,9 @@ the page). A website item never commits next door; each half below is its own it
    request reach the button's picture; the second presses each Example button and saves
    through the Download row, so a miss there that the first does not have is the page's.
    Look at the browser run's PNGs beside the keep JPEGs
-   (`fractal-drive-sync/style-keeps/<style>/`) too. The benches take `--workers`, `--tier`
-   and `--only`: on a shared machine keep it low, or split the run. A palette entry no
+   (`fractal-drive-sync/style-keeps/<style>/`) too. Every bench takes `--only`; the
+   browser bench alone takes `--workers` and `--tier`, and `custom-parity.mjs` splits with
+   `--shard i/n`: on a shared machine keep the workers low, or split the run. A palette entry no
    Example opens on is held with `--palette <entry>` on `custom-natives.mjs` and
    `custom-parity.mjs` (`--stack mode`), which draw each of its mode's Examples on it as
    `<id>@<entry>`. The browser bench waits on `#render-state`'s `data-busy`, which the page

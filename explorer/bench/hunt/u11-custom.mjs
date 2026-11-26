@@ -15,7 +15,12 @@
 // `narrow` (1000, 760 and 420 px by device emulation), `tabs` (every tab taking the canvas
 // mid-pass, then a resize mid-pass), `undo` (Ctrl+Z inside a knob's pass, then Ctrl+Y),
 // `saved` (a custom view saved, its tile read and reopened, then the screensaver over one),
-// `offline` (`style.wasm` blocked: a sentence and a stopped dot, then a later try that works).
+// `offline` (`style.wasm` blocked: a sentence and a stopped dot, then a later try that works),
+// `recolour` (022_bug_hunt: at each mode's first Example, `]`, a knob and Auto tone, each
+// picture held to a fresh load of its link, since website 020 recolours the kept frame),
+// `aliases` (every old name's link lands on its mode and palette), `rests` (a knob a palette
+// tunes shows the tuned value, and its default typed there is a setting the link keeps). `MODES=a,b` narrows
+// `boot`, `examples` and `recolour` to those modes, and `SKIP=a,b` leaves some out.
 //
 // At every meaningful moment (the preview landing, the exact picture, a refusal) it takes a
 // screenshot and runs the same checks: console errors and warnings (`lib.mjs`'s witness log),
@@ -34,7 +39,7 @@ import { appendFileSync, mkdirSync, readFileSync, readdirSync, writeFileSync } f
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { roundEven, wholeKnob } from "../../style.js";
+import { aliasesOf, knobRest, palettesOf, roundEven, wholeKnob } from "../../style.js";
 import { Page, say, sleep } from "./lib.mjs";
 
 const ROOT = fileURLToPath(new URL("../../../", import.meta.url));
@@ -45,12 +50,17 @@ const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
 const OUT = join(ROOT, "artifacts/explorer-bench/u11-custom", stamp);
 mkdirSync(OUT, { recursive: true });
 
-const ALL = ["boot", "examples", "impatience", "knobs", "toggles", "leave", "endurance", "download", "narrow", "tabs", "undo", "saved", "offline"];
+const ALL = ["boot", "examples", "impatience", "knobs", "toggles", "leave", "endurance", "download", "narrow", "tabs", "undo", "saved", "offline", "recolour", "aliases", "rests"];
 const asked = process.argv.slice(2).filter((arg) => !arg.startsWith("-"));
 const scenarios = asked.length > 0 ? asked : ALL;
 
 let shots = 0;
 const findings = [];
+/** The modes a run walks: `MODES=a,b` names them, `SKIP=a,b` leaves some out (frost-feather's
+ *  Example takes about forty minutes). */
+const NAMED = process.env.MODES?.split(",").filter(Boolean) ?? null;
+const SKIPPED = new Set(process.env.SKIP?.split(",").filter(Boolean) ?? []);
+const chosen = (modes = bundle.modes) => modes.filter((m) => (NAMED === null || NAMED.includes(m.name)) && !SKIPPED.has(m.name));
 function row(data) {
   appendFileSync(join(OUT, "rows.jsonl"), `${JSON.stringify(data)}\n`);
 }
@@ -264,7 +274,7 @@ function shorthand(scenario, where, text) {
 // Scenarios.
 
 async function boot(page) {
-  for (const mode of bundle.modes) {
+  for (const mode of chosen()) {
     const query = `v=4&custom=${mode.name}`;
     const answered = await page.open(`?${query}`, { settle: 0 });
     if (answered !== "studio") {
@@ -289,7 +299,7 @@ async function boot(page) {
 }
 
 async function examples(page) {
-  for (const mode of bundle.modes) {
+  for (const mode of chosen()) {
     await page.open(`?v=4&custom=${mode.name}`, { settle: 0 });
     await pass(page);
     const buttons = (await page.ev(STATE)).examples;
@@ -636,7 +646,140 @@ async function offline(page) {
   if (again.dot !== "final") finding("offline", "the custom modes never recovered after the module loaded", { again });
 }
 
-const RUN = { offline, saved, boot, examples, impatience, knobs, toggles, leave, endurance, download, narrow, tabs, undo };
+/** Watch the status line through a pass, for the stage names it says (`recoloring` is the
+ *  pool's recolour of its kept frame, website 020). */
+async function passSaying(page, options = {}) {
+  const said = new Set();
+  const watch = setInterval(async () => {
+    try {
+      const status = await page.ev(`document.getElementById('stats')?.textContent ?? ''`);
+      if (status) said.add(status.replace(/^[^:]*: \S+, /, ""));
+    } catch {}
+  }, 120);
+  try {
+    const drawn = await pass(page, options);
+    return { ...drawn, said: [...said] };
+  } finally {
+    clearInterval(watch);
+  }
+}
+
+/** One change at a finished picture, held to a fresh load of the link it ends on: what a
+ *  recolour (website 020) must draw is exactly the picture the measure from scratch draws. */
+async function heldToFresh(page, mode, label, act) {
+  await act();
+  const drawn = await passSaying(page);
+  const state = await look(page, "recolour", `${mode.name}-${label}`, { layout: false });
+  // The pool's own word for it (`timing.recoloured`), the status line a second witness.
+  const timing = await page.ev(`(globalThis.__customTimings ?? []).at(-1)?.timing ?? null`);
+  const recoloured = timing?.recoloured === true || drawn.said.some((line) => line.startsWith("recoloring"));
+  const query = await address(page);
+  row({ scenario: "recolour", mode: mode.name, label, recoloured, query, said: drawn.said, ...drawn });
+  if (drawn.dot !== "final") {
+    finding("recolour", "pass did not finish", { mode: mode.name, label, drawn, status: state.status });
+    return null;
+  }
+  const raster = await page.canvasHash();
+  await fixedPoint(page, "recolour", query, { raster });
+  return recoloured;
+}
+
+/** A palette switch, a knob and Auto tone at a finished Example, each held to a fresh load
+ *  (website 020's recolour), then a second `]` pressed inside the first one's pass. `MODES`
+ *  (comma-separated names) narrows it; by default every mode with a palette set or a knob. */
+async function recolour(page) {
+  const modes = chosen(NAMED ? bundle.modes : bundle.modes.filter((m) => palettesOf(m).length > 1 || m.knobs.length > 0));
+  const tally = { recoloured: 0, measured: 0 };
+  for (const mode of modes) {
+    // The first Example: a place the mode reads well at, and one the reader starts from.
+    await page.open(`?v=4&custom=${mode.name}`, { settle: 0 });
+    await pass(page);
+    await click(page, `#custom-examples button[data-example]`);
+    const first = await pass(page);
+    if (first.dot !== "final") {
+      finding("recolour", "example did not finish", { mode: mode.name, first });
+      continue;
+    }
+    const steps = [];
+    if (palettesOf(mode).length > 1) {
+      steps.push(["palette", () => page.ev(`window.dispatchEvent(new KeyboardEvent('keydown', { key: ']', bubbles: true }))`)]);
+    }
+    const knob = mode.knobs.find((k) => !k.set.every((t) => (typeof t === "string" ? t : t.path).startsWith("/projection/")));
+    if (knob) {
+      const to = knob.default === knob.range[1] ? knob.range[0] : knob.range[1];
+      steps.push([`knob-${knob.name}`, () => set(page, `#custom-knobs input[type=number][data-knob="${knob.name}"]`, to)]);
+    }
+    if ("tone" in mode.stack) steps.push(["autotone-off", () => click(page, "#custom-autotone")]);
+    for (const [label, act] of steps) {
+      const recoloured = await heldToFresh(page, mode, label, act);
+      if (recoloured === true) tally.recoloured += 1;
+      else if (recoloured === false) tally.measured += 1;
+    }
+    // Impatience: a second `]` inside the first one's recolour.
+    if (palettesOf(mode).length > 2) {
+      await page.ev(`window.dispatchEvent(new KeyboardEvent('keydown', { key: ']', bubbles: true }))`);
+      await sleep(150);
+      const recoloured = await heldToFresh(page, mode, "palette-twice", () =>
+        page.ev(`window.dispatchEvent(new KeyboardEvent('keydown', { key: ']', bubbles: true }))`),
+      );
+      void recoloured;
+    }
+  }
+  row({ scenario: "recolour", tally });
+  say("recolour", JSON.stringify(tally));
+}
+
+/** Every old name the bundle still opens (`aliasesOf`): its link lands on the mode it was
+ *  merged into, at the palette entry that was it, and the address bar says so. */
+async function aliases(page) {
+  for (const [old, alias] of aliasesOf(bundle)) {
+    const answered = await page.open(`?v=4&custom=${encodeURIComponent(old)}`, { settle: 0 });
+    if (answered !== "studio") {
+      finding("aliases", "an old name's link refused", { old, said: (await page.refused()).said });
+      continue;
+    }
+    const drawn = await pass(page, { within: 240000 });
+    const state = await look(page, "aliases", old, { layout: false });
+    const query = await address(page);
+    const params = new URLSearchParams(query);
+    row({ scenario: "aliases", old, alias, query, ...drawn });
+    if (params.get("custom") !== alias.name) finding("aliases", "an old name opened another mode", { old, alias, query });
+    if ((params.get("tuned") ?? null) !== alias.palette) finding("aliases", "an old name opened another palette", { old, alias, query });
+    if (state.custom !== alias.name) finding("aliases", "the mode select is not the alias's mode", { old, alias, select: state.custom });
+  }
+}
+
+/** Every palette entry that tunes a knob (022_bug_hunt): the box shows the tuned value the
+ *  picture draws (`knobRest`), and the knob's default typed there is a setting the link keeps. */
+async function rests(page) {
+  for (const mode of chosen()) {
+    for (const entry of palettesOf(mode)) {
+      const tuned = mode.knobs.filter((knob) => knobRest(mode, entry, knob) !== knob.default);
+      if (tuned.length === 0) continue;
+      const own = entry === palettesOf(mode)[0];
+      const query = `v=4&custom=${mode.name}${own ? "" : `&tuned=${encodeURIComponent(entry.colormap)}`}`;
+      await page.open(`?${query}`, { settle: 300 });
+      const state = await page.ev(STATE);
+      for (const knob of tuned) {
+        const box = state.knobs.find((k) => k.name === knob.name);
+        const rest = knobRest(mode, entry, knob);
+        if (Math.abs(Number(box?.value) - rest) > 1e-6) {
+          finding("rests", "a knob box shows another value than the picture draws", { mode: mode.name, palette: entry.colormap, knob: knob.name, shown: box?.value, rest });
+        }
+      }
+      const knob = tuned.find((k) => k.default >= k.range[0] && k.default <= k.range[1]);
+      if (!knob) continue;
+      await set(page, `#custom-knobs input[type=number][data-knob="${knob.name}"]`, knob.default);
+      const back = await address(page);
+      row({ scenario: "rests", mode: mode.name, palette: entry.colormap, knob: knob.name, back });
+      if (!new URLSearchParams(back).get("knobs")?.includes(`${knob.name}:`)) {
+        finding("rests", "the knob's default at a palette that tunes it was dropped as no setting", { mode: mode.name, palette: entry.colormap, knob: knob.name, back });
+      }
+    }
+  }
+}
+
+const RUN = { offline, saved, boot, examples, impatience, knobs, toggles, leave, endurance, download, narrow, tabs, undo, recolour, aliases, rests };
 
 // ---------------------------------------------------------------------------------------
 

@@ -17,6 +17,8 @@ import {
   exampleAt,
   exampleCustom,
   freshCustom,
+  knobRest,
+  turned,
   exampleQuery,
   familyOf,
   INTEGER_MEMBERS,
@@ -311,6 +313,38 @@ test("a whole-number knob in a link reads as the number the module draws", () =>
   assert.deepEqual(read("v=4&custom=arch-tunnel&knobs=arch_glow:0.45"), { arch_glow: 0.45 });
   const once = emit(parse("v=4&custom=arch-tunnel&knobs=turns:4.5", CONTEXT), CONTEXT);
   assert.equal(emit(parse(once, CONTEXT), CONTEXT), once, "and the link it writes is a fixed point");
+});
+
+test("an unset knob is at its palette's tuned value, which the link leaves out and nothing else", () => {
+  // 022_bug_hunt: greenhorn tunes brass-foam's Star rays to 0.5 (default 0.3); the slider
+  // said 0.3, and setting 0.3 was read as no setting, which drew 0.5.
+  const mode = modes.get("brass-foam");
+  const star = mode.knobs.find((knob) => knob.name === "star_rays");
+  const greenhorn = palettesOf(mode).find((entry) => entry.colormap === "greenhorn");
+  assert.equal(knobRest(mode, greenhorn, star), 0.5);
+  assert.equal(knobRest(mode, palettesOf(mode)[0], star), star.default);
+  const read = (query) => parse(query, CONTEXT).custom.knobs;
+  assert.deepEqual(read("v=4&custom=brass-foam&tuned=greenhorn&knobs=star_rays:0.3"), { star_rays: 0.3 });
+  assert.deepEqual(read("v=4&custom=brass-foam&tuned=greenhorn&knobs=star_rays:0.5"), {}, "its rest");
+  assert.deepEqual(read("v=4&custom=brass-foam&knobs=star_rays:0.3"), {}, "the default palette's rest");
+  for (const query of ["v=4&custom=brass-foam&tuned=greenhorn&knobs=star_rays:0.3&p=twilight_shifted", "v=4&custom=brass-foam&tuned=greenhorn&p=twilight_shifted"]) {
+    assert.equal(emit(parse(query, CONTEXT), CONTEXT), query);
+  }
+  // Every rest the request draws is the stack's member: what the slider shows is the picture.
+  for (const each of bundle.modes) {
+    for (const entry of palettesOf(each)) {
+      for (const knob of each.knobs) {
+        const rest = knobRest(each, entry, knob);
+        const custom = { ...freshCustom(each.name), palette: entry === palettesOf(each)[0] ? null : entry.colormap };
+        const target = knob.set[0];
+        const path = typeof target === "string" ? target : target.path;
+        const steps = path.split("/").slice(1);
+        const drawn = steps.reduce((node, step) => node?.[step], stackOf(each, custom));
+        const asSet = steps.reduce((node, step) => node?.[step], turned(stackOf(each, custom), [knob], { [knob.name]: rest }));
+        if (typeof drawn === "number") assert.ok(Math.abs(asSet - drawn) < 1e-9, `${each.name} ${entry.colormap} ${knob.name}`);
+      }
+    }
+  }
 });
 
 test("a custom pass fits its workers' memory: fewer workers for a large picture, none past one's", () => {

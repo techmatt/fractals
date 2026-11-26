@@ -5,6 +5,64 @@ won't-fix with a reason. A hunt reads it first and never re-reports an item alre
 The hunt before this file (`explorer_bug_hunt_ckpt138`, 2026-09-20) kept its findings in
 `explorer/README.md`'s *What the last bug hunt covered* and the sections they belong to.
 
+## 022_bug_hunt (2026-11-25): what changed since 004
+
+The custom-modes rebakes (015, 021), the shared measure and recolour (020), `palettesOf`,
+and the deploy split (017). The checker is `u11-custom.mjs`'s `recolour`, `aliases` and
+`rests` scenarios: 84 palette switches, knobs and Auto tone over 40 modes drew exactly what
+a fresh load of each link draws (59 recoloured); every old name opened its mode and palette.
+
+### Fixed
+
+1. **A knob a palette tunes showed its default, not the value drawn.** The module writes the
+   entry's tuned values and then only the knobs that are set, so brass-foam on greenhorn
+   drew Star rays at 0.5 with the slider at 0.3, and setting 0.3 was read as no setting and
+   drew 0.5 (33 knob-palette pairs). The box, the slider, Reset and the link now read the
+   knob at rest as the entry's value (`style.js` `knobRest`, the contract's `rests`).
+2. **A download estimate after a palette switch was priced off the recolour**, which
+   iterates nothing, while a download always measures: about half the real time. A
+   recoloured pass keeps the cost of the pass it recoloured.
+3. **A post-stage mode's download estimate was divided by the pool's workers** (tri-mosaic,
+   paper-layers, gouache-cut, starburst-veils, light-shafts), though it draws whole on one
+   worker: a quarter to an eighth of the real time.
+4. **Two Saved custom views a palette apart were one tile twice**: the title now names a
+   `tuned` palette.
+5. The status line said `on 1 workers` for every post-stage mode, and `measure` for the
+   time a recolour took.
+6. `docs/custom-modes.md` listed five of the nine `INTEGER_MEMBERS`, and said every bench
+   takes `--workers` and `--tier` (only the browser bench does; parity and natives ignored
+   both without a word).
+
+### Deferred to Matt
+
+1. **Nine palette entries tune a knob outside its own range** (veil-drift's Brightness at
+   seven of its maps, brass-foam's greenhorn Bubble size 0.6 on 0.06 to 0.16,
+   soft-petals' golden_egg_petals, molten-folds' interstellar_webs). The box says the
+   value; the slider sits at its end, and a touch jumps the picture into range. Recommend a
+   wallpapers item widening those ranges, or dropping the knob's member from the entry's
+   values; the alternative, clamping here, would draw something no keep did. (Matt's call)
+2. **Stepping `]` faster than a recolour lands measures afresh**: the cancel terminates the
+   keeper mid-recolour, so its kept frame goes (14 of 14 second presses measured afresh).
+   Recommend letting a keeper whose only call is a recolour finish rather than
+   terminating it, keeping `kept` through the cancelled pass: about 2× on fast stepping.
+3. **A large HiDPI screen draws a custom mode on one worker** (older than 020): a
+   2560x1440 window at device pixel ratio 2 is a 2972x1668 canvas, 19.8 million samples
+   at 4×, past `PASS_MEMORY`'s share for two workers and past `MAX_CUSTOM_SAMPLES`, which
+   only a download is held to. veil-drift's home view had no picture after 25 minutes
+   (15 of them sharpening, then the measure), and no trap. Recommend pricing helpers at
+   what they hold since 020 (the shared measure and their tiles; 004's deferred 2), and
+   drawing a screen past one worker's memory at one sample a pixel, said in the status line.
+   (Matt's call: the second trades the keeps' supersample for a picture at all.)
+4. **checks.yml still pins Node-20 actions** (`checkout@v4`, `setup-node@v4`,
+   `setup-python@v5`, `upload-artifact@v4`, `download-artifact@v4`): every run carries the
+   deprecation annotation that 017 cleared from pages.yml. Nothing fails yet. Recommend
+   the same move to the Node-24 majors, each tag checked on a run.
+
+### Won't fix
+
+- **At a 540 px window the knob boxes run 10 px past the controls column.** The explorer
+  targets desktop only (`docs/rulings.md`); every control stays visible and usable.
+
 ## 004_bug_hunt (2026-11-06): the custom (experimental) render mode
 
 The checker is `explorer/bench/hunt/u11-custom.mjs` (`explorer/README.md`'s *What the last

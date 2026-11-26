@@ -627,7 +627,10 @@ function readCustom(params, context) {
     if (!(value >= low && value <= high)) {
       throw new PermalinkError(`The ${knob.label} setting has to be between ${low} and ${high}, not ${number} (${pair}).`);
     }
-    if (value !== knob.default) knobs[key] = value;
+    // No setting is the knob at rest at this palette: its tuned value where the entry tunes
+    // it (`style.js` `knobRest`), so `knobs=star_rays:0.3` on brass-foam's greenhorn,
+    // which tunes it to 0.5, is a setting (022_bug_hunt).
+    if (value !== (knob.rests?.[palette ?? set[0]] ?? knob.default)) knobs[key] = value;
   }
   // A place's own projection members, as a location record carries them (a log-polar
   // tunnel's `twist` and `ring`), laid over the mode's by the module.
@@ -665,8 +668,9 @@ function emitCustom(custom, context) {
   const palettes = context.customs?.get(custom.name)?.palettes ?? [];
   if (custom.palette && custom.palette !== palettes[0]) parts.push(`${TUNED_KEY}=${encode(custom.palette)}`);
   const knobs = context.customs?.get(custom.name)?.knobs ?? [];
+  const at = custom.palette ?? palettes[0];
   const set = knobs
-    .filter((knob) => custom.knobs[knob.name] !== undefined && custom.knobs[knob.name] !== knob.default)
+    .filter((knob) => custom.knobs[knob.name] !== undefined && custom.knobs[knob.name] !== (knob.rests?.[at] ?? knob.default))
     .map((knob) => `${knob.name}:${number(custom.knobs[knob.name])}`);
   if (set.length > 0) parts.push(`${KNOBS_KEY}=${encodeCurve(set.join(","))}`);
   if (custom.matched === false) parts.push(`${MATCHED_KEY}=0`);
