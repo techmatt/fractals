@@ -1,7 +1,7 @@
 // Every custom mode's example locations, opened by their buttons in the served explorer and
 // downloaded through the page's own Download row, for `custom-compare.py --png`.
 //
-//   node explorer/bench/custom-browser.mjs <base url> <out dir> [--size 640x400] [--only <mode>,…]
+//   node explorer/bench/custom-browser.mjs <base url> <out dir> [--size 640x400] [--only <mode|style|keep>,…]
 //                                          [--tier curated|lab] [--wait <seconds>]
 //                                          [--workers <n>] [--port <debugging port>]
 //
@@ -113,7 +113,11 @@ async function landed() {
 
 let screenshot = false;
 for (const mode of bundle.modes) {
-  if (only && !only.includes(mode.style) && !only.includes(mode.name)) continue;
+  // `--only` takes a public name, a style, or a keep id (`<style>__<n>`), as the
+  // other custom benches do.
+  const keepsNamed = only?.filter((each) => each.startsWith(`${mode.style}__`)) ?? [];
+  const whole = !only || only.includes(mode.style) || only.includes(mode.name);
+  if (!whole && keepsNamed.length === 0) continue;
   if (tierOnly && tierOf(mode) !== tierOnly) continue;
   // The tier's entry first: the custom select lists that tier's modes only.
   const tier = TIERS.find((each) => each.tier === tierOf(mode)).option;
@@ -130,6 +134,7 @@ for (const mode of bundle.modes) {
   }
   for (let index = 0; index < mode.shown.length; index++) {
     const id = `${mode.style}__${index}`;
+    if (!whole && !keepsNamed.includes(id)) continue;
     if (done.has(id) && screenshot) continue;
     const row = { id, mode: mode.name };
     errors.length = 0;
