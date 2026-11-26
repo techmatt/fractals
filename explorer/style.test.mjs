@@ -77,7 +77,7 @@ const EXAMPLES = bundle.modes.flatMap((mode) => mode.shown.map((shown, index) =>
  *  two more are reached: cauliflower-scales' card is a keep of its published stack, and
  *  chrome-whorl's published `rings` is its kept 0.6. Since 4569f4e (088 to 090), marbled-pour's
  *  card, kept at 10 paper sheets (its post pass's `levels`) where the published stack draws 16. Since
- *  b2542fc (092), veil-shards' card, its `f_broad` keep (the views at twice the zoom), which
+ *  078b600 (092), veil-shards' card, its `f_broad` keep (the views at twice the zoom), which
  *  no knob of a mode with none reaches. */
 const UNREACHED = [
   "teal_filaments__1",
