@@ -66,7 +66,7 @@
 // (profiling_pass_ckpt146): a refusal on a server started since then is a finding again.
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -98,9 +98,12 @@ const EXPLAINED = [
   /The powerPreference option is currently ignored when calling requestAdapter\(\) on Windows/,
 ];
 
-/** A page under the harness: the browser, the connection, and the witness log. */
+/** A page under the harness: the browser, the connection, and the witness log.
+ *  `debug` 0 (the default) lets Chrome pick a free debugging port, read back from the
+ *  profile's `DevToolsActivePort`, as `../cdp.mjs`'s `open` does. A named one is taken
+ *  as given (a unit restarts on its own port), so two runs naming one port collide. */
 export class Page {
-  constructor({ port = SITE, debug = 9400, browser = CHROME, width = 1600, height = 1100 } = {}) {
+  constructor({ port = SITE, debug = 0, browser = CHROME, width = 1600, height = 1100 } = {}) {
     this.port = port;
     this.debug = debug;
     this.browser = browser;
@@ -131,6 +134,10 @@ export class Page {
     for (let i = 0; i < 100 && !target; i++) {
       await sleep(200);
       try {
+        // Chrome writes the port it chose on the first line, once it is listening.
+        if (this.debug === 0) {
+          this.debug = Number(readFileSync(join(this.profile, "DevToolsActivePort"), "utf8").split("\n")[0]);
+        }
         // `localhost` and not `127.0.0.1`: Chrome on this machine binds the debugging port on
         // `[::1]` alone some launches and not others, and an IPv4 ask then finds nothing and
         // reads as a browser that never came up (deep_leveled_link_and_recolour_ckpt150).

@@ -1,9 +1,9 @@
 # explorer/bench
 
 Harnesses run in neither `builder check` nor CI; each is started by hand, and most say how atop.
-A browser harness's Chrome picks its own debugging port by default (`cdp.mjs`'s `open`, port 0),
-except `hunt/lib.mjs`'s `Page`, `showcase.mjs`, and the deep-gpu-agree/time/lose/same harnesses,
-which name ports.
+A browser harness's Chrome picks its own debugging port by default (port 0, in `cdp.mjs`'s
+`open` and `hunt/lib.mjs`'s `Page`), except the hunt units, `showcase.mjs`, and the
+deep-gpu-agree/time/lose/same harnesses, which name ports.
 
 "Serve" means `python -m builder serve` must be up (port 8000 unless the harness takes another);
 "sibling" means the wallpapers checkout at `C:\Code\fractal-wallpapers`; "records" means

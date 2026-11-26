@@ -431,7 +431,9 @@ const TABS = {
   },
 };
 
-const DEBUG = Number(process.env.DEBUG_PORT ?? 9441);
+// 0: Chrome picks each browser's port (`hunt/lib.mjs`'s `Page`).
+const DEBUG = Number(process.env.DEBUG_PORT ?? 0);
+const CHECKER = DEBUG === 0 ? 0 : DEBUG + 1;
 
 async function fresh(debug) {
   return new Page({ width: 1400, height: 900, debug }).start();
@@ -495,7 +497,7 @@ async function savedLinks(page) {
 }
 
 let driver = await fresh(DEBUG);
-let checker = await fresh(DEBUG + 1);
+let checker = await fresh(CHECKER);
 const rows = [];
 let misses = 0;
 try {
@@ -513,7 +515,7 @@ try {
         await finish(driver);
         await finish(checker);
         driver = await fresh(DEBUG);
-        checker = await fresh(DEBUG + 1);
+        checker = await fresh(CHECKER);
         await load(driver, from);
       }
       if (tabName === "saved" && row.url) {

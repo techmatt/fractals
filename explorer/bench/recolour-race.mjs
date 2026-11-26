@@ -421,7 +421,7 @@ async function trial(page, scenario, at, offset, actions) {
 
 // ------------------------------------------------------------------------ the run
 
-const DEBUG = Number(process.env.DEBUG_PORT ?? 9431);
+const DEBUG = Number(process.env.DEBUG_PORT ?? 0);
 
 /** A fresh browser. On Windows, killing `chrome.exe` leaves its children holding the
  *  debugging port, so the whole tree goes. */
