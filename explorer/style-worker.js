@@ -48,7 +48,7 @@ function close() {
 function open(request) {
   close();
   const raw = encoder.encode(request);
-  const pointer = wasm.alloc(raw.length);
+  const pointer = wasm.alloc(raw.length) >>> 0;
   new Uint8Array(wasm.memory.buffer, pointer, raw.length).set(raw);
   const answer = text(wasm.open(pointer, raw.length));
   wasm.dealloc(pointer, raw.length);
@@ -86,7 +86,7 @@ self.onmessage = (event) => {
       self.postMessage({ kind: "exported", job, bytes, elapsed: performance.now() - started }, [bytes]);
     } else if (message.kind === "import") {
       const raw = new Uint8Array(message.bytes);
-      const pointer = wasm.alloc(raw.length);
+      const pointer = wasm.alloc(raw.length) >>> 0;
       new Uint8Array(wasm.memory.buffer, pointer, raw.length).set(raw);
       const report = text(wasm.import_measure(session, pointer, raw.length));
       wasm.dealloc(pointer, raw.length);
@@ -97,7 +97,7 @@ self.onmessage = (event) => {
       // the frame its last `measure` kept: no orbit iterated. Refused, the session is as
       // it was, and the pass measures afresh.
       const raw = encoder.encode(message.request);
-      const pointer = wasm.alloc(raw.length);
+      const pointer = wasm.alloc(raw.length) >>> 0;
       new Uint8Array(wasm.memory.buffer, pointer, raw.length).set(raw);
       const report = text(wasm.recolour(session, pointer, raw.length));
       wasm.dealloc(pointer, raw.length);

@@ -26,11 +26,10 @@ import json
 import re
 import subprocess
 from dataclasses import dataclass
-from html import escape
 from pathlib import Path
 
-from . import heads, icons
-from .paths import SITE_ROOT
+from . import escape, heads, icons
+from .paths import SITE_ROOT, read_exact
 
 GO_DIR = SITE_ROOT / "go"
 REGISTER = GO_DIR / "redirects.jsonl"
@@ -103,7 +102,7 @@ def load() -> list[Redirect]:
 
 def page(redirect: Redirect) -> str:
     """The forwarding page for one row."""
-    href = escape(redirect.href, quote=True)
+    href = escape.attribute(redirect.href)
     html = "\n".join(
         [
             "<!doctype html>",
@@ -159,11 +158,6 @@ def read(queries: dict[str, str]) -> dict[str, dict]:
     return json.loads(completed.stdout)
 
 
-def _read(path: Path) -> str:
-    with path.open(encoding="utf-8", newline="") as handle:
-        return handle.read()
-
-
 def problems() -> list[str]:
     """The `go` check: every target parses, and every page is the register's own."""
     try:
@@ -186,7 +180,7 @@ def problems() -> list[str]:
         shown = path.relative_to(SITE_ROOT).as_posix()
         if not path.is_file():
             found.append(f"{shown}: missing — run `python -m builder build`")
-        elif _read(path) != html:
+        elif read_exact(path) != html:
             found.append(f"{shown}: differs from what the register writes — run `build`")
     for path in sorted(GO_DIR.rglob("*")):
         if path.is_file() and path != REGISTER and path not in expected:

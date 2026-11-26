@@ -29,7 +29,7 @@ const REST = `(() => {
     && (!progress || progress.hidden);
 })()`;
 
-const page = await open({ port: job.debug ?? 9431, width: job.width, height: job.height });
+const page = await open({ width: job.width, height: job.height });
 try {
   await page.send("Emulation.setDeviceMetricsOverride", {
     width: job.width,

@@ -859,14 +859,7 @@ BANDS_MINED_COLUMNS = 5
 BANDS_SEATED_COLUMNS = 4
 BANDS_SEATED_ROWS = 2
 
-#: Two lines under a middle-band tile: which pair it belongs to, then how it was drawn.
-BANDS_LABEL_LINES = 2
-
-#: The room between two bands, with the hand-off arrow drawn down the middle of it.
-BANDS_HAND_OFF = 46
-
-#: How much bigger a band's title is than the label under a tile of that band, and the
-#: air between the title and the pictures it names.
+#: How much bigger a band's title is than the label under a tile of that band.
 #:
 #: **A title outranks a label** *(Matt, 2026-09-05)*: it says what the whole block under
 #: it is, where a label names one picture inside that block, so setting it smaller had the
@@ -876,7 +869,6 @@ BANDS_HAND_OFF = 46
 #: sheets on this page are still on `BAND_SIZE` and bringing them into line is a pass of
 #: its own.
 BANDS_TITLE_STEP = 4
-BANDS_TITLE_AIR = 6
 
 #: What each band is called, in the words the article already teaches. The first and the
 #: last are the names of the sections either side of this one, which is what makes the

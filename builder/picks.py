@@ -875,11 +875,6 @@ def family_formula(family: dict) -> str:
     return f"z{str(int(degree)).translate(SUPERSCRIPT)} + c"
 
 
-def family_with_formula(family: dict) -> str:
-    """A family as the article names it, and the iteration it runs, on one line."""
-    return f"{family_name(family)} — {family_formula(family)}"
-
-
 def panel_alt(pick: Pick) -> str:
     """What a reader's screen reader says about one panel of a split figure.
 

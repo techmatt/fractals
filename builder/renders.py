@@ -680,7 +680,7 @@ def judge_probabilities(
 
     Cached on what was asked, in this repository's own artifacts. The wallpaper
     project's committed scores are the check on this: re-reading a side it has already
-    published reproduces its numbers, which is what `builder judges --verify` does.
+    published reproduces its numbers.
     """
     wanted = [str(Path(picture)) for picture in pictures]
     root = Path(root) if root is not None else default_cache_root()

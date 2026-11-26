@@ -28,11 +28,9 @@ Everything drawn lands under ignored `artifacts/deep-pack/`.
 
 from __future__ import annotations
 
-import argparse
 import json
 import random
 import subprocess
-import sys
 import tempfile
 import time
 from pathlib import Path
@@ -88,9 +86,9 @@ RESOLUTION = (2560, 1440)
 SUPERSAMPLE = 3
 QUALITY = 95
 
-#: The probe's grid, and how long a run may be before it drops to 2x2 samples a pixel.
+#: The probe's grid. `probe` prints the full run's estimate at 3x3 and at 2x2 samples a
+#: pixel, and the operator picks `render`'s `--ss` from them.
 PROBE = (480, 270)
-BUDGET_HOURS = 6.0
 
 #: A degree said as a word: next door's `curation/packs.py` `DEGREE_WORD`.
 DEGREE_WORD = {3: "Cubic", 4: "Quartic", 5: "Quintic", 6: "Sextic"}
@@ -194,8 +192,7 @@ def write_members() -> list[str]:
         {"schema": 1, "kind": "member", **{k: m[k] for k in ("rank", "id", "from", "file", "link")}}
         for m in members
     ]
-    body = "\n".join(json.dumps(row, ensure_ascii=False) for row in rows) + "\n"
-    RECORD.write_text(body, encoding="utf-8", newline="\n")
+    _write(rows)
     said = [f"{len(members)} members, {len(dropped)} dropped"]
     said += [f"  {d['from']} is {d['same_as']}" for d in dropped]
     return said
@@ -203,8 +200,7 @@ def write_members() -> list[str]:
 
 def members() -> list[dict]:
     """The member rows of the committed record, in rank order."""
-    rows = [json.loads(line) for line in RECORD.read_text(encoding="utf-8").splitlines() if line]
-    return [row for row in rows if row["kind"] == "member"]
+    return [row for row in _rows() if row["kind"] == "member"]
 
 
 # ------------------------------------------------------------------------------ drawing
@@ -361,7 +357,7 @@ def previews(seed: int = SEED) -> list[str]:
     the site, and that rule cannot reach this pack: 27 of its 28 members are already a Deep
     zoom figure's panel or a Deep gallery tile (deep_pack_ckpt157), which is what they are.
     """
-    rows = [json.loads(line) for line in RECORD.read_text(encoding="utf-8").splitlines() if line]
+    rows = _rows()
     header, listed = rows[0], [row for row in rows if row["kind"] == "member"]
     work = WORK / "tiles"
     (WORK / "fields").mkdir(parents=True, exist_ok=True)
@@ -408,6 +404,11 @@ def previews(seed: int = SEED) -> list[str]:
         mark = "*" if one["id"] in picks else " "
         said.append(f" {mark} {one['from']:<10} {one['family']:<8} spread {one['spread']}")
     return said
+
+
+def _rows() -> list[dict]:
+    """Every row of the record, the header first."""
+    return [json.loads(line) for line in RECORD.read_text(encoding="utf-8").splitlines() if line]
 
 
 def _write(rows: list[dict]) -> None:
@@ -585,7 +586,7 @@ def build_zip(ss: int = SUPERSAMPLE) -> list[str]:
         )
     writing.replace(target)
     digest = hashlib.sha256(target.read_bytes()).hexdigest()
-    rows = [json.loads(line) for line in RECORD.read_text(encoding="utf-8").splitlines() if line]
+    rows = _rows()
     rows[0]["zip"] = {"file": ZIP, "bytes": target.stat().st_size, "sha256": digest}
     rows[0]["regime"] = {
         "resolution": list(RESOLUTION),
@@ -597,29 +598,24 @@ def build_zip(ss: int = SUPERSAMPLE) -> list[str]:
     return [f"{target}: {target.stat().st_size:,} bytes, sha256 {digest}"]
 
 
-def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="python -m builder deep-pack")
-    parser.add_argument(
-        "stage", choices=("members", "probe", "render", "previews", "verify", "zip")
-    )
-    parser.add_argument("--ss", type=int, default=SUPERSAMPLE)
-    options = parser.parse_args(argv)
+#: The stages `python -m builder deep-pack` runs, in the order the module docstring gives.
+STAGES = ("members", "probe", "render", "previews", "verify", "zip")
+
+
+def run(stage: str, ss: int = SUPERSAMPLE) -> int:
+    """One stage, at below-normal priority, its report printed."""
     below_normal()
-    if options.stage == "members":
+    if stage == "members":
         said = write_members()
-    elif options.stage == "previews":
+    elif stage == "previews":
         said = previews()
-    elif options.stage == "verify":
-        said = verify(options.ss)
-    elif options.stage == "zip":
-        said = build_zip(options.ss)
-    elif options.stage == "probe":
+    elif stage == "verify":
+        said = verify(ss)
+    elif stage == "zip":
+        said = build_zip(ss)
+    elif stage == "probe":
         said = probe()
     else:
-        said = render(options.ss)
+        said = render(ss)
     print("\n".join(said))
     return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())

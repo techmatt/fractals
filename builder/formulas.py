@@ -53,7 +53,8 @@ import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 
-from .paths import SITE_ROOT, site_pages
+from . import escape
+from .paths import SITE_ROOT, read_exact, shown, site_pages
 
 #: The two packages, pinned by version and by the registry's own integrity hash. The font
 #: is MathJax 4's default and its own package; `mathjax` depends on it by `^4.1.3`, and
@@ -138,7 +139,7 @@ def fetch() -> list[str]:
     for name, url, integrity in MATHJAX:
         target = MODULES / name
         if (target / "package.json").is_file():
-            lines.append(f"{name} {VERSION} is already at {_shown(target)}")
+            lines.append(f"{name} {VERSION} is already at {shown(target)}")
             continue
         with urllib.request.urlopen(url, timeout=120) as response:
             payload = response.read()
@@ -147,7 +148,7 @@ def fetch() -> list[str]:
         if actual != expected:
             raise FormulaError(f"{url}: {algorithm} is {actual}, and the pin says {expected}")
         _unpack(payload, target)
-        lines.append(f"fetched {name} {VERSION} into {_shown(target)}")
+        lines.append(f"fetched {name} {VERSION} into {shown(target)}")
     return lines
 
 
@@ -214,7 +215,7 @@ def _cleaned(tex: str, svg: str, speech: str) -> Typeset:
         reading = reading.replace(f" {wrong} ", f" {right} ")
     reading = reading.strip()
     kept = " ".join(f'{name}="{attributes[name]}"' for name in _KEPT)
-    head = f'<svg {kept} role="img" aria-label="{html.escape(reading)}">'
+    head = f'<svg {kept} role="img" aria-label="{escape.attribute(reading)}">'
     body = _DATA_ATTRIBUTE.sub("", svg[opening.end() :])
     return Typeset(svg=head + body, speech=reading)
 
@@ -223,7 +224,7 @@ def _cleaned(tex: str, svg: str, speech: str) -> Typeset:
 
 
 def pages_with_formulas() -> list[Path]:
-    return [path for path in site_pages() if 'class="formula"' in _read(path)]
+    return [path for path in site_pages() if 'class="formula"' in read_exact(path)]
 
 
 def block(indent: str, tex: str, svg: str) -> str:
@@ -245,7 +246,7 @@ def _drawn_for(paths: list[Path]) -> dict[str, Typeset]:
         {
             html.unescape(found.group("tex"))
             for path in paths
-            for found in FORMULA.finditer(_read(path))
+            for found in FORMULA.finditer(read_exact(path))
         }
     )
     return dict(zip(texs, typeset(texs), strict=True))
@@ -257,15 +258,15 @@ def write() -> list[str]:
     drawn = _drawn_for(paths)
     lines = []
     for path in paths:
-        before = _read(path)
+        before = read_exact(path)
         after = _expected(before, drawn)
         count = len(FORMULA.findall(before))
         if after == before:
-            lines.append(f"{_shown(path)}: {count} formula(s), unchanged")
+            lines.append(f"{shown(path)}: {count} formula(s), unchanged")
             continue
         with path.open("w", encoding="utf-8", newline="\n") as handle:
             handle.write(after)
-        lines.append(f"{_shown(path)}: {count} formula(s), rewritten")
+        lines.append(f"{shown(path)}: {count} formula(s), rewritten")
     for tex, typeset_ in drawn.items():
         lines.append(f"  {tex}\n    reads: {typeset_.speech}")
     return lines
@@ -277,23 +278,23 @@ def write() -> list[str]:
 def problems(with_renderer: bool) -> list[str]:
     """The shape of every formula block everywhere; its bytes, where MathJax is here."""
     found = []
-    paths = [path for path in site_pages() if "formula" in _read(path)]
+    paths = [path for path in site_pages() if "formula" in read_exact(path)]
     for path in paths:
-        page_html = _read(path)
+        page_html = read_exact(path)
         if _OLD_FORMULA.search(page_html):
             found.append(
-                f'{_shown(path)}: a <pre class="formula"> is left — a display formula is '
+                f'{shown(path)}: a <pre class="formula"> is left — a display formula is '
                 "TeX in a formula block now"
             )
         for match in FORMULA.finditer(page_html):
             found.extend(_shape(path, match))
     if with_renderer and not found:
-        with_blocks = [path for path in paths if FORMULA.search(_read(path))]
+        with_blocks = [path for path in paths if FORMULA.search(read_exact(path))]
         drawn = _drawn_for(with_blocks)
         for path in with_blocks:
-            if _expected(_read(path), drawn) != _read(path):
+            if _expected(read_exact(path), drawn) != read_exact(path):
                 found.append(
-                    f"{_shown(path)}: a formula is not what its TeX typesets to "
+                    f"{shown(path)}: a formula is not what its TeX typesets to "
                     "(python -m builder formulas)"
                 )
     return found
@@ -301,7 +302,7 @@ def problems(with_renderer: bool) -> list[str]:
 
 def _shape(path: Path, match: re.Match[str]) -> list[str]:
     tex, body = html.unescape(match.group("tex")), match.group("body")
-    where = f"{_shown(path)}: formula {tex!r}" if tex.strip() else f"{_shown(path)}: a formula"
+    where = f"{shown(path)}: formula {tex!r}" if tex.strip() else f"{shown(path)}: a formula"
     if not tex.strip():
         return [f"{where} has no TeX"]
     if body.count("<svg") != 1:
@@ -318,12 +319,3 @@ def _shape(path: Path, match: re.Match[str]) -> list[str]:
     if "currentColor" not in body:
         wrong.append("its <svg> is not drawn in currentColor")
     return [f"{where}: {problem}" for problem in wrong]
-
-
-def _read(path: Path) -> str:
-    with path.open(encoding="utf-8", newline="") as handle:
-        return handle.read()
-
-
-def _shown(path: Path) -> str:
-    return path.relative_to(SITE_ROOT).as_posix()

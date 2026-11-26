@@ -312,7 +312,9 @@ def write() -> list[str]:
         "wallpapers_commit": _header_commit(),
         "points": points,
     }
-    RECORD.write_text(json.dumps(record, indent=1, ensure_ascii=False) + LF, newline=LF)
+    RECORD.write_text(
+        json.dumps(record, indent=1, ensure_ascii=False) + LF, encoding="utf-8", newline=LF
+    )
 
     lines = [
         f"{tally['phoenix']} Phoenix seats, {tally['on_plane']} start at z_-1 = 0, "

@@ -1,28 +1,8 @@
 """The one entry point: `python -m builder <command>`.
 
-`build` writes, `check` only reads and exits 1 on a problem, `figure` prints markup to
-paste, `figures` lists what is still to make and lands a finished one, `locations` and
-`judges` draw the figures of those two sections, `picks` draws the figures whose panels
-are named by a tentative gallery's own IDs, `growth` and `pipeline` bake the figures that
-are charts of a measurement rather than pictures of anything, `diagram` draws the
-figures that are diagrams rather than renders (`diagrams.DIAGRAMS`), `serve` puts the
-committed tree on localhost for previewing, `prose` holds each page to the approved document it was
-placed from, and `review` builds the doc a page is marked up in and reads it back.
-`explorer` bakes the explorer page's palettes, wasm module and manifest. `seats` lands a
-published tentative record next door as a staged gallery — a record and its pictures, with
-no page made from them. `import` brings an image in as a web-res asset.
-`deep-gallery` bakes the Deep tab's gallery tiles from its register, and runs the stages
-that found the first set. `dive-candidates` lands deep candidates by the Dive block's own
-rules and lays them out as a numbered sheet to pick a figure from; `random-dives` lands the
-same way, in New coloring, into the Deep tab's Random dives record and its tiles.
-`deep-pack` renders the Wallpaper packs page's deep gallery at full size and zips it.
-`tools-and-data` writes the two files the Tools and data page offers.
-`prose`, `review`, `explorer`, `locations`, `judges`, `picks`, `start`, `seats`, `phoenix-points`,
-`deep-gallery`, `growth`, `pipeline` and `tools-and-data` are the
-commands that reach outside the repository — for a full-size original, for the approved
-prose, for the Drive-synced review folder, and for the engine, the records and the
-judges next door.
-Run `python -m builder --help` for the list.
+`build` writes, `check` only reads and exits 1 on a problem; every command is listed below,
+and `builder/README.md`'s *Commands* says what each one does. Any command that draws or
+bakes needs the fractal-wallpapers checkout beside this one.
 """
 
 import argparse
@@ -49,6 +29,7 @@ from . import (
 from . import curation as curation_module
 from . import deep_figures as deep_figures_module
 from . import deep_gallery as deep_gallery_module
+from . import deep_pack as deep_pack_module
 from . import dive_candidates as dive_candidates_module
 from . import explorer as explorer_module
 from . import growth as growth_module
@@ -95,7 +76,13 @@ def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="python -m builder", description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
 
-    built = commands.add_parser("build", help="regenerate gallery pages and thumbnails")
+    built = commands.add_parser(
+        "build",
+        help=(
+            "generated pages, thumbnails, and every page's rail, site bar, icon links, head "
+            "block, and go/ redirects"
+        ),
+    )
     built.add_argument(
         "--no-thumbnails",
         action="store_true",
@@ -563,11 +550,8 @@ def _parser() -> argparse.ArgumentParser:
         "--replace", action="store_true", help="land a redraw of a figure already on the page"
     )
 
-    mapped = commands.add_parser("atlas", help="report the atlas record, or draw its figure")
-    mapped.add_argument(
-        "--figure",
-        choices=sorted(atlas_module.MAKERS),
-        help="compose that figure from the record and land it",
+    mapped = commands.add_parser(
+        "atlas", help="report the atlas record, or rebuild its plates and slot pictures"
     )
     mapped.add_argument(
         "--make",
@@ -689,10 +673,10 @@ def _parser() -> argparse.ArgumentParser:
         "deep-pack",
         help="the Wallpaper packs page's deep gallery: members, renders, previews, and zip",
     )
+    deep_pack.add_argument("stage", choices=deep_pack_module.STAGES)
     deep_pack.add_argument(
-        "stage", choices=["members", "probe", "render", "previews", "verify", "zip"]
+        "--ss", type=int, default=deep_pack_module.SUPERSAMPLE, help="samples a pixel each way"
     )
-    deep_pack.add_argument("--ss", type=int, default=3, help="samples a pixel each way")
 
     random_dives = commands.add_parser(
         "random-dives",
@@ -1727,7 +1711,7 @@ def _do_review_read(page: str, *, full: bool) -> int:
 
 
 def _do_atlas(options: argparse.Namespace) -> int:
-    """What the atlas record holds — or, with a flag, the figure it is drawn into."""
+    """What the atlas record holds, after any rebuild its flags ask for."""
     if options.make:
         for line in atlas_module.make(options.record or seats_module.STAMP, options.plane):
             print(line)
@@ -1747,9 +1731,6 @@ def _do_atlas(options: argparse.Namespace) -> int:
             print(line)
     if options.plates or options.dive_plates:
         for line in atlas_module.dive_plates():
-            print(line)
-    if options.figure:
-        for line in atlas_module.draw(options.figure):
             print(line)
     for line in atlas_module.summary():
         print(line)
@@ -1887,6 +1868,66 @@ def _do_walk(options: argparse.Namespace) -> int:
     return 0
 
 
+def _handled_errors() -> tuple[type[Exception], ...]:
+    """Every error class a command reports as `error: …` and exit 1, not as a traceback.
+
+    Evaluated only once an error is propagating, so the modules a command imports lazily
+    are imported here only then.
+    """
+    from . import (
+        deep_judges,
+        go,
+        recipes,
+        run_it_yourself,
+        tools_atlas,
+        tools_judges,
+        tools_labels,
+        tools_palettes,
+    )
+
+    return (
+        records.RecordError,
+        atlas_module.AtlasError,
+        images.ImageError,
+        explorer_module.ExplorerError,
+        renders.EngineError,
+        growth_module.GrowthError,
+        picks_module.PickError,
+        icons.IconError,
+        picker_module.PickerError,
+        seats_module.SeatError,
+        phoenix_points_module.PhoenixPointsError,
+        deep_gallery_module.DeepGalleryError,
+        dive_candidates_module.DiveCandidatesError,
+        links.LinkError,
+        pool_module.PoolError,
+        curation_module.CurationError,
+        prose_module.ProseError,
+        formulas.FormulaError,
+        review_module.ReviewError,
+        walk_module.WalkError,
+        start_module.StartError,
+        packs_module.PacksError,
+        votes_module.VotesError,
+        tools_and_data_module.ToolsDataError,
+        deep_figures_module.DeepFigureError,
+        deep_judges.DeepJudgesError,
+        deep_pack_module.DeepPackError,
+        families.FamilyError,
+        front.FrontError,
+        overview.OverviewError,
+        palettes_module.PaletteError,
+        recipes.RecipeError,
+        run_it_yourself.RunItYourselfError,
+        tools_atlas.ToolsAtlasError,
+        tools_judges.JudgesError,
+        tools_labels.LabelsError,
+        tools_palettes.ToolsPalettesError,
+        go.GoError,
+        OSError,
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     _widen_output()
     options = _parser().parse_args(argv)
@@ -1968,9 +2009,7 @@ def main(argv: list[str] | None = None) -> int:
                 print(line)
             return 0
         if options.command == "deep-pack":
-            from . import deep_pack
-
-            return deep_pack.main([options.stage, "--ss", str(options.ss)])
+            return deep_pack_module.run(options.stage, options.ss)
         if options.command == "random-dives":
             for line in random_dives_module.main(options):
                 print(line)
@@ -1986,33 +2025,7 @@ def main(argv: list[str] | None = None) -> int:
         if options.command == "walk":
             return _do_walk(options)
         return _do_import(options)
-    except (
-        records.RecordError,
-        atlas_module.AtlasError,
-        images.ImageError,
-        explorer_module.ExplorerError,
-        renders.EngineError,
-        growth_module.GrowthError,
-        picks_module.PickError,
-        icons.IconError,
-        picker_module.PickerError,
-        seats_module.SeatError,
-        phoenix_points_module.PhoenixPointsError,
-        deep_gallery_module.DeepGalleryError,
-        dive_candidates_module.DiveCandidatesError,
-        links.LinkError,
-        pool_module.PoolError,
-        curation_module.CurationError,
-        prose_module.ProseError,
-        formulas.FormulaError,
-        review_module.ReviewError,
-        walk_module.WalkError,
-        start_module.StartError,
-        packs_module.PacksError,
-        votes_module.VotesError,
-        tools_and_data_module.ToolsDataError,
-        OSError,
-    ) as error:
+    except _handled_errors() as error:
         print(f"error: {error}", file=sys.stderr)
         return 1
 

@@ -63,7 +63,6 @@ LEDGER = "demo_neighborhood"
 #: The walk's own presentation geometry: what the gates read and the judge scored. A
 #: panel that claims to show "the frame as the walk saw it" is rendered at exactly this.
 NODE_TILE = (384, 216)
-NODE_SUPERSAMPLE = 1
 
 #: The house sheet width. Every figure on the page is this wide, so a reader scrolling
 #: the section sees one column rather than a ragged edge.
@@ -606,13 +605,6 @@ def _paste_marked(sheet, picture, layer, origin: tuple[int, int]) -> None:
     picture = picture.convert("RGBA")
     picture.alpha_composite(layer)
     sheet.paste(picture.convert("RGB"), origin)
-
-
-def _tag(draw, x: float, y: float, text: str, colour) -> None:
-    """A number on a marked box, dark-under-light like the box itself."""
-    face = font(15)
-    for offset, ink in (((1, 1), (0, 0, 0)), ((0, 0), colour)):
-        draw.text((x + offset[0], y + offset[1]), text, fill=ink, font=face)
 
 
 def _family_name(family: dict) -> str:
@@ -1165,13 +1157,6 @@ def _store_provenance(order: str, picks, rows, size, with_score: bool) -> list[s
 BOUNDARY_SEED = 11
 BOUNDARY_KEEP = 12
 BOUNDARY_COLUMNS = 4
-
-#: What each gate refuses, said the way the prose says it.
-FATES = {
-    "flat": "already escaped to blandness",
-    "interior_cap": "mostly interior",
-    "occupancy_floor": "too little of the frame carrying detail",
-}
 
 
 def random_samples() -> Split:

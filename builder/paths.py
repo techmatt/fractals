@@ -29,10 +29,21 @@ UNSERVED_DIRS = frozenset(
 )
 
 # Top-level trees that are ignored scratch, skipped only at the root because the name is
-# common: `out/` is a session's scratch (ignored in `.git/info/exclude`; a clone of this
-# repository there once read as 89 problems), and `experiments/` holds conductor items'
-# results folders (ignored in `.gitignore`).
+# common: `out/` is a session's scratch (a clone of this repository there once read as 89
+# problems), and `experiments/` holds conductor items' results folders; `.gitignore`
+# ignores both.
 UNSERVED_ROOTS = frozenset({"out", "experiments"})
+
+
+def shown(path: Path) -> str:
+    """A path under the checkout as a report names it: root-relative, forward slashes."""
+    return path.relative_to(SITE_ROOT).as_posix()
+
+
+def read_exact(path: Path) -> str:
+    """A text file's contents with its line endings untranslated, so a CRLF shows."""
+    with path.open(encoding="utf-8", newline="") as handle:
+        return handle.read()
 
 
 def carrier_path(page: str) -> Path:

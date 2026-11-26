@@ -74,15 +74,6 @@ def place_of_viewport(viewport: dict) -> tuple[str, str]:
     return place(viewport["center_re"], viewport["center_im"], viewport["width"])
 
 
-def family_word(family: dict) -> str:
-    """What the prose would call this family, for the report rather than the match."""
-    kind = str(family.get("kind") or "?")
-    degree = family.get("degree")
-    if kind in ("julia", "multibrot") and degree:
-        return f"{kind} d{degree}"
-    return kind
-
-
 # --------------------------------------------------------------------------- the stores
 
 

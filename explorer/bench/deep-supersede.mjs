@@ -194,7 +194,7 @@ const SCENARIOS = {
 
 const wanted = process.argv.slice(2);
 const names = wanted.length ? wanted : Object.keys(SCENARIOS);
-const page = await open({ port: 9431, width: 1400, height: 900 });
+const page = await open({ width: 1400, height: 900 });
 const results = {};
 let failed = false;
 try {

@@ -28,7 +28,7 @@ const search = option("--query");
 const PATIENCE = 1000 * Number(option("--patience") ?? 3600);
 
 const url = `http://localhost:${port}/explorer/bench/gpu-probe/kernel-check.html${search ? `?${search}` : ""}`;
-const browser = await open({ port: 9432, headless: !args.includes("--headed") });
+const browser = await open({ headless: !args.includes("--headed") });
 let ok = false;
 try {
   await browser.send("Page.navigate", { url });

@@ -3,9 +3,10 @@
     python explorer/bench/custom-compare.py <explorer dir> <native dir> [--png]
 
 `<explorer dir>` holds `custom-parity.mjs`'s `<id>.rgba` and `results.jsonl` (or, with
-`--png`, the explorer's own downloads, `<id>.png`); `<native dir>` holds the native
-engine's `<id>.native.png` at the same size, as the sibling's `style wasm-parity` writes
-them (`artifacts/style-wasm/wasm-parity/`). The tolerance is the one item 026 set: on
+`--png`, `custom-browser.mjs`'s downloads, `<id>.png`, and its `browser.jsonl`);
+`<native dir>` holds the native engine's `<id>.native.png` at the same size, as
+`custom-natives.mjs` draws them (or, against `--stack keep`, the sibling's `style
+wasm-parity`, in its `artifacts/style-wasm/wasm-parity/`). The tolerance is the one item 026 set: on
 Windows, identical bytes; elsewhere at most 2 steps on 0.5% of pixels, which nobody has
 measured. Prints one line per example and exits 1 on any that misses.
 """
@@ -37,16 +38,25 @@ def compare(native: bytes, rgb: bytes) -> tuple[int, int]:
 def main(argv: list[str]) -> int:
     ours, theirs = Path(argv[0]), Path(argv[1])
     png = "--png" in argv
-    if png:
+    record = ours / ("browser.jsonl" if png else "results.jsonl")
+    missed = refused = 0
+    if png and not record.exists():
         ids = sorted(path.stem for path in ours.glob("*__*.png"))
     else:
-        rows = [json.loads(line) for line in (ours / "results.jsonl").read_text().splitlines()]
-        # `custom-parity.mjs` appends, so a rerun into one directory repeats an id.
-        ids = sorted({row["id"] for row in rows if row["ok"]})
-        for row in rows:
+        # Both benches append, so a rerun into one directory repeats an id: its last row is
+        # the one that counts. A refused row is a miss, and so, with `--png`, is a download
+        # that never landed; a button the page rightly does not offer is skipped.
+        last = {}
+        for line in record.read_text().splitlines():
+            if line.strip():
+                row = json.loads(line)
+                last[row["id"]] = row
+        ids = sorted(ident for ident, row in last.items() if row["ok"] and "skipped" not in row)
+        for ident, row in sorted(last.items()):
             if not row["ok"]:
-                print(f"{row['id']:<24} REFUSED {row['why']}")
-    missed = 0
+                print(f"{ident:<24} REFUSED {row.get('why', 'no download landed')}  MISS")
+                refused += 1
+        missed = refused
     for ident in ids:
         # A missing native is a miss said by name, not a traceback: an id a rerun left from an
         # older bundle, an Example no reference was drawn for, or a keep no longer offered.
@@ -78,7 +88,8 @@ def main(argv: list[str]) -> int:
         )
         missed += not within
         print(f"{ident:<24} {verdict}{'' if within else '  MISS'}")
-    print(f"{len(ids) - missed} of {len(ids)} within item 026's tolerance")
+    total = len(ids) + refused
+    print(f"{total - missed} of {total} within item 026's tolerance")
     return 1 if missed else 0
 
 

@@ -72,7 +72,6 @@ ORBIT_SIZE = (960, 540)
 ORBIT_SCALE = 2
 PLANE_EXTENT = 2.45
 CHART_CEILING = 2.5
-PALETTE_COLORS = 64
 
 
 def _orbits() -> list[list[complex]]:

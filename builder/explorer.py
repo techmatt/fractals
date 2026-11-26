@@ -124,10 +124,8 @@ PALETTES_BLOB = EXPLORER_DIR / "palettes.bin"
 BLOB_LAYOUT = "planar-delta"
 #: One row of gradient per map, in index order — a picture of what the blob holds, for a
 #: person rather than for the page. Nothing serves it, so it is written under the ignored
-#: `artifacts/` rather than beside the page, where it sat untracked until cleanup_ckpt163;
-#: the bake removes a copy still left at the old address.
+#: `artifacts/` rather than beside the page, where it sat untracked until cleanup_ckpt163.
 PALETTES_SWATCH = SITE_ROOT / "artifacts" / "explorer" / "palettes-swatch.png"
-_OLD_PALETTES_SWATCH = EXPLORER_DIR / "palettes-swatch.png"
 CATALOG_MODULE = EXPLORER_DIR / "catalog.js"
 WASM_MODULE = EXPLORER_DIR / "engine.wasm"
 MANIFEST = EXPLORER_DIR / "engine.manifest.json"
@@ -966,7 +964,6 @@ def write_palettes() -> Baked:
     made = palettes_module_text()
     PALETTES_MODULE.write_text(made.text, encoding="utf-8", newline="\n")
     PALETTES_BLOB.write_bytes(made.blob)
-    _OLD_PALETTES_SWATCH.unlink(missing_ok=True)
     # Pillow is the one thing here a machine may not have, and the swatch is the one
     # output nothing reads — so its absence is a missing picture and never a failed bake.
     with contextlib.suppress(ImportError):

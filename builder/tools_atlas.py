@@ -16,9 +16,7 @@ geometry of `.mark::before` — a 9 px dot, a 1 px light ring at 72 % white, and
 halo 2 px out at 55 % black. They are drawn at the size they have on a plate the width of
 `frame.js`'s `LEAST`, the narrowest plate the studio draws, because a panel here is shown
 at about that width; so a panel reads as the tab does at its narrowest, dots overlapping
-where the tab's do. `builder.atlas.draw`, the retired `atlas-places` still, drew a darker
-ring at a fraction of the plate's own width; the frame has moved on since, and this follows
-the frame.
+where the tab's do.
 
 **The link is to the Atlas tab, not to the plate**, because a plate is drawn in
 `atlas_grey`, a ramp the explorer does not carry, and a view of the plane in the explorer's

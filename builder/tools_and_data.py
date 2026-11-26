@@ -30,12 +30,11 @@ reads. It is rerun after `seats` re-lands the gallery, or when the library chang
 from __future__ import annotations
 
 import json
-from pathlib import Path
 from urllib.parse import parse_qsl
 
 from . import palettes, picks, renders, seats
 from .pages import SITE_URL
-from .paths import SITE_ROOT
+from .paths import SITE_ROOT, shown
 
 #: Where the page and its two files live.
 DIRECTORY = SITE_ROOT / "tools-and-data"
@@ -225,8 +224,8 @@ def write() -> list[str]:
     with PALETTES.open("w", encoding="utf-8", newline=LF) as handle:
         handle.write(_palette_text(held))
     return [
-        f"{_shown(LOCATIONS)}: {len(rows):,} seats, {LOCATIONS.stat().st_size:,} bytes",
-        f"{_shown(PALETTES)}: {len(held['palettes'])} palettes, {PALETTES.stat().st_size:,} bytes",
+        f"{shown(LOCATIONS)}: {len(rows):,} seats, {LOCATIONS.stat().st_size:,} bytes",
+        f"{shown(PALETTES)}: {len(held['palettes'])} palettes, {PALETTES.stat().st_size:,} bytes",
     ]
 
 
@@ -245,7 +244,3 @@ def _palette_text(held: dict) -> str:
     if json.loads(text) != held:
         raise ToolsDataError("the palettes file does not read back as what was written")
     return text
-
-
-def _shown(path: Path) -> str:
-    return path.relative_to(SITE_ROOT).as_posix()

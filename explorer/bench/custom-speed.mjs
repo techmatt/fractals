@@ -33,7 +33,7 @@ const switching = !args.includes("--no-switch");
 const downloading = !args.includes("--no-download");
 const verifying = args.includes("--verify");
 
-const browser = await open({ port: Number(option("--port", "9434")), width: 1600, height: 1000 });
+const browser = await open({ port: Number(option("--port", "0")), width: 1600, height: 1000 });
 if (workers > 0) {
   await browser.send("Page.addScriptToEvaluateOnNewDocument", { source: `globalThis.__customWorkers = ${workers};` });
 }

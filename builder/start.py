@@ -120,11 +120,10 @@ PINK_DRAW = (
     "and the list holds more of them than the figure draws.",
 )
 
-#: Once the list holds more picks than cells, Matt chooses twelve *(pink_picks_ckpt157)*:
-#: the registry row's recipe names them in `chosen`, each by `pick_id` of its link, and the
-#: figure draws them in list order shuffled by `seed`. A pick is named by its own link
-#: rather than by its place in the list, so nothing appended later can move a choice.
-PINK_ORDER_SEED = 20260930
+# Once the list holds more picks than cells, Matt chooses twelve *(pink_picks_ckpt157)*:
+# the registry row's recipe names them in `chosen`, each by `pick_id` of its link, and the
+# figure draws them in list order shuffled by `seed`. A pick is named by its own link
+# rather than by its place in the list, so nothing appended later can move a choice.
 
 
 def pick_id(link: str) -> str:

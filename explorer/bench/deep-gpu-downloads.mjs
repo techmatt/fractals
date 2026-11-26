@@ -139,7 +139,7 @@ function decodePng(bytes) {
 }
 
 const downloads = mkdtempSync(join(tmpdir(), "deep-downloads-"));
-const page = await open({ port: 9700 + Math.floor(Math.random() * 200), width: 1280, height: 800 });
+const page = await open({ width: 1280, height: 800 });
 await page.send("Page.addScriptToEvaluateOnNewDocument", { source: INSTRUMENT });
 await page.send("Browser.setDownloadBehavior", { behavior: "allow", downloadPath: downloads, eventsEnabled: true });
 

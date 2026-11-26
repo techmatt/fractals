@@ -36,7 +36,6 @@ const PATIENCE = 1000 * Number(option("--patience") ?? 5400);
 
 const url = `http://localhost:${port}/explorer/bench/gpu-probe/index.html${search ? `?${search}` : ""}`;
 const browser = await open({
-  port: 9431,
   headless,
   flags: ["--disable-dawn-features=timestamp_quantization"],
 });

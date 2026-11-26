@@ -6113,6 +6113,40 @@ modePicker.addEventListener("change", () => {
   draw();
 });
 
+// ------------------------------------------------------------------- the custom modes
+
+/** The custom modes' record, fetched once: `null` where it could not be read. */
+let customsLoading = null;
+function loadCustoms() {
+  customsLoading ??= json(new URL("./custom-modes.json", import.meta.url));
+  return customsLoading;
+}
+
+/** The custom modes installed, from the record: their select entries, controls, and the
+ *  link contract's `customs`, so a link naming one reads from then on. */
+function installCustoms(published) {
+  if (customs !== null || !published) return;
+  contract.customs = contractOf(published);
+  customs = customUi.install(published, {
+    view: () => view,
+    setCustom,
+    openLink: (query) => openLink(query),
+    locked,
+    busy: () => busy,
+    stopsOf,
+    elements: customElements,
+  });
+  // At boot, for a link naming a mode, this runs before there is a view: the boot's own
+  // first `rebuild` lists the entries then.
+  if (view !== null) syncModes();
+}
+
+/** Whether the custom modes are installed, once their record has been read. */
+async function customsReady() {
+  if (customs === null) installCustoms(await loadCustoms());
+  return customs !== null;
+}
+
 /** The custom mode the reader was last in, which choosing the entry again returns to. */
 let lastCustom = null;
 
@@ -6716,8 +6750,8 @@ async function main() {
     gallery.load(import.meta.url).catch((error) => error),
     json(new URL("./palette-names.json", import.meta.url)),
     json(new URL("./popular.json", import.meta.url)),
-    // **The custom modes wait for the first frame** (008_custom_tiers): the record is 790 KB
-    // (74 KB on the wire) since the lab tier, and only a link naming one needs it before the
+    // **The custom modes wait for the first frame** (008_custom_tiers): the record has run to
+    // about 1 MB since the lab tier (far less compressed on the wire), and only a link naming one needs it before the
     // first frame, since the link is read against it. Otherwise it is fetched once the first
     // frame is under way, and the select gains its Custom entries when it lands. The module
     // itself waits until a custom mode first draws.
@@ -7105,39 +7139,6 @@ async function main() {
     });
   // The custom modes' record, now the first frame is asked for (see `loadCustoms`).
   if (customs === null) customsReady();
-}
-
-/** The custom modes' record, fetched once: `null` where it could not be read. */
-let customsLoading = null;
-function loadCustoms() {
-  customsLoading ??= json(new URL("./custom-modes.json", import.meta.url));
-  return customsLoading;
-}
-
-/** The custom modes installed, from the record: their select entries, controls, and the
- *  link contract's `customs`, so a link naming one reads from then on. */
-function installCustoms(published) {
-  if (customs !== null || !published) return;
-  contract.customs = contractOf(published);
-  customs = customUi.install(published, {
-    view: () => view,
-    setCustom,
-    openLink: (query) => openLink(query),
-    locked,
-    busy: () => busy,
-    say,
-    stopsOf,
-    elements: customElements,
-  });
-  // At boot, for a link naming a mode, this runs before there is a view: the boot's own
-  // first `rebuild` lists the entries then.
-  if (view !== null) syncModes();
-}
-
-/** Whether the custom modes are installed, once their record has been read. */
-async function customsReady() {
-  if (customs === null) installCustoms(await loadCustoms());
-  return customs !== null;
 }
 
 main().catch((error) => {

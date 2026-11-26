@@ -8,11 +8,7 @@ over unchanged inputs reports nothing.
 from pathlib import Path
 
 from . import galleries, go, heads, icons, images, pages, sections
-from .paths import SITE_ROOT
-
-
-def _shown(path: Path) -> str:
-    return path.relative_to(SITE_ROOT).as_posix()
+from .paths import shown
 
 
 def _write_page(path: Path, html: str) -> str | None:
@@ -23,7 +19,7 @@ def _write_page(path: Path, html: str) -> str | None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="\n") as handle:
         handle.write(html)
-    return _shown(path)
+    return shown(path)
 
 
 def _thumbs(gallery: galleries.Gallery) -> list[str]:
@@ -33,7 +29,7 @@ def _thumbs(gallery: galleries.Gallery) -> list[str]:
         source = gallery.directory / image.file
         thumb = gallery.thumbs_directory / image.file
         if not source.is_file():
-            raise images.ImageError(f"{_shown(gallery.metadata_path)} names a missing {image.file}")
+            raise images.ImageError(f"{shown(gallery.metadata_path)} names a missing {image.file}")
         stale = (
             not thumb.is_file()
             or images.dimensions(thumb) != image.thumb_size
@@ -41,12 +37,12 @@ def _thumbs(gallery: galleries.Gallery) -> list[str]:
         )
         if stale:
             images.write_thumb(source, thumb, image.thumb_size)
-            written.append(_shown(thumb))
+            written.append(shown(thumb))
     if gallery.thumbs_directory.is_dir():
         for path in sorted(gallery.thumbs_directory.iterdir()):
             if path.name not in named:
                 path.unlink()
-                written.append(f"{_shown(path)} (removed)")
+                written.append(f"{shown(path)} (removed)")
     return written
 
 

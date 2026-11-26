@@ -60,7 +60,7 @@ function instance() {
   const text = (pointer) => JSON.parse(plain(pointer));
   /** `name(handle, ptr, len)` over `raw` copied in, its JSON answer out. */
   const send = (name, handle, raw) => {
-    const pointer = wasm.alloc(raw.length);
+    const pointer = wasm.alloc(raw.length) >>> 0;
     new Uint8Array(wasm.memory.buffer, pointer, raw.length).set(raw);
     const answer = handle === null ? text(wasm[name](pointer, raw.length)) : text(wasm[name](handle, pointer, raw.length));
     wasm.dealloc(pointer, raw.length);

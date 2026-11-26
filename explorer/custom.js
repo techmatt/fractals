@@ -79,9 +79,8 @@ export function gradientOf(map) {
 /**
  * Install the controls. `host` is the page:
  *
- *   view(), setCustom(custom|null, {draw}), openLink(query), locked(), busy(), palette(),
- *   say(text), stopsOf(name), elements: {bar, picker, matched, swatches, autotone, reset,
- *   knobs, examples, note}
+ *   view(), setCustom(custom|null), openLink(query), locked(), busy(), stopsOf(name),
+ *   elements: {bar, picker, matched, swatches, autotone, reset, knobs, examples, note}
  */
 export function install(bundle, host) {
   const modes = modesOf(bundle);
@@ -410,7 +409,6 @@ export function install(bundle, host) {
     optionOf,
     sync,
     cycle,
-    paletteName,
     nameOf,
     request,
     started,

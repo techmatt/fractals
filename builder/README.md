@@ -17,16 +17,18 @@ recipes [--fill]     what article/figure-recipes.jsonl holds; land missing seat 
 links [--write]      derive explorer/links.jsonl from every picture's provenance
 locations|judges|palettes|pool|picks|curation|start|front|tools|families|fundamentals|
 overview|deep [ID ...] [--place] [--replace]   draw a page's figures
+deep --judge-scores DIR   promote the deep judges' study into builder/data/
 palettes --library   refresh palettes/library.jsonl, land missing strips
 picks --narrow [ID]  cut and land a sheet's narrow rendition
 growth|pipeline [--stamp S]   charts off the pool study (builder/pool_study.py)
 diagram ID           a figure that is not a render (diagrams.DIAGRAMS)
 screenshot ID        a piece of the explorer, over CDP (screenshots.MAKERS)
 icons                record the icon recipe, draw the icon set
-atlas [--ingest]     the atlas record, its figure, or its slot pictures
+atlas [--ingest]     the atlas record, its plates, or its slot pictures
 seats [--records-only]   land the gallery and its collections as one staged gallery
 phoenix-points       the Phoenix tab's starting points, tiles, and plane frames
 explorer [--palettes-only|--perturb|--style|--random]   bake the explorer's modules
+explorer --roster R|--families|--popular|--names   re-read a record the explorer carries
 walk                 place the Walk tab's render judge and ORT runtime
 packs [--import|stage]   the Wallpaper packs record
 votes ingest|status|browse|export-order   friends' picks
@@ -42,18 +44,31 @@ import SRC DEST [--crop l,t,r,b] [--max-width N]   an image in as web-res
 ```
 
 Each is `python -m builder <line>`; `--help` has the flags. Install with `python -m pip
-install -r builder/requirements.txt`. The wallpapers checkout comes from
-`FRACTAL_WALLPAPERS_ROOT` or an untracked `local.toml`; `renders.py` alone shells its
-engine. Makers and the video tools are no part of `build` or `check`, since text
-rasterizes through the machine's fonts.
+install -r builder/requirements.txt`. `renders.py` alone shells the wallpapers engine.
+Makers and the video tools are no part of `build` or `check`, since text rasterizes
+through the machine's fonts.
+
+**This machine's paths** are keys of an untracked `local.toml` at the root, each with an
+environment variable that wins over it (set empty, it says "none here"; `settings.py`):
+
+| key | variable | names | read by |
+|---|---|---|---|
+| `wallpapers_root` | `FRACTAL_WALLPAPERS_ROOT` | the wallpapers checkout | `check`'s next-door halves, makers, `explorer` |
+| `render_cache` | `FRACTAL_WEBSITE_RENDER_CACHE` | the render cache (default `artifacts/`) | `renders.py` |
+| `drive_sync_root` | `FRACTAL_DRIVE_SYNC_ROOT` | the Drive-synced working folder | `prose`, `review`, `votes` |
+| `full_set_root` | `FRACTAL_WEBSITE_FULL_SET` | the full-size wallpaper set | `packs` |
+| `packs_root` | `FRACTAL_WEBSITE_PACKS` | the built packs | `packs` |
+
+The wallpapers project's own `hot_root` and `archive_root` are read from its checkout's
+`local.toml`, never copied here (`renders.Tiers`).
 
 ## What `check` checks
 
 `builder/checks.py`'s module docstring lists every check. It runs on a bare clone: what a
 check cannot do without the wallpapers checkout, Pillow, node, or fetched MathJax is a
 **named skip**, counted in the exit summary, never a failure or a silent pass. The checkout
-is asked by `library`, `bake`, `seats`, `coloring`, half of `figures`, and half of
-`stamps`. **A green CI is not a green tree**: run `check` here and read the skip count.
+is asked by `library`, `bake`, `seats`, `coloring`, and the next-door halves of `figures`,
+`stamps`, `readmes`, `repeats`, and `packs`. **A green CI is not a green tree**: run `check` here and read the skip count.
 
 A missing `candidate` key while a merge, leg, or solve runs next door is usually a streamed
 read of a ledger being rewritten; rerun once it finishes. Tolerances live in code
@@ -76,7 +91,8 @@ the publishable ones, `galleries.staged()` the rest. Staged rows may omit `title
 Gallery and library assets are tracked (Matt); a rewrite is a diff under the 20 MB gate:
 `assets/images/galleries/seated-candidates/*.webp` (`seats`), `explorer/palettes.bin`
 (`explorer --palettes-only`; the explorer is blank without it),
-`assets/images/atlas/<plane>-*.webp` (`atlas --ingest`), `explorer/deep-gallery/` and
+`assets/images/atlas/<plane>-*.webp` (`atlas --ingest`), `assets/images/atlas/miniature-*.png`
+(`atlas --miniatures`), `explorer/dive-plates/` (`atlas --dive-plates`), `explorer/deep-gallery/` and
 `explorer/random-dives/` tiles, `explorer/phoenix-points/` (`phoenix-points`; its rule,
 `OVERRIDES`, and `STYLE` are in `phoenix_points.py`), and `explorer/judges/` (`walk`). The
 palette swatch goes to ignored `artifacts/explorer/`.

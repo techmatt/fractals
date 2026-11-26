@@ -2094,56 +2094,11 @@ def _miniatured(partition: Partition) -> list[str]:
     return [f"{partition.name}: no {path.name}; run `python -m builder atlas --miniatures`"]
 
 
-# ---------------------------------------------------------------------------- the maker
+# ---------------------------------------------------------------------------- the marks
 
-#: The figures this module draws, by figure id. A maker addresses a location by its
-#: record: the plate is the picture the maker next door landed and the dots are the
-#: record's own `px`/`py`, so nothing here is re-derived at draw time and a rerun cannot
-#: move a dot that nobody asked to move.
-MAKERS = {"atlas-places": "the plate with every kept place marked on it"}
-
-#: The figure's marks, as a share of the plate's width. The page draws CSS dots at a
-#: fixed pixel size over a plate that scales; a figure is one fixed size, so the same
-#: mark is written as a fraction and comes out the same relative size it has on screen.
-MARK_RADIUS = 0.0039
-MARK_RING = 0.0012
-
-#: What each kind of place is drawn in. The page's two tokens, transcribed the way
-#: `builder/theme.py` transcribes the well colors and for the same reason: Pillow cannot
-#: read CSS. `check`'s `theme` holds those five; these two are the atlas's own and are
-#: held by nothing but this comment, because a figure drawn a shade off its page is not a
-#: failure a reader could be misled by.
+#: What each kind of place is drawn in, for `builder/tools_atlas.py`'s panels. The page's
+#: two tokens (`atlas/frame.css`), transcribed the way `builder/theme.py` transcribes the
+#: well colors and for the same reason: Pillow cannot read CSS. `check`'s `theme` holds
+#: those five; these two are the atlas's own and are held by nothing but this comment,
+#: because a panel drawn a shade off its page is not a failure a reader could be misled by.
 MARK_COLOR = {"mandelbrot": (77, 141, 240), "julia": (242, 88, 76)}
-
-
-def draw(identifier: str) -> list[str]:
-    """Draw one of this module's figures and land it where its registry row says."""
-    if identifier not in MAKERS:
-        raise AtlasError(f"{identifier}: not a figure this module draws")
-    from PIL import Image, ImageDraw
-
-    from . import figures
-
-    atlas = load_all()
-    partition = atlas.partitions[0]
-    figure = figures.load_all()[identifier]
-
-    with Image.open(partition.plate.path) as plate:
-        sheet = plate.convert("RGB")
-    canvas = ImageDraw.Draw(sheet)
-    radius = MARK_RADIUS * sheet.width
-    ring = MARK_RING * sheet.width
-    for dot in partition.dots:
-        x = dot.px / partition.plate.width * sheet.width
-        y = dot.py / partition.plate.height * sheet.height
-        canvas.ellipse(
-            (x - radius - ring, y - radius - ring, x + radius + ring, y + radius + ring),
-            fill=(0, 0, 0),
-        )
-        canvas.ellipse((x - radius, y - radius, x + radius, y + radius), fill=MARK_COLOR[dot.plane])
-
-    width, height = images.land(sheet, figure.path)
-    return [
-        f"{figure.file}: {width}x{height}, {len(partition.dots)} marks "
-        f"({figure.path.stat().st_size / 1e3:.0f} kB)"
-    ]

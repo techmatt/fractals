@@ -46,7 +46,8 @@ rebuilding the engine's wasm needs a fractal-wallpapers checkout beside this one
 - `explorer/`: the explorer, its wasm modules, and the permalink format its links use
 - `atlas/`: the atlas view shared by the explorer's Atlas tab and the Fractal atlases page
 - `palettes/`: the palette library and the palette prompt
-- `deep-zoom/`: the deep zoom videos
+- `deep-zoom/`: the deep zoom videos, and the Dives and Julia sets page
+  (`dives-and-julia-sets/`, written by `python -m builder.julia_dives page`)
 - `wallpaper-packs/`: the download page for the full-size packs
 - `tools-and-data/`: the Tools and data page, its downloadable records, and Run the
   pipeline yourself, which hosts the walkthrough fractal-wallpapers writes
@@ -57,6 +58,9 @@ rebuilding the engine's wasm needs a fractal-wallpapers checkout beside this one
   and the bug hunts' findings list
 - `tools/judges-lab/`: the browser port of the judges, used by the explorer's Walk tab
 - `examples/`: the four pictures above
+- `404.html`: the not-found page, the one page with an absolute `<base>`
+- `.github/workflows/`: the checks CI runs (`checks.yml`) and the Pages deploy
+- `pyproject.toml`: the ruff settings; `local.toml` (untracked): this machine's paths, below
 
 ## Building and serving it locally
 

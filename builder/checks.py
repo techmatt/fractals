@@ -71,9 +71,10 @@ and why), never a crash and never a silent pass.
 - **caps** — every panel linked from a gallery seat opens at that seat's `maxiter`: the
   link's `n`, or the width policy, asked through `emit.mjs`. Seats outside the site's
   recipe store are a named skip without the checkout; the whole check is one without node.
-- **bake** — the explorer's two generated modules are byte for byte a rebake from
-  `explorer/palettes.jsonl`, `explorer/modes.jsonl`, and the wallpaper project, and no
-  figure uses a map the roster does not carry. A whole skip without the checkout.
+- **bake** — `palettes.js`, `palettes.bin`, and `catalog.js` are byte for byte a rebake
+  from `explorer/palettes.jsonl`, `explorer/modes.jsonl`, and the wallpaper project; the
+  roster's `random` flags are the list the wallpaper project states; and no figure is
+  drawn in a map the roster does not carry. A whole skip without the checkout.
 - **stamps** — a full-size picture's metadata link is the contract's, whoever wrote it.
   Everywhere: `stamp.js`'s `EXPLORER_URL` is `pages.SITE_URL` plus `explorer/`. With the
   checkout, the release writer spells every general-collection seat as `emit.mjs` does and
@@ -149,6 +150,8 @@ from .paths import (
     THUMBS_DIR_NAME,
     carrier_path,
     hosted_pages,
+    read_exact,
+    shown,
     site_pages,
 )
 
@@ -176,21 +179,12 @@ class _Links(HTMLParser):
                 self.found.append((self.getpos()[0], name, value))
 
 
-def _read(path: Path) -> str:
-    with path.open(encoding="utf-8", newline="") as handle:
-        return handle.read()
-
-
-def _shown(path: Path) -> str:
-    return path.relative_to(SITE_ROOT).as_posix()
-
-
 def check_links() -> list[str]:
     problems = []
     for page in [*site_pages(), *hosted_pages()]:
         parser = _Links()
-        parser.feed(_read(page))
-        where = _shown(page)
+        parser.feed(read_exact(page))
+        where = shown(page)
         for line, attribute, value in parser.found:
             problem = _link_problem(page, attribute, value)
             if problem:
@@ -234,12 +228,12 @@ def check_pages(loaded: list[galleries.Gallery], article: list[sections.Section]
     expected = pages.generated_pages(loaded, article)
     for path, html in expected.items():
         if not path.is_file():
-            problems.append(f"{_shown(path)}: missing — run `python -m builder build`")
-        elif _read(path) != html:
-            problems.append(f"{_shown(path)}: differs from builder output — run `build`")
+            problems.append(f"{shown(path)}: missing — run `python -m builder build`")
+        elif read_exact(path) != html:
+            problems.append(f"{shown(path)}: differs from builder output — run `build`")
     for path in sorted(GALLERIES_DIR.glob("*.html")):
         if path not in expected:
-            problems.append(f"{_shown(path)}: no gallery metadata produces this page")
+            problems.append(f"{shown(path)}: no gallery metadata produces this page")
     return problems
 
 
@@ -291,8 +285,8 @@ def check_figures() -> list[str]:
     for page in [*sections_first, *hanging]:
         if not page.is_file():
             continue
-        html = _read(page)
-        where = _shown(page)
+        html = read_exact(page)
+        where = shown(page)
         opened = links.opened(page)
         if _FIGURE_OPEN.search(html):
             problems.append(f"{where}: a figure without a data-figure id")
@@ -504,9 +498,9 @@ def check_landing() -> list[str]:
                 f"figures.jsonl: {figure.id} has an explorer link and the block a redraw "
                 "would look for does not carry it — `--replace` would refuse this figure"
             )
-        if block not in _read(figure.page_path):
+        if block not in read_exact(figure.page_path):
             problems.append(
-                f"{_shown(figure.page_path)}: {figure.id} is not a block a redraw could "
+                f"{shown(figure.page_path)}: {figure.id} is not a block a redraw could "
                 f"land on — reprint it with `python -m builder figure {figure.id}`"
             )
     return problems
@@ -562,11 +556,11 @@ def check_contents(article: list[sections.Section]) -> list[str]:
     listed = {section.page for section in article}
     for path in sorted(ARTICLE_DIR.glob("*.html")):
         if path.name not in listed:
-            problems.append(f"{_shown(path)}: not in sections.jsonl, so the rail would skip it")
+            problems.append(f"{shown(path)}: not in sections.jsonl, so the rail would skip it")
 
     for path in sections.hand_written(article):
-        html = _read(path)
-        where = _shown(path)
+        html = read_exact(path)
+        where = shown(path)
         if sections.RAIL_START not in html or sections.RAIL_END not in html:
             problems.append(f"{where}: no contents-rail markers — the page skeleton carries them")
             continue
@@ -591,7 +585,7 @@ def _index_markers(article: list[sections.Section]) -> list[str]:
     when every section was written *(front_and_start_ckpt147)*.
     """
     problems = []
-    lines = _read(SITE_INDEX).splitlines()
+    lines = read_exact(SITE_INDEX).splitlines()
     for section in article:
         href = f'href="article/{section.page}"'
         if not any("<h3>" in line and href in line for line in lines):
@@ -626,12 +620,12 @@ def check_assets(loaded: list[galleries.Gallery]) -> list[str]:
             source = gallery.directory / image.file
             thumb = gallery.thumbs_directory / image.file
             if not source.is_file():
-                problems.append(f"{_shown(gallery.metadata_path)}: no {image.file}")
+                problems.append(f"{shown(gallery.metadata_path)}: no {image.file}")
                 continue
             if can_measure and images.dimensions(source) != (image.width, image.height):
                 actual = images.dimensions(source)
                 problems.append(
-                    f"{_shown(source)}: metadata says {image.width}x{image.height}, "
+                    f"{shown(source)}: metadata says {image.width}x{image.height}, "
                     f"file is {actual[0]}x{actual[1]}"
                 )
             if gallery.staged:
@@ -639,9 +633,9 @@ def check_assets(loaded: list[galleries.Gallery]) -> list[str]:
                 # viewer on a click, so there is no larger size to make a thumbnail of.
                 continue
             if not thumb.is_file():
-                problems.append(f"{_shown(thumb)}: missing — run `python -m builder build`")
+                problems.append(f"{shown(thumb)}: missing — run `python -m builder build`")
             elif can_measure and images.dimensions(thumb) != image.thumb_size:
-                problems.append(f"{_shown(thumb)}: not the size the page expects — run `build`")
+                problems.append(f"{shown(thumb)}: not the size the page expects — run `build`")
         problems.extend(_orphans(gallery, named))
     return problems
 
@@ -651,18 +645,18 @@ def _orphans(gallery: galleries.Gallery, named: set[str]) -> list[str]:
     for path in sorted(gallery.directory.iterdir()):
         if path.is_dir():
             if path.name != THUMBS_DIR_NAME:
-                problems.append(f"{_shown(path)}: unexpected directory in a gallery")
+                problems.append(f"{shown(path)}: unexpected directory in a gallery")
             continue
         if (
             path.name != GALLERY_METADATA_NAME
             and path.name not in gallery.records
             and path.name not in named
         ):
-            problems.append(f"{_shown(path)}: not named by {GALLERY_METADATA_NAME}")
+            problems.append(f"{shown(path)}: not named by {GALLERY_METADATA_NAME}")
     if gallery.thumbs_directory.is_dir():
         for path in sorted(gallery.thumbs_directory.iterdir()):
             if path.name not in named:
-                problems.append(f"{_shown(path)}: thumbnail of an image no longer in the gallery")
+                problems.append(f"{shown(path)}: thumbnail of an image no longer in the gallery")
     return problems
 
 
@@ -749,10 +743,10 @@ def check_theme() -> list[str]:
     """`theme.py`'s well tokens are the ones `site.css` declares."""
     stylesheet = SITE_ROOT / "assets" / "css" / "site.css"
     if not stylesheet.is_file():
-        return [f"{_shown(stylesheet)}: missing — theme.py has nothing to be held to"]
+        return [f"{shown(stylesheet)}: missing — theme.py has nothing to be held to"]
     declared = {
         name: tuple(int(value[index : index + 2], 16) for index in (0, 2, 4))
-        for name, value in _CSS_TOKEN.findall(_read(stylesheet))
+        for name, value in _CSS_TOKEN.findall(read_exact(stylesheet))
     }
     problems = []
     for name, transcribed in theme.CSS_TOKENS.items():
@@ -777,7 +771,7 @@ def check_guidance() -> list[str]:
     instructions = SITE_ROOT / "CLAUDE.md"
     if not instructions.is_file():
         return ["CLAUDE.md: missing — nothing here points a prompt at the editorial rules"]
-    if GUIDANCE not in _read(instructions):
+    if GUIDANCE not in read_exact(instructions):
         return [
             f"CLAUDE.md: never names {GUIDANCE} — the editorial rules live on the synced "
             "drive, and a prompt that is not sent there writes against nothing"
@@ -805,26 +799,26 @@ def check_bake() -> list[str]:
     try:
         return _bake_problems()
     except (renders.EngineError, explorer.ExplorerError, records.RecordError, OSError) as error:
-        return [f"explorer: the bake could not be reproduced here — {error}"]
+        return [f"bake: the bake could not be reproduced here — {error}"]
 
 
 def _bake_problems() -> list[str]:
     problems = []
     made = explorer.palettes_module_text()
-    committed = _read(explorer.PALETTES_MODULE)
+    committed = read_exact(explorer.PALETTES_MODULE)
     if made.text != committed:
         problems.append(
-            f"{_shown(explorer.PALETTES_MODULE)}: not what "
+            f"{shown(explorer.PALETTES_MODULE)}: not what "
             "`python -m builder explorer --palettes-only` bakes from "
-            f"{_shown(explorer.PICKS_RECORD)} — {_first_difference(made.text, committed)}"
+            f"{shown(explorer.PICKS_RECORD)} — {_first_difference(made.text, committed)}"
         )
     problems += _blob_problems(made.blob)
     catalogued, _modes = explorer.catalog_module_text()
-    committed = _read(explorer.CATALOG_MODULE)
+    committed = read_exact(explorer.CATALOG_MODULE)
     if catalogued != committed:
         problems.append(
-            f"{_shown(explorer.CATALOG_MODULE)}: not what `python -m builder explorer` bakes "
-            f"from {_shown(explorer.MODES_RECORD)} and the engine beside it — "
+            f"{shown(explorer.CATALOG_MODULE)}: not what `python -m builder explorer` bakes "
+            f"from {shown(explorer.MODES_RECORD)} and the engine beside it — "
             f"{_first_difference(catalogued, committed)}"
         )
     return problems + _unbakeable() + _random_problems()
@@ -839,10 +833,10 @@ def _blob_problems(baked: bytes) -> list[str]:
     that is not there draws nothing, and saying so here is cheaper than finding out in a
     browser.
     """
-    where = _shown(explorer.PALETTES_BLOB)
+    where = shown(explorer.PALETTES_BLOB)
     if not explorer.PALETTES_BLOB.is_file():
         return [
-            f"{where}: the index in {_shown(explorer.PALETTES_MODULE)} addresses it and it is "
+            f"{where}: the index in {shown(explorer.PALETTES_MODULE)} addresses it and it is "
             "not here. It is committed, and `python -m builder explorer --palettes-only` writes "
             "it again."
         ]
@@ -886,7 +880,7 @@ def _unbakeable() -> list[str]:
     carried = {entry.name for entry in explorer.roster()[1]}
     missing = sorted(explorer.drawn_in(held) - carried)
     return [
-        f"{_shown(explorer.PICKS_RECORD)}: a figure is drawn in {name}, which the roster does "
+        f"{shown(explorer.PICKS_RECORD)}: a figure is drawn in {name}, which the roster does "
         "not carry, so the explorer cannot open that picture"
         for name in missing
     ]
@@ -907,7 +901,7 @@ def _random_problems() -> list[str]:
     listed = explorer.random_choice()
     if listed is None:
         return [
-            f"{_shown(explorer.PICKS_RECORD)}: its `random` flags cite "
+            f"{shown(explorer.PICKS_RECORD)}: its `random` flags cite "
             f"{'/'.join(explorer.RANDOM_SOURCE)} and the checkout no longer holds it — either "
             "the list moved next door or this record is citing a file nobody wrote"
         ]
@@ -918,7 +912,7 @@ def _random_problems() -> list[str]:
     if wanted == marked:
         return []
     return [
-        f"{_shown(explorer.PICKS_RECORD)}: {len(marked)} maps are marked for a random pick and "
+        f"{shown(explorer.PICKS_RECORD)}: {len(marked)} maps are marked for a random pick and "
         f"the list next door holds {len(wanted)} this roster carries — "
         f"{len(wanted - marked)} listed and unmarked, {len(marked - wanted)} marked and no "
         "longer listed. `python -m builder explorer --random`"
@@ -1080,9 +1074,9 @@ def check_deep() -> list[str]:
         (deep_gallery.REGISTER, deep_gallery.THUMBS),
         (random_dives.RECORD, random_dives.TILES),
     ):
-        shown = _shown(record)
+        where = shown(record)
         if not record.exists():
-            problems.append(f"{shown}: missing")
+            problems.append(f"{where}: missing")
             continue
         links: list[str] = []
         for number, line in enumerate(record.read_text(encoding="utf-8").splitlines(), 1):
@@ -1090,27 +1084,27 @@ def check_deep() -> list[str]:
                 continue
             link = str(json.loads(line).get("link", ""))
             if not link.startswith("dv="):
-                problems.append(f"{shown} line {number}: not a deep link")
+                problems.append(f"{where} line {number}: not a deep link")
                 continue
             links.append(link)
         seen: set[str] = set()
         for link in links:
             if link in seen:
-                problems.append(f"{shown}: {link[:60]}… recorded twice")
+                problems.append(f"{where}: {link[:60]}… recorded twice")
             seen.add(link)
         if record == random_dives.RECORD:
             places: dict[tuple[str, str, str], str] = {}
             for link in links:
                 place = random_dives.frame_key(link)
                 if place in places and places[place] != link:
-                    problems.append(f"{shown}: {place[0]} at {place[1]}, {place[2]} twice")
+                    problems.append(f"{where}: {place[0]} at {place[1]}, {place[2]} twice")
                 places[place] = link
         named = {f"{deep_gallery.fnv(link)}.webp" for link in links}
         on_disk = {path.name for path in tiles.iterdir()} if tiles.is_dir() else set()
         for name in sorted(named - on_disk):
-            problems.append(f"{_shown(tiles / name)}: missing, and its row is in {shown}")
+            problems.append(f"{shown(tiles / name)}: missing, and its row is in {where}")
         for name in sorted(on_disk - named):
-            problems.append(f"{_shown(tiles / name)}: no row in {shown} names it")
+            problems.append(f"{shown(tiles / name)}: no row in {where} names it")
         for name in sorted(named & on_disk):
             path = tiles / name
             relative = path.relative_to(SITE_ROOT).as_posix()

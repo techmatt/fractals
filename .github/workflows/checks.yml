@@ -20,7 +20,7 @@
 # here and there is not going to be one. Several instantiate the committed wasm modules.
 #
 # `crates` proves the five Rust crates compile, on the toolchain the manifests record
-# rather than on stable (explorer/README.md has why 1.98.1 is not neutral). It is the one
+# rather than on stable (explorer/README.md has why a newer one is not neutral). It is the one
 # job that is not a bare clone: `engine-wasm` depends on the wallpapers engine by path, and
 # `perturb-wasm` and `deep-gpu-model` on its picture kernel (`perturbation/`), and
 # `style-wasm` on its style module (`style-wasm/`), so that repository is checked out

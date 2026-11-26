@@ -103,10 +103,11 @@ Matt marks up a Google-Docs copy of a page and an item applies the marks. **Read
 - **A page may hang off a section without being one.** `article/` holds exactly the fourteen
   ratified sections; a page belonging to one lives in its own directory and names itself with
   a slash in the registries (`palettes/make-your-own.html`).
-- **`.gitignore` keeps its shape**: `scratch/` and `artifacts/`, toolchain noise, OS junk. A
+- **`.gitignore` keeps its shape**: `scratch/`, `artifacts/`, `/out/` and `/experiments/`;
+  `local.toml`; the root-markdown deny-list; build trees, toolchain noise, OS junk. A
   tracked file inside an ignored tree is how these rules rot.
 - **Formatting**: `ruff` at line length 100; `.gitattributes` normalizes to LF and marks
-  images binary. **Cross-platform**: `pathlib` only, no absolute paths in tracked code,
+  images, `.wasm`, `.bin`, and `.onnx` binary. **Cross-platform**: `pathlib` only, no absolute paths in tracked code,
   lowercase-with-hyphens filenames.
 
 **Figures** (`builder/README.md`'s *Figures are a registry, not a generator*)

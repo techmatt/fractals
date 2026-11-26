@@ -1631,8 +1631,7 @@ def place(
             f"{identifier} is already made, as {figure.file} — place is for a pending row. "
             "Pass --replace to land a redraw of a figure that is already on the page."
         )
-    lines = [line for line in FIGURE_REGISTRY.read_text(encoding="utf-8").splitlines() if line]
-    rows = [json.loads(line) for line in lines]
+    lines, rows = _registry_lines()
     row = next(row for row in rows if row.get("id") == identifier)
     if not (provenance or row.get("provenance")):
         raise records.RecordError(
@@ -1687,12 +1686,8 @@ def place(
         row["recipe"] = recipe
     if sources:
         row["sources"] = list(sources)
-    ordered = {key: row[key] for key in KEY_ORDER if key in row}
-    ordered.update({key: value for key, value in row.items() if key not in ordered})
     index = next(index for index, other in enumerate(rows) if other.get("id") == identifier)
-    lines[index] = json.dumps(ordered, ensure_ascii=False)
-    with FIGURE_REGISTRY.open("w", encoding="utf-8", newline=LF) as handle:
-        handle.write(LF.join(lines) + LF)
+    _write_row(lines, index, row)
 
     # The links are derived from the row just written, and written, before the page is
     # healed: the block a landing writes carries the link registry's hrefs, so healing
@@ -1720,18 +1715,28 @@ def place_narrow(identifier: str, narrow: tuple[str, int, int]) -> Figure:
         raise records.RecordError(
             f"{identifier} is not a made, composited sheet, and only one has a narrow rendition"
         )
-    lines = [line for line in FIGURE_REGISTRY.read_text(encoding="utf-8").splitlines() if line]
-    rows = [json.loads(line) for line in lines]
+    lines, rows = _registry_lines()
     index = next(index for index, other in enumerate(rows) if other.get("id") == identifier)
     row = dict(rows[index], narrow=dict(zip(("file", "width", "height"), narrow, strict=True)))
+    _write_row(lines, index, row)
+    placed = load_all()[identifier]
+    reprint(placed)
+    return placed
+
+
+def _registry_lines() -> tuple[list[str], list[dict]]:
+    """The registry's non-blank lines, and each one read."""
+    lines = [line for line in FIGURE_REGISTRY.read_text(encoding="utf-8").splitlines() if line]
+    return lines, [json.loads(line) for line in lines]
+
+
+def _write_row(lines: list[str], index: int, row: dict) -> None:
+    """Put one row back at its line, its keys in `KEY_ORDER`, and write the registry in LF."""
     ordered = {key: row[key] for key in KEY_ORDER if key in row}
     ordered.update({key: value for key, value in row.items() if key not in ordered})
     lines[index] = json.dumps(ordered, ensure_ascii=False)
     with FIGURE_REGISTRY.open("w", encoding="utf-8", newline=LF) as handle:
         handle.write(LF.join(lines) + LF)
-    placed = load_all()[identifier]
-    reprint(placed)
-    return placed
 
 
 def landing_block(figure: Figure) -> str:
@@ -1841,23 +1846,19 @@ def by_page(registry: dict[str, Figure]) -> dict[str, list[Figure]]:
 
 # --------------------------------------------------------------- resolving the keys
 
-#: How each kind of key is spelled, and which store answers it.
-#:
-#: The stores are the wallpaper project's, read-only and next door, so this half of the
-#: check only runs where that checkout is configured — `check` says so and moves on
-#: where it is not, exactly as it does for Pillow. CI clones this repository alone.
-KEY_FORMS = {
-    RUN_ROW: (
-        "<run>|release|<candidate>  → data/curation/release/**/*.jsonl",
-        "<head>/<batch>.jsonl:<line>  → data/<head>/rows/<batch>.jsonl",
-    ),
-    LOCATION: (
-        "labels/<batch>.jsonl:<line>  → data/labels/rows/<batch>.jsonl",
-        "<ledger>/walk.jsonl[#<node_id>]  → the artifacts tree, through renders.artifact",
-    ),
-    GALLERY_SEAT: ("<stamp>|<recipe key>  → artifacts/curation/tentative/<stamp>/gallery.jsonl",),
-    CANDIDATE: ("<recipe key>  → artifacts/curation/candidate_ledger/rows.jsonl",),
-}
+# How each kind of key is spelled, and which store answers it:
+#
+#   run_row       <run>|release|<candidate>  → data/curation/release/**/*.jsonl
+#                 <head>/<batch>.jsonl:<line>  → data/<head>/rows/<batch>.jsonl
+#   location      labels/<batch>.jsonl:<line>  → data/labels/rows/<batch>.jsonl
+#                 <ledger>/walk.jsonl[#<node_id>]  → the artifacts tree, through
+#                 renders.artifact
+#   gallery_seat  <stamp>|<recipe key>  → artifacts/curation/tentative/<stamp>/gallery.jsonl
+#   candidate     <recipe key>  → artifacts/curation/candidate_ledger/rows.jsonl
+#
+# The stores are the wallpaper project's, read-only and next door, so this half of the
+# check only runs where that checkout is configured — `check` says so and moves on
+# where it is not, exactly as it does for Pillow. CI clones this repository alone.
 
 #: The label stores whose rows are whole pictures. `gallery_grade` is the same shape as the
 #: other two with its rating in `grade` (tools_bands_ckpt156); a key here is a line count.

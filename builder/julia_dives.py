@@ -8,6 +8,7 @@
     python -m builder.julia_dives page        # deep-zoom/dives-and-julia-sets/index.html
     python -m builder.julia_dives all         # score, pick, render, page
     python -m builder.julia_dives twins       # re-frame the Julia twins, then page
+    python -m builder.julia_dives refit       # recolour each twin as the Deep tab's Fit would
 
 Fields are the dive chain pilot's (`deep-gallery-native field`, 640x360 at 2x2, the frame's own
 cap); the neutral picture and the judge are judge_deep_ckpt156's, so a score made here is made
@@ -82,8 +83,6 @@ HEARTBEAT_S = 15 * 60
 #: of the smaller width, and their widths within this ratio.
 NEAR_SHARE = 0.01
 NEAR_RATIO = 2.0
-#: Where the folder is assumed to sit on the site, and so how its links reach the explorer.
-SITE_PLACE = "deep-zoom/dives-and-julia-sets/"
 EXPLORER = "../../explorer/index.html?"
 TITLE = "500 dives and their Julia sets"
 #: The page has no prose to take a description from, so it carries this one in its head.
@@ -848,7 +847,7 @@ def twins(_args=None):
 #
 # carried_dives_twin_fit_ckpt160: a twin's colouring numbers were its primary's, fitted to the
 # primary's field. Each twin is recoloured as the Deep tab's Fit would colour it, off its own
-# field: the palette kept, absolute with Straighten iter on (`shade.mjs`'s `refit`).
+# field: the palette kept, absolute with Straighten iter on (`julia_dives_shade.mjs`'s `refit`).
 
 REFITS = WORK / "refits.jsonl"
 BEFORE = WORK / "twin-before"

@@ -18,7 +18,14 @@ viewer on the right; one URL, and old links still open the same picture.
 
 ## What is here
 
-- Page: `index.html` (with its inline boot script), `explorer.css`, `explorer.js`.
+- Page: `index.html` (with its inline boot script), `explorer.css`, `explorer.js`,
+  `screensaver-home.webp`.
+- **`explorer.js` is in banner-marked sections** (`// ---- the controls`, …); find a
+  landmark by name, never by line: the boot is `main()` under *starting up*; a link opens
+  through `openLink`/`openAny` (*what was opened*); the Mode select is `syncModes` (*the
+  controls*); passes are `drawPass` and `drawCustom` (*drawing*); Saved starts at
+  `startSaved`; `setBusy` holds the controls during a download; *the custom modes* holds
+  the record's `loadCustoms`/`installCustoms`/`customsReady` and `setCustom`.
 - Panels: `gallery.js`, `browse.js`, `screensaver.js`, `walk.js` (+ `judges.js`,
   `resize.mjs`, `judges/`), `phoenix.js` (+ `phoenix-points.json`, `phoenix-points/`),
   `saved.js`, `saved-panel.js`, `zip.js`, `paged-inflection/` (paged out).
@@ -29,6 +36,7 @@ viewer on the right; one URL, and old links still open the same picture.
 - Deep: `deep.js`, `deep-render.js`, `deep-worker.js`, `deep-fx.js`, `deep-gpu.js`,
   `deep-gpu-wgsl.js`, `deep-gpu-bla.js`, `deep-gpu-selftest/`, `deep-gallery.js`,
   `random-dives.js`, `dives.js`, `dive-results.js`, and their registers and tile folders.
+- Atlas: `dive-plates/` (`python -m builder atlas --dive-plates`); the frame is `../atlas/`.
 - Custom modes: `custom.js`, `style.js`, `style-worker.js`.
 - Records, edited on purpose: `palettes.jsonl`, `modes.jsonl`, `palette-names.json`,
   `popular.json`.
@@ -190,7 +198,15 @@ sibling's `curation/explorer_link.py` writes; `check`'s `stamps` holds both.
 
 ## Measured
 
-`bench/`'s harnesses run in neither `check` nor CI and write to ignored `artifacts/`.
+`bench/`'s harnesses run in neither `check` nor CI; `bench/README.md` has one line on each
+(what it measures, node or browser, what it needs, where it writes). `record()` (`output.mjs`) writes to
+ignored `artifacts/explorer-bench/`, and a harness taking an out directory writes there
+(`artifacts/` or `out/`, both ignored). A browser harness's Chrome picks its own debugging
+port (`cdp.mjs`'s `open`), so harnesses run side by side. ⚠ Four files in `bench/` are
+shared modules used outside it: `engine.mjs` (imported by the `bands`, `deep`, `derive`,
+and `level` suites and the builder's `.mjs` makers), `perturb.mjs` (the `deep` and
+`deep-gpu` suites, `builder/deep_figures.mjs`, `zoom_fields.mjs`), `cdp.mjs`
+(`builder/screenshot.mjs`), and `output.mjs`; an edit there is a CI and maker change.
 ⚠ This machine drifts by up to 30%: alternate before/after runs; re-measure, never quote.
 
 ## The permalink contract, version 4
@@ -240,7 +256,8 @@ modes with 105 Example buttons, fetched after the first frame unless a link name
 
 ## The test suites
 
-The list is `CLAUDE.md`'s and `checks.yml`'s. `level.test.mjs` and `stops.test.mjs` skip a
+`node --test explorer/*.test.mjs atlas/atlas.test.mjs` runs them all on node 22, nothing
+installed; `checks.yml` names each, so a new suite joins CI on purpose. `level.test.mjs` and `stops.test.mjs` skip a
 case by name without `artifacts/level-derive/` or a baked `palettes.bin`.
 
 ## Rebuilding

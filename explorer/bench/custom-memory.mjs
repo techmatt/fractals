@@ -44,7 +44,7 @@ for (const mode of bundle.modes) {
   const view = parse(exampleQuery(mode, mode.shown[0], { palette: "twilight_shifted", encode }), context);
   const request = requestOf({ bundle, mode, custom: view.custom, view, maxiter: view.maxiter, stopsOf: null, width, height, supersample: 2 });
   const raw = new TextEncoder().encode(JSON.stringify(request));
-  const pointer = wasm.alloc(raw.length);
+  const pointer = wasm.alloc(raw.length) >>> 0;
   new Uint8Array(wasm.memory.buffer, pointer, raw.length).set(raw);
   const before = wasm.memory.buffer.byteLength;
   const opened = text(wasm.open(pointer, raw.length));

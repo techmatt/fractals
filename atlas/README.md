@@ -31,12 +31,13 @@ multibrot3.jsonl  multibrot4.jsonl  multibrot5.jsonl  multibrot6.jsonl  phoenix.
 ## The frame is a piece, and a page mounts it
 
 `frame.js` builds the frame inside whatever element it is handed and returns
-`{ record, refit, destroy, plane }`; `frame.css` holds the frame's rules, including its four
+`{ record, refit, destroy, open, plane }`; `frame.css` holds the frame's rules, including its four
 colors, set on the frame itself so a host that knows nothing of them still gets them.
 `frame.js`'s header and option comments are the reference.
 
 - **The studio** mounts one with an `onPick`, which takes a click instead of the link and
-  leaves the slots as keyboard-reachable buttons. It uses
+  leaves the slots as keyboard-reachable buttons, and a `slotMark` (each slot's save mark).
+  It uses
   `options.plane`, `options.onPlane`, and the handle's `open(name)` to hold the chips to
   its view: a chip opens that plane's home view, and a view on another plane moves the chip
   (a Julia set's is the parameter plane of its degree). An older `panel=atlas:phoenix`
@@ -45,7 +46,8 @@ colors, set on the frame itself so a host that knows nothing of them still gets 
   (`builder/figures.py`'s `LIVE`), once it nears the viewport. It passes no `onPick`, so a
   slot is a link and a click on a mark goes where its gallery slot goes; every link it
   builds carries `panel=atlas`, so a reader lands in the Atlas tab on that place's plane. It
-  passes `fit: "width"`, `least: COLUMN_LEAST`, and `miniatures` (each chip carries a grey
+  passes `fit: "width"`, `least: COLUMN_LEAST`, `linger: true` (as the studio does), and
+  `miniatures` (each chip carries a grey
   miniature of its plate, `assets/images/atlas/miniature-<partition>.png`; the studio's
   chips stay words).
 - **`fit` and `least` may be functions**, asked at every fit: the studio answers `"box"`
@@ -207,6 +209,3 @@ nought on every plane. It ignores the maker's own 16:9 `base.jpg`, keeps every c
 plate, and projects each dot from its `place` onto its plane's plate, so an ingest never
 undoes `--plates`. A plane made against another release, judge, bar, map, or thumbnail size
 than the planes already in the record is refused, because the method row says those once.
-
-`--figure atlas-places` is the retired still of the plate and its marks; with no registry
-row it stops on a `KeyError` before writing anything.

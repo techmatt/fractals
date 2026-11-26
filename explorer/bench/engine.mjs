@@ -78,19 +78,8 @@ export async function load(url = new URL("../engine.wasm", import.meta.url)) {
     return JSON.parse(text);
   };
 
-  /** Which SAMPLE rows a band of output rows has to be handed, the pad included. */
-  const bandLanes = (spec, rowStart, rowEnd) => {
-    const [pointer, length] = put(JSON.stringify(spec));
-    const out = wasm.band_lanes(pointer, length, rowStart, rowEnd);
-    wasm.dealloc(pointer, length);
-    const size = new DataView(wasm.memory.buffer).getUint32(out, true);
-    const text = decoder.decode(new Uint8Array(wasm.memory.buffer, out + 4, size));
-    wasm.dealloc(out, size + 4);
-    return JSON.parse(text);
-  };
-
   /** One band of a shade, through statistics measured over the whole field: the
-   *  band's RGBA. `lanes` is the padded sample rows `bandLanes` names, and is freed. */
+   *  band's RGBA. `lanes` is the band's sample rows, its pad included, and is freed. */
   const shadeBand = (spec, stats, lanes, rowStart, rowEnd) => {
     const [pointer, length] = put(JSON.stringify(spec));
     const [statsPointer, statsLength] = put(JSON.stringify(stats));
@@ -208,7 +197,6 @@ export async function load(url = new URL("../engine.wasm", import.meta.url)) {
     band,
     shade,
     shadeStats,
-    bandLanes,
     shadeBand,
     shadeLevel,
     deriveLevel,

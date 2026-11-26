@@ -46,9 +46,9 @@ const landing = join(out, "landing");
 mkdirSync(landing, { recursive: true });
 
 const bundle = JSON.parse(readFileSync(fileURLToPath(new URL("../custom-modes.json", import.meta.url)), "utf8"));
-// `--port` is Chrome's debugging port: a second run beside the first needs its own
-// (`cdp.mjs`'s `open` refuses a port another Chrome holds).
-const browser = await open({ port: Number(option("--port", "9433")), width: 1400, height: 900 });
+// `--port` names Chrome's debugging port; by default Chrome picks a free one (`cdp.mjs`'s
+// `open`), so runs side by side never drive each other's page.
+const browser = await open({ port: Number(option("--port", "0")), width: 1400, height: 900 });
 const errors = [];
 browser.on((message) => {
   if (message.method === "Runtime.exceptionThrown") errors.push(message.params.exceptionDetails?.exception?.description);

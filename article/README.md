@@ -14,10 +14,7 @@ training-judges.html              deep-zoom.html
                                   fractal-math.html
 ```
 
-All fourteen are written, and `sections.jsonl` is what says so. A section that is not
-written yet is a placeholder: the slug, the heading, the section navigation and an `intro`
-section of one sentence saying it is not written yet. A page
-that has been written loses that `intro`, and its prose lives in
+All fourteen are written, and `sections.jsonl` is what says so; a page's prose lives in
 `<section class="prose">`. **No page carries a standfirst** — the ruling in
 `writing-guidance.md` cut the device site-wide, and a page opens on its lead.
 
@@ -48,14 +45,11 @@ are the builder's:
   every prose `<h2>`, which is derived from the heading's own words. `python -m builder
   build` writes both; nothing between the markers is worth typing.
 
-One page is not a section and not in this directory: `../start-here.html`, the page a new
-reader is sent to first, which the rail lists above the contents rather than among them.
-
-Two pages hang off **Color palettes** without being sections of their own, and they live
-in `../palettes/` rather than here: `all-palettes.html`, which the builder generates —
-every palette in the library as a strip, grouped the way the section groups them — and
-`make-your-own.html`, the palette prompt, which is hand-written the way a section is.
-A registry names either of them with its slash: `palettes/make-your-own.html`.
+The pages that are not sections live outside this directory: `../start-here.html`, the
+Tools and data page, the Wallpaper packs page, the palette library and prompt under
+`../palettes/`, and the deep zoom videos. `builder/README.md`'s *Pages outside the reading
+order* has which is which; a registry names a hanging page with its slash
+(`palettes/make-your-own.html`).
 
 Three registries live here, one per thing a page is held to. `sections.jsonl` gives the
 fourteen pages their reading order and marks the ones that are written, which nothing on

@@ -3,6 +3,9 @@ artifacts/
 # Conductor items' working papers (results folders): kept on disk, never tracked or
 # served by Pages, as fractal-wallpapers keeps them (004_bug_hunt, MESSAGE #1025).
 /experiments/
+# A session's scratch and run output (conductor's `out/<item>/`): never tracked or served.
+# It was ignored only in one machine's `.git/info/exclude`, so a fresh clone saw it.
+/out/
 
 # This machine's own settings: where the companion code repository is checked out.
 # No absolute path is committed here, so the one that exists is untracked.
@@ -43,7 +46,6 @@ tools/judges-lab/samples/
 node_modules/
 
 # Builder output that is regenerated rather than reviewed.
-builder/__pycache__/
 __pycache__/
 *.egg-info/
 .venv/

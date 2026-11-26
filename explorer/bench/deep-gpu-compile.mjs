@@ -67,7 +67,7 @@ const ROUND = (kernels) => `(async () => {
   return { adapter: [adapter.info?.vendor, adapter.info?.architecture].join(" "), rows };
 })()`;
 
-const page = await open({ port: 9600 + Math.floor(Math.random() * 300), width: 800, height: 600 });
+const page = await open({ width: 800, height: 600 });
 const out = { form: FORM, parallel: PARALLEL, source: SOURCE, started: new Date().toISOString(), rounds: [] };
 try {
   for (let round = 1; round <= ROUNDS; round++) {
