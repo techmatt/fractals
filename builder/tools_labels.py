@@ -391,14 +391,6 @@ def _order(found: dict[int, list[dict]]) -> list[tuple[int, dict]]:
     return [(rating, row) for rating in RATINGS for row in found[rating]]
 
 
-def _family_words(family: dict) -> str:
-    parts = [family["kind"] + (f" degree {family['degree']}" if "degree" in family else "")]
-    for name in PHOENIX_CONSTANTS:
-        if name in family:
-            parts.append(f"{name} = {family[name][0]} + {family[name][1]}i")
-    return ", ".join(parts)
-
-
 def _stage(stage: dict) -> str:
     extra = "".join(f" {key} {value}" for key, value in stage.items() if key != "kind")
     return f"{stage.get('kind')}{extra}"
@@ -412,7 +404,7 @@ def _line(index: int, band: str, rating: int, row: dict) -> str:
         f"{row['recorded_at']}."
     )
     frame = (
-        f"panel {index}, {TITLES[band]}, rated {rating}: {_family_words(row['family'])}, "
+        f"panel {index}, {TITLES[band]}, rated {rating}: {judges.family_text(row['family'])}, "
         f"centre {view['center_re']} + {view['center_im']}i, width {view['width']}, mode "
     )
     word = "colormap" if index == 1 else "palette"

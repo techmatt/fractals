@@ -58,6 +58,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .paths import SITE_ROOT
+from .records import jsonl, write_jsonl
 from .settings import LOCAL_SETTINGS, configured, read_settings
 
 #: Where the wallpaper project is checked out. The variable wins over the file.
@@ -1047,22 +1048,6 @@ def palette_space(what: str, **ask):
     if completed.returncode != 0:
         raise EngineError(f"asking palette space for {what} failed: {completed.stderr.strip()}")
     return json.loads(completed.stdout)
-
-
-def jsonl(path: Path) -> list[dict]:
-    """Every row of a JSONL file, in order."""
-    with Path(path).open(encoding="utf-8") as handle:
-        return [json.loads(line) for line in handle if line.strip()]
-
-
-def write_jsonl(rows, path: Path) -> Path:
-    """A JSONL file, written with the line ending this repository normalizes to."""
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8", newline="\n") as handle:
-        for row in rows:
-            handle.write(json.dumps(row, ensure_ascii=False) + "\n")
-    return path
 
 
 def scores(locations, *, regime: str = NODE_REGIME, root: Path | None = None) -> list[dict]:

@@ -62,6 +62,7 @@ from . import figures as figures_module
 from . import frames, links, palettes, renders, sheets
 from . import picks as picks_module
 from .locations import Made, Split, neutral_spec, node_rows, panel_path, panels
+from .picks import family_words
 
 ID = "tools-judges"
 
@@ -832,18 +833,6 @@ def _band(judge: str) -> dict:
     return {"title": TITLES[judge], "note": note, "columns": columns}
 
 
-def _family_words(family: dict) -> str:
-    """A family and its constants, the way `check`'s `locations` reads a frame."""
-    kind = family["kind"]
-    words = f"family {kind}"
-    if kind in ("multibrot", "julia"):
-        words += f", degree {family.get('degree', 2)}"
-    for constant in ("c", "p", "z_prev"):
-        if family.get(constant):
-            words += f", {constant} = {family[constant][0]} + {family[constant][1]}i"
-    return words
-
-
 def _class_words(example: dict) -> str:
     k = example["class"]
     low, high = example["window"]
@@ -900,7 +889,7 @@ def _location_panels(made: list[Made], lines: list[str]) -> None:
         view = example["viewport"]
         lines.append(
             f"Location panel {index + 1}, {example['ledger']}/walk.jsonl node "
-            f"{example['node']}: {_family_words(example['family'])}, centre "
+            f"{example['node']}: {family_words(example['family'])}, centre "
             f"{view['center_re']} + {view['center_im']}i, width {view['width']}, mode smooth, "
             + ("colormap" if index == 0 else "palette")
             + f" {renders.COLORMAP}, maxiter {example['maxiter']}; {_class_words(example)}."
@@ -976,7 +965,7 @@ def _palette_panels(made: list[Made], lines: list[str]) -> None:
         f"that the explorer opens exactly; {len(held['skipped'])} set(s) before it were "
         "passed over"
         + (f" ({'; '.join(held['skipped'])})" if held["skipped"] else "")
-        + f". Every panel: {_family_words(held['family'])}, centre {view['center_re']} + "
+        + f". Every panel: {family_words(held['family'])}, centre {view['center_re']} + "
         f"{view['center_im']}i, width {view['width']}, mode {held['mode']}, curve "
         f"{held['curve']}, maxiter {grid['maxiter']}, drawn at the set's own "
         f"{grid['resolution'][0]}x{grid['resolution'][1]}, supersample {grid['supersample']}, "
@@ -1017,7 +1006,7 @@ def _palette_panels(made: list[Made], lines: list[str]) -> None:
         )
         folded = "folded" if library[name].mirror else "unfolded, cyclic"
         lines.append(
-            f"Palette panel {index + 1}, {_family_words(place['family'])}, centre "
+            f"Palette panel {index + 1}, {family_words(place['family'])}, centre "
             f"{view['center_re']} + {view['center_im']}i, width {view['width']}: palette "
             f"{name} ({shown}), {folded}; {example['percentile']}th percentile, nearest-rank "
             f"value {example['value']!r}, this map scored {example['score']!r}."

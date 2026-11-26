@@ -39,6 +39,7 @@ from urllib.parse import parse_qsl
 from . import deep_gallery, images
 from .dive_candidates import below_normal
 from .paths import GALLERY_IMAGES_DIR, SITE_ROOT, relative_href
+from .records import write_jsonl
 
 HERE = Path(__file__).resolve().parent
 RECORD = HERE / "data" / "deep-pack.jsonl"
@@ -192,7 +193,7 @@ def write_members() -> list[str]:
         {"schema": 1, "kind": "member", **{k: m[k] for k in ("rank", "id", "from", "file", "link")}}
         for m in members
     ]
-    _write(rows)
+    write_jsonl(rows, RECORD)
     said = [f"{len(members)} members, {len(dropped)} dropped"]
     said += [f"  {d['from']} is {d['same_as']}" for d in dropped]
     return said
@@ -398,7 +399,7 @@ def previews(seed: int = SEED) -> list[str]:
         previews=picks,
     )
     header.setdefault("zip", {"file": ZIP, "bytes": None})
-    _write([header, *listed])
+    write_jsonl([header, *listed], RECORD)
     said = [f"pool {len(pool)}"]
     for one in pool:
         mark = "*" if one["id"] in picks else " "
@@ -409,11 +410,6 @@ def previews(seed: int = SEED) -> list[str]:
 def _rows() -> list[dict]:
     """Every row of the record, the header first."""
     return [json.loads(line) for line in RECORD.read_text(encoding="utf-8").splitlines() if line]
-
-
-def _write(rows: list[dict]) -> None:
-    body = "\n".join(json.dumps(row, ensure_ascii=False) for row in rows) + "\n"
-    RECORD.write_text(body, encoding="utf-8", newline="\n")
 
 
 # ------------------------------------------------------------------------ the pack record
@@ -594,7 +590,7 @@ def build_zip(ss: int = SUPERSAMPLE) -> list[str]:
         "quality": QUALITY,
         "chroma": "444",
     }
-    _write(rows)
+    write_jsonl(rows, RECORD)
     return [f"{target}: {target.stat().st_size:,} bytes, sha256 {digest}"]
 
 

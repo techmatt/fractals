@@ -116,3 +116,22 @@ def read(path: Path) -> list[Record]:
     if not records:
         raise RecordError(f"{path.name}: no records")
     return records
+
+
+def jsonl(path: Path) -> list[dict]:
+    """Every row of a JSONL file, in order, with no schema asked of it."""
+    with Path(path).open(encoding="utf-8") as handle:
+        return [json.loads(line) for line in handle if line.strip()]
+
+
+def write_jsonl(rows, path: Path) -> Path:
+    """A JSONL file, written with the line ending this repository normalizes to.
+
+    The body is made whole before the file is opened, so a row that will not serialize
+    leaves the file as it was.
+    """
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    body = "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows)
+    path.write_text(body, encoding="utf-8", newline="\n")
+    return path

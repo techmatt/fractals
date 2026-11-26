@@ -101,7 +101,7 @@ def held_out(head: str) -> list[dict]:
     """Every evaluation row of one judge's committed score file, in file order."""
     if head not in HELD_OUT:
         raise records.RecordError(f"{head!r} is not one of {', '.join(sorted(HELD_OUT))}")
-    rows = renders.jsonl(renders.data_file(*HELD_OUT[head]))
+    rows = records.jsonl(renders.data_file(*HELD_OUT[head]))
     return [row for row in rows if row.get("side") == "eval"]
 
 
@@ -531,8 +531,8 @@ def _sizes_provenance(row: dict) -> list[str]:
 # ---------------------------------------------------------------------- the provenance
 
 
-def _family_text(family: dict) -> str:
-    """A family and its constants, as a provenance line spells them."""
+def family_text(family: dict) -> str:
+    """A family and its constants, as a provenance line spells them (`tools_labels` too)."""
     parts = [family["kind"] + (f" degree {family['degree']}" if "degree" in family else "")]
     for name in ("c", "p", "z_prev"):
         if name in family:
@@ -544,7 +544,7 @@ def _place(row: dict) -> str:
     """The family and the frame: what it takes to draw a location again."""
     viewport = row["viewport"]
     centre = f"{viewport['center_re']} + {viewport['center_im']}i"
-    return f"{_family_text(row['family'])}, centre {centre}, width {viewport['width']}"
+    return f"{family_text(row['family'])}, centre {centre}, width {viewport['width']}"
 
 
 def _coloring_text(record: dict) -> str:
@@ -640,7 +640,7 @@ def score_to_decision() -> Drawn:
     Nothing is re-rendered here. The pictures are that command's output under its own
     ignored `artifacts/` tree, and this side composes them.
     """
-    frames = renders.jsonl(_decision_frames() / DECISION_SIDECAR)
+    frames = records.jsonl(_decision_frames() / DECISION_SIDECAR)
     panel = panels(len(frames))
     band = sheets.caption_band(panel[1], SHEET_WIDTH, 3)
     sheet, draw = sheets.canvas(SHEET_WIDTH, sheets.PAD + panel[1] + band + sheets.PAD)

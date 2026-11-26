@@ -520,9 +520,8 @@ def derive() -> list[dict]:
 
 
 def write(rows: list[dict]) -> Path:
-    body = LF.join(json.dumps(row, ensure_ascii=False) for row in rows)
-    RECORD.write_text(body + LF, encoding="utf-8", newline=LF)
-    return RECORD
+    """The record, header first (`derive` always gives one, so the file is never empty)."""
+    return records.write_jsonl(rows, RECORD)
 
 
 def committed_rows() -> list[dict]:

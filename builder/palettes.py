@@ -211,7 +211,7 @@ def library() -> dict[str, Palette]:
     directory = renders.data_file(*LIBRARY)
     skipped = uncarried()
     made = {}
-    for line in renders.jsonl(directory / "provenance.jsonl"):
+    for line in records.jsonl(directory / "provenance.jsonl"):
         made[line["name"]] = (line["source"], line.get("mood_family"))
     found = {}
     for path in sorted(directory.glob("*.json")):
@@ -225,7 +225,7 @@ def library() -> dict[str, Palette]:
 
 def uncarried() -> set[str]:
     """The maps `carriers.jsonl` names in a `kind == "uncarried"` row."""
-    rows = renders.jsonl(renders.data_file(*LIBRARY) / CARRIERS)
+    rows = records.jsonl(renders.data_file(*LIBRARY) / CARRIERS)
     return {str(row["map"]) for row in rows if row.get("kind") == "uncarried"}
 
 
@@ -258,7 +258,7 @@ def carriers() -> list[dict]:
     is the same count that repository re-verified before it dropped them, arrived at from
     the other side.
     """
-    rows = renders.jsonl(renders.data_file(*LIBRARY) / CARRIERS)
+    rows = records.jsonl(renders.data_file(*LIBRARY) / CARRIERS)
     header = next((row for row in rows if row.get("kind") == "method"), None)
     if header is None:
         raise PaletteError(f"{CARRIERS} carries no method row, so nothing says what its fields are")
@@ -346,7 +346,7 @@ def pool() -> list[str]:
 def batches() -> dict[str, list[str]]:
     """Every authored batch, in name order, keyed by the file the run wrote."""
     found: dict[str, list[str]] = {}
-    for line in renders.jsonl(renders.data_file(*LIBRARY) / "provenance.jsonl"):
+    for line in records.jsonl(renders.data_file(*LIBRARY) / "provenance.jsonl"):
         if line.get("source") != "authored":
             continue
         found.setdefault(line["batch"], []).append(line["name"])

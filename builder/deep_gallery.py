@@ -357,7 +357,7 @@ def _places_to_descend(degree: int, count: int, seed: int) -> list[dict]:
     from .renders import wallpapers_root
 
     examples = wallpapers_root() / "artifacts" / "discovery" / "minibrot_examples.jsonl"
-    rows = [json.loads(line) for line in examples.read_text().splitlines()[1:]]
+    rows = [json.loads(line) for line in examples.read_text(encoding="utf-8").splitlines()[1:]]
     mine = []
     for r in rows:
         if "place" not in r or not r.get("picture"):
@@ -768,7 +768,8 @@ def _render(frame: dict, resolution, ss: int, tag: str, threads: int | None = No
 
 def preview(frames_path: Path, name: str, workers: int = 3) -> list[str]:
     """Render each frame at 256x144, colour it automatically, lay the lot out labelled."""
-    frames_list = [json.loads(line) for line in frames_path.read_text().splitlines() if line]
+    lines = frames_path.read_text(encoding="utf-8").splitlines()
+    frames_list = [json.loads(line) for line in lines if line]
     held = WORK / "previews"
     held.mkdir(parents=True, exist_ok=True)
     (WORK / "fields").mkdir(exist_ok=True)
@@ -776,7 +777,7 @@ def preview(frames_path: Path, name: str, workers: int = 3) -> list[str]:
     def one(frame):
         meta = held / f"{frame['id']}.json"
         if meta.exists():
-            return json.loads(meta.read_text())
+            return json.loads(meta.read_text(encoding="utf-8"))
         if not float(frame["w"]) < floor_width(frame["re"], frame["im"]):
             raise DeepGalleryError(f"{frame['id']} is above the floor")
         drawn = _render(frame, PREVIEW, 1, "p", threads=max(1, 12 // workers))
@@ -858,7 +859,7 @@ def zooms() -> list[str]:
     factor = record["zooms"]["factor"]
     out = []
     for fid in record["zooms"]["from"]:
-        m = json.loads((WORK / "previews" / f"{fid}.json").read_text())
+        m = json.loads((WORK / "previews" / f"{fid}.json").read_text(encoding="utf-8"))
         f = m["frame"]
         field = _load_field(Path(m["field"]), *PREVIEW)
         g = _compress(field, 0.0)
@@ -912,7 +913,7 @@ def _selection() -> list[dict]:
     rows = []
     for subject, ids in record["selection"].items():
         for fid in ids:
-            m = json.loads((WORK / "previews" / f"{fid}.json").read_text())
+            m = json.loads((WORK / "previews" / f"{fid}.json").read_text(encoding="utf-8"))
             rows.append({"frame": {**m["frame"], "subject": subject}, "cap": m["cap"]})
     return rows
 
@@ -963,7 +964,9 @@ def sheet() -> list[str]:
         for r in rows:
             number += 1
             f = r["frame"]
-            meta = json.loads((WORK / "fields" / f"final_{f['id']}.json").read_text())
+            meta = json.loads(
+                (WORK / "fields" / f"final_{f['id']}.json").read_text(encoding="utf-8")
+            )
             field_path = WORK / "fields" / f"final_{f['id']}.f64"
             field = _load_field(field_path, width, height, ss)
             k = number + 3 * g

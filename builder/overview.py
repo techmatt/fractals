@@ -143,18 +143,6 @@ def _check_folds() -> None:
         )
 
 
-def _family_words(family: dict) -> str:
-    """A family spelled the way every provenance line on this site spells one."""
-    kind = family.get("kind")
-    named = f"family {kind}"
-    if kind in ("multibrot", "julia"):
-        named += f", degree {family.get('degree', 2)}"
-    for constant in ("c", "p", "z_prev"):
-        if family.get(constant):
-            named += f", {constant} = {family[constant][0]} + {family[constant][1]}i"
-    return named
-
-
 LEVEL_OPERATOR = "band_autolevel/v1"
 
 
@@ -344,7 +332,7 @@ def _provenance(found, chosen, big, small) -> list[str]:
         lines.append(
             f"{picks.family_name(family)}: gallery seat {pick.identifier}, alias "
             f"{pick.alias}, seat {pick.seat.get('seat')}, partition "
-            f"{pick.seat.get('partition')} — {_family_words(family)}, centre "
+            f"{pick.seat.get('partition')} — {picks.family_words(family)}, centre "
             f"{viewport['center_re']} + {viewport['center_im']}i, width {viewport['width']}."
         )
     lines.append(

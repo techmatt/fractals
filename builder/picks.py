@@ -843,6 +843,19 @@ def family_name(family: dict) -> str:
     return {"mandelbrot": "Mandelbrot", "phoenix": "Phoenix"}.get(kind, str(kind))
 
 
+def family_words(family: dict) -> str:
+    """A family and its constants, the way a provenance line spells one and `check`'s
+    `locations` reads a frame back: `family julia, degree 2, c = a + bi`."""
+    kind = family.get("kind")
+    named = f"family {kind}"
+    if kind in ("multibrot", "julia"):
+        named += f", degree {family.get('degree', 2)}"
+    for constant in ("c", "p", "z_prev"):
+        if family.get(constant):
+            named += f", {constant} = {family[constant][0]} + {family[constant][1]}i"
+    return named
+
+
 #: The iteration each family runs, spelled the way `escape-families` spells it under its
 #: own tiles: the article's formula with the step subscripts dropped, which is what makes
 #: it short enough to sit under a picture *(Matt, 2026-09-06)*. Phoenix keeps one
@@ -2050,13 +2063,7 @@ def released_line(example: Example, *, representative: bool) -> str:
     """The right panel of a row that is a released wallpaper rather than a seat."""
     row = example.row
     family, viewport = row["family"], row["viewport"]
-    kind = family.get("kind")
-    named = f"family {kind}"
-    if kind in ("multibrot", "julia"):
-        named += f", degree {family.get('degree', 2)}"
-    for constant in ("c", "p", "z_prev"):
-        if family.get(constant):
-            named += f", {constant} = {family[constant][0]} + {family[constant][1]}i"
+    named = family_words(family)
     map_word = "colormap" if representative else "palette"
     return (
         f"{family_name(family)}, {mode_words(row['mode'])}: released wallpaper "
@@ -2084,13 +2091,7 @@ def smooth_line(example: Example) -> str:
     """The left panel of a row: the same recipe in `smooth`, and what the operator did."""
     row = smooth_row(example.row)
     family, viewport = row["family"], row["viewport"]
-    kind = family.get("kind")
-    named = f"family {kind}"
-    if kind in ("multibrot", "julia"):
-        named += f", degree {family.get('degree', 2)}"
-    for constant in ("c", "p", "z_prev"):
-        if family.get(constant):
-            named += f", {constant} = {family[constant][0]} + {family[constant][1]}i"
+    named = family_words(family)
     if example.left_curve is None:
         levelled = (
             "The autolevel operator was run on this render at the row's own regime "

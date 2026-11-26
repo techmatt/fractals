@@ -1426,8 +1426,8 @@ def ingest(
         thumb={"width": thumb_across, "height": thumb_down},
     )
 
-    _write_rows(ATLAS_INDEX, [method] + partitions)
-    _write_rows(ATLAS_DIR / target["file"], rows)
+    records.write_jsonl([method] + partitions, ATLAS_INDEX)
+    records.write_jsonl(rows, ATLAS_DIR / target["file"])
 
     # Both suffixes, because the sweep is what takes the old format out. A slot picture is
     # WebP since `website_webp_and_atlas_deprecate` and every plate is still JPEG; the
@@ -1585,11 +1585,6 @@ def _encode(source: Path, destination: Path, quality: int) -> None:
 
     with Image.open(source) as picture:
         picture.convert("RGB").save(destination, format="WEBP", quality=quality, method=6)
-
-
-def _write_rows(path: Path, rows: list[dict]) -> None:
-    body = "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows)
-    path.write_text(body, encoding="utf-8", newline="\n")
 
 
 # ---------------------------------------------------------------------------- the plates
@@ -1910,7 +1905,7 @@ def plates() -> list[str]:
             px, py = project((float(at[0]), float(at[1])), spelled)
             dot["px"], dot["py"] = round(px, 2), round(py, 2)
             moved.append(dot)
-        _write_rows(path, moved)
+        records.write_jsonl(moved, path)
         partition["dots"] = len(moved)
         if moved:
             lines.append(f"  {partition['file']}: {len(moved)} dots re-projected")
@@ -1933,7 +1928,7 @@ def plates() -> list[str]:
             f"{partition['radius_px']} px"
         )
 
-    _write_rows(ATLAS_INDEX, [method] + partitions)
+    records.write_jsonl([method] + partitions, ATLAS_INDEX)
     return lines
 
 
