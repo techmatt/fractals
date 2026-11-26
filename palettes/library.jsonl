@@ -182,6 +182,7 @@
 {"schema": 1, "kind": "palette", "name": "soft_veils_wine", "cyclic": false, "hue": "red", "source": "converted"}
 {"schema": 1, "kind": "palette", "name": "Spectral", "cyclic": false, "hue": "red", "source": "converted"}
 {"schema": 1, "kind": "palette", "name": "Spice Procession", "cyclic": true, "hue": "red", "source": "authored"}
+{"schema": 1, "kind": "palette", "name": "star_nebula", "cyclic": false, "hue": "red", "source": "converted"}
 {"schema": 1, "kind": "palette", "name": "strange-creature-25", "cyclic": true, "hue": "red", "source": "extracted"}
 {"schema": 1, "kind": "palette", "name": "sweet_child", "cyclic": false, "hue": "red", "source": "converted"}
 {"schema": 1, "kind": "palette", "name": "Teal & Coral Tide", "cyclic": true, "hue": "red", "source": "authored"}
@@ -323,6 +324,7 @@
 {"schema": 1, "kind": "palette", "name": "soft_veils_fire", "cyclic": false, "hue": "orange", "source": "converted"}
 {"schema": 1, "kind": "palette", "name": "solipstic", "cyclic": true, "hue": "orange", "source": "extracted"}
 {"schema": 1, "kind": "palette", "name": "Sorbet Vault", "cyclic": true, "hue": "orange", "source": "authored"}
+{"schema": 1, "kind": "palette", "name": "string_lines", "cyclic": false, "hue": "orange", "source": "converted"}
 {"schema": 1, "kind": "palette", "name": "sun-god-25", "cyclic": true, "hue": "orange", "source": "extracted"}
 {"schema": 1, "kind": "palette", "name": "sunsets-wake-25", "cyclic": true, "hue": "orange", "source": "extracted"}
 {"schema": 1, "kind": "palette", "name": "taladee", "cyclic": true, "hue": "orange", "source": "extracted"}
@@ -930,9 +932,9 @@
 {"schema": 1, "kind": "palette", "name": "flame_wisp_spark", "cyclic": false, "hue": "blue", "source": "converted"}
 {"schema": 1, "kind": "palette", "name": "fractal_abstraction_lines_130499_2560x1600", "cyclic": true, "hue": "blue", "source": "extracted"}
 {"schema": 1, "kind": "palette", "name": "frost_filaments", "cyclic": false, "hue": "blue", "source": "converted"}
-{"schema": 1, "kind": "palette", "name": "frost_star", "cyclic": false, "hue": "blue", "source": "converted"}
 {"schema": 1, "kind": "palette", "name": "Glacier Ascent", "cyclic": true, "hue": "blue", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "glass_orbs", "cyclic": false, "hue": "blue", "source": "converted"}
+{"schema": 1, "kind": "palette", "name": "glow_tube", "cyclic": false, "hue": "blue", "source": "converted"}
 {"schema": 1, "kind": "palette", "name": "gnuplot2", "cyclic": false, "hue": "blue", "source": "converted"}
 {"schema": 1, "kind": "palette", "name": "Gold Leaf, Deep Water", "cyclic": true, "hue": "blue", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "golden_sand", "cyclic": false, "hue": "blue", "source": "converted"}
@@ -1035,6 +1037,7 @@
 {"schema": 1, "kind": "palette", "name": "jade-serpent-25", "cyclic": true, "hue": "purple", "source": "extracted"}
 {"schema": 1, "kind": "palette", "name": "let-there-be-light-25", "cyclic": true, "hue": "purple", "source": "extracted"}
 {"schema": 1, "kind": "palette", "name": "lethe-25", "cyclic": true, "hue": "purple", "source": "extracted"}
+{"schema": 1, "kind": "palette", "name": "light_pillar", "cyclic": false, "hue": "purple", "source": "converted"}
 {"schema": 1, "kind": "palette", "name": "Lime, Sage & Teal Dusk", "cyclic": true, "hue": "purple", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "Nebula Flare", "cyclic": true, "hue": "purple", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "Nebula Veil", "cyclic": true, "hue": "purple", "source": "authored"}
@@ -1053,6 +1056,7 @@
 {"schema": 1, "kind": "palette", "name": "skyward-25", "cyclic": true, "hue": "purple", "source": "extracted"}
 {"schema": 1, "kind": "palette", "name": "Sorbet Cellar", "cyclic": true, "hue": "purple", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "standard-25", "cyclic": true, "hue": "purple", "source": "extracted"}
+{"schema": 1, "kind": "palette", "name": "star_clusters", "cyclic": false, "hue": "purple", "source": "converted"}
 {"schema": 1, "kind": "palette", "name": "starburst_veils", "cyclic": false, "hue": "purple", "source": "converted"}
 {"schema": 1, "kind": "palette", "name": "storm_clouds", "cyclic": false, "hue": "purple", "source": "converted"}
 {"schema": 1, "kind": "palette", "name": "Sulphur in the Vault", "cyclic": true, "hue": "purple", "source": "authored"}
@@ -1065,6 +1069,7 @@
 {"schema": 1, "kind": "palette", "name": "Violet Cellar", "cyclic": true, "hue": "purple", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "Violet Kindled", "cyclic": true, "hue": "purple", "source": "authored"}
 {"schema": 1, "kind": "palette", "name": "Violet, Cyan, Ochre", "cyclic": true, "hue": "purple", "source": "authored"}
+{"schema": 1, "kind": "palette", "name": "violet_threads", "cyclic": false, "hue": "purple", "source": "converted"}
 {"schema": 1, "kind": "palette", "name": "visions-25", "cyclic": true, "hue": "purple", "source": "extracted"}
 {"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-5dpzz5", "cyclic": true, "hue": "purple", "source": "extracted"}
 {"schema": 1, "kind": "palette", "name": "wallhaven_wallhaven-dg6v93", "cyclic": true, "hue": "purple", "source": "extracted"}

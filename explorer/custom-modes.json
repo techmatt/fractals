@@ -19408,7 +19408,7 @@
      "what": "the frame's median lightness, which the tone pass holds the picture to",
      "default": 0.287,
      "range": [
-      0.12,
+      0.22,
       0.36
      ],
      "set": [
@@ -25896,6 +25896,32 @@
       "brightness": 0.209
      },
      "score": 3
+    },
+    {
+     "colormap": "soft_veils_wine",
+     "values": {
+      "/layers/7/opacity": 0.55,
+      "/layers/8/opacity": 0.55,
+      "/layers/9/opacity": 0.55,
+      "/layers/10/opacity": 0.55,
+      "/layers/11/opacity": 0.55,
+      "/layers/12/opacity": 0.55,
+      "/layers/13/opacity": 0.4,
+      "/layers/14/opacity": 0.4,
+      "/layers/15/opacity": 0.4,
+      "/layers/16/opacity": 0.4,
+      "/layers/17/opacity": 0.4,
+      "/layers/18/opacity": 0.4,
+      "/layers/19/opacity": 0.6,
+      "/tone/median": 0.258,
+      "/tone/p10": 0.12
+     },
+     "rests": {
+      "veils": 0.55,
+      "wisps": 0.4,
+      "halo": 0.6,
+      "brightness": 0.258
+     }
     }
    ],
    "aliases": [],
@@ -42447,6 +42473,2403 @@
         "opacity": 1.0
        }
       ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "veil-shards",
+   "style": "veil_shards",
+   "tier": "lab",
+   "palette": "veil_shards",
+   "palettes": [
+    {
+     "colormap": "veil_shards",
+     "values": {},
+     "score": 5
+    },
+    {
+     "colormap": "bone_star",
+     "values": {
+      "/tone/median": 0.405,
+      "/tone/p10": 0.25
+     },
+     "score": 5
+    },
+    {
+     "colormap": "silk_shards",
+     "values": {
+      "/layers/6/opacity": 0.1,
+      "/layers/7/opacity": 0.75,
+      "/layers/8/opacity": 0.1,
+      "/layers/9/opacity": 0.75,
+      "/layers/10/opacity": 0.1,
+      "/layers/11/opacity": 0.75,
+      "/layers/12/opacity": 0.1,
+      "/layers/13/opacity": 0.75,
+      "/layers/14/opacity": 0.1,
+      "/layers/15/opacity": 0.75,
+      "/layers/16/opacity": 0.1,
+      "/layers/16/sheet/period": 0.0625,
+      "/layers/17/opacity": 0.75,
+      "/layers/17/sheet/period": 0.0625,
+      "/tone/median": 0.135,
+      "/tone/p10": 0.093
+     },
+     "score": 5
+    }
+   ],
+   "aliases": [],
+   "variant": "current",
+   "what": "Veils broken into shards: translucent panes cut along the set's level lines and across them along bent field lines, each cell a soft scoop with a hard bright rim, crossing veils from turned views, green with gold rims (bone-white veils and red silk strands as palette entries).",
+   "knobs": [],
+   "stack": {
+    "name": "veil_shards",
+    "tone": {
+     "median": 0.35,
+     "p10": 0.235,
+     "log_density": 8.0
+    },
+    "layers": [
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "de"
+       }
+      },
+      "power": 0.0001,
+      "color": {
+       "palette": 0.04
+      },
+      "opacity": 1.0
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "stripe",
+        "density": 2.0
+       }
+      },
+      "power": 2.0,
+      "color": {
+       "palette": 0.25
+      },
+      "blend": "screen",
+      "opacity": 0.07
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "stripe",
+        "density": 2.0
+       },
+       "view": {
+        "turn": 137.5,
+        "zoom": 0.5,
+        "shift": [
+         -0.079,
+         -0.108
+        ]
+       }
+      },
+      "power": 2.0,
+      "color": {
+       "palette": 0.27
+      },
+      "blend": "screen",
+      "opacity": 0.07
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "stripe",
+        "density": 2.0
+       },
+       "view": {
+        "turn": 275.0,
+        "zoom": 0.609,
+        "shift": [
+         -0.057,
+         0.181
+        ]
+       }
+      },
+      "power": 2.0,
+      "color": {
+       "palette": 0.29
+      },
+      "blend": "screen",
+      "opacity": 0.07
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "stripe",
+        "density": 2.0
+       },
+       "view": {
+        "turn": 52.5,
+        "zoom": 0.742,
+        "shift": [
+         0.22,
+         -0.075
+        ]
+       }
+      },
+      "power": 2.0,
+      "color": {
+       "palette": 0.31
+      },
+      "blend": "screen",
+      "opacity": 0.07
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "stripe",
+        "density": 2.0
+       },
+       "view": {
+        "turn": 190.0,
+        "zoom": 0.903,
+        "shift": [
+         -0.22,
+         -0.154
+        ]
+       }
+      },
+      "power": 2.0,
+      "color": {
+       "palette": 0.33
+      },
+      "blend": "screen",
+      "opacity": 0.07
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       },
+       "view": {
+        "turn": 137.5,
+        "zoom": 0.5,
+        "shift": [
+         -0.079,
+         -0.108
+        ]
+       }
+      },
+      "sheet": {
+       "bands": 3.0,
+       "phase": 0.37,
+       "fill": 0.15,
+       "edge": 0.3
+      },
+      "color": {
+       "palette": 0.36
+      },
+      "blend": "screen",
+      "opacity": 0.25,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 3.0
+      }
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       },
+       "view": {
+        "turn": 137.5,
+        "zoom": 0.5,
+        "shift": [
+         -0.079,
+         -0.108
+        ]
+       }
+      },
+      "sheet": {
+       "bands": 3.0,
+       "phase": 0.37,
+       "fill": 0.0,
+       "edge": 0.02
+      },
+      "color": {
+       "palette": 0.74
+      },
+      "blend": "screen",
+      "opacity": 0.45,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 3.0
+      }
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       },
+       "view": {
+        "turn": 275.0,
+        "zoom": 0.609,
+        "shift": [
+         -0.057,
+         0.181
+        ]
+       }
+      },
+      "sheet": {
+       "bands": 3.0,
+       "phase": 0.74,
+       "fill": 0.15,
+       "edge": 0.3
+      },
+      "color": {
+       "palette": 0.39
+      },
+      "blend": "screen",
+      "opacity": 0.25,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 3.0
+      }
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       },
+       "view": {
+        "turn": 275.0,
+        "zoom": 0.609,
+        "shift": [
+         -0.057,
+         0.181
+        ]
+       }
+      },
+      "sheet": {
+       "bands": 3.0,
+       "phase": 0.74,
+       "fill": 0.0,
+       "edge": 0.02
+      },
+      "color": {
+       "palette": 0.78
+      },
+      "blend": "screen",
+      "opacity": 0.45,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 3.0
+      }
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       },
+       "view": {
+        "turn": 52.5,
+        "zoom": 0.742,
+        "shift": [
+         0.22,
+         -0.075
+        ]
+       }
+      },
+      "sheet": {
+       "bands": 3.0,
+       "phase": 0.11,
+       "fill": 0.15,
+       "edge": 0.3
+      },
+      "color": {
+       "palette": 0.42
+      },
+      "blend": "screen",
+      "opacity": 0.25,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 3.0
+      }
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       },
+       "view": {
+        "turn": 52.5,
+        "zoom": 0.742,
+        "shift": [
+         0.22,
+         -0.075
+        ]
+       }
+      },
+      "sheet": {
+       "bands": 3.0,
+       "phase": 0.11,
+       "fill": 0.0,
+       "edge": 0.02
+      },
+      "color": {
+       "palette": 0.82
+      },
+      "blend": "screen",
+      "opacity": 0.45,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 3.0
+      }
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       },
+       "view": {
+        "turn": 190.0,
+        "zoom": 0.903,
+        "shift": [
+         -0.22,
+         -0.154
+        ]
+       }
+      },
+      "sheet": {
+       "bands": 3.0,
+       "phase": 0.48,
+       "fill": 0.15,
+       "edge": 0.3
+      },
+      "color": {
+       "palette": 0.45
+      },
+      "blend": "screen",
+      "opacity": 0.25,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 3.0
+      }
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       },
+       "view": {
+        "turn": 190.0,
+        "zoom": 0.903,
+        "shift": [
+         -0.22,
+         -0.154
+        ]
+       }
+      },
+      "sheet": {
+       "bands": 3.0,
+       "phase": 0.48,
+       "fill": 0.0,
+       "edge": 0.02
+      },
+      "color": {
+       "palette": 0.86
+      },
+      "blend": "screen",
+      "opacity": 0.45,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 3.0
+      }
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "sheet": {
+       "period": 1.0,
+       "phase": 0.0,
+       "fill": 0.15,
+       "edge": 0.3
+      },
+      "color": {
+       "palette": 0.5
+      },
+      "blend": "screen",
+      "opacity": 0.25,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 3.0
+      }
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "sheet": {
+       "period": 1.0,
+       "phase": 0.0,
+       "fill": 0.0,
+       "edge": 0.02
+      },
+      "color": {
+       "palette": 0.88
+      },
+      "blend": "screen",
+      "opacity": 0.6,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 3.0
+      }
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "lines": {
+        "radius": 2.0,
+        "twist": -2.0,
+        "divide": 1.5,
+        "side": "outside"
+       }
+      },
+      "sheet": {
+       "period": 0.125,
+       "phase": 0.0,
+       "fill": 0.15,
+       "edge": 0.3
+      },
+      "color": {
+       "palette": 0.6
+      },
+      "blend": "screen",
+      "opacity": 0.25,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 3.0
+      }
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "lines": {
+        "radius": 2.0,
+        "twist": -2.0,
+        "divide": 1.5,
+        "side": "outside"
+       }
+      },
+      "sheet": {
+       "period": 0.125,
+       "phase": 0.0,
+       "fill": 0.0,
+       "edge": 0.02
+      },
+      "color": {
+       "palette": 0.95
+      },
+      "blend": "screen",
+      "opacity": 0.6,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 3.0
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "de"
+       }
+      },
+      "falloff": 0.0015,
+      "color": {
+       "palette": 0.7
+      },
+      "blend": "screen",
+      "opacity": 0.25
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "de"
+       }
+      },
+      "falloff": 0.00025,
+      "color": {
+       "palette": 0.95
+      },
+      "blend": "screen",
+      "opacity": 0.35
+     }
+    ]
+   },
+   "shown": [
+    {
+     "keep": "style_flame_veils_r1/veil_shards/forms_a/vs_a_f_broad",
+     "caption": "Green veils of light netted into curved shards round a cubic Julia set, each pane rimmed in gold, the shards growing finer towards the set",
+     "location": {
+      "schema": 1,
+      "name": "04_vj_d3_r1.08_t0.124_whole",
+      "family": {
+       "kind": "julia",
+       "degree": 3,
+       "c": [
+        "0.4703002567301635",
+        "0.028926321933118226"
+       ]
+      },
+      "viewport": {
+       "center_re": "0.0",
+       "center_im": "0.0",
+       "width": "2.9"
+      },
+      "maxiter": 800,
+      "note": "degree-3 Julia set, fixed-point multiplier 1.08*e^(2 pi i 0.124), whole; seed 28, draw 10"
+     },
+     "colormap": "veil_shards",
+     "stack": {
+      "name": "veil_shards",
+      "tone": {
+       "median": 0.35,
+       "p10": 0.235,
+       "log_density": 8.0
+      },
+      "layers": [
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "power": 0.0001,
+        "color": {
+         "palette": 0.04
+        },
+        "opacity": 1.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "stripe",
+          "density": 2.0
+         }
+        },
+        "power": 2.0,
+        "color": {
+         "palette": 0.25
+        },
+        "blend": "screen",
+        "opacity": 0.07
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "stripe",
+          "density": 2.0
+         },
+         "view": {
+          "turn": 137.5,
+          "zoom": 1.0,
+          "shift": [
+           -0.079,
+           -0.108
+          ]
+         }
+        },
+        "power": 2.0,
+        "color": {
+         "palette": 0.27
+        },
+        "blend": "screen",
+        "opacity": 0.07
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "stripe",
+          "density": 2.0
+         },
+         "view": {
+          "turn": 275.0,
+          "zoom": 1.218,
+          "shift": [
+           -0.057,
+           0.181
+          ]
+         }
+        },
+        "power": 2.0,
+        "color": {
+         "palette": 0.29
+        },
+        "blend": "screen",
+        "opacity": 0.07
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "stripe",
+          "density": 2.0
+         },
+         "view": {
+          "turn": 52.5,
+          "zoom": 1.484,
+          "shift": [
+           0.22,
+           -0.075
+          ]
+         }
+        },
+        "power": 2.0,
+        "color": {
+         "palette": 0.31
+        },
+        "blend": "screen",
+        "opacity": 0.07
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "stripe",
+          "density": 2.0
+         },
+         "view": {
+          "turn": 190.0,
+          "zoom": 1.806,
+          "shift": [
+           -0.22,
+           -0.154
+          ]
+         }
+        },
+        "power": 2.0,
+        "color": {
+         "palette": 0.33
+        },
+        "blend": "screen",
+        "opacity": 0.07
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         },
+         "view": {
+          "turn": 137.5,
+          "zoom": 1.0,
+          "shift": [
+           -0.079,
+           -0.108
+          ]
+         }
+        },
+        "sheet": {
+         "bands": 3.0,
+         "phase": 0.37,
+         "fill": 0.15,
+         "edge": 0.3
+        },
+        "color": {
+         "palette": 0.36
+        },
+        "blend": "screen",
+        "opacity": 0.25,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 3.0
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         },
+         "view": {
+          "turn": 137.5,
+          "zoom": 1.0,
+          "shift": [
+           -0.079,
+           -0.108
+          ]
+         }
+        },
+        "sheet": {
+         "bands": 3.0,
+         "phase": 0.37,
+         "fill": 0.0,
+         "edge": 0.02
+        },
+        "color": {
+         "palette": 0.74
+        },
+        "blend": "screen",
+        "opacity": 0.45,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 3.0
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         },
+         "view": {
+          "turn": 275.0,
+          "zoom": 1.218,
+          "shift": [
+           -0.057,
+           0.181
+          ]
+         }
+        },
+        "sheet": {
+         "bands": 3.0,
+         "phase": 0.74,
+         "fill": 0.15,
+         "edge": 0.3
+        },
+        "color": {
+         "palette": 0.39
+        },
+        "blend": "screen",
+        "opacity": 0.25,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 3.0
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         },
+         "view": {
+          "turn": 275.0,
+          "zoom": 1.218,
+          "shift": [
+           -0.057,
+           0.181
+          ]
+         }
+        },
+        "sheet": {
+         "bands": 3.0,
+         "phase": 0.74,
+         "fill": 0.0,
+         "edge": 0.02
+        },
+        "color": {
+         "palette": 0.78
+        },
+        "blend": "screen",
+        "opacity": 0.45,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 3.0
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         },
+         "view": {
+          "turn": 52.5,
+          "zoom": 1.484,
+          "shift": [
+           0.22,
+           -0.075
+          ]
+         }
+        },
+        "sheet": {
+         "bands": 3.0,
+         "phase": 0.11,
+         "fill": 0.15,
+         "edge": 0.3
+        },
+        "color": {
+         "palette": 0.42
+        },
+        "blend": "screen",
+        "opacity": 0.25,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 3.0
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         },
+         "view": {
+          "turn": 52.5,
+          "zoom": 1.484,
+          "shift": [
+           0.22,
+           -0.075
+          ]
+         }
+        },
+        "sheet": {
+         "bands": 3.0,
+         "phase": 0.11,
+         "fill": 0.0,
+         "edge": 0.02
+        },
+        "color": {
+         "palette": 0.82
+        },
+        "blend": "screen",
+        "opacity": 0.45,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 3.0
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         },
+         "view": {
+          "turn": 190.0,
+          "zoom": 1.806,
+          "shift": [
+           -0.22,
+           -0.154
+          ]
+         }
+        },
+        "sheet": {
+         "bands": 3.0,
+         "phase": 0.48,
+         "fill": 0.15,
+         "edge": 0.3
+        },
+        "color": {
+         "palette": 0.45
+        },
+        "blend": "screen",
+        "opacity": 0.25,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 3.0
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         },
+         "view": {
+          "turn": 190.0,
+          "zoom": 1.806,
+          "shift": [
+           -0.22,
+           -0.154
+          ]
+         }
+        },
+        "sheet": {
+         "bands": 3.0,
+         "phase": 0.48,
+         "fill": 0.0,
+         "edge": 0.02
+        },
+        "color": {
+         "palette": 0.86
+        },
+        "blend": "screen",
+        "opacity": 0.45,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 3.0
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "sheet": {
+         "period": 1.0,
+         "phase": 0.0,
+         "fill": 0.15,
+         "edge": 0.3
+        },
+        "color": {
+         "palette": 0.5
+        },
+        "blend": "screen",
+        "opacity": 0.25,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 3.0
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "sheet": {
+         "period": 1.0,
+         "phase": 0.0,
+         "fill": 0.0,
+         "edge": 0.02
+        },
+        "color": {
+         "palette": 0.88
+        },
+        "blend": "screen",
+        "opacity": 0.6,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 3.0
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "lines": {
+          "radius": 2.0,
+          "twist": -2.0,
+          "divide": 1.5,
+          "side": "outside"
+         }
+        },
+        "sheet": {
+         "period": 0.125,
+         "phase": 0.0,
+         "fill": 0.15,
+         "edge": 0.3
+        },
+        "color": {
+         "palette": 0.6
+        },
+        "blend": "screen",
+        "opacity": 0.25,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 3.0
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "lines": {
+          "radius": 2.0,
+          "twist": -2.0,
+          "divide": 1.5,
+          "side": "outside"
+         }
+        },
+        "sheet": {
+         "period": 0.125,
+         "phase": 0.0,
+         "fill": 0.0,
+         "edge": 0.02
+        },
+        "color": {
+         "palette": 0.95
+        },
+        "blend": "screen",
+        "opacity": 0.6,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 3.0
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "falloff": 0.0015,
+        "color": {
+         "palette": 0.7
+        },
+        "blend": "screen",
+        "opacity": 0.25
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "falloff": 0.00025,
+        "color": {
+         "palette": 0.95
+        },
+        "blend": "screen",
+        "opacity": 0.35
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "veil-star",
+   "style": "veil_star",
+   "tier": "lab",
+   "palette": "veil_shards",
+   "palettes": [
+    {
+     "colormap": "veil_shards",
+     "values": {},
+     "score": 5
+    },
+    {
+     "colormap": "bone_star",
+     "values": {},
+     "score": 5
+    }
+   ],
+   "aliases": [],
+   "variant": "current",
+   "what": "A star of veils: veil_shards' rimmed shards and crossing veils folded by a five-turn kaleidoscope into a five-point star round the frame's centre (green and gold; a bone-white star as a palette entry).",
+   "knobs": [],
+   "stack": {
+    "name": "veil_star",
+    "tone": {
+     "median": 0.35,
+     "p10": 0.235,
+     "log_density": 8.0
+    },
+    "layers": [
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "de"
+       }
+      },
+      "power": 0.0001,
+      "color": {
+       "palette": 0.04
+      },
+      "opacity": 1.0
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "stripe",
+        "density": 2.0
+       }
+      },
+      "power": 2.0,
+      "color": {
+       "palette": 0.25
+      },
+      "blend": "screen",
+      "opacity": 0.07
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "stripe",
+        "density": 2.0
+       },
+       "view": {
+        "turn": 137.5,
+        "zoom": 1.0,
+        "shift": [
+         -0.079,
+         -0.108
+        ]
+       }
+      },
+      "power": 2.0,
+      "color": {
+       "palette": 0.27
+      },
+      "blend": "screen",
+      "opacity": 0.07
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "stripe",
+        "density": 2.0
+       },
+       "view": {
+        "turn": 275.0,
+        "zoom": 1.218,
+        "shift": [
+         -0.057,
+         0.181
+        ]
+       }
+      },
+      "power": 2.0,
+      "color": {
+       "palette": 0.29
+      },
+      "blend": "screen",
+      "opacity": 0.07
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "stripe",
+        "density": 2.0
+       },
+       "view": {
+        "turn": 52.5,
+        "zoom": 1.484,
+        "shift": [
+         0.22,
+         -0.075
+        ]
+       }
+      },
+      "power": 2.0,
+      "color": {
+       "palette": 0.31
+      },
+      "blend": "screen",
+      "opacity": 0.07
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "stripe",
+        "density": 2.0
+       },
+       "view": {
+        "turn": 190.0,
+        "zoom": 1.806,
+        "shift": [
+         -0.22,
+         -0.154
+        ]
+       }
+      },
+      "power": 2.0,
+      "color": {
+       "palette": 0.33
+      },
+      "blend": "screen",
+      "opacity": 0.07
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       },
+       "view": {
+        "turn": 137.5,
+        "zoom": 1.0,
+        "shift": [
+         -0.079,
+         -0.108
+        ]
+       }
+      },
+      "sheet": {
+       "bands": 3.0,
+       "phase": 0.37,
+       "fill": 0.15,
+       "edge": 0.3
+      },
+      "color": {
+       "palette": 0.36
+      },
+      "blend": "screen",
+      "opacity": 0.25,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 5.0
+      }
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       },
+       "view": {
+        "turn": 137.5,
+        "zoom": 1.0,
+        "shift": [
+         -0.079,
+         -0.108
+        ]
+       }
+      },
+      "sheet": {
+       "bands": 3.0,
+       "phase": 0.37,
+       "fill": 0.0,
+       "edge": 0.02
+      },
+      "color": {
+       "palette": 0.74
+      },
+      "blend": "screen",
+      "opacity": 0.45,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 5.0
+      }
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       },
+       "view": {
+        "turn": 275.0,
+        "zoom": 1.218,
+        "shift": [
+         -0.057,
+         0.181
+        ]
+       }
+      },
+      "sheet": {
+       "bands": 3.0,
+       "phase": 0.74,
+       "fill": 0.15,
+       "edge": 0.3
+      },
+      "color": {
+       "palette": 0.39
+      },
+      "blend": "screen",
+      "opacity": 0.25,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 5.0
+      }
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       },
+       "view": {
+        "turn": 275.0,
+        "zoom": 1.218,
+        "shift": [
+         -0.057,
+         0.181
+        ]
+       }
+      },
+      "sheet": {
+       "bands": 3.0,
+       "phase": 0.74,
+       "fill": 0.0,
+       "edge": 0.02
+      },
+      "color": {
+       "palette": 0.78
+      },
+      "blend": "screen",
+      "opacity": 0.45,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 5.0
+      }
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       },
+       "view": {
+        "turn": 52.5,
+        "zoom": 1.484,
+        "shift": [
+         0.22,
+         -0.075
+        ]
+       }
+      },
+      "sheet": {
+       "bands": 3.0,
+       "phase": 0.11,
+       "fill": 0.15,
+       "edge": 0.3
+      },
+      "color": {
+       "palette": 0.42
+      },
+      "blend": "screen",
+      "opacity": 0.25,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 5.0
+      }
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       },
+       "view": {
+        "turn": 52.5,
+        "zoom": 1.484,
+        "shift": [
+         0.22,
+         -0.075
+        ]
+       }
+      },
+      "sheet": {
+       "bands": 3.0,
+       "phase": 0.11,
+       "fill": 0.0,
+       "edge": 0.02
+      },
+      "color": {
+       "palette": 0.82
+      },
+      "blend": "screen",
+      "opacity": 0.45,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 5.0
+      }
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       },
+       "view": {
+        "turn": 190.0,
+        "zoom": 1.806,
+        "shift": [
+         -0.22,
+         -0.154
+        ]
+       }
+      },
+      "sheet": {
+       "bands": 3.0,
+       "phase": 0.48,
+       "fill": 0.15,
+       "edge": 0.3
+      },
+      "color": {
+       "palette": 0.45
+      },
+      "blend": "screen",
+      "opacity": 0.25,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 5.0
+      }
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       },
+       "view": {
+        "turn": 190.0,
+        "zoom": 1.806,
+        "shift": [
+         -0.22,
+         -0.154
+        ]
+       }
+      },
+      "sheet": {
+       "bands": 3.0,
+       "phase": 0.48,
+       "fill": 0.0,
+       "edge": 0.02
+      },
+      "color": {
+       "palette": 0.86
+      },
+      "blend": "screen",
+      "opacity": 0.45,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 5.0
+      }
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "sheet": {
+       "period": 1.0,
+       "phase": 0.0,
+       "fill": 0.15,
+       "edge": 0.3
+      },
+      "color": {
+       "palette": 0.5
+      },
+      "blend": "screen",
+      "opacity": 0.25,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 5.0
+      }
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "sheet": {
+       "period": 1.0,
+       "phase": 0.0,
+       "fill": 0.0,
+       "edge": 0.02
+      },
+      "color": {
+       "palette": 0.88
+      },
+      "blend": "screen",
+      "opacity": 0.6,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 5.0
+      }
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "lines": {
+        "radius": 2.0,
+        "twist": -2.0,
+        "divide": 1.5,
+        "side": "outside"
+       }
+      },
+      "sheet": {
+       "period": 0.125,
+       "phase": 0.0,
+       "fill": 0.15,
+       "edge": 0.3
+      },
+      "color": {
+       "palette": 0.6
+      },
+      "blend": "screen",
+      "opacity": 0.25,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 5.0
+      }
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "lines": {
+        "radius": 2.0,
+        "twist": -2.0,
+        "divide": 1.5,
+        "side": "outside"
+       }
+      },
+      "sheet": {
+       "period": 0.125,
+       "phase": 0.0,
+       "fill": 0.0,
+       "edge": 0.02
+      },
+      "color": {
+       "palette": 0.95
+      },
+      "blend": "screen",
+      "opacity": 0.6,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 5.0
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "de"
+       }
+      },
+      "falloff": 0.0015,
+      "color": {
+       "palette": 0.7
+      },
+      "blend": "screen",
+      "opacity": 0.25
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "de"
+       }
+      },
+      "falloff": 0.00025,
+      "color": {
+       "palette": 0.95
+      },
+      "blend": "screen",
+      "opacity": 0.1
+     }
+    ],
+    "projection": {
+     "kaleidoscope": {
+      "center": [
+       0.5,
+       0.5
+      ],
+      "turns": 5,
+      "angle": 90.0
+     }
+    }
+   },
+   "shown": [
+    {
+     "keep": "style_flame_veils_r1/veil_shards/forms_a/vs_a_s_base",
+     "caption": "Veil_shards' rimmed green panes folded by a kaleidoscope into a five-point star of veils round a Julia set's lace",
+     "location": {
+      "schema": 1,
+      "name": "04_vj_d3_r1.08_t0.124_whole",
+      "family": {
+       "kind": "julia",
+       "degree": 3,
+       "c": [
+        "0.4703002567301635",
+        "0.028926321933118226"
+       ]
+      },
+      "viewport": {
+       "center_re": "0.0",
+       "center_im": "0.0",
+       "width": "2.9"
+      },
+      "maxiter": 800,
+      "note": "degree-3 Julia set, fixed-point multiplier 1.08*e^(2 pi i 0.124), whole; seed 28, draw 10"
+     },
+     "colormap": "veil_shards",
+     "stack": {
+      "name": "veil_star",
+      "tone": {
+       "median": 0.35,
+       "p10": 0.235,
+       "log_density": 8.0
+      },
+      "layers": [
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "power": 0.0001,
+        "color": {
+         "palette": 0.04
+        },
+        "opacity": 1.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "stripe",
+          "density": 2.0
+         }
+        },
+        "power": 2.0,
+        "color": {
+         "palette": 0.25
+        },
+        "blend": "screen",
+        "opacity": 0.07
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "stripe",
+          "density": 2.0
+         },
+         "view": {
+          "turn": 137.5,
+          "zoom": 1.0,
+          "shift": [
+           -0.079,
+           -0.108
+          ]
+         }
+        },
+        "power": 2.0,
+        "color": {
+         "palette": 0.27
+        },
+        "blend": "screen",
+        "opacity": 0.07
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "stripe",
+          "density": 2.0
+         },
+         "view": {
+          "turn": 275.0,
+          "zoom": 1.218,
+          "shift": [
+           -0.057,
+           0.181
+          ]
+         }
+        },
+        "power": 2.0,
+        "color": {
+         "palette": 0.29
+        },
+        "blend": "screen",
+        "opacity": 0.07
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "stripe",
+          "density": 2.0
+         },
+         "view": {
+          "turn": 52.5,
+          "zoom": 1.484,
+          "shift": [
+           0.22,
+           -0.075
+          ]
+         }
+        },
+        "power": 2.0,
+        "color": {
+         "palette": 0.31
+        },
+        "blend": "screen",
+        "opacity": 0.07
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "stripe",
+          "density": 2.0
+         },
+         "view": {
+          "turn": 190.0,
+          "zoom": 1.806,
+          "shift": [
+           -0.22,
+           -0.154
+          ]
+         }
+        },
+        "power": 2.0,
+        "color": {
+         "palette": 0.33
+        },
+        "blend": "screen",
+        "opacity": 0.07
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         },
+         "view": {
+          "turn": 137.5,
+          "zoom": 1.0,
+          "shift": [
+           -0.079,
+           -0.108
+          ]
+         }
+        },
+        "sheet": {
+         "bands": 3.0,
+         "phase": 0.37,
+         "fill": 0.15,
+         "edge": 0.3
+        },
+        "color": {
+         "palette": 0.36
+        },
+        "blend": "screen",
+        "opacity": 0.25,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 5.0
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         },
+         "view": {
+          "turn": 137.5,
+          "zoom": 1.0,
+          "shift": [
+           -0.079,
+           -0.108
+          ]
+         }
+        },
+        "sheet": {
+         "bands": 3.0,
+         "phase": 0.37,
+         "fill": 0.0,
+         "edge": 0.02
+        },
+        "color": {
+         "palette": 0.74
+        },
+        "blend": "screen",
+        "opacity": 0.45,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 5.0
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         },
+         "view": {
+          "turn": 275.0,
+          "zoom": 1.218,
+          "shift": [
+           -0.057,
+           0.181
+          ]
+         }
+        },
+        "sheet": {
+         "bands": 3.0,
+         "phase": 0.74,
+         "fill": 0.15,
+         "edge": 0.3
+        },
+        "color": {
+         "palette": 0.39
+        },
+        "blend": "screen",
+        "opacity": 0.25,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 5.0
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         },
+         "view": {
+          "turn": 275.0,
+          "zoom": 1.218,
+          "shift": [
+           -0.057,
+           0.181
+          ]
+         }
+        },
+        "sheet": {
+         "bands": 3.0,
+         "phase": 0.74,
+         "fill": 0.0,
+         "edge": 0.02
+        },
+        "color": {
+         "palette": 0.78
+        },
+        "blend": "screen",
+        "opacity": 0.45,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 5.0
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         },
+         "view": {
+          "turn": 52.5,
+          "zoom": 1.484,
+          "shift": [
+           0.22,
+           -0.075
+          ]
+         }
+        },
+        "sheet": {
+         "bands": 3.0,
+         "phase": 0.11,
+         "fill": 0.15,
+         "edge": 0.3
+        },
+        "color": {
+         "palette": 0.42
+        },
+        "blend": "screen",
+        "opacity": 0.25,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 5.0
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         },
+         "view": {
+          "turn": 52.5,
+          "zoom": 1.484,
+          "shift": [
+           0.22,
+           -0.075
+          ]
+         }
+        },
+        "sheet": {
+         "bands": 3.0,
+         "phase": 0.11,
+         "fill": 0.0,
+         "edge": 0.02
+        },
+        "color": {
+         "palette": 0.82
+        },
+        "blend": "screen",
+        "opacity": 0.45,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 5.0
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         },
+         "view": {
+          "turn": 190.0,
+          "zoom": 1.806,
+          "shift": [
+           -0.22,
+           -0.154
+          ]
+         }
+        },
+        "sheet": {
+         "bands": 3.0,
+         "phase": 0.48,
+         "fill": 0.15,
+         "edge": 0.3
+        },
+        "color": {
+         "palette": 0.45
+        },
+        "blend": "screen",
+        "opacity": 0.25,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 5.0
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         },
+         "view": {
+          "turn": 190.0,
+          "zoom": 1.806,
+          "shift": [
+           -0.22,
+           -0.154
+          ]
+         }
+        },
+        "sheet": {
+         "bands": 3.0,
+         "phase": 0.48,
+         "fill": 0.0,
+         "edge": 0.02
+        },
+        "color": {
+         "palette": 0.86
+        },
+        "blend": "screen",
+        "opacity": 0.45,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 5.0
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "sheet": {
+         "period": 1.0,
+         "phase": 0.0,
+         "fill": 0.15,
+         "edge": 0.3
+        },
+        "color": {
+         "palette": 0.5
+        },
+        "blend": "screen",
+        "opacity": 0.25,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 5.0
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "sheet": {
+         "period": 1.0,
+         "phase": 0.0,
+         "fill": 0.0,
+         "edge": 0.02
+        },
+        "color": {
+         "palette": 0.88
+        },
+        "blend": "screen",
+        "opacity": 0.6,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 5.0
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "lines": {
+          "radius": 2.0,
+          "twist": -2.0,
+          "divide": 1.5,
+          "side": "outside"
+         }
+        },
+        "sheet": {
+         "period": 0.125,
+         "phase": 0.0,
+         "fill": 0.15,
+         "edge": 0.3
+        },
+        "color": {
+         "palette": 0.6
+        },
+        "blend": "screen",
+        "opacity": 0.25,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 5.0
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "lines": {
+          "radius": 2.0,
+          "twist": -2.0,
+          "divide": 1.5,
+          "side": "outside"
+         }
+        },
+        "sheet": {
+         "period": 0.125,
+         "phase": 0.0,
+         "fill": 0.0,
+         "edge": 0.02
+        },
+        "color": {
+         "palette": 0.95
+        },
+        "blend": "screen",
+        "opacity": 0.6,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 5.0
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "falloff": 0.0015,
+        "color": {
+         "palette": 0.7
+        },
+        "blend": "screen",
+        "opacity": 0.25
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "falloff": 0.00025,
+        "color": {
+         "palette": 0.95
+        },
+        "blend": "screen",
+        "opacity": 0.1
+       }
+      ],
+      "projection": {
+       "kaleidoscope": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "turns": 5,
+        "angle": 90.0
+       }
+      }
      }
     }
    ]
@@ -59061,6 +61484,70 @@
     ]
    ]
   },
+  "bone_star": {
+   "schema": 1,
+   "name": "bone_star",
+   "kind": "sequential",
+   "source": "bone_star, authored as 7 control points as the albedo of the veil_shards style's entry from wallhaven-wqg52p: a dark umber ground through taupe and beige to a peach-cream and a warm white on the star's creases.",
+   "stops": [
+    [
+     0.0,
+     [
+      22,
+      16,
+      12
+     ]
+    ],
+    [
+     0.2,
+     [
+      62,
+      48,
+      38
+     ]
+    ],
+    [
+     0.4,
+     [
+      118,
+      94,
+      78
+     ]
+    ],
+    [
+     0.58,
+     [
+      170,
+      136,
+      112
+     ]
+    ],
+    [
+     0.72,
+     [
+      206,
+      170,
+      144
+     ]
+    ],
+    [
+     0.86,
+     [
+      232,
+      206,
+      184
+     ]
+    ],
+    [
+     1.0,
+     [
+      252,
+      244,
+      236
+     ]
+    ]
+   ]
+  },
   "bronze_packing": {
    "schema": 1,
    "name": "bronze_packing",
@@ -65989,6 +68476,70 @@
     ]
    ]
   },
+  "silk_shards": {
+   "schema": 1,
+   "name": "silk_shards",
+   "kind": "sequential",
+   "source": "silk_shards, authored as 7 control points as the albedo of the veil_shards style's entry from wallhaven-kwg7v6: a black-maroon ground, oxblood haze, then crimson strands to a hot rose and a pale pink on their sheen.",
+   "stops": [
+    [
+     0.0,
+     [
+      10,
+      2,
+      4
+     ]
+    ],
+    [
+     0.2,
+     [
+      44,
+      6,
+      12
+     ]
+    ],
+    [
+     0.4,
+     [
+      104,
+      10,
+      24
+     ]
+    ],
+    [
+     0.58,
+     [
+      176,
+      18,
+      38
+     ]
+    ],
+    [
+     0.72,
+     [
+      222,
+      40,
+      62
+     ]
+    ],
+    [
+     0.86,
+     [
+      246,
+      110,
+      130
+     ]
+    ],
+    [
+     1.0,
+     [
+      255,
+      214,
+      220
+     ]
+    ]
+   ]
+  },
   "slate_rosettes": {
    "schema": 1,
    "name": "slate_rosettes",
@@ -66689,6 +69240,78 @@
       226,
       248,
       212
+     ]
+    ]
+   ]
+  },
+  "soft_veils_wine": {
+   "schema": 1,
+   "name": "soft_veils_wine",
+   "kind": "sequential",
+   "source": "soft_veils_wine, authored as 8 control points as the albedo of the soft_veils style's entry from wine-and-roses-25.jpg: a black-wine ground, a burgundy haze, then crimson veils to rose-gold, gold and a pale straw.",
+   "stops": [
+    [
+     0.0,
+     [
+      12,
+      2,
+      6
+     ]
+    ],
+    [
+     0.18,
+     [
+      52,
+      6,
+      20
+     ]
+    ],
+    [
+     0.35,
+     [
+      110,
+      14,
+      36
+     ]
+    ],
+    [
+     0.5,
+     [
+      160,
+      30,
+      48
+     ]
+    ],
+    [
+     0.64,
+     [
+      196,
+      96,
+      60
+     ]
+    ],
+    [
+     0.78,
+     [
+      226,
+      168,
+      70
+     ]
+    ],
+    [
+     0.9,
+     [
+      244,
+      214,
+      120
+     ]
+    ],
+    [
+     1.0,
+     [
+      252,
+      240,
+      190
      ]
     ]
    ]
@@ -68153,6 +70776,70 @@
       240,
       231,
       196
+     ]
+    ]
+   ]
+  },
+  "veil_shards": {
+   "schema": 1,
+   "name": "veil_shards",
+   "kind": "sequential",
+   "source": "veil_shards, authored as 7 control points as the albedo of the veil_shards style from wallhaven-r7ev9m: a deep bottle-green ground through jade and olive to amber, gold and a pale lemon on the sheets' rims.",
+   "stops": [
+    [
+     0.0,
+     [
+      8,
+      34,
+      22
+     ]
+    ],
+    [
+     0.2,
+     [
+      20,
+      72,
+      44
+     ]
+    ],
+    [
+     0.38,
+     [
+      46,
+      110,
+      58
+     ]
+    ],
+    [
+     0.55,
+     [
+      120,
+      132,
+      36
+     ]
+    ],
+    [
+     0.7,
+     [
+      206,
+      140,
+      30
+     ]
+    ],
+    [
+     0.85,
+     [
+      240,
+      196,
+      64
+     ]
+    ],
+    [
+     1.0,
+     [
+      252,
+      240,
+      150
      ]
     ]
    ]
