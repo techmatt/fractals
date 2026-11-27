@@ -1,7 +1,7 @@
 {
   "built": "2026-11-26",
   "bundle": {
-    "colormaps": 121,
+    "colormaps": 131,
     "file": "custom-modes.json",
     "modes": [
       "brass-foam",
@@ -67,10 +67,13 @@
       "marbled-pour",
       "pour-cells",
       "veil-shards",
-      "veil-star"
+      "veil-star",
+      "nautilus-fins",
+      "bokeh-bloom",
+      "netted-leaves"
     ],
     "schema": 1,
-    "sha256": "12233c606be99dab691f1a756d9c0618b73d48511bd255e1702cc2ab342ab034"
+    "sha256": "5d3b91f592ca35df9218a6f71089d1ed87a948fd9417b11cec99b87021d3b0ef"
   },
   "crate": "explorer/style-wasm",
   "dependencies": [
@@ -87,8 +90,8 @@
   "rustc": "1.96.0 (ac68faa20 2026-05-25)",
   "schema": 1,
   "trees": {
-    "data/palettes": "75c275c70e03944c45b31dbcb93f215189c2d9dc",
-    "data/styles": "cb308e7e2a5a738f1b734ed97bc8fcc93fe36794",
+    "data/palettes": "57f9b0a5481e88d39d3fa9dffc90ece6b0fec804",
+    "data/styles": "f6552ff063c95de1919e36cd2f5545ce4d307f5f",
     "engine": "078940238748e2ec3e77b0b81edbb99b6b05268a",
     "style-wasm": "628b751269c2231c208f67d2a274482ba21cdefb"
   }

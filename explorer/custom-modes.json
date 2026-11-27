@@ -1430,6 +1430,14 @@
      "colormap": "glossy_lobes",
      "values": {},
      "score": 4
+    },
+    {
+     "colormap": "waltz_orbs",
+     "values": {
+      "/tone/median": 0.163,
+      "/tone/p10": 0.04
+     },
+     "score": 3
     }
    ],
    "aliases": [],
@@ -22786,6 +22794,17 @@
      "colormap": "crescent_lines",
      "values": {},
      "score": 3
+    },
+    {
+     "colormap": "copper_feathers",
+     "values": {
+      "/tone/median": 0.268,
+      "/tone/p10": 0.025
+     },
+     "rests": {
+      "brightness": 0.268
+     },
+     "score": 3
     }
    ],
    "aliases": [],
@@ -23444,6 +23463,11 @@
       "lace_glow": 0.5
      },
      "score": 2
+    },
+    {
+     "colormap": "nautilus_fins",
+     "values": {},
+     "score": 3
     }
    ],
    "aliases": [
@@ -24604,6 +24628,17 @@
       "/tone/median": 0.606,
       "/tone/p10": 0.303
      }
+    },
+    {
+     "colormap": "starburst_lace",
+     "values": {
+      "/tone/median": 0.185,
+      "/tone/p10": 0.008,
+      "/interior": {
+       "rgb": "#04060c"
+      }
+     },
+     "score": 3
     }
    ],
    "aliases": [
@@ -33922,6 +33957,14 @@
       "/tone/p10": 0.034
      },
      "score": 3
+    },
+    {
+     "colormap": "violet_threads",
+     "values": {
+      "/tone/median": 0.106,
+      "/tone/p10": 0.019
+     },
+     "score": 3
     }
    ],
    "aliases": [],
@@ -38970,6 +39013,14 @@
       "/tone/median": 0.061,
       "/tone/p10": 0.007
      }
+    },
+    {
+     "colormap": "copper_feathers",
+     "values": {
+      "/tone/median": 0.268,
+      "/tone/p10": 0.025
+     },
+     "score": 3
     }
    ],
    "aliases": [
@@ -39591,6 +39642,14 @@
      "colormap": "hollow_webs",
      "values": {},
      "score": 3
+    },
+    {
+     "colormap": "knit_webs",
+     "values": {
+      "/tone/median": 0.323,
+      "/tone/p10": 0.145
+     },
+     "score": 3
     }
    ],
    "aliases": [],
@@ -40081,11 +40140,15 @@
       "/layers/3/light/rings": 0.35,
       "/layers/3/light/slope": 1.2
      }
+    },
+    {
+     "colormap": "blue_nebula",
+     "values": {}
     }
    ],
    "aliases": [],
    "variant": "current",
-   "what": "Storm clouds: crinkled cloud banks in teal, violet and orchid, the lace their edge, soft colour drifting through them, lit as a broad relief (blue and gold, and a crimson nebula with stars, as palette entries).",
+   "what": "Storm clouds: crinkled cloud banks in teal, violet and orchid, the lace their edge, soft colour drifting through them, lit as a broad relief (blue and gold, a crimson nebula with stars, and a blue nebula, as palette entries).",
    "knobs": [],
    "stack": {
     "name": "storm_clouds",
@@ -42071,7 +42134,7 @@
     "post": [
      {
       "kind": "paper",
-      "levels": 16,
+      "levels": 10,
       "taper": 0.8,
       "hop": 0.125,
       "phase": 0.0625,
@@ -42492,29 +42555,53 @@
      "colormap": "bone_star",
      "values": {
       "/tone/median": 0.405,
-      "/tone/p10": 0.25
+      "/tone/p10": 0.25,
+      "/layers/2/channel/view/zoom": 0.5,
+      "/layers/3/channel/view/zoom": 0.609,
+      "/layers/4/channel/view/zoom": 0.742,
+      "/layers/5/channel/view/zoom": 0.903,
+      "/layers/6/channel/view/zoom": 0.5,
+      "/layers/7/channel/view/zoom": 0.5,
+      "/layers/8/channel/view/zoom": 0.609,
+      "/layers/9/channel/view/zoom": 0.609,
+      "/layers/10/channel/view/zoom": 0.742,
+      "/layers/11/channel/view/zoom": 0.742,
+      "/layers/12/channel/view/zoom": 0.903,
+      "/layers/13/channel/view/zoom": 0.903
      },
      "score": 5
     },
     {
      "colormap": "silk_shards",
      "values": {
+      "/tone/median": 0.135,
+      "/tone/p10": 0.093,
+      "/layers/2/channel/view/zoom": 0.5,
+      "/layers/3/channel/view/zoom": 0.609,
+      "/layers/4/channel/view/zoom": 0.742,
+      "/layers/5/channel/view/zoom": 0.903,
+      "/layers/6/channel/view/zoom": 0.5,
       "/layers/6/opacity": 0.1,
+      "/layers/7/channel/view/zoom": 0.5,
       "/layers/7/opacity": 0.75,
+      "/layers/8/channel/view/zoom": 0.609,
       "/layers/8/opacity": 0.1,
+      "/layers/9/channel/view/zoom": 0.609,
       "/layers/9/opacity": 0.75,
+      "/layers/10/channel/view/zoom": 0.742,
       "/layers/10/opacity": 0.1,
+      "/layers/11/channel/view/zoom": 0.742,
       "/layers/11/opacity": 0.75,
+      "/layers/12/channel/view/zoom": 0.903,
       "/layers/12/opacity": 0.1,
+      "/layers/13/channel/view/zoom": 0.903,
       "/layers/13/opacity": 0.75,
       "/layers/14/opacity": 0.1,
       "/layers/15/opacity": 0.75,
       "/layers/16/opacity": 0.1,
       "/layers/16/sheet/period": 0.0625,
       "/layers/17/opacity": 0.75,
-      "/layers/17/sheet/period": 0.0625,
-      "/tone/median": 0.135,
-      "/tone/p10": 0.093
+      "/layers/17/sheet/period": 0.0625
      },
      "score": 5
     }
@@ -42568,7 +42655,7 @@
        },
        "view": {
         "turn": 137.5,
-        "zoom": 0.5,
+        "zoom": 1.0,
         "shift": [
          -0.079,
          -0.108
@@ -42591,7 +42678,7 @@
        },
        "view": {
         "turn": 275.0,
-        "zoom": 0.609,
+        "zoom": 1.218,
         "shift": [
          -0.057,
          0.181
@@ -42614,7 +42701,7 @@
        },
        "view": {
         "turn": 52.5,
-        "zoom": 0.742,
+        "zoom": 1.484,
         "shift": [
          0.22,
          -0.075
@@ -42637,7 +42724,7 @@
        },
        "view": {
         "turn": 190.0,
-        "zoom": 0.903,
+        "zoom": 1.806,
         "shift": [
          -0.22,
          -0.154
@@ -42659,7 +42746,7 @@
        },
        "view": {
         "turn": 137.5,
-        "zoom": 0.5,
+        "zoom": 1.0,
         "shift": [
          -0.079,
          -0.108
@@ -42695,7 +42782,7 @@
        },
        "view": {
         "turn": 137.5,
-        "zoom": 0.5,
+        "zoom": 1.0,
         "shift": [
          -0.079,
          -0.108
@@ -42731,7 +42818,7 @@
        },
        "view": {
         "turn": 275.0,
-        "zoom": 0.609,
+        "zoom": 1.218,
         "shift": [
          -0.057,
          0.181
@@ -42767,7 +42854,7 @@
        },
        "view": {
         "turn": 275.0,
-        "zoom": 0.609,
+        "zoom": 1.218,
         "shift": [
          -0.057,
          0.181
@@ -42803,7 +42890,7 @@
        },
        "view": {
         "turn": 52.5,
-        "zoom": 0.742,
+        "zoom": 1.484,
         "shift": [
          0.22,
          -0.075
@@ -42839,7 +42926,7 @@
        },
        "view": {
         "turn": 52.5,
-        "zoom": 0.742,
+        "zoom": 1.484,
         "shift": [
          0.22,
          -0.075
@@ -42875,7 +42962,7 @@
        },
        "view": {
         "turn": 190.0,
-        "zoom": 0.903,
+        "zoom": 1.806,
         "shift": [
          -0.22,
          -0.154
@@ -42911,7 +42998,7 @@
        },
        "view": {
         "turn": 190.0,
-        "zoom": 0.903,
+        "zoom": 1.806,
         "shift": [
          -0.22,
          -0.154
@@ -44276,7 +44363,7 @@
    "shown": [
     {
      "keep": "style_flame_veils_r1/veil_shards/forms_a/vs_a_s_base",
-     "caption": "Veil_shards' rimmed green panes folded by a kaleidoscope into a five-point star of veils round a Julia set's lace",
+     "caption": "Green shards of veil, each pane rimmed in gold, folded by a kaleidoscope into a five-point star round a Julia set's lace",
      "location": {
       "schema": 1,
       "name": "04_vj_d3_r1.08_t0.124_whole",
@@ -44870,6 +44957,1234 @@
         "angle": 90.0
        }
       }
+     }
+    }
+   ]
+  },
+  {
+   "name": "nautilus-fins",
+   "style": "nautilus_fins",
+   "tier": "lab",
+   "palette": "nautilus_fins",
+   "palettes": [
+    {
+     "colormap": "nautilus_fins",
+     "values": {},
+     "score": 3
+    },
+    {
+     "colormap": "shell_tunnels",
+     "values": {
+      "/layers/1/light/period": 0.5,
+      "/layers/2/sheet/period": 0.5,
+      "/layers/3/sheet/period": 0.5,
+      "/layers/4/opacity": 0.4,
+      "/tone/median": 0.583,
+      "/tone/p10": 0.364
+     },
+     "score": 3
+    }
+   ],
+   "aliases": [],
+   "variant": "current",
+   "what": "A nautilus of layered fins: one translucent fin per escape step, each brightening to a dark-lined rim and lit as a curved surface, gold beads strung along the set's edge and its heart inked dark, gold to violet (orange shell ribs as a palette entry).",
+   "knobs": [],
+   "stack": {
+    "name": "nautilus_fins",
+    "interior": {
+     "palette": 0.04
+    },
+    "tone": {
+     "median": 0.628,
+     "p10": 0.012
+    },
+    "layers": [
+     {
+      "kind": "palette",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       },
+       "invert": true
+      },
+      "palette": {
+       "transfer": {
+        "kind": "rank"
+       },
+       "gamma": 1.0,
+       "cycles": 1.0
+      }
+     },
+     {
+      "kind": "light",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "light": {
+       "period": 1.0,
+       "rings": 0.0,
+       "slope": 1.0,
+       "azimuth": 135.0,
+       "elevation": 42.0,
+       "ambient": 0.55,
+       "diffuse": 0.65,
+       "specular": 0.5,
+       "shininess": 18.0,
+       "rim": 0.1,
+       "rim_power": 3.0,
+       "highlight": {
+        "palette": 1.0
+       }
+      }
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "sheet": {
+       "period": 1.0,
+       "fill": 0.35,
+       "edge": 0.08
+      },
+      "color": {
+       "palette": 0.88
+      },
+      "blend": "screen",
+      "opacity": 0.45
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "sheet": {
+       "period": 1.0,
+       "fill": 0.0,
+       "edge": 0.05
+      },
+      "color": {
+       "palette": 0.1
+      },
+      "blend": "multiply",
+      "opacity": 0.55
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "de"
+       }
+      },
+      "falloff": 0.002,
+      "color": {
+       "palette": 0.04
+      },
+      "blend": "multiply",
+      "opacity": 0.9
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.08,
+        "spacing": 1.0,
+        "read": "height",
+        "escaped": true,
+        "largest": 0.015
+       }
+      },
+      "power": 1.0,
+      "color": {
+       "palette": 0.82
+      },
+      "blend": "screen",
+      "opacity": 1.0,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": true,
+       "power": 2.0
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "inside": {
+        "iterations": 1000
+       }
+      },
+      "power": 0.01,
+      "color": {
+       "palette": 0.22
+      },
+      "opacity": 1.0
+     },
+     {
+      "kind": "light",
+      "channel": {
+       "inside": {
+        "iterations": 1000
+       }
+      },
+      "light": {
+       "bands": 1.0,
+       "rings": 1.0,
+       "slope": 0.0,
+       "azimuth": 135.0,
+       "elevation": 55.0,
+       "ambient": 0.8,
+       "diffuse": 0.5,
+       "specular": 0.9,
+       "shininess": 24.0,
+       "rim": 0.25,
+       "rim_power": 3.0,
+       "highlight": {
+        "palette": 0.95
+       }
+      }
+     }
+    ]
+   },
+   "shown": [
+    {
+     "keep": "style_shells_blooms_r1/nautilus_fins/locations/nf_loc_29_phoenix_c34a0553",
+     "caption": "Layered gold fins round small coiled shells, each fin lit like a curved chamber wall, with soft gold beads drifting over the pale shell",
+     "location": {
+      "schema": 1,
+      "name": "phoenix_c34a0553",
+      "family": {
+       "c": [
+        "-0.5266783574752247",
+        "-0.652322729101436"
+       ],
+       "kind": "phoenix",
+       "p": [
+        "-0.28353182998131243",
+        "-0.02545285599096059"
+       ],
+       "z_prev": [
+        "-0.10324356398202189",
+        "0.43684294503006016"
+       ]
+      },
+      "viewport": {
+       "center_re": "0.27986136130525324",
+       "center_im": "0.5342979328491491",
+       "width": "0.8207228013857981"
+      },
+      "maxiter": 6243,
+      "note": "final139_general seat 208 (smooth_mean_angle, phoenix)",
+      "gallery": {
+       "record": "final139_general",
+       "seat": 208,
+       "key": "c34a05536c6983d5",
+       "p_spiral": 0.374127
+      }
+     },
+     "colormap": "nautilus_fins",
+     "stack": {
+      "name": "nf_base",
+      "interior": {
+       "palette": 0.04
+      },
+      "tone": {
+       "median": 0.628,
+       "p10": 0.012
+      },
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         },
+         "invert": true
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         },
+         "gamma": 1.0,
+         "cycles": 1.0
+        }
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "light": {
+         "period": 1.0,
+         "rings": 0.0,
+         "slope": 1.0,
+         "azimuth": 135.0,
+         "elevation": 42.0,
+         "ambient": 0.55,
+         "diffuse": 0.65,
+         "specular": 0.5,
+         "shininess": 18.0,
+         "rim": 0.1,
+         "rim_power": 3.0,
+         "highlight": {
+          "palette": 1.0
+         }
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "sheet": {
+         "period": 1.0,
+         "fill": 0.35,
+         "edge": 0.08
+        },
+        "color": {
+         "palette": 0.88
+        },
+        "blend": "screen",
+        "opacity": 0.45
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "sheet": {
+         "period": 1.0,
+         "fill": 0.0,
+         "edge": 0.05
+        },
+        "color": {
+         "palette": 0.1
+        },
+        "blend": "multiply",
+        "opacity": 0.55
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "falloff": 0.002,
+        "color": {
+         "palette": 0.04
+        },
+        "blend": "multiply",
+        "opacity": 0.9
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.08,
+          "spacing": 1.0,
+          "read": "height",
+          "escaped": true,
+          "largest": 0.015
+         }
+        },
+        "power": 1.0,
+        "color": {
+         "palette": 0.82
+        },
+        "blend": "screen",
+        "opacity": 1.0,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": true,
+         "power": 2.0
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "inside": {
+          "iterations": 1000
+         }
+        },
+        "power": 0.01,
+        "color": {
+         "palette": 0.22
+        },
+        "opacity": 1.0
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "inside": {
+          "iterations": 1000
+         }
+        },
+        "light": {
+         "bands": 1.0,
+         "rings": 1.0,
+         "slope": 0.0,
+         "azimuth": 135.0,
+         "elevation": 55.0,
+         "ambient": 0.8,
+         "diffuse": 0.5,
+         "specular": 0.9,
+         "shininess": 24.0,
+         "rim": 0.25,
+         "rim_power": 3.0,
+         "highlight": {
+          "palette": 0.95
+         }
+        }
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "bokeh-bloom",
+   "style": "bokeh_bloom",
+   "tier": "lab",
+   "palette": "bokeh_bloom",
+   "palettes": [
+    {
+     "colormap": "bokeh_bloom",
+     "values": {},
+     "score": 3
+    }
+   ],
+   "aliases": [],
+   "variant": "current",
+   "what": "A glowing bloom with bokeh: soft lit petals in rust and gold with bright rims and fine veining, the set's lace as dark veins, a warm heart, the far field sunk into the dark and strewn with soft out-of-focus discs.",
+   "knobs": [],
+   "stack": {
+    "name": "bokeh_bloom",
+    "interior": {
+     "palette": 0.02
+    },
+    "tone": {
+     "median": 0.147,
+     "p10": 0.038
+    },
+    "layers": [
+     {
+      "kind": "palette",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "palette": {
+       "transfer": {
+        "kind": "rank"
+       },
+       "gamma": 1.0,
+       "cycles": 1.0
+      }
+     },
+     {
+      "kind": "light",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "light": {
+       "period": 2.0,
+       "rings": 0.0,
+       "slope": 1.0,
+       "azimuth": 120.0,
+       "elevation": 38.0,
+       "ambient": 0.4,
+       "diffuse": 0.8,
+       "specular": 0.35,
+       "shininess": 12.0,
+       "rim": 0.2,
+       "rim_power": 3.0,
+       "highlight": {
+        "palette": 1.0
+       }
+      }
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "sheet": {
+       "period": 2.0,
+       "fill": 0.1,
+       "edge": 0.1
+      },
+      "color": {
+       "palette": 0.78
+      },
+      "blend": "screen",
+      "opacity": 0.6
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "stripe",
+        "density": 48.0
+       }
+      },
+      "color": {
+       "palette": 0.12
+      },
+      "blend": "multiply",
+      "opacity": 0.25,
+      "power": 2.0
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "de"
+       }
+      },
+      "falloff": 0.0008,
+      "color": {
+       "palette": 0.0
+      },
+      "blend": "multiply",
+      "opacity": 0.85
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "radial": {
+        "center": [
+         0.5,
+         0.5
+        ]
+       }
+      },
+      "color": {
+       "palette": 0.92
+      },
+      "blend": "screen",
+      "opacity": 0.2,
+      "power": 4.0
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "gaussian_int"
+       },
+       "invert": true
+      },
+      "color": {
+       "palette": 1.0
+      },
+      "blend": "screen",
+      "opacity": 0.7,
+      "power": 45.0,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "smooth"
+        }
+       },
+       "power": 1.0
+      }
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "de"
+       }
+      },
+      "power": 2.0,
+      "color": {
+       "palette": 0.0
+      },
+      "blend": "multiply",
+      "opacity": 0.6
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "bubble": {
+        "center": [
+         0.5,
+         0.5
+        ],
+        "radius": 0.3,
+        "spacing": 1.0,
+        "read": "height",
+        "escaped": true,
+        "largest": 0.4,
+        "smallest": 0.05,
+        "fade": 0.5
+       }
+      },
+      "power": 0.3,
+      "color": {
+       "palette": 0.72
+      },
+      "blend": "add",
+      "opacity": 0.85,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        }
+       },
+       "invert": false,
+       "power": 1.5
+      }
+     }
+    ]
+   },
+   "shown": [
+    {
+     "keep": "style_shells_blooms_r1/bokeh_bloom/forms_b/bb_b_bb_base",
+     "caption": "Glowing rust and gold petals veined with dark lace round spiral hearts, the far field sunk into shadow behind soft out-of-focus discs",
+     "location": {
+      "schema": 1,
+      "name": "julia-mandelbrot_29e0b1cd",
+      "family": {
+       "kind": "julia",
+       "degree": 2,
+       "c": [
+        "-0.7578064602405856",
+        "0.07283215584887273"
+       ]
+      },
+      "viewport": {
+       "center_re": "0.0",
+       "center_im": "0.0",
+       "width": "0.375"
+      },
+      "maxiter": 950,
+      "note": "final139_general seat 545 (smooth_angle_min, julia:mandelbrot)",
+      "gallery": {
+       "record": "final139_general",
+       "seat": 545,
+       "key": "29e0b1cde8661861",
+       "p_spiral": 0.007804
+      }
+     },
+     "colormap": "bokeh_bloom",
+     "stack": {
+      "name": "bb_base",
+      "interior": {
+       "palette": 0.02
+      },
+      "tone": {
+       "median": 0.147,
+       "p10": 0.038
+      },
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         },
+         "gamma": 1.0,
+         "cycles": 1.0
+        }
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "light": {
+         "period": 2.0,
+         "rings": 0.0,
+         "slope": 1.0,
+         "azimuth": 120.0,
+         "elevation": 38.0,
+         "ambient": 0.4,
+         "diffuse": 0.8,
+         "specular": 0.35,
+         "shininess": 12.0,
+         "rim": 0.2,
+         "rim_power": 3.0,
+         "highlight": {
+          "palette": 1.0
+         }
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "sheet": {
+         "period": 2.0,
+         "fill": 0.1,
+         "edge": 0.1
+        },
+        "color": {
+         "palette": 0.78
+        },
+        "blend": "screen",
+        "opacity": 0.6
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "stripe",
+          "density": 48.0
+         }
+        },
+        "color": {
+         "palette": 0.12
+        },
+        "blend": "multiply",
+        "opacity": 0.25,
+        "power": 2.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "falloff": 0.0008,
+        "color": {
+         "palette": 0.0
+        },
+        "blend": "multiply",
+        "opacity": 0.85
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "radial": {
+          "center": [
+           0.5,
+           0.5
+          ]
+         }
+        },
+        "color": {
+         "palette": 0.92
+        },
+        "blend": "screen",
+        "opacity": 0.2,
+        "power": 4.0
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "gaussian_int"
+         },
+         "invert": true
+        },
+        "color": {
+         "palette": 1.0
+        },
+        "blend": "screen",
+        "opacity": 0.7,
+        "power": 45.0,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "smooth"
+          }
+         },
+         "power": 1.0
+        }
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "power": 2.0,
+        "color": {
+         "palette": 0.0
+        },
+        "blend": "multiply",
+        "opacity": 0.6
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "bubble": {
+          "center": [
+           0.5,
+           0.5
+          ],
+          "radius": 0.3,
+          "spacing": 1.0,
+          "read": "height",
+          "escaped": true,
+          "largest": 0.4,
+          "smallest": 0.05,
+          "fade": 0.5
+         }
+        },
+        "power": 0.3,
+        "color": {
+         "palette": 0.72
+        },
+        "blend": "add",
+        "opacity": 0.85,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          }
+         },
+         "invert": false,
+         "power": 1.5
+        }
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "netted-leaves",
+   "style": "netted_leaves",
+   "tier": "lab",
+   "palette": "netted_leaves",
+   "palettes": [
+    {
+     "colormap": "netted_leaves",
+     "values": {},
+     "score": 4
+    }
+   ],
+   "aliases": [],
+   "variant": "current",
+   "what": "Netted leaves: lit leaf and chevron shapes outlined dark at every escape step, olive, gold and rust, under a fine fishnet mesh of field lines crossed by level lines that tightens towards the set.",
+   "knobs": [],
+   "stack": {
+    "name": "netted_leaves",
+    "interior": {
+     "palette": 0.08
+    },
+    "tone": {
+     "median": 0.279,
+     "p10": 0.085
+    },
+    "layers": [
+     {
+      "kind": "palette",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "palette": {
+       "transfer": {
+        "kind": "rank"
+       },
+       "cycles": 1.0
+      }
+     },
+     {
+      "kind": "light",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "light": {
+       "period": 3.0,
+       "rings": 0.0,
+       "slope": 1.0,
+       "azimuth": 135.0,
+       "elevation": 40.0,
+       "ambient": 0.45,
+       "diffuse": 0.75,
+       "specular": 0.35,
+       "shininess": 14.0,
+       "rim": 0.15,
+       "rim_power": 3.0,
+       "highlight": {
+        "rgb": "#fff4c8"
+       }
+      }
+     },
+     {
+      "kind": "palette",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "palette": {
+       "transfer": {
+        "kind": "rank"
+       },
+       "cycles": 3.0
+      },
+      "opacity": 0.85,
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        },
+        "invert": true
+       },
+       "power": 25.0
+      }
+     },
+     {
+      "kind": "light",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "light": {
+       "period": 1.0,
+       "rings": 0.0,
+       "slope": 1.0,
+       "azimuth": 135.0,
+       "elevation": 40.0,
+       "ambient": 0.45,
+       "diffuse": 0.75,
+       "specular": 0.55,
+       "shininess": 14.0,
+       "rim": 0.15,
+       "rim_power": 3.0,
+       "highlight": {
+        "rgb": "#fff4c8"
+       }
+      },
+      "mask": {
+       "channel": {
+        "field": {
+         "kind": "de"
+        },
+        "invert": true
+       },
+       "power": 25.0
+      }
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "sheet": {
+       "period": 1.0,
+       "fill": 0.0,
+       "edge": 0.12
+      },
+      "color": {
+       "palette": 0.0
+      },
+      "blend": "multiply",
+      "opacity": 0.85
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "lines": {
+        "radius": 2.0,
+        "side": "outside"
+       }
+      },
+      "sheet": {
+       "period": 0.03125,
+       "fill": 0.0,
+       "edge": 0.3
+      },
+      "color": {
+       "palette": 0.0
+      },
+      "blend": "multiply",
+      "opacity": 0.55
+     },
+     {
+      "kind": "sheet",
+      "channel": {
+       "field": {
+        "kind": "smooth"
+       }
+      },
+      "sheet": {
+       "period": 0.25,
+       "fill": 0.0,
+       "edge": 0.3
+      },
+      "color": {
+       "palette": 0.0
+      },
+      "blend": "multiply",
+      "opacity": 0.55
+     },
+     {
+      "kind": "glow",
+      "channel": {
+       "field": {
+        "kind": "de"
+       }
+      },
+      "falloff": 0.0003,
+      "color": {
+       "rgb": "#140a06"
+      },
+      "blend": "multiply",
+      "opacity": 0.45
+     }
+    ]
+   },
+   "shown": [
+    {
+     "keep": "style_texture_lace_r1/netted_leaves/locations/nl_loc_07_julia-multibrot3_017f4085",
+     "caption": "Curled olive, gold and rust leaves along a three-fold Julia set, each lit like a shallow bowl and covered in a fine dark net that tightens towards the lace",
+     "location": {
+      "schema": 1,
+      "name": "julia-multibrot3_017f4085",
+      "family": {
+       "c": [
+        "0.4169190761394084",
+        "0.006933824661843332"
+       ],
+       "degree": 3,
+       "kind": "julia"
+      },
+      "viewport": {
+       "center_re": "-0.06748903259992045",
+       "center_im": "-0.6613097304718834",
+       "width": "0.4304012429270956"
+      },
+      "maxiter": 7361,
+      "note": "final139_general seat 999 (stripe, julia:multibrot3)",
+      "gallery": {
+       "record": "final139_general",
+       "seat": 999,
+       "key": "017f4085e03430a0",
+       "p_spiral": 0.004946
+      }
+     },
+     "colormap": "netted_leaves",
+     "stack": {
+      "name": "nl_base",
+      "interior": {
+       "palette": 0.08
+      },
+      "tone": {
+       "median": 0.279,
+       "p10": 0.085
+      },
+      "layers": [
+       {
+        "kind": "palette",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         },
+         "cycles": 1.0
+        }
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "light": {
+         "period": 3.0,
+         "rings": 0.0,
+         "slope": 1.0,
+         "azimuth": 135.0,
+         "elevation": 40.0,
+         "ambient": 0.45,
+         "diffuse": 0.75,
+         "specular": 0.35,
+         "shininess": 14.0,
+         "rim": 0.15,
+         "rim_power": 3.0,
+         "highlight": {
+          "rgb": "#fff4c8"
+         }
+        }
+       },
+       {
+        "kind": "palette",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "palette": {
+         "transfer": {
+          "kind": "rank"
+         },
+         "cycles": 3.0
+        },
+        "opacity": 0.85,
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          },
+          "invert": true
+         },
+         "power": 25.0
+        }
+       },
+       {
+        "kind": "light",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "light": {
+         "period": 1.0,
+         "rings": 0.0,
+         "slope": 1.0,
+         "azimuth": 135.0,
+         "elevation": 40.0,
+         "ambient": 0.45,
+         "diffuse": 0.75,
+         "specular": 0.55,
+         "shininess": 14.0,
+         "rim": 0.15,
+         "rim_power": 3.0,
+         "highlight": {
+          "rgb": "#fff4c8"
+         }
+        },
+        "mask": {
+         "channel": {
+          "field": {
+           "kind": "de"
+          },
+          "invert": true
+         },
+         "power": 25.0
+        }
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "sheet": {
+         "period": 1.0,
+         "fill": 0.0,
+         "edge": 0.12
+        },
+        "color": {
+         "palette": 0.0
+        },
+        "blend": "multiply",
+        "opacity": 0.85
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "lines": {
+          "radius": 2.0,
+          "side": "outside"
+         }
+        },
+        "sheet": {
+         "period": 0.03125,
+         "fill": 0.0,
+         "edge": 0.3
+        },
+        "color": {
+         "palette": 0.0
+        },
+        "blend": "multiply",
+        "opacity": 0.55
+       },
+       {
+        "kind": "sheet",
+        "channel": {
+         "field": {
+          "kind": "smooth"
+         }
+        },
+        "sheet": {
+         "period": 0.25,
+         "fill": 0.0,
+         "edge": 0.3
+        },
+        "color": {
+         "palette": 0.0
+        },
+        "blend": "multiply",
+        "opacity": 0.55
+       },
+       {
+        "kind": "glow",
+        "channel": {
+         "field": {
+          "kind": "de"
+         }
+        },
+        "falloff": 0.0003,
+        "color": {
+         "rgb": "#140a06"
+        },
+        "blend": "multiply",
+        "opacity": 0.45
+       }
+      ]
      }
     }
    ]
@@ -61484,6 +62799,142 @@
     ]
    ]
   },
+  "blue_nebula": {
+   "schema": 1,
+   "name": "blue_nebula",
+   "kind": "sequential",
+   "source": "blue_nebula, authored as 8 control points as an albedo from wallhaven-jewqgw (a storm_clouds entry): a black-navy sky, a deep blue haze, then the cloud's cobalt and sky blue, its red-orange filaments high up, and a blue-white for the stars.",
+   "stops": [
+    [
+     0.0,
+     [
+      2,
+      6,
+      18
+     ]
+    ],
+    [
+     0.16,
+     [
+      8,
+      22,
+      56
+     ]
+    ],
+    [
+     0.32,
+     [
+      24,
+      62,
+      130
+     ]
+    ],
+    [
+     0.48,
+     [
+      62,
+      120,
+      196
+     ]
+    ],
+    [
+     0.62,
+     [
+      132,
+      176,
+      224
+     ]
+    ],
+    [
+     0.76,
+     [
+      214,
+      92,
+      48
+     ]
+    ],
+    [
+     0.88,
+     [
+      250,
+      150,
+      90
+     ]
+    ],
+    [
+     1.0,
+     [
+      240,
+      246,
+      255
+     ]
+    ]
+   ]
+  },
+  "bokeh_bloom": {
+   "schema": 1,
+   "name": "bokeh_bloom",
+   "kind": "sequential",
+   "source": "bokeh_bloom, authored as 7 control points as the albedo of the bokeh_bloom style from wallhaven-8xz1mk: a black-brown night, dark umber and maroon-rust petals, then rust orange and orange to gold and a cream at the bloom's heart.",
+   "stops": [
+    [
+     0.0,
+     [
+      8,
+      4,
+      4
+     ]
+    ],
+    [
+     0.18,
+     [
+      40,
+      16,
+      12
+     ]
+    ],
+    [
+     0.36,
+     [
+      100,
+      34,
+      18
+     ]
+    ],
+    [
+     0.54,
+     [
+      180,
+      70,
+      28
+     ]
+    ],
+    [
+     0.7,
+     [
+      228,
+      124,
+      52
+     ]
+    ],
+    [
+     0.85,
+     [
+      246,
+      196,
+      110
+     ]
+    ],
+    [
+     1.0,
+     [
+      255,
+      244,
+      210
+     ]
+    ]
+   ]
+  },
   "bone_star": {
    "schema": 1,
    "name": "bone_star",
@@ -62048,6 +63499,70 @@
       252,
       222,
       150
+     ]
+    ]
+   ]
+  },
+  "copper_feathers": {
+   "schema": 1,
+   "name": "copper_feathers",
+   "kind": "sequential",
+   "source": "copper_feathers, authored as 7 control points as the albedo of the feather_plumes style's entry from wallhaven-xld8rd: a black night, dark slate, copper-brown and copper, then steel blue and silver plumes to a white with a faint mauve.",
+   "stops": [
+    [
+     0.0,
+     [
+      6,
+      6,
+      8
+     ]
+    ],
+    [
+     0.2,
+     [
+      40,
+      46,
+      60
+     ]
+    ],
+    [
+     0.38,
+     [
+      110,
+      60,
+      30
+     ]
+    ],
+    [
+     0.52,
+     [
+      176,
+      100,
+      48
+     ]
+    ],
+    [
+     0.68,
+     [
+      120,
+      140,
+      170
+     ]
+    ],
+    [
+     0.84,
+     [
+      196,
+      208,
+      224
+     ]
+    ],
+    [
+     1.0,
+     [
+      248,
+      242,
+      246
      ]
     ]
    ]
@@ -66340,6 +67855,70 @@
     ]
    ]
   },
+  "knit_webs": {
+   "schema": 1,
+   "name": "knit_webs",
+   "kind": "sequential",
+   "source": "knit_webs, authored as 7 control points as the albedo of the hollow_webs style's entry from within-25: a slate-black well, slate blue and teal, bronze and tan webbing, an aqua sheen, to a pale bone.",
+   "stops": [
+    [
+     0.0,
+     [
+      20,
+      24,
+      28
+     ]
+    ],
+    [
+     0.2,
+     [
+      40,
+      60,
+      80
+     ]
+    ],
+    [
+     0.38,
+     [
+      60,
+      110,
+      120
+     ]
+    ],
+    [
+     0.55,
+     [
+      140,
+      110,
+      70
+     ]
+    ],
+    [
+     0.7,
+     [
+      190,
+      160,
+      110
+     ]
+    ],
+    [
+     0.85,
+     [
+      110,
+      190,
+      200
+     ]
+    ],
+    [
+     1.0,
+     [
+      236,
+      226,
+      200
+     ]
+    ]
+   ]
+  },
   "krinshinda_smooth": {
    "schema": 1,
    "name": "krinshinda_smooth",
@@ -67572,6 +69151,70 @@
     ]
    ]
   },
+  "nautilus_fins": {
+   "schema": 1,
+   "name": "nautilus_fins",
+   "kind": "sequential",
+   "source": "nautilus_fins, authored as 7 control points as the albedo of the nautilus_fins style from wallhaven-ey2zv8: a near-black violet core, dusky violet and plum-bronze, then amber, gold and pale gold fins to a cream white.",
+   "stops": [
+    [
+     0.0,
+     [
+      14,
+      8,
+      22
+     ]
+    ],
+    [
+     0.2,
+     [
+      52,
+      34,
+      70
+     ]
+    ],
+    [
+     0.38,
+     [
+      104,
+      70,
+      62
+     ]
+    ],
+    [
+     0.55,
+     [
+      170,
+      112,
+      40
+     ]
+    ],
+    [
+     0.7,
+     [
+      214,
+      170,
+      70
+     ]
+    ],
+    [
+     0.85,
+     [
+      236,
+      214,
+      140
+     ]
+    ],
+    [
+     1.0,
+     [
+      252,
+      246,
+      220
+     ]
+    ]
+   ]
+  },
   "neon_loops": {
    "schema": 1,
    "name": "neon_loops",
@@ -67632,6 +69275,70 @@
       255,
       255,
       255
+     ]
+    ]
+   ]
+  },
+  "netted_leaves": {
+   "schema": 1,
+   "name": "netted_leaves",
+   "kind": "sequential",
+   "source": "netted_leaves, authored as 7 control points as the albedo of the netted_leaves style from zulu-25: a green-black ground, dark teal-green and olive, a maroon-rust leaf heart, then ochre and gold rims to a pale straw yellow.",
+   "stops": [
+    [
+     0.0,
+     [
+      8,
+      16,
+      14
+     ]
+    ],
+    [
+     0.18,
+     [
+      24,
+      52,
+      44
+     ]
+    ],
+    [
+     0.35,
+     [
+      70,
+      92,
+      50
+     ]
+    ],
+    [
+     0.5,
+     [
+      120,
+      40,
+      24
+     ]
+    ],
+    [
+     0.65,
+     [
+      176,
+      110,
+      40
+     ]
+    ],
+    [
+     0.82,
+     [
+      222,
+      190,
+      80
+     ]
+    ],
+    [
+     1.0,
+     [
+      246,
+      236,
+      160
      ]
     ]
    ]
@@ -68400,6 +70107,70 @@
       252,
       236,
       214
+     ]
+    ]
+   ]
+  },
+  "shell_tunnels": {
+   "schema": 1,
+   "name": "shell_tunnels",
+   "kind": "sequential",
+   "source": "shell_tunnels, authored as 7 control points as the albedo of the nautilus_fins style's entry from wallhaven-odxj5p: a deep maroon, brick and rust, then orange, salmon and peach ribs to a warm yellow-cream at the tunnels' ends.",
+   "stops": [
+    [
+     0.0,
+     [
+      40,
+      10,
+      8
+     ]
+    ],
+    [
+     0.2,
+     [
+      96,
+      30,
+      18
+     ]
+    ],
+    [
+     0.38,
+     [
+      170,
+      62,
+      26
+     ]
+    ],
+    [
+     0.55,
+     [
+      226,
+      110,
+      50
+     ]
+    ],
+    [
+     0.7,
+     [
+      236,
+      160,
+      120
+     ]
+    ],
+    [
+     0.85,
+     [
+      246,
+      206,
+      180
+     ]
+    ],
+    [
+     1.0,
+     [
+      255,
+      240,
+      200
      ]
     ]
    ]
@@ -69392,6 +71163,78 @@
       236,
       248,
       255
+     ]
+    ]
+   ]
+  },
+  "starburst_lace": {
+   "schema": 1,
+   "name": "starburst_lace",
+   "kind": "sequential",
+   "source": "starburst_lace, authored as 8 control points as the albedo of the smooth_bands style's entry from web_burst: a rust-red far field, a dark brown, navy and steel blue lace, pale blue starbursts, then cream-gold spiral eyes to a warm white.",
+   "stops": [
+    [
+     0.0,
+     [
+      110,
+      36,
+      22
+     ]
+    ],
+    [
+     0.15,
+     [
+      150,
+      56,
+      34
+     ]
+    ],
+    [
+     0.3,
+     [
+      40,
+      20,
+      20
+     ]
+    ],
+    [
+     0.45,
+     [
+      10,
+      24,
+      44
+     ]
+    ],
+    [
+     0.6,
+     [
+      30,
+      80,
+      120
+     ]
+    ],
+    [
+     0.75,
+     [
+      100,
+      160,
+      190
+     ]
+    ],
+    [
+     0.88,
+     [
+      240,
+      200,
+      130
+     ]
+    ],
+    [
+     1.0,
+     [
+      255,
+      246,
+      225
      ]
     ]
    ]
@@ -70896,6 +72739,134 @@
       214,
       164,
       196
+     ]
+    ]
+   ]
+  },
+  "violet_threads": {
+   "schema": 1,
+   "name": "violet_threads",
+   "kind": "sequential",
+   "source": "violet_threads, authored as 7 control points as the albedo of the neon_loops style's entry from wallhaven-r21py7: a black-violet ground, a deep purple haze, then violet threads to orchid, a hot magenta-pink and a pink white on the orbs.",
+   "stops": [
+    [
+     0.0,
+     [
+      8,
+      2,
+      20
+     ]
+    ],
+    [
+     0.2,
+     [
+      34,
+      8,
+      80
+     ]
+    ],
+    [
+     0.4,
+     [
+      80,
+      26,
+      170
+     ]
+    ],
+    [
+     0.58,
+     [
+      130,
+      60,
+      230
+     ]
+    ],
+    [
+     0.72,
+     [
+      184,
+      96,
+      250
+     ]
+    ],
+    [
+     0.86,
+     [
+      236,
+      150,
+      250
+     ]
+    ],
+    [
+     1.0,
+     [
+      255,
+      230,
+      255
+     ]
+    ]
+   ]
+  },
+  "waltz_orbs": {
+   "schema": 1,
+   "name": "waltz_orbs",
+   "kind": "sequential",
+   "source": "waltz_orbs, authored as 7 control points as the albedo of the nautilus_fins style's entry from waltzing-in-shadows: a near-black teal, deep and mid teal for the orbs, an olive green, then muted gold and gold swirl bands to a cream.",
+   "stops": [
+    [
+     0.0,
+     [
+      4,
+      12,
+      18
+     ]
+    ],
+    [
+     0.2,
+     [
+      10,
+      44,
+      58
+     ]
+    ],
+    [
+     0.38,
+     [
+      30,
+      90,
+      104
+     ]
+    ],
+    [
+     0.55,
+     [
+      70,
+      110,
+      80
+     ]
+    ],
+    [
+     0.7,
+     [
+      170,
+      150,
+      80
+     ]
+    ],
+    [
+     0.85,
+     [
+      230,
+      206,
+      130
+     ]
+    ],
+    [
+     1.0,
+     [
+      252,
+      244,
+      206
      ]
     ]
    ]

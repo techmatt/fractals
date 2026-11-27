@@ -75,10 +75,9 @@ const EXAMPLES = bundle.modes.flatMap((mode) => mode.shown.map((shown, index) =>
  *  since 7c62551 shows the round-two `ls2_subtler` keep; feather-plumes' new card
  *  (`fp2_stack_2d84_tempest`) is still not the published stack. Since 232db92 (085, 087)
  *  two more are reached: cauliflower-scales' card is a keep of its published stack, and
- *  chrome-whorl's published `rings` is its kept 0.6. Since 4569f4e (088 to 090), marbled-pour's
- *  card, kept at 10 paper sheets (its post pass's `levels`) where the published stack draws 16. Since
- *  078b600 (092), veil-shards' card, its `f_broad` keep (the views at twice the zoom), which
- *  no knob of a mode with none reaches. */
+ *  chrome-whorl's published `rings` is its kept 0.6. Marbled-pour's card (kept at 10 paper
+ *  sheets, 4569f4e) and veil-shards' (its `f_broad` keep, 078b600) were unreached until
+ *  7074d32 (094) moved both published stacks to their kept readings. */
 const UNREACHED = [
   "teal_filaments__1",
   "star_eye__2",
@@ -105,16 +104,14 @@ const UNREACHED = [
   "feather_plumes__0",
   "storm_clouds__0",
   "starburst_veils__0",
-  "marbled_pour__0",
-  "veil_shards__0",
 ];
 
-test("the bundle is the 64 published modes in two tiers, each with an example", () => {
+test("the bundle is the 67 published modes in two tiers, each with an example", () => {
   assert.equal(bundle.schema, 1);
-  assert.equal(bundle.modes.length, 64);
+  assert.equal(bundle.modes.length, 67);
   const tiers = bundle.modes.map((mode) => tierOf(mode));
   assert.equal(tiers.filter((tier) => tier === "curated").length, 16);
-  assert.equal(tiers.filter((tier) => tier === "lab").length, 48);
+  assert.equal(tiers.filter((tier) => tier === "lab").length, 51);
   for (const mode of bundle.modes) {
     assert.ok(mode.shown.length > 0, mode.name);
     // A curated mode has four or five knobs (the catalog's tier rule); a lab mode may have none.
@@ -145,10 +142,10 @@ test("an example opens at the mode's defaults, plus the setting that reproduces 
   });
 });
 
-test("each mode offers one button a picture: 111 of the 113 keeps", () => {
+test("each mode offers one button a picture: 114 of the 116 keeps", () => {
   const offered = bundle.modes.flatMap((mode) => offeredExamples(mode, encode).map(({ index }) => `${mode.style}__${index}`));
-  assert.equal(offered.length, 111);
-  assert.equal(EXAMPLES.length, 113);
+  assert.equal(offered.length, 114);
+  assert.equal(EXAMPLES.length, 116);
   // star-eye's third keep draws its second's picture under the published settings, and
   // draped-folds' second its first's (both kept at the same place under round variants).
   const unoffered = ["star_eye__2", "draped_folds__1"];
@@ -405,7 +402,7 @@ test("each mode carries its palette set, the mode's own map first, every map in 
   // and neon-loops' own maps, which the page once put back itself. The same array every call.
   for (const [name, set] of [
     ["chrome-orbs", ["chrome_orbs", "mercury_tubes"]],
-    ["neon-loops", ["neon_loops", "tan_star_beams"]],
+    ["neon-loops", ["neon_loops", "tan_star_beams", "violet_threads"]],
   ]) {
     const mode = modes.get(name);
     assert.deepEqual(mode.palettes.map((entry) => entry.colormap), set, name);
