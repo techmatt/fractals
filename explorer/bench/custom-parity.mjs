@@ -35,6 +35,12 @@ const option = (name, fallback) => {
 };
 const [width, height] = option("--size", "640x400").split("x").map(Number);
 const [shard, shards] = option("--shard", "0/1").split("/").map(Number);
+// Shards count from 0: an out-of-range one would match no example and draw nothing, quietly.
+if (!(Number.isInteger(shards) && shards >= 1 && Number.isInteger(shard) && shard >= 0 && shard < shards)) {
+  const range = Number.isInteger(shards) && shards >= 1 ? `0..${shards - 1}` : "0..n-1, n ≥ 1";
+  console.error(`--shard ${option("--shard")}: shards count from 0; i must be in ${range} (i/n)`);
+  process.exit(2);
+}
 const which = option("--stack", "keep");
 const only = option("--only", null)?.split(",") ?? null;
 const entry = option("--palette", null);

@@ -113,4 +113,6 @@ deep-gpu-agree/time/lose/same harnesses, which name ports.
   changes fired at page moments; `hunt/lib.mjs`'s `Page`; serve; records.
 - `hunt/` — the bug hunt: `lib.mjs`'s `Page` (a second CDP client with a watchdog and a
   witness log), `smoke.mjs`, units `u1`–`u11`, and `probe-*` regression probes; serve (`PORT`
-  moves it); units record findings, the rest see header.
+  moves it); units record findings, the rest see header. The custom modes' unit is
+  `u11-custom.mjs` (its header lists the scenarios): `recolour` holds each palette switch,
+  knob, and Auto tone to a fresh load's raster; `MODES=`/`SKIP=` narrow a run.

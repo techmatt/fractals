@@ -198,15 +198,11 @@ sibling's `curation/explorer_link.py` writes; `check`'s `stamps` holds both.
 
 ## Measured
 
-`bench/`'s harnesses run in neither `check` nor CI; `bench/README.md` has one line on each
-(what it measures, node or browser, what it needs, where it writes). `record()` (`output.mjs`) writes to
-ignored `artifacts/explorer-bench/`, and a harness taking an out directory writes there
-(`artifacts/` or `out/`, both ignored). A browser harness's Chrome picks its own debugging
-port (`cdp.mjs`'s `open`), so harnesses run side by side. ⚠ Four files in `bench/` are
-shared modules used outside it: `engine.mjs` (imported by the `bands`, `deep`, `derive`,
-and `level` suites and the builder's `.mjs` makers), `perturb.mjs` (the `deep` and
-`deep-gpu` suites, `builder/deep_figures.mjs`, `zoom_fields.mjs`), `cdp.mjs`
-(`builder/screenshot.mjs`), and `output.mjs`; an edit there is a CI and maker change.
+`bench/`'s harnesses run in neither `check` nor CI; `bench/README.md` has a line on each:
+what it measures and needs, where it writes (`artifacts/` or `out/`, both ignored), and
+which name a port (the rest run side by side). ⚠ `engine.mjs`, `perturb.mjs`, and
+`cdp.mjs` are imported by test suites and builder makers (`bench/README.md`'s *Shared
+modules* names each importer): an edit there is a CI and maker change.
 ⚠ This machine drifts by up to 30%: alternate before/after runs; re-measure, never quote.
 
 ## The permalink contract, version 4
@@ -236,10 +232,9 @@ explorer itself puts a view on Absolute, never given to a link.
 
 ## What the last bug hunt covered
 
-`bench/hunt/` (u1–u11, probes, `lib.mjs` with its known false alarms); run units serially.
-The custom modes' unit is `u11-custom.mjs` (its header lists the scenarios; `recolour` holds
-each palette switch, knob and Auto tone to a fresh load's raster, `PORT=` and `MODES=`/`SKIP=`
-narrow a run); findings live in `docs/qa-findings.md`.
+`bench/hunt/` (u1–u11, probes, `lib.mjs` with its known false alarms; `bench/README.md` has
+each, the custom modes' `u11-custom.mjs` too); run units serially. Findings live in
+`docs/qa-findings.md`.
 
 ## The operator is the engine's
 

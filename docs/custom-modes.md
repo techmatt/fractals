@@ -100,7 +100,7 @@ half below is its own item.
    miss only the browser run has (it presses each Example and saves through the Download
    row) is the page's. Look at its PNGs beside the keep JPEGs
    (`fractal-drive-sync/style-keeps/<style>/`) too. Every bench takes `--only`; the browser
-   bench alone `--workers` and `--tier`; `custom-parity.mjs` splits with `--shard i/n`, `i` from 0 to n−1 (`n/n` draws nothing). A
+   bench alone `--workers` and `--tier`; `custom-parity.mjs` splits with `--shard i/n`, `i` from 0 to n−1 (`n/n` is refused). A
    palette entry no Example opens on is held with `--palette <entry>` on the first two,
    drawn as `<id>@<entry>`. The browser bench waits on `#render-state`'s `data-busy`, held
    while a download has the controls, so a slow Example needs no timeout of its own.
