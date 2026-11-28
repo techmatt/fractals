@@ -29,6 +29,8 @@ deep-gpu-agree/time/lose/same harnesses, which name ports.
 
 - `custom-counts.mjs` — every number `style.test.mjs` pins about `custom-modes.json`; node;
   prints, writes nothing.
+- `custom-changed.mjs` — the Examples a rebake owes a redraw against the bundle before it,
+  as an `--only` list, and those that keep their last reading; node; prints, writes nothing.
 - `custom-memory.mjs` — wasm memory a worker grows to per custom mode; node; prints.
 - `custom-parity.mjs` — each mode's examples drawn through the page's request path; node;
   writes `<id>.rgba` and `results.jsonl` to an out dir.

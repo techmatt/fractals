@@ -44,6 +44,13 @@ import { Page, say, sleep } from "./lib.mjs";
 
 const ROOT = fileURLToPath(new URL("../../../", import.meta.url));
 const bundle = JSON.parse(readFileSync(join(ROOT, "explorer/custom-modes.json"), "utf8"));
+/** A scenario's mode by public name: a rebake that deletes it stops the run here, rather than
+ *  quietly testing another mode (028: steel-blades, arch-tunnel and gilt-orbs left in 107). */
+const named = (name) => {
+  const mode = bundle.modes.find((m) => m.name === name);
+  if (!mode) throw new Error(`u11: no custom mode ${name} in the bundle; pick another for this scenario`);
+  return mode;
+};
 const WORKERS = Number(process.env.WORKERS ?? 3);
 const [WIDTH, HEIGHT] = (process.env.SIZE ?? "1200x800").split("x").map(Number);
 const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
@@ -401,7 +408,7 @@ async function knobs(page) {
 }
 
 async function toggles(page) {
-  const mode = bundle.modes.find((m) => m.name === "glass-whorl") ?? bundle.modes[1];
+  const mode = named("glass-whorl");
   await page.open(`?v=4&custom=${mode.name}`, { settle: 0 });
   await pass(page);
   const on = await look(page, "toggles", "matched-on");
@@ -437,7 +444,7 @@ async function toggles(page) {
 }
 
 async function leave(page) {
-  const mode = bundle.modes.find((m) => m.name === "steel-blades") ?? bundle.modes[0];
+  const mode = named("lacquer-lobes");
   await page.open(`?v=4&custom=${mode.name}`, { settle: 0 });
   await sleep(1500);
   const mid = await page.metrics();
@@ -480,7 +487,7 @@ async function endurance(page) {
 }
 
 async function download(page) {
-  const mode = bundle.modes.find((m) => m.name === "glass-whorl") ?? bundle.modes[0];
+  const mode = named("glass-whorl");
   const landing = join(OUT, "downloads");
   mkdirSync(landing, { recursive: true });
   await page.send("Browser.setDownloadBehavior", { behavior: "allow", downloadPath: landing });
@@ -519,7 +526,7 @@ async function download(page) {
 /** Narrow windows, by device emulation (headless Chrome clamps a real window near 500 px):
  *  the custom rows must wrap inside the column, never past the screen. */
 async function narrow(page) {
-  const mode = bundle.modes.find((m) => m.name === "steel-blades") ?? bundle.modes[0];
+  const mode = named("lacquer-lobes");
   for (const [width, height, mobile] of [[1000, 900, false], [760, 1000, false], [420, 900, true]]) {
     await page.send("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: 1, mobile });
     await page.open(`?v=4&custom=${mode.name}`, { settle: 0 });
@@ -532,7 +539,7 @@ async function narrow(page) {
 
 /** Other tabs taking the canvas mid-pass, and a resize mid-pass. */
 async function tabs(page) {
-  const mode = bundle.modes.find((m) => m.name === "brass-foam") ?? bundle.modes[0];
+  const mode = named("brass-foam");
   await page.open(`?v=4&custom=${mode.name}`, { settle: 0 });
   await sleep(1200);
   for (const tab of ["tab-deep", "tab-walk", "tab-saved", "tab-phoenix", "tab-gallery"]) {
@@ -558,11 +565,12 @@ async function tabs(page) {
 
 /** Ctrl+Z mid-pass returns to the picture just left, and Ctrl+Y comes forward again. */
 async function undo(page) {
-  const mode = bundle.modes.find((m) => m.name === "arch-tunnel") ?? bundle.modes[0];
+  const mode = named("glass-whorl");
   await page.open(`?v=4&custom=${mode.name}`, { settle: 0 });
   await pass(page);
   const first = await address(page);
-  const knob = mode.knobs.find((k) => k.name === "arch_glow") ?? mode.knobs[0];
+  const knob = mode.knobs.find((k) => k.name === "core_glow");
+  if (!knob) throw new Error("u11 undo: glass-whorl has no core_glow knob");
   await set(page, `#custom-knobs input[type=number][data-knob="${knob.name}"]`, knob.range[0]);
   // Undo while the moved knob's pass is still drawing, past its preview.
   for (let i = 0; i < 100; i++) {
@@ -587,7 +595,7 @@ async function undo(page) {
 /** Save a custom view, read its Saved tile as a reader does, and reopen it from there; then
  *  the screensaver over a custom view, and Escape back. */
 async function saved(page) {
-  const mode = bundle.modes.find((m) => m.name === "gilt-orbs") ?? bundle.modes[0];
+  const mode = named("gear-halo");
   await page.open(`?v=4&custom=${mode.name}`, { settle: 0 });
   await pass(page);
   await click(page, "#custom-examples button:nth-of-type(1)");

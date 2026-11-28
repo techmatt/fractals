@@ -75,10 +75,15 @@ half below is its own item.
    then run the test. `explorer/README.md`'s *Custom modes* names the counts once.
 9. **Hold every Example to its button's native picture**, at 640x400 2×2.
    `custom-natives.mjs` draws each offered button with the sibling's `style render` at its
-   place, palette and knobs (the published look, *Problems*, 2), a few seconds each: run it
-   once, in one process, since `style render` rewrites its out directory's `renders.jsonl`
-   and two at once corrupt it (every later render fails `JSONDecodeError`). Use fresh out
-   directories (a stale id reads `NO NATIVE`). **Draw both sides at one pin**: the natives
+   place, palette and knobs (the published look, *Problems*, 2), 2 to 70 s each at one
+   thread (the showcase's deep seats the slow end; Node's side about twice that): one
+   process to an out directory, since `style render` rewrites that directory's
+   `renders.jsonl` and two at once corrupt it (every later render fails `JSONDecodeError`);
+   a second process with its own out directory is safe. Use fresh out directories (a stale
+   id reads `NO NATIVE`). **Redraw only what moved**: `custom-changed.mjs` against the
+   bundle before the rebake lists the Examples owed (`--only`) and those keeping the last
+   rebake's reading, which holds while the sibling's `engine/` and `style-wasm/` did not move
+   between the pins (028 drew 206 and reused 42; the whole set is hours at three threads). **Draw both sides at one pin**: the natives
    come from the sibling's `HEAD` as they run, the Node and page sides from the committed
    bundle, so a sibling commit mid-run is a miss; re-pin, then redraw that mode on
    both sides, its `<style>__*` files deleted first (`custom-natives.mjs` and
@@ -96,8 +101,9 @@ half below is its own item.
 
    The tolerance is identical, on Windows; a miss is a finding, except on a button opening
    with Auto tone off, which `custom-natives.mjs` names and skips: hold it to
-   `wasm-parity`'s picture (`--stack keep` draws each keep's own stack against those). A
-   miss only the browser run has (it presses each Example and saves through the Download
+   `wasm-parity`'s picture (`--stack keep` draws each keep's own stack against those), and
+   except the sibling's standing misses, which its `style-wasm/README.md` lists (*Parity:
+   which run is owed*; five multi-view flame stacks at 107). A miss only the browser run has (it presses each Example and saves through the Download
    row) is the page's. Look at its PNGs beside the keep JPEGs
    (`fractal-drive-sync/style-keeps/<style>/`) too. Every bench takes `--only`; the browser
    bench alone `--workers` and `--tier`; `custom-parity.mjs` splits with `--shard i/n`, `i` from 0 to n−1 (`n/n` is refused). A
