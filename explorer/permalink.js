@@ -620,8 +620,9 @@ function readCustom(params, context) {
     if (seen.has(key)) throw new PermalinkError(`This link sets ${knob.label} twice.`);
     seen.add(key);
     const read = finite(number, `${knob.label} setting`);
-    // A whole-number knob (arch-tunnel's Turns) is read as the module draws it, half to
-    // even, so `turns:4.5` is the 4 it always drew and its box never says 5 (004_bug_hunt).
+    // A whole-number knob (stirred-ink's Stir length; arch-tunnel's Turns until wallpapers
+    // 107) is read as the module draws it, half to even, so `turns:4.5` is the 4 it always
+    // drew and its box never says 5 (004_bug_hunt).
     const value = knob.whole ? halfEven(read) : read;
     const [low, high] = knob.range;
     if (!(value >= low && value <= high)) {

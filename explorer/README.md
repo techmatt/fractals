@@ -250,8 +250,8 @@ fixtures live only in `engine-wasm/`. ⚠ It is baked with `builder/explorer.py`
 ## Custom modes
 
 The mode select's two custom entries, Custom and Custom (lab), one a tier, draw the
-sibling's modes with `style.wasm`, byte for byte; `custom-modes.json` is the record, 67
-modes with 114 Example buttons, fetched after the first frame unless a link names one.
+sibling's modes with `style.wasm`, byte for byte; `custom-modes.json` is the record, 53
+modes with 252 Example buttons, fetched after the first frame unless a link names one.
 `docs/custom-modes.md` is the whole path. Keys: `permalink.js` `CUSTOM_KEY`.
 
 ## The test suites

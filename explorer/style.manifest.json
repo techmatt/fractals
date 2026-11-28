@@ -1,24 +1,19 @@
 {
-  "built": "2026-11-26",
+  "built": "2026-11-27",
   "bundle": {
-    "colormaps": 131,
+    "colormaps": 120,
     "file": "custom-modes.json",
     "modes": [
       "brass-foam",
       "lacquer-lobes",
       "silk-waves",
       "glass-whorl",
-      "arch-tunnel",
       "ribbon-foam",
-      "gilt-orbs",
-      "steel-blades",
       "soft-petals",
       "teal-mist",
       "star-eye",
-      "ember-rose",
       "gear-halo",
       "blue-veils",
-      "teal-nebula",
       "violet-ribbons",
       "chalk-shards",
       "corkscrew-ribbons",
@@ -26,9 +21,7 @@
       "amber-flames",
       "spark-veils",
       "frost-feather",
-      "crimson-swirl",
       "molten-folds",
-      "chrome-orbs",
       "cauliflower-scales",
       "ember-streams",
       "satin-spiral",
@@ -38,25 +31,18 @@
       "line-bands",
       "ribbed-hoses",
       "sliced-mirrors",
-      "cut-tiles",
       "scaled-folds",
       "copper-webs",
       "tri-mosaic",
       "stirred-ink",
       "paper-layers",
-      "gouache-cut",
-      "mercury-tubes",
-      "neon-loops",
       "hairline-rays",
       "frost-stipple",
       "grain-fans",
-      "frost-filaments",
       "draped-folds",
-      "gilded-leaves",
       "chrome-whorl",
       "dew-bloom",
       "filigree-dials",
-      "glass-orbs",
       "feather-plumes",
       "hollow-webs",
       "storm-clouds",
@@ -73,7 +59,7 @@
       "netted-leaves"
     ],
     "schema": 1,
-    "sha256": "5d3b91f592ca35df9218a6f71089d1ed87a948fd9417b11cec99b87021d3b0ef"
+    "sha256": "df67afdb229c77b0dcb488c730804a37acec907f7366dd6f701292c19306bcb6"
   },
   "crate": "explorer/style-wasm",
   "dependencies": [
@@ -90,9 +76,9 @@
   "rustc": "1.96.0 (ac68faa20 2026-05-25)",
   "schema": 1,
   "trees": {
-    "data/palettes": "57f9b0a5481e88d39d3fa9dffc90ece6b0fec804",
-    "data/styles": "f6552ff063c95de1919e36cd2f5545ce4d307f5f",
+    "data/palettes": "9828c76ab15bdf803593dbec9e109e2bc7584919",
+    "data/styles": "b783d5be7a4bf0fc7d3cd27c6c30c3fe751e25e6",
     "engine": "078940238748e2ec3e77b0b81edbb99b6b05268a",
-    "style-wasm": "628b751269c2231c208f67d2a274482ba21cdefb"
+    "style-wasm": "e7adfd80b5d774e30e6b9ec50882f61ab66b273f"
   }
 }

@@ -59,6 +59,24 @@ const CONTEXT = {
   customs: contractOf(bundle),
 };
 
+/** A log-polar stand-in: no published mode draws through a log-polar projection, nor has a
+ *  place with projection members, since wallpapers 107 deleted arch-tunnel, so the link's `projection` key and a place's members are held here
+ *  on teal-mist's stack under arch-tunnel's tunnel and knobs (a whole-number Turns, and a
+ *  fractional glow), its one example kept at three turns at arch-tunnel's own place. */
+const TUNNEL = (() => {
+  const teal = bundle.modes.find((mode) => mode.name === "teal-mist");
+  const stack = { ...teal.stack, projection: { log_polar: { turns: 5, center: [0.36, 0.45] } } };
+  const knobs = [
+    { name: "turns", label: "Arm count", what: "how many arms", default: 5.0, range: [3.0, 6.0], set: ["/projection/log_polar/turns"] },
+    { name: "arch_glow", label: "Arch glow", what: "the arches' glow", default: 0.4, range: [0.3, 0.9], set: ["/layers/1/opacity"] },
+  ];
+  const tunnel = { ...teal, name: "test-tunnel", style: "test_tunnel", stack, knobs, aliases: [] };
+  const location = { ...teal.shown[0].location, projection: { log_polar: { twist: -0.23153, ring: 5.0 } } };
+  const kept = { ...stack, projection: { log_polar: { ...stack.projection.log_polar, turns: 3 } } };
+  return { ...tunnel, shown: [{ ...teal.shown[0], colormap: teal.palette, location, stack: kept }] };
+})();
+const TUNNEL_CONTEXT = { ...CONTEXT, customs: contractOf({ ...bundle, modes: [...bundle.modes, TUNNEL] }) };
+
 /** Each example as `[mode, shown, id]`, numbered as `style wasm-parity` numbers them. */
 const EXAMPLES = bundle.modes.flatMap((mode) => mode.shown.map((shown, index) => [mode, shown, `${mode.style}__${index}`]));
 
@@ -77,12 +95,14 @@ const EXAMPLES = bundle.modes.flatMap((mode) => mode.shown.map((shown, index) =>
  *  two more are reached: cauliflower-scales' card is a keep of its published stack, and
  *  chrome-whorl's published `rings` is its kept 0.6. Marbled-pour's card (kept at 10 paper
  *  sheets, 4569f4e) and veil-shards' (its `f_broad` keep, 078b600) were unreached until
- *  7074d32 (094) moved both published stacks to their kept readings. */
+ *  7074d32 (094) moved both published stacks to their kept readings. Since ef6bd46 (107)
+ *  five fewer, with their modes deleted (ember-rose, teal-nebula, mercury-tubes,
+ *  gilded-leaves, glass-orbs); every showcase keep 107 added is a keep of its published
+ *  stack. Since 436184b (108) cube-facets' five, its stack's facet count published as a
+ *  knob whose setting no keep's stack reads back. */
 const UNREACHED = [
   "teal_filaments__1",
   "star_eye__2",
-  "ember_rose__2",
-  "flame_veil_teal__0",
   "flame_veil_chalk__2",
   "flame_wisp_amber__0",
   "flame_wisp_spark__0",
@@ -93,25 +113,27 @@ const UNREACHED = [
   "tri_mosaic__2",
   "stirred_ink__2",
   "paper_layers__1",
-  "mercury_tubes__1",
   "hairline_rays__0",
   "frost_stipple__0",
   "grain_fans__0",
   "draped_folds__0",
   "draped_folds__1",
-  "gilded_leaves__0",
-  "glass_orbs__0",
   "feather_plumes__0",
   "storm_clouds__0",
   "starburst_veils__0",
+  "cube_facets__0",
+  "cube_facets__1",
+  "cube_facets__2",
+  "cube_facets__3",
+  "cube_facets__4",
 ];
 
-test("the bundle is the 67 published modes in two tiers, each with an example", () => {
+test("the bundle is the 53 published modes in two tiers, each with an example", () => {
   assert.equal(bundle.schema, 1);
-  assert.equal(bundle.modes.length, 67);
+  assert.equal(bundle.modes.length, 53);
   const tiers = bundle.modes.map((mode) => tierOf(mode));
-  assert.equal(tiers.filter((tier) => tier === "curated").length, 16);
-  assert.equal(tiers.filter((tier) => tier === "lab").length, 51);
+  assert.equal(tiers.filter((tier) => tier === "curated").length, 13);
+  assert.equal(tiers.filter((tier) => tier === "lab").length, 40);
   for (const mode of bundle.modes) {
     assert.ok(mode.shown.length > 0, mode.name);
     // A curated mode has four or five knobs (the catalog's tier rule); a lab mode may have none.
@@ -127,10 +149,16 @@ test("the bundle is the 67 published modes in two tiers, each with an example", 
 test("an example opens at the mode's defaults, plus the setting that reproduces its keep", () => {
   const unreached = EXAMPLES.filter(([mode, shown]) => !exampleCustom(mode, shown).reached).map(([, , id]) => id);
   assert.deepEqual(unreached, UNREACHED);
-  const tunnel = modes.get("arch-tunnel");
-  assert.deepEqual(exampleCustom(tunnel, tunnel.shown[0]).custom.knobs, { turns: 3 });
+  const placed = exampleCustom(TUNNEL, TUNNEL.shown[0]);
+  assert.ok(placed.reached);
+  assert.deepEqual(placed.custom.knobs, { turns: 3 });
+  assert.deepEqual(placed.custom.projection, { twist: -0.23153, ring: 5.0 });
   const silk = modes.get("silk-waves");
-  for (const shown of silk.shown) assert.equal(exampleCustom(silk, shown).custom.autotone, false);
+  // Its three round-one keeps were drawn without the tone pass; 107's two showcase keeps with it.
+  assert.deepEqual(
+    silk.shown.map((shown) => exampleCustom(silk, shown).custom.autotone),
+    [false, false, false, true, true],
+  );
   const brass = modes.get("brass-foam");
   assert.deepEqual(exampleCustom(brass, brass.shown[0]).custom, {
     name: "brass-foam",
@@ -142,10 +170,10 @@ test("an example opens at the mode's defaults, plus the setting that reproduces 
   });
 });
 
-test("each mode offers one button a picture: 114 of the 116 keeps", () => {
+test("each mode offers one button a picture: 252 of the 254 keeps", () => {
   const offered = bundle.modes.flatMap((mode) => offeredExamples(mode, encode).map(({ index }) => `${mode.style}__${index}`));
-  assert.equal(offered.length, 114);
-  assert.equal(EXAMPLES.length, 116);
+  assert.equal(offered.length, 252);
+  assert.equal(EXAMPLES.length, 254);
   // star-eye's third keep draws its second's picture under the published settings, and
   // draped-folds' second its first's (both kept at the same place under round variants).
   const unoffered = ["star_eye__2", "draped_folds__1"];
@@ -214,7 +242,7 @@ test("an example's link is a fixed point, and reads back as the example's reques
 });
 
 test("Auto tone off drops the stack's tone pass and nothing else", () => {
-  const mode = modes.get("gilt-orbs");
+  const mode = modes.get("lacquer-lobes");
   const custom = { name: mode.name, knobs: {}, matched: true, autotone: false, projection: null };
   const { tone, ...rest } = mode.stack;
   assert.ok(tone);
@@ -223,8 +251,8 @@ test("Auto tone off drops the stack's tone pass and nothing else", () => {
 });
 
 test("Matched palette off draws the view's palette, reversed by Reverse", () => {
-  const mode = modes.get("gilt-orbs");
-  const view = parse(`v=4&custom=gilt-orbs&matched=0&p=Blues&reverse=1`, CONTEXT);
+  const mode = modes.get("lacquer-lobes");
+  const view = parse(`v=4&custom=lacquer-lobes&matched=0&p=Blues&reverse=1`, CONTEXT);
   const baked = { kind: "sequential", stops: [[0, [0, 0, 0]], [0.25, [10, 10, 10]], [1, [255, 255, 255]]] };
   const request = requestOf({ bundle, mode, custom: view.custom, view, maxiter: 500, stopsOf: () => baked, width: 8, height: 5 });
   assert.equal(request.colormap.kind, "sequential");
@@ -233,19 +261,19 @@ test("Matched palette off draws the view's palette, reversed by Reverse", () => 
 });
 
 test("the custom keys round-trip, defaults left out, knobs in the mode's order", () => {
-  const knobs = "light_angle:90,orb_size:0.2,haze:0.5";
-  const view = parse(`v=4&f=multibrot3&custom=gilt-orbs&knobs=${knobs}&autotone=0&matched=0&p=Blues`, CONTEXT);
-  // haze 0.5 is its default, so it is not held; orb_size comes first in the mode's order.
-  assert.deepEqual(view.custom.knobs, { light_angle: 90, orb_size: 0.2 });
-  assert.equal(emit(view, CONTEXT), "v=4&f=multibrot3&custom=gilt-orbs&knobs=orb_size:0.2,light_angle:90&matched=0&autotone=0&p=Blues");
+  const knobs = "sparkle:0.5,light_angle:90,gloss:0.9";
+  const view = parse(`v=4&f=multibrot3&custom=lacquer-lobes&knobs=${knobs}&autotone=0&matched=0&p=Blues`, CONTEXT);
+  // gloss 0.9 is its default, so it is not held; light_angle comes first in the mode's order.
+  assert.deepEqual(view.custom.knobs, { light_angle: 90, sparkle: 0.5 });
+  assert.equal(emit(view, CONTEXT), "v=4&f=multibrot3&custom=lacquer-lobes&knobs=light_angle:90,sparkle:0.5&matched=0&autotone=0&p=Blues");
 });
 
 test("under a custom mode the engine mode's keys are read, held to their rules, and dropped", () => {
-  const view = parse("v=4&m=smooth_stripe&density=4&custom=gilt-orbs&p=twilight_shifted", CONTEXT);
+  const view = parse("v=4&m=smooth_stripe&density=4&custom=lacquer-lobes&p=twilight_shifted", CONTEXT);
   assert.equal(view.mode, "smooth");
   assert.deepEqual(view.params, {});
-  assert.equal(emit(view, CONTEXT), "v=4&custom=gilt-orbs&p=twilight_shifted");
-  assert.throws(() => parse("v=4&m=smooth_stripe&density=x&custom=gilt-orbs", CONTEXT), PermalinkError);
+  assert.equal(emit(view, CONTEXT), "v=4&custom=lacquer-lobes&p=twilight_shifted");
+  assert.throws(() => parse("v=4&m=smooth_stripe&density=x&custom=lacquer-lobes", CONTEXT), PermalinkError);
 });
 
 test("a link without a custom mode is the string it always was", () => {
@@ -260,18 +288,18 @@ test("a custom link that cannot be read is refused in a sentence", () => {
     "v=4&custom=no-such-mode",
     "v=4&knobs=orb_size:0.2",
     "v=4&matched=0",
-    "v=4&custom=gilt-orbs&knobs=orb_size:9",
-    "v=4&custom=gilt-orbs&knobs=no_knob:1",
-    "v=4&custom=gilt-orbs&knobs=orb_size",
-    "v=4&custom=gilt-orbs&knobs=orb_size:0.2,orb_size:0.25",
-    "v=4&custom=gilt-orbs&matched=2",
-    "v=4&custom=gilt-orbs&projection=twist:0.1",
-    "v=4&custom=arch-tunnel&projection=twist:x",
+    "v=4&custom=lacquer-lobes&knobs=web_width:9",
+    "v=4&custom=lacquer-lobes&knobs=no_knob:1",
+    "v=4&custom=lacquer-lobes&knobs=web_width",
+    "v=4&custom=lacquer-lobes&knobs=web_width:0.1,web_width:0.11",
+    "v=4&custom=lacquer-lobes&matched=2",
+    "v=4&custom=lacquer-lobes&projection=twist:0.1",
+    "v=4&custom=test-tunnel&projection=twist:x",
   ];
   for (const query of refused) {
-    assert.throws(() => parse(query, CONTEXT), PermalinkError, query);
+    assert.throws(() => parse(query, TUNNEL_CONTEXT), PermalinkError, query);
     try {
-      parse(query, CONTEXT);
+      parse(query, TUNNEL_CONTEXT);
     } catch (error) {
       assert.doesNotMatch(error.message, /"knobs"|"custom"|"matched"|"projection"/, query);
     }
@@ -305,14 +333,18 @@ test("the pool takes half the machine's threads, one to eight", () => {
 
 test("a whole-number knob in a link reads as the number the module draws", () => {
   // 004_bug_hunt: `turns:4.5` drew 4 turns while the box and the slider said 5.
-  const read = (query) => parse(query, CONTEXT).custom.knobs;
-  assert.deepEqual(read("v=4&custom=arch-tunnel&knobs=turns:4.5"), { turns: 4 });
-  assert.deepEqual(read("v=4&custom=arch-tunnel&knobs=turns:3.5"), { turns: 4 });
-  assert.deepEqual(read("v=4&custom=arch-tunnel&knobs=turns:5.4"), {}, "5 is the default, left out");
+  const read = (query) => parse(query, TUNNEL_CONTEXT).custom.knobs;
+  assert.deepEqual(read("v=4&custom=test-tunnel&knobs=turns:4.5"), { turns: 4 });
+  assert.deepEqual(read("v=4&custom=test-tunnel&knobs=turns:3.5"), { turns: 4 });
+  assert.deepEqual(read("v=4&custom=test-tunnel&knobs=turns:5.4"), {}, "5 is the default, left out");
   // A fractional knob is read as written.
-  assert.deepEqual(read("v=4&custom=arch-tunnel&knobs=arch_glow:0.45"), { arch_glow: 0.45 });
-  const once = emit(parse("v=4&custom=arch-tunnel&knobs=turns:4.5", CONTEXT), CONTEXT);
-  assert.equal(emit(parse(once, CONTEXT), CONTEXT), once, "and the link it writes is a fixed point");
+  assert.deepEqual(read("v=4&custom=test-tunnel&knobs=arch_glow:0.45"), { arch_glow: 0.45 });
+  const once = emit(parse("v=4&custom=test-tunnel&knobs=turns:4.5", TUNNEL_CONTEXT), TUNNEL_CONTEXT);
+  assert.equal(emit(parse(once, TUNNEL_CONTEXT), TUNNEL_CONTEXT), once, "and the link it writes is a fixed point");
+  // The bundle's own whole-number knob: stirred-ink's stir length, the stir's `steps`.
+  const ink = (query) => parse(query, CONTEXT).custom.knobs;
+  assert.deepEqual(ink("v=4&custom=stirred-ink&knobs=stir_length:3.5"), { stir_length: 4 });
+  assert.deepEqual(ink("v=4&custom=stirred-ink&knobs=stir_length:3.4"), {}, "3 is the default, left out");
 });
 
 test("an unset knob is at its palette's tuned value, which the link leaves out and nothing else", () => {
@@ -398,18 +430,12 @@ test("each mode carries its palette set, the mode's own map first, every map in 
     palettesOf(modes.get("brass-foam")).map((entry) => entry.colormap),
     ["bronze_packing", "magma", "teal_tunnel", "twilight", "greenhorn"],
   );
-  // A default kept nowhere is still the bundle's first entry (wallpapers 085): chrome-orbs'
-  // and neon-loops' own maps, which the page once put back itself. The same array every call.
-  for (const [name, set] of [
-    ["chrome-orbs", ["chrome_orbs", "mercury_tubes"]],
-    ["neon-loops", ["neon_loops", "tan_star_beams", "violet_threads"]],
-  ]) {
-    const mode = modes.get(name);
-    assert.deepEqual(mode.palettes.map((entry) => entry.colormap), set, name);
-    assert.equal(palettesOf(mode), mode.palettes, name);
-  }
-  const lone = modes.get("chrome-orbs");
-  assert.equal(palettesOf(lone), palettesOf(lone));
+  // A default kept nowhere is still the bundle's first entry (wallpapers 085), as the loop
+  // above holds; chrome-orbs and neon-loops had one until wallpapers 107 deleted both, and
+  // no mode has one since. The set is the bundle's own array, the same every call.
+  const brass = modes.get("brass-foam");
+  assert.equal(palettesOf(brass), brass.palettes);
+  assert.equal(palettesOf(brass), palettesOf(brass));
 });
 
 test("an unset knob's rest is the bundle's, at every entry of every mode", () => {
